@@ -17,9 +17,13 @@ extern "C" {
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 
-int modeset_open(const char *node);
-void modeset_swapbuffer();
-void modeset_cleanup();
+typedef struct modeset_dev modeset_dev;
+
+int modeset_open(const char* node);
+modeset_dev* modeset_create();
+void modeset_swapbuffer(modeset_dev* dev);
+void modeset_destroy(modeset_dev* dev);
+void modeset_close();
 
 #if defined (__cplusplus)
 }

@@ -69,11 +69,10 @@ struct modeset_dev {
 	drmModeCrtc *saved_crtc;
 };
 
-static struct modeset_dev *modeset_list = NULL;
+//static struct modeset_dev *modeset_list = NULL;
 
 static int fd = -1;
 
-static int modeset_prepare();
 static int modeset_find_crtc(drmModeRes *res, drmModeConnector *conn,
 				 struct modeset_dev *dev);
 static int modeset_create_fb(struct modeset_buf *buf);
@@ -124,15 +123,12 @@ int modeset_open(const char *node)
 		return -1;
 	}
 
-	return modeset_prepare();
+	return 0;
 }
 
-/*
- * modeset_prepare() stays the same.
- */
-
-static int modeset_prepare()
+modeset_dev* modeset_create()
 {
+	modeset_dev* ret_dev = 0;
 	drmModeRes *res;
 	drmModeConnector *conn;
 	struct modeset_dev *dev;
@@ -142,7 +138,7 @@ static int modeset_prepare()
 	res = drmModeGetResources(fd);
 	if (!res) {
 		printf("cannot retrieve DRM resources (%d): %m\n", errno);
-		return -1;
+		return 0;
 	}
 
 	// iterate all connectors
@@ -173,8 +169,8 @@ static int modeset_prepare()
 
 		// free connector data and link device into global list
 		drmModeFreeConnector(conn);
-		dev->next = modeset_list;
-		modeset_list = dev;
+		dev->next = ret_dev;
+		ret_dev = dev;
 	}
 
 	// free resources again
@@ -182,7 +178,7 @@ static int modeset_prepare()
 
 	struct modeset_dev *iter;
 	struct modeset_buf *buf;
-	for (iter = modeset_list; iter; iter = iter->next) {
+	for (iter = ret_dev; iter; iter = iter->next) {
 		iter->saved_crtc = drmModeGetCrtc(fd, iter->crtc);
 		buf = &iter->bufs[iter->front_buf];
 		ret = drmModeSetCrtc(fd, iter->crtc, buf->fb, 0, 0,
@@ -191,7 +187,8 @@ static int modeset_prepare()
 			printf("cannot set CRTC for connector %u (%d): %m\n",
 				iter->conn, errno);
 	}
-	return 0;
+
+	return ret_dev;
 }
 
 /*
@@ -263,7 +260,7 @@ static int modeset_setup_dev(drmModeRes *res, drmModeConnector *conn,
  */
 
 static int modeset_find_crtc(drmModeRes *res, drmModeConnector *conn,
-			     struct modeset_dev *dev)
+				 modeset_dev *dev)
 {
 	drmModeEncoder *enc;
 	unsigned int i, j;
@@ -279,7 +276,7 @@ static int modeset_find_crtc(drmModeRes *res, drmModeConnector *conn,
 	if (enc) {
 		if (enc->crtc_id) {
 			crtc = enc->crtc_id;
-			for (iter = modeset_list; iter; iter = iter->next) {
+			for (iter = dev; iter; iter = iter->next) {
 				if (iter->crtc == crtc) {
 					crtc = -1;
 					break;
@@ -316,7 +313,7 @@ static int modeset_find_crtc(drmModeRes *res, drmModeConnector *conn,
 
 			// check that no other device already uses this CRTC
 			crtc = res->crtcs[j];
-			for (iter = modeset_list; iter; iter = iter->next) {
+			for (iter = dev; iter; iter = iter->next) {
 				if (iter->crtc == crtc) {
 					crtc = -1;
 					break;
@@ -476,13 +473,13 @@ static void modeset_destroy_fb(struct modeset_buf *buf)
  * vertical-sync.
  */
 
-void modeset_swapbuffer()
+void modeset_swapbuffer(modeset_dev* dev)
 {
 	struct modeset_dev *iter;
 	struct modeset_buf *buf;
 	int ret;
 
-	for (iter = modeset_list; iter; iter = iter->next) {
+	for (iter = dev; iter; iter = iter->next) {
 		buf = &iter->bufs[iter->front_buf ^ 1];
 
 		ret = drmModeSetCrtc(fd, iter->crtc, buf->fb, 0, 0,
@@ -500,14 +497,14 @@ void modeset_swapbuffer()
  * modeset_destroy_fb() instead of accessing the framebuffers directly.
  */
 
-void modeset_cleanup()
+void modeset_destroy(modeset_dev* dev)
 {
 	struct modeset_dev *iter;
 
-	while (modeset_list) {
+	while (dev) {
 		// remove from global list
-		iter = modeset_list;
-		modeset_list = iter->next;
+		iter = dev;
+		dev = iter->next;
 
 		// restore saved CRTC configuration
 		drmModeSetCrtc(fd,
@@ -527,7 +524,10 @@ void modeset_cleanup()
 		// free allocated memory
 		free(iter);
 	}
+}
 
+void modeset_close()
+{
 	close(fd);
 }
 

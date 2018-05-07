@@ -5,7 +5,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include "driver/modeset.h"
+#include "driver/vkExt.h"
 
 //#define GLFW_INCLUDE_VULKAN
 //#define VK_USE_PLATFORM_WIN32_KHR
@@ -165,12 +165,12 @@ void createInstance() {
 }
 
 void createWindowSurface() {
-	//if (glfwCreateWindowSurface(instance, window, NULL, &windowSurface) != VK_SUCCESS) {
-	//	std::cerr << "failed to create window surface!" << std::endl;
-	//	assert(0);
-	//}
+	if (vkCreateRpiSurfaceKHR(instance, 0, 0, &windowSurface) != VK_SUCCESS) {
+		std::cerr << "failed to create window surface!" << std::endl;
+		assert(0);
+	}
 
-	//std::cout << "created window surface" << std::endl;
+	std::cout << "created window surface" << std::endl;
 }
 
 void findPhysicalDevice() {
@@ -670,17 +670,16 @@ int main() {
 
 	//window = glfwCreateWindow(640, 480, "The 630 line cornflower blue window", nullptr, nullptr);
 
-	int ret = 0;
-	ret = modeset_open("/dev/dri/card0"); assert(!ret);
-	modeset_swapbuffer();
+	//TODO create surface
+	//swapbuffer
 
 	// Use Vulkan
 	setupVulkan();
 
 	mainLoop();
 
+	//TODO destroy surface
 	cleanup();
-	modeset_cleanup();
 
 	return 0;
 }
