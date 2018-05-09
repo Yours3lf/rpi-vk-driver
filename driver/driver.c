@@ -69,6 +69,11 @@ typedef struct VkQueue_T
 	int familyIndex;
 } _queue;
 
+typedef struct VkCommandBuffer_T
+{
+	int dummy;
+} _commandBuffer;
+
 VkQueueFamilyProperties _queueFamilyProperties[] =
 {
 	{
@@ -349,101 +354,297 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSemaphore(
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceSurfaceCapabilitiesKHR
+ * The capabilities of a swapchain targetting a surface are the intersection of the capabilities of the WSI platform,
+ * the native window or display, and the physical device. The resulting capabilities can be obtained with the queries listed
+ * below in this section. Capabilities that correspond to image creation parameters are not independent of each other:
+ * combinations of parameters that are not supported as reported by vkGetPhysicalDeviceImageFormatProperties are not supported
+ * by the surface on that physical device, even if the capabilities taken individually are supported as part of some other parameter combinations.
+ *
+ * capabilities the specified device supports for a swapchain created for the surface
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
 	VkPhysicalDevice                            physicalDevice,
 	VkSurfaceKHR                                surface,
 	VkSurfaceCapabilitiesKHR*                   pSurfaceCapabilities)
 {
+	assert(physicalDevice);
+	assert(surface);
+	assert(pSurfaceCapabilities);
+
+	pSurfaceCapabilities->minImageCount = 1; //min 1
+	pSurfaceCapabilities->maxImageCount = 2; //TODO max 2 for double buffering for now...
+	pSurfaceCapabilities->currentExtent.width = ((modeset_dev*)surface)->bufs[0].width;
+	pSurfaceCapabilities->currentExtent.height = ((modeset_dev*)surface)->bufs[0].height;
+	pSurfaceCapabilities->minImageExtent.width = ((modeset_dev*)surface)->bufs[0].width; //TODO
+	pSurfaceCapabilities->minImageExtent.height = ((modeset_dev*)surface)->bufs[0].height; //TODO
+	pSurfaceCapabilities->maxImageExtent.width = ((modeset_dev*)surface)->bufs[0].width; //TODO
+	pSurfaceCapabilities->maxImageExtent.height = ((modeset_dev*)surface)->bufs[0].height; //TODO
+	pSurfaceCapabilities->maxImageArrayLayers = 1; //TODO maybe more layers for cursor etc.
+	pSurfaceCapabilities->supportedTransforms = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR; //TODO no rotation for now
+	pSurfaceCapabilities->currentTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR; //TODO get this from dev
+	pSurfaceCapabilities->supportedCompositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; //TODO no alpha compositing for now
+	pSurfaceCapabilities->supportedUsageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; //well we want to draw on the screen right
+
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkDeviceWaitIdle(
-		VkDevice									device)
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceSurfaceFormatsKHR
+ * If pSurfaceFormats is NULL, then the number of format pairs supported for the given surface is returned in pSurfaceFormatCount.
+ * The number of format pairs supported will be greater than or equal to 1. Otherwise, pSurfaceFormatCount must point to a variable
+ * set by the user to the number of elements in the pSurfaceFormats array, and on return the variable is overwritten with the number
+ * of structures actually written to pSurfaceFormats. If the value of pSurfaceFormatCount is less than the number of format pairs supported,
+ * at most pSurfaceFormatCount structures will be written. If pSurfaceFormatCount is smaller than the number of format pairs supported for the given surface,
+ * VK_INCOMPLETE will be returned instead of VK_SUCCESS to indicate that not all the available values were returned.
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(
+	VkPhysicalDevice                            physicalDevice,
+	VkSurfaceKHR                                surface,
+	uint32_t*                                   pSurfaceFormatCount,
+	VkSurfaceFormatKHR*                         pSurfaceFormats)
 {
+	assert(physicalDevice);
+	assert(surface);
+	assert(pSurfaceFormatCount);
+
+	const int numFormats = 1;
+
+	if(!pSurfaceFormats)
+	{
+		*pSurfaceFormatCount = numFormats;
+		return VK_SUCCESS;
+	}
+
+	int arraySize = *pSurfaceFormatCount;
+	int elementsWritten = min(numFormats, arraySize);
+
+	for(int c = 0; c < elementsWritten; ++c)
+	{
+		//TODO
+		pSurfaceFormats[c].colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+		pSurfaceFormats[c].format = VK_FORMAT_R8G8B8A8_UNORM;
+	}
+
+	*pSurfaceFormatCount = elementsWritten;
+
+	if(elementsWritten < numFormats)
+	{
+		return VK_INCOMPLETE;
+	}
+
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkFreeCommandBuffers(
-		VkDevice                                    device,
-		VkCommandPool                               commandPool,
-		uint32_t                                    commandBufferCount,
-		const VkCommandBuffer*                      pCommandBuffers)
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceSurfacePresentModesKHR
+ * If pPresentModes is NULL, then the number of presentation modes supported for the given surface is returned in pPresentModeCount.
+ * Otherwise, pPresentModeCount must point to a variable set by the user to the number of elements in the pPresentModes array,
+ * and on return the variable is overwritten with the number of values actually written to pPresentModes.
+ * If the value of pPresentModeCount is less than the number of presentation modes supported, at most pPresentModeCount values will be written.
+ * If pPresentModeCount is smaller than the number of presentation modes supported for the given surface, VK_INCOMPLETE will be returned instead of
+ * VK_SUCCESS to indicate that not all the available values were returned.
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
+	VkPhysicalDevice                            physicalDevice,
+	VkSurfaceKHR                                surface,
+	uint32_t*                                   pPresentModeCount,
+	VkPresentModeKHR*                           pPresentModes)
 {
+	assert(physicalDevice);
+	assert(surface);
+	assert(pPresentModeCount);
 
+	const int numModes = 1;
+
+	if(!pPresentModes)
+	{
+		*pPresentModeCount = numModes;
+		return VK_SUCCESS;
+	}
+
+	int arraySize = *pPresentModeCount;
+	int elementsWritten = min(numModes, arraySize);
+
+	for(int c = 0; c < elementsWritten; ++c)
+	{
+		//TODO
+		pPresentModes[c] = VK_PRESENT_MODE_FIFO_KHR;
+	}
+
+	*pPresentModeCount = elementsWritten;
+
+	if(elementsWritten < numModes)
+	{
+		return VK_INCOMPLETE;
+	}
+
+	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateSwapchainKHR
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 	VkDevice                                    device,
-	VkCommandPool                               commandPool,
-	const VkAllocationCallbacks*                pAllocator)
+	const VkSwapchainCreateInfoKHR*             pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkSwapchainKHR*                             pSwapchain)
 {
+	assert(device);
+	assert(pCreateInfo);
 
+	//TODO: allocator is ignored for now
+	assert(pAllocator == 0);
+
+	*pSwapchain = pCreateInfo->surface; //TODO
+
+	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
-	VkDevice                                    device,
-	VkSemaphore                                 semaphore,
-	const VkAllocationCallbacks*                pAllocator)
-{
-
-}
-
-VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetSwapchainImagesKHR
+ * If pSwapchainImages is NULL, then the number of presentable images for swapchain is returned in pSwapchainImageCount.
+ * Otherwise, pSwapchainImageCount must point to a variable set by the user to the number of elements in the pSwapchainImages array,
+ * and on return the variable is overwritten with the number of structures actually written to pSwapchainImages.
+ * If the value of pSwapchainImageCount is less than the number of presentable images for swapchain, at most pSwapchainImageCount structures will be written.
+ * If pSwapchainImageCount is smaller than the number of presentable images for swapchain, VK_INCOMPLETE will be returned instead of VK_SUCCESS to
+ * indicate that not all the available values were returned.
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainImagesKHR(
 	VkDevice                                    device,
 	VkSwapchainKHR                              swapchain,
-	const VkAllocationCallbacks*                pAllocator)
+	uint32_t*                                   pSwapchainImageCount,
+	VkImage*                                    pSwapchainImages)
 {
+	assert(device);
+	assert(swapchain);
 
+	const int numImages = 2;
+
+	if(!pSwapchainImages)
+	{
+		*pSwapchainImageCount = numImages;
+		return VK_SUCCESS;
+	}
+
+	int arraySize = *pSwapchainImageCount;
+	int elementsWritten = min(numImages, arraySize);
+
+	for(int c = 0; c < elementsWritten; ++c)
+	{
+		//TODO
+		pSwapchainImages[c] = c;
+	}
+
+	*pSwapchainImageCount = elementsWritten;
+
+	if(elementsWritten < numImages)
+	{
+		return VK_INCOMPLETE;
+	}
+
+	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#commandbuffers-pools
+ * Command pools are opaque objects that command buffer memory is allocated from, and which allow the implementation to amortize the
+ * cost of resource creation across multiple command buffers. Command pools are externally synchronized, meaning that a command pool must
+ * not be used concurrently in multiple threads. That includes use via recording commands on any command buffers allocated from the pool,
+ * as well as operations that allocate, free, and reset command buffers or the pool itself.
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
 	VkDevice                                    device,
-	const VkAllocationCallbacks*                pAllocator)
+	const VkCommandPoolCreateInfo*              pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkCommandPool*                              pCommandPool)
 {
+	assert(device);
+	assert(pCreateInfo);
 
-}
+	//TODO: allocator is ignored for now
+	assert(pAllocator == 0);
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(
-	VkInstance                                  instance,
-	const VkAllocationCallbacks*                pAllocator)
-{
+	*pCommandPool = 0; //TODO implement pool memory allocator
 
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(
-	VkQueue                                     queue,
-	const VkPresentInfoKHR*                     pPresentInfo)
-{
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
-	VkQueue                                     queue,
-	uint32_t                                    submitCount,
-	const VkSubmitInfo*                         pSubmits,
-	VkFence                                     fence)
-{
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#commandbuffer-allocation
+ * vkAllocateCommandBuffers can be used to create multiple command buffers. If the creation of any of those command buffers fails,
+ * the implementation must destroy all successfully created command buffer objects from this command, set all entries of the pCommandBuffers array to NULL and return the error.
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 	VkDevice                                    device,
-	VkSwapchainKHR                              swapchain,
-	uint64_t                                    timeout,
-	VkSemaphore                                 semaphore,
-	VkFence                                     fence,
-	uint32_t*                                   pImageIndex)
+	const VkCommandBufferAllocateInfo*          pAllocateInfo,
+	VkCommandBuffer*                            pCommandBuffers)
 {
+	assert(device);
+	assert(pAllocateInfo);
+	assert(pCommandBuffers);
+
+	VkResult res = VK_SUCCESS;
+
+	for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
+	{
+		pCommandBuffers[c] = malloc(sizeof(_commandBuffer));
+		if(!pCommandBuffers[c])
+		{
+			res = VK_ERROR_OUT_OF_HOST_MEMORY; //TODO or VK_ERROR_OUT_OF_DEVICE_MEMORY?
+		}
+	}
+
+	if(res != VK_SUCCESS)
+	{
+		for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
+		{
+			free(pCommandBuffers[c]);
+			pCommandBuffers[c] = 0;
+		}
+	}
+
+	return res;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkBeginCommandBuffer
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
+	VkCommandBuffer                             commandBuffer,
+	const VkCommandBufferBeginInfo*             pBeginInfo)
+{
+	assert(commandBuffer);
+	assert(pBeginInfo);
+
+	//TODO
+
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkEndCommandBuffer(
-	VkCommandBuffer                             commandBuffer)
-{
-	return VK_SUCCESS;
-}
-
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdPipelineBarrier
+ * vkCmdPipelineBarrier is a synchronization command that inserts a dependency between commands submitted to the same queue, or between commands in the same subpass.
+ * When vkCmdPipelineBarrier is submitted to a queue, it defines a memory dependency between commands that were submitted before it, and those submitted after it.
+ * If vkCmdPipelineBarrier was recorded outside a render pass instance, the first synchronization scope includes all commands that occur earlier in submission order.
+ * If vkCmdPipelineBarrier was recorded inside a render pass instance, the first synchronization scope includes only commands that occur earlier in submission order within the same subpass.
+ * In either case, the first synchronization scope is limited to operations on the pipeline stages determined by the source stage mask specified by srcStageMask.
+ *
+ * If vkCmdPipelineBarrier was recorded outside a render pass instance, the second synchronization scope includes all commands that occur later in submission order.
+ * If vkCmdPipelineBarrier was recorded inside a render pass instance, the second synchronization scope includes only commands that occur later in submission order within the same subpass.
+ * In either case, the second synchronization scope is limited to operations on the pipeline stages determined by the destination stage mask specified by dstStageMask.
+ *
+ * The first access scope is limited to access in the pipeline stages determined by the source stage mask specified by srcStageMask.
+ * Within that, the first access scope only includes the first access scopes defined by elements of the pMemoryBarriers,
+ * pBufferMemoryBarriers and pImageMemoryBarriers arrays, which each define a set of memory barriers. If no memory barriers are specified,
+ * then the first access scope includes no accesses.
+ *
+ * The second access scope is limited to access in the pipeline stages determined by the destination stage mask specified by dstStageMask.
+ * Within that, the second access scope only includes the second access scopes defined by elements of the pMemoryBarriers, pBufferMemoryBarriers and pImageMemoryBarriers arrays,
+ * which each define a set of memory barriers. If no memory barriers are specified, then the second access scope includes no accesses.
+ *
+ * If dependencyFlags includes VK_DEPENDENCY_BY_REGION_BIT, then any dependency between framebuffer-space pipeline stages is framebuffer-local - otherwise it is framebuffer-global.
+ */
 VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
 	VkCommandBuffer                             commandBuffer,
 	VkPipelineStageFlags                        srcStageMask,
@@ -456,9 +657,16 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
 	uint32_t                                    imageMemoryBarrierCount,
 	const VkImageMemoryBarrier*                 pImageMemoryBarriers)
 {
+	assert(commandBuffer);
 
+	//TODO
 }
 
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdClearColorImage
+ * Color and depth/stencil images can be cleared outside a render pass instance using vkCmdClearColorImage or vkCmdClearDepthStencilImage, respectively.
+ * These commands are only allowed outside of a render pass instance.
+ */
 VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 	VkCommandBuffer                             commandBuffer,
 	VkImage                                     image,
@@ -467,65 +675,226 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 	uint32_t                                    rangeCount,
 	const VkImageSubresourceRange*              pRanges)
 {
+	assert(commandBuffer);
 
+	//TODO
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
-	VkCommandBuffer                             commandBuffer,
-	const VkCommandBufferBeginInfo*             pBeginInfo)
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEndCommandBuffer
+ * If there was an error during recording, the application will be notified by an unsuccessful return code returned by vkEndCommandBuffer.
+ * If the application wishes to further use the command buffer, the command buffer must be reset. The command buffer must have been in the recording state,
+ * and is moved to the executable state.
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkEndCommandBuffer(
+	VkCommandBuffer                             commandBuffer)
 {
+	assert(commandBuffer);
+
+	//TODO
+
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
-	VkDevice                                    device,
-	const VkCommandBufferAllocateInfo*          pAllocateInfo,
-	VkCommandBuffer*                            pCommandBuffers)
-{
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
-	VkDevice                                    device,
-	const VkCommandPoolCreateInfo*              pCreateInfo,
-	const VkAllocationCallbacks*                pAllocator,
-	VkCommandPool*                              pCommandPool)
-{
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainImagesKHR(
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkAcquireNextImageKHR
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(
 	VkDevice                                    device,
 	VkSwapchainKHR                              swapchain,
-	uint32_t*                                   pSwapchainImageCount,
-	VkImage*                                    pSwapchainImages)
+	uint64_t                                    timeout,
+	VkSemaphore                                 semaphore,
+	VkFence                                     fence,
+	uint32_t*                                   pImageIndex)
 {
+	assert(device);
+	assert(swapchain);
+
+	//TODO
+
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkQueueSubmit
+ * vkQueueSubmit is a queue submission command, with each batch defined by an element of pSubmits as an instance of the VkSubmitInfo structure.
+ * Batches begin execution in the order they appear in pSubmits, but may complete out of order.
+ * Fence and semaphore operations submitted with vkQueueSubmit have additional ordering constraints compared to other submission commands,
+ * with dependencies involving previous and subsequent queue operations. Information about these additional constraints can be found in the semaphore and
+ * fence sections of the synchronization chapter.
+ * Details on the interaction of pWaitDstStageMask with synchronization are described in the semaphore wait operation section of the synchronization chapter.
+ * The order that batches appear in pSubmits is used to determine submission order, and thus all the implicit ordering guarantees that respect it.
+ * Other than these implicit ordering guarantees and any explicit synchronization primitives, these batches may overlap or otherwise execute out of order.
+ * If any command buffer submitted to this queue is in the executable state, it is moved to the pending state. Once execution of all submissions of a command buffer complete,
+ * it moves from the pending state, back to the executable state. If a command buffer was recorded with the VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT flag,
+ * it instead moves back to the invalid state.
+ * If vkQueueSubmit fails, it may return VK_ERROR_OUT_OF_HOST_MEMORY or VK_ERROR_OUT_OF_DEVICE_MEMORY.
+ * If it does, the implementation must ensure that the state and contents of any resources or synchronization primitives referenced by the submitted command buffers and any semaphores
+ * referenced by pSubmits is unaffected by the call or its failure. If vkQueueSubmit fails in such a way that the implementation is unable to make that guarantee,
+ * the implementation must return VK_ERROR_DEVICE_LOST. See Lost Device.
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
+	VkQueue                                     queue,
+	uint32_t                                    submitCount,
+	const VkSubmitInfo*                         pSubmits,
+	VkFence                                     fence)
+{
+	assert(queue);
+
+	//TODO
+
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkQueuePresentKHR
+ * Any writes to memory backing the images referenced by the pImageIndices and pSwapchains members of pPresentInfo,
+ * that are available before vkQueuePresentKHR is executed, are automatically made visible to the read access performed by the presentation engine.
+ * This automatic visibility operation for an image happens-after the semaphore signal operation, and happens-before the presentation engine accesses the image.
+ * Queueing an image for presentation defines a set of queue operations, including waiting on the semaphores and submitting a presentation request to the presentation engine.
+ * However, the scope of this set of queue operations does not include the actual processing of the image by the presentation engine.
+ * If vkQueuePresentKHR fails to enqueue the corresponding set of queue operations, it may return VK_ERROR_OUT_OF_HOST_MEMORY or VK_ERROR_OUT_OF_DEVICE_MEMORY.
+ * If it does, the implementation must ensure that the state and contents of any resources or synchronization primitives referenced is unaffected by the call or its failure.
+ * If vkQueuePresentKHR fails in such a way that the implementation is unable to make that guarantee, the implementation must return VK_ERROR_DEVICE_LOST.
+ * However, if the presentation request is rejected by the presentation engine with an error VK_ERROR_OUT_OF_DATE_KHR or VK_ERROR_SURFACE_LOST_KHR,
+ * the set of queue operations are still considered to be enqueued and thus any semaphore to be waited on gets unsignaled when the corresponding queue operation is complete.
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(
+	VkQueue                                     queue,
+	const VkPresentInfoKHR*                     pPresentInfo)
+{
+	assert(queue);
+	assert(pPresentInfo);
+
+	for(int c = 0; c < pPresentInfo->swapchainCount; ++c)
+	{
+		//TODO
+		modeset_swapbuffer((modeset_dev*)pPresentInfo->pSwapchains[c], pPresentInfo->pImageIndices[c]);
+	}
+
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDeviceWaitIdle
+ * vkDeviceWaitIdle is equivalent to calling vkQueueWaitIdle for all queues owned by device.
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkDeviceWaitIdle(
+		VkDevice									device)
+{
+	assert(device);
+
+	//TODO
+	//possibly wait on ioctl
+
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkFreeCommandBuffers
+ * Any primary command buffer that is in the recording or executable state and has any element of pCommandBuffers recorded into it, becomes invalid.
+ */
+VKAPI_ATTR void VKAPI_CALL vkFreeCommandBuffers(
+		VkDevice                                    device,
+		VkCommandPool                               commandPool,
+		uint32_t                                    commandBufferCount,
+		const VkCommandBuffer*                      pCommandBuffers)
+{
+	assert(device);
+	//assert(commandPool); //TODO
+	assert(pCommandBuffers);
+
+	for(int c = 0; c < commandBufferCount; ++c)
+	{
+		free(pCommandBuffers[c]); //TODO
+	}
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyCommandPool
+ * When a pool is destroyed, all command buffers allocated from the pool are freed.
+ * Any primary command buffer allocated from another VkCommandPool that is in the recording or executable state and has a secondary command buffer
+ * allocated from commandPool recorded into it, becomes invalid.
+ */
+VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
 	VkDevice                                    device,
-	const VkSwapchainCreateInfoKHR*             pCreateInfo,
-	const VkAllocationCallbacks*                pAllocator,
-	VkSwapchainKHR*                             pSwapchain)
+	VkCommandPool                               commandPool,
+	const VkAllocationCallbacks*                pAllocator)
 {
-	return VK_SUCCESS;
+	assert(device);
+	//assert(commandPool); //TODO
+
+	//TODO: allocator is ignored for now
+	assert(pAllocator == 0);
+
+	//TODO
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
-	VkPhysicalDevice                            physicalDevice,
-	VkSurfaceKHR                                surface,
-	uint32_t*                                   pPresentModeCount,
-	VkPresentModeKHR*                           pPresentModes)
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroySemaphore
+ */
+VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
+	VkDevice                                    device,
+	VkSemaphore                                 semaphore,
+	const VkAllocationCallbacks*                pAllocator)
 {
-	return VK_SUCCESS;
+	assert(device);
+	assert(semaphore);
+
+	//TODO: allocator is ignored for now
+	assert(pAllocator == 0);
+
+	//TODO
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(
-	VkPhysicalDevice                            physicalDevice,
-	VkSurfaceKHR                                surface,
-	uint32_t*                                   pSurfaceFormatCount,
-	VkSurfaceFormatKHR*                         pSurfaceFormats)
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroySwapchainKHR
+ */
+VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
+	VkDevice                                    device,
+	VkSwapchainKHR                              swapchain,
+	const VkAllocationCallbacks*                pAllocator)
 {
-	return VK_SUCCESS;
+	assert(device);
+	assert(swapchain);
+
+	//TODO: allocator is ignored for now
+	assert(pAllocator == 0);
+
+	//TODO
 }
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyDevice
+ * To ensure that no work is active on the device, vkDeviceWaitIdle can be used to gate the destruction of the device.
+ * Prior to destroying a device, an application is responsible for destroying/freeing any Vulkan objects that were created using that device as the
+ * first parameter of the corresponding vkCreate* or vkAllocate* command
+ */
+VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(
+	VkDevice                                    device,
+	const VkAllocationCallbacks*                pAllocator)
+{
+	assert(device);
+
+	//TODO: allocator is ignored for now
+	assert(pAllocator == 0);
+
+	//TODO
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyInstance
+ *
+ */
+VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(
+	VkInstance                                  instance,
+	const VkAllocationCallbacks*                pAllocator)
+{
+	assert(instance);
+
+	//TODO: allocator is ignored for now
+	assert(pAllocator == 0);
+
+	//TODO
+}
+
