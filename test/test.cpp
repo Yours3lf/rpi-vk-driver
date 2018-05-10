@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <cassert>
+#include "driver/CustomAssert.h"
 
 #include <vulkan/vulkan.h>
 
@@ -670,15 +670,11 @@ int main() {
 
 	//window = glfwCreateWindow(640, 480, "The 630 line cornflower blue window", nullptr, nullptr);
 
-	//TODO create surface
-	//swapbuffer
-
 	// Use Vulkan
 	setupVulkan();
 
 	mainLoop();
 
-	//TODO destroy surface
 	cleanup();
 
 	return 0;

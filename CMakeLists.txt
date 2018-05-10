@@ -12,6 +12,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+	message("Debug build")
+	add_definitions(-DDEBUG_BUILD)
+endif()
+
 set (EXTERNAL_PATH ${CMAKE_CURRENT_SOURCE_DIR}/external/)
 link_directories(${EXTERNAL_PATH}/lib)
 include_directories(${EXTERNAL_PATH}/include)

@@ -1,10 +1,9 @@
 #include <stdio.h>
-#include <assert.h>
+#include "CustomAssert.h"
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <assert.h>
 #include <stdint.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
@@ -18,6 +17,8 @@
 #include "vkExt.h"
 
 #include "modeset.h"
+
+#include "PoolAllocator.h"
 
 #ifndef min
 #define min(a, b) (a < b ? a : b)
