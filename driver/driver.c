@@ -18,7 +18,11 @@
 
 #include "modeset.h"
 
+#include "AlignedAllocator.h"
 #include "PoolAllocator.h"
+#include "LinearAllocator.h"
+
+#include "drm/vc4_drm.h"
 
 #ifndef min
 #define min(a, b) (a < b ? a : b)
@@ -72,8 +76,15 @@ typedef struct VkQueue_T
 
 typedef struct VkCommandBuffer_T
 {
-	int dummy;
+	drm_vc4_submit_cl cls[100]; //each cl is a draw call
 } _commandBuffer;
+
+typedef struct VkCommandPool_T
+{
+	int usePoolAllocator;
+	PoolAllocator pa;
+	LinearAllocator la;
+} _commandPool;
 
 VkQueueFamilyProperties _queueFamilyProperties[] =
 {
@@ -566,7 +577,35 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	*pCommandPool = 0; //TODO implement pool memory allocator
+	//VK_COMMAND_POOL_CREATE_TRANSIENT_BIT
+	//specifies that command buffers allocated from the pool will be short-lived, meaning that they will be reset or freed in a relatively short timeframe.
+	//This flag may be used by the implementation to control memory allocation behavior within the pool.
+	//--> definitely use pool allocator
+
+	//VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
+	//allows any command buffer allocated from a pool to be individually reset to the initial state; either by calling vkResetCommandBuffer, or via the implicit reset when calling vkBeginCommandBuffer.
+	//If this flag is not set on a pool, then vkResetCommandBuffer must not be called for any command buffer allocated from that pool.
+
+	//TODO pool family ignored for now
+
+	_commandPool* cp = malloc(sizeof(_commandPool));
+
+	//initial number of command buffers to hold
+	int numCommandBufs = 100;
+
+	if(pCreateInfo->flags & VK_COMMAND_POOL_CREATE_TRANSIENT_BIT)
+	{
+		//use pool allocator
+		cp->usePoolAllocator = 1;
+		cp->pa = createPoolAllocator(malloc(numCommandBufs * sizeof(_commandBuffer)), sizeof(_commandBuffer), numCommandBufs * sizeof(_commandBuffer));
+	}
+	else
+	{
+		cp->usePoolAllocator = 0;
+		cp->la = createLinearAllocator(malloc(numCommandBufs * sizeof(_commandBuffer)), numCommandBufs * sizeof(_commandBuffer));
+	}
+
+	*pCommandPool = (VkCommandPool)cp;
 
 	return VK_SUCCESS;
 }
@@ -587,21 +626,52 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 
 	VkResult res = VK_SUCCESS;
 
-	for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
+	_commandPool* cp = *(_commandPool*)pAllocateInfo->commandPool;
+
+	if(cp->usePoolAllocator)
 	{
-		pCommandBuffers[c] = malloc(sizeof(_commandBuffer));
-		if(!pCommandBuffers[c])
+		for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
 		{
-			res = VK_ERROR_OUT_OF_HOST_MEMORY; //TODO or VK_ERROR_OUT_OF_DEVICE_MEMORY?
+			pCommandBuffers[c] = poolAllocte(&cp->pa);
+
+			if(!pCommandBuffers[c])
+			{
+				res = VK_ERROR_OUT_OF_HOST_MEMORY; //TODO or VK_ERROR_OUT_OF_DEVICE_MEMORY?
+				break;
+			}
+		}
+	}
+	else
+	{
+		for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
+		{
+			pCommandBuffers[c] = linearAllocte(&cp->la, sizeof(_commandBuffer));
+
+			if(!pCommandBuffers[c])
+			{
+				res = VK_ERROR_OUT_OF_HOST_MEMORY; //TODO or VK_ERROR_OUT_OF_DEVICE_MEMORY?
+				break;
+			}
 		}
 	}
 
 	if(res != VK_SUCCESS)
 	{
-		for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
+		if(cp->usePoolAllocator)
 		{
-			free(pCommandBuffers[c]);
-			pCommandBuffers[c] = 0;
+			for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
+			{
+				poolFree(&cp->pa, pCommandBuffers[c]);
+				pCommandBuffers[c] = 0;
+			}
+		}
+		else
+		{
+			for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
+			{
+				//we don't really free linear memory, just reset the whole command pool
+				pCommandBuffers[c] = 0;
+			}
 		}
 	}
 
@@ -823,12 +893,24 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
 	const VkAllocationCallbacks*                pAllocator)
 {
 	assert(device);
-	//assert(commandPool); //TODO
+	assert(commandPool);
 
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	//TODO
+	_commandPool* cp = *(_commandPool*)commandPool;
+
+	if(cp->usePoolAllocator)
+	{
+		free(cp->pa.buf);
+		destroyPoolAllocator(cp->pa);
+	}
+	else
+	{
+		free(cp->continuousMem);
+	}
+
+	free(cp);
 }
 
 /*

@@ -17,6 +17,7 @@ PoolAllocator createPoolAllocator(char* b, unsigned bs, unsigned s)
 	assert(b); //only allocated memory
 	assert(bs >= sizeof(void*)); //we need to be able to store
 	assert(s%bs==0); //we want a size that is the exact multiple of block size
+	assert(s > bs); //at least 1 element
 
 	PoolAllocator pa =
 	{
