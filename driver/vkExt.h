@@ -16,7 +16,7 @@ typedef enum VkRpiSurfaceCreateFlagsKHR {
 typedef struct VkRpiSurfaceCreateInfoKHR {
 			   VkStructureType               sType;
 			   const void*                   pNext;
-			   VkRpiSurfaceCreateFlagsKHR    flags;
+			   VkRpiSurfaceCreateFlagsKHR    flags; //reserved
 			   //maybe include some other stuff dunno
 		   } VkRpiSurfaceCreateInfoKHR;
 

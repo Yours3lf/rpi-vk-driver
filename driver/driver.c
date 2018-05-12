@@ -222,12 +222,7 @@ VkPhysicalDeviceFeatures _features =
 	.variableMultisampleRate = 1,
 	.inheritedQueries = 1,
 };
-
-typedef struct VkInstance_T
-{
-	//supposedly this should contain all the enabled layers?
-	int dummy;
-} _instance;
+#define numFeatures (sizeof(_features)/sizeof(VkBool32))
 
 typedef struct VkPhysicalDevice_T
 {
@@ -235,14 +230,9 @@ typedef struct VkPhysicalDevice_T
 	int dummy;
 } _physicalDevice;
 
-typedef struct VkDevice_T
-{
-	int dummy;
-} _device;
-
 typedef struct VkQueue_T
 {
-	int familyIndex;
+	int dummy;
 } _queue;
 
 typedef enum commandBufferState
@@ -282,16 +272,7 @@ VkQueueFamilyProperties _queueFamilyProperties[] =
 		.minImageTransferGranularity = {1, 1, 1}
 	}
 };
-const int numQueueFamilies = sizeof(_queueFamilyProperties)/sizeof(VkQueueFamilyProperties);
-
-_queue _queuesByFamily[][1] =
-{
-	{
-		{
-			.familyIndex = 0
-		}
-	}
-};
+#define numQueueFamilies (sizeof(_queueFamilyProperties)/sizeof(VkQueueFamilyProperties))
 
 static VkExtensionProperties instanceExtensions[] =
 {
@@ -320,7 +301,7 @@ static VkExtensionProperties instanceExtensions[] =
 		.specVersion = 1
 	}
 };
-const unsigned numInstanceExtensions = sizeof(instanceExtensions) / sizeof(VkExtensionProperties);
+#define numInstanceExtensions (sizeof(instanceExtensions) / sizeof(VkExtensionProperties))
 
 static VkExtensionProperties deviceExtensions[] =
 {
@@ -353,7 +334,51 @@ static VkExtensionProperties deviceExtensions[] =
 		.specVersion = 1
 	}
 };
-const unsigned numDeviceExtensions = sizeof(deviceExtensions) / sizeof(VkExtensionProperties);
+#define numDeviceExtensions (sizeof(deviceExtensions) / sizeof(VkExtensionProperties))
+
+typedef struct VkInstance_T
+{
+	//supposedly this should contain all the enabled layers?
+	int enabledExtensions[numInstanceExtensions];
+	int numEnabledExtensions;
+	_physicalDevice dev;
+} _instance;
+
+typedef struct VkDevice_T
+{
+	int enabledExtensions[numDeviceExtensions];
+	int numEnabledExtensions;
+	VkPhysicalDeviceFeatures enabledFeatures;
+	_physicalDevice* dev;
+	_queue* queues[numQueueFamilies];
+	int numQueues[numQueueFamilies];
+} _device;
+
+int findInstanceExtension(char* name)
+{
+	for(int c = 0; c < numInstanceExtensions; ++c)
+	{
+		if(strcmp(instanceExtensions[c].extensionName, name) == 0)
+		{
+			return c;
+		}
+	}
+
+	return -1;
+}
+
+int findDeviceExtension(char* name)
+{
+	for(int c = 0; c < numDeviceExtensions; ++c)
+	{
+		if(strcmp(deviceExtensions[c].extensionName, name) == 0)
+		{
+			return c;
+		}
+	}
+
+	return -1;
+}
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateInstanceExtensionProperties
@@ -372,7 +397,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(
 	uint32_t*                                   pPropertyCount,
 	VkExtensionProperties*                      pProperties)
 {
-	assert(!pLayerName); //layers ignored for now
+	assert(!pLayerName); //TODO layers ignored for now
 	assert(pPropertyCount);
 
 	if(!pProperties)
@@ -407,19 +432,46 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 	const VkAllocationCallbacks*                pAllocator,
 	VkInstance*                                 pInstance)
 {
-	*pInstance = malloc(sizeof(_instance));
 	assert(pInstance);
+	assert(pCreateInfo);
+
+	*pInstance = malloc(sizeof(_instance));
+
+	if(!*pInstance)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	(*pInstance)->numEnabledExtensions = 0;
 
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
 	//TODO: possibly we need to load layers here
 	//and store them in pInstance
+	assert(pCreateInfo->enabledLayerCount == 0);
 
-	//TODO: need to check here that the requested
-	//extensions are supported
-	//eg.
-	//VK_KHR_surface
+	if(pCreateInfo->enabledExtensionCount)
+	{
+		assert(pCreateInfo->ppEnabledExtensionNames);
+	}
+
+	for(int c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
+	{
+		int findres = findInstanceExtension(pCreateInfo->ppEnabledExtensionNames[c]);
+		if(findres > -1)
+		{
+			(*pInstance)->enabledExtensions[(*pInstance)->numEnabledExtensions] = findres;
+			(*pInstance)->numEnabledExtensions++;
+		}
+		else
+		{
+			return VK_ERROR_EXTENSION_NOT_PRESENT;
+		}
+	}
+
+	//TODO ignored for now
+	//pCreateInfo->pApplicationInfo
 
 	return VK_SUCCESS;
 }
@@ -457,9 +509,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDevices(
 
 	for(int c = 0; c < elementsWritten; ++c)
 	{
-		//TODO no allocator, we probably shouldn't allocate
-		pPhysicalDevices[c] = malloc(sizeof(_physicalDevice));
-		assert(pPhysicalDevices[c]);
+		pPhysicalDevices[c] = &instance->dev;
 	}
 
 	*pPhysicalDeviceCount = elementsWritten;
@@ -610,6 +660,8 @@ VkResult vkCreateRpiSurfaceKHR(
 			  const VkAllocationCallbacks*                pAllocator,
 			  VkSurfaceKHR*                               pSurface)
 {
+	assert(instance);
+	//assert(pCreateInfo); //ignored for now
 	assert(pSurface);
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
@@ -660,8 +712,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 {
 	assert(physicalDevice);
 	assert(pDevice);
-
-	//TODO verify extensions, features
+	assert(pCreateInfo);
 
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
@@ -670,6 +721,59 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 	if(!pDevice)
 	{
 		return VK_ERROR_TOO_MANY_OBJECTS;
+	}
+
+	(*pDevice)->dev = physicalDevice;
+
+	for(int c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
+	{
+		int findres = findDeviceExtension(pCreateInfo->ppEnabledExtensionNames[c]);
+		if(findres > -1)
+		{
+			(*pDevice)->enabledExtensions[(*pDevice)->numEnabledExtensions] = findres;
+			(*pDevice)->numEnabledExtensions++;
+		}
+		else
+		{
+			return VK_ERROR_EXTENSION_NOT_PRESENT;
+		}
+	}
+
+	VkBool32* requestedFeatures = pCreateInfo->pEnabledFeatures;
+	VkBool32* supportedFeatures = &_features;
+
+	if(requestedFeatures)
+	{
+		for(int c = 0; c < numFeatures; ++c)
+		{
+			if(requestedFeatures[c] && !supportedFeatures[c])
+			{
+				return VK_ERROR_FEATURE_NOT_PRESENT;
+			}
+		}
+
+		(*pDevice)->enabledFeatures = *pCreateInfo->pEnabledFeatures;
+	}
+	else
+	{
+		memset(&(*pDevice)->enabledFeatures, 0, sizeof((*pDevice)->enabledFeatures)); //just disable everything
+	}
+
+	//layers ignored per spec
+	//pCreateInfo->enabledLayerCount
+
+	for(int c = 0; c < numQueueFamilies; ++c)
+	{
+		(*pDevice)->queues[c] = 0;
+	}
+
+	if(pCreateInfo->queueCreateInfoCount > 0)
+	{
+		for(int c = 0; c < pCreateInfo->queueCreateInfoCount; ++c)
+		{
+			(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex] = malloc(sizeof(_queue)*pCreateInfo->pQueueCreateInfos[c].queueCount);
+			(*pDevice)->numQueues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex] = pCreateInfo->pQueueCreateInfos[c].queueCount;
+		}
 	}
 
 	return VK_SUCCESS;
@@ -690,9 +794,9 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue(
 	assert(pQueue);
 
 	assert(queueFamilyIndex < numQueueFamilies);
-	assert(queueIndex < _queueFamilyProperties[queueFamilyIndex].queueCount);
+	assert(queueIndex < device->numQueues[queueFamilyIndex]);
 
-	*pQueue = &_queuesByFamily[queueFamilyIndex][queueIndex];
+	*pQueue = &device->queues[queueFamilyIndex][queueIndex];
 }
 
 /*
@@ -866,6 +970,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 {
 	assert(device);
 	assert(pCreateInfo);
+	assert(pSwapchain);
 
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
@@ -892,6 +997,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainImagesKHR(
 {
 	assert(device);
 	assert(swapchain);
+	assert(pSwapchainImageCount);
 
 	const int numImages = 2;
 
@@ -1259,9 +1365,18 @@ VKAPI_ATTR void VKAPI_CALL vkFreeCommandBuffers(
 	//assert(commandPool); //TODO
 	assert(pCommandBuffers);
 
+	_commandPool* cp = (_commandPool*)commandPool;
+
 	for(int c = 0; c < commandBufferCount; ++c)
 	{
-		free(pCommandBuffers[c]); //TODO
+		if(cp->usePoolAllocator)
+		{
+			poolFree(&cp->pa, pCommandBuffers[c]);
+		}
+		else
+		{
+			linearFree(&cp->la, pCommandBuffers[c]);
+		}
 	}
 }
 
