@@ -56,7 +56,7 @@ extern "C" {
 #define DRM_IOCTL_VC4_LABEL_BO            DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_LABEL_BO, struct drm_vc4_label_bo)
 #define DRM_IOCTL_VC4_GEM_MADVISE         DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_GEM_MADVISE, struct drm_vc4_gem_madvise)
 
-struct drm_vc4_submit_rcl_surface {
+typedef struct drm_vc4_submit_rcl_surface {
 	__u32 hindex; /* Handle index, or ~0 if not present. */
 	__u32 offset; /* Offset to start of buffer. */
 	/*
@@ -67,7 +67,7 @@ struct drm_vc4_submit_rcl_surface {
 
 #define VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES		(1 << 0)
 	__u16 flags;
-};
+} drm_vc4_submit_rcl_surface;
 
 /**
  * struct drm_vc4_submit_cl - ioctl argument for submitting commands to the 3D
@@ -82,7 +82,7 @@ struct drm_vc4_submit_rcl_surface {
  * data to its own address space, and then validates and stores it in a GPU
  * BO.
  */
-struct drm_vc4_submit_cl {
+typedef struct drm_vc4_submit_cl {
 	/* Pointer to the binner command list.
 	 *
 	 * This is the first set of commands executed, which runs the
@@ -173,7 +173,7 @@ struct drm_vc4_submit_cl {
 	 * wait ioctl).
 	 */
 	__u64 seqno;
-};
+} drm_vc4_submit_cl;
 
 /**
  * struct drm_vc4_wait_seqno - ioctl argument for waiting for
@@ -182,10 +182,10 @@ struct drm_vc4_submit_cl {
  * timeout_ns is the timeout in nanoseconds, where "0" means "don't
  * block, just return the status."
  */
-struct drm_vc4_wait_seqno {
+typedef struct drm_vc4_wait_seqno {
 	__u64 seqno;
 	__u64 timeout_ns;
-};
+} drm_vc4_wait_seqno;
 
 /**
  * struct drm_vc4_wait_bo - ioctl argument for waiting for
@@ -195,11 +195,11 @@ struct drm_vc4_wait_seqno {
  * rendering to a BO and you want to wait for all rendering to be
  * completed.
  */
-struct drm_vc4_wait_bo {
+typedef struct drm_vc4_wait_bo {
 	__u32 handle;
 	__u32 pad;
 	__u64 timeout_ns;
-};
+} drm_vc4_wait_bo;
 
 /**
  * struct drm_vc4_create_bo - ioctl argument for creating VC4 BOs.
@@ -207,13 +207,13 @@ struct drm_vc4_wait_bo {
  * There are currently no values for the flags argument, but it may be
  * used in a future extension.
  */
-struct drm_vc4_create_bo {
+typedef struct drm_vc4_create_bo {
 	__u32 size;
 	__u32 flags;
 	/** Returned GEM handle for the BO. */
 	__u32 handle;
 	__u32 pad;
-};
+} drm_vc4_create_bo;
 
 /**
  * struct drm_vc4_mmap_bo - ioctl argument for mapping VC4 BOs.
@@ -226,13 +226,13 @@ struct drm_vc4_create_bo {
  * There are currently no values for the flags argument, but it may be
  * used in a future extension.
  */
-struct drm_vc4_mmap_bo {
+typedef struct drm_vc4_mmap_bo {
 	/** Handle for the object being mapped. */
 	__u32 handle;
 	__u32 flags;
 	/** offset into the drm node to use for subsequent mmap call. */
 	__u64 offset;
-};
+} drm_vc4_mmap_bo;
 
 /**
  * struct drm_vc4_create_shader_bo - ioctl argument for creating VC4
@@ -242,7 +242,7 @@ struct drm_vc4_mmap_bo {
  * executed from would allow privlege escalation, shaders must be
  * created using this ioctl, and they can't be mmapped later.
  */
-struct drm_vc4_create_shader_bo {
+typedef struct drm_vc4_create_shader_bo {
 	/* Size of the data argument. */
 	__u32 size;
 	/* Flags, currently must be 0. */
@@ -255,20 +255,20 @@ struct drm_vc4_create_shader_bo {
 	__u32 handle;
 	/* Pad, must be 0. */
 	__u32 pad;
-};
+} drm_vc4_create_shader_bo;
 
-struct drm_vc4_get_hang_state_bo {
+typedef struct drm_vc4_get_hang_state_bo {
 	__u32 handle;
 	__u32 paddr;
 	__u32 size;
 	__u32 pad;
-};
+} drm_vc4_get_hang_state_bo;
 
 /**
  * struct drm_vc4_hang_state - ioctl argument for collecting state
  * from a GPU hang for analysis.
 */
-struct drm_vc4_get_hang_state {
+typedef struct drm_vc4_get_hang_state {
 	/** Pointer to array of struct drm_vc4_get_hang_state_bo. */
 	__u64 bo;
 	/**
@@ -298,7 +298,7 @@ struct drm_vc4_get_hang_state {
 
 	/* Pad that we may save more registers into in the future. */
 	__u32 pad[16];
-};
+} drm_vc4_get_hang_state;
 
 #define DRM_VC4_PARAM_V3D_IDENT0		0
 #define DRM_VC4_PARAM_V3D_IDENT1		1
@@ -309,32 +309,32 @@ struct drm_vc4_get_hang_state {
 #define DRM_VC4_PARAM_SUPPORTS_FIXED_RCL_ORDER	6
 #define DRM_VC4_PARAM_SUPPORTS_MADVISE		7
 
-struct drm_vc4_get_param {
+typedef struct drm_vc4_get_param {
 	__u32 param;
 	__u32 pad;
 	__u64 value;
-};
+} drm_vc4_get_param;
 
-struct drm_vc4_get_tiling {
+typedef struct drm_vc4_get_tiling {
 	__u32 handle;
 	__u32 flags;
 	__u64 modifier;
-};
+} drm_vc4_get_tiling;
 
-struct drm_vc4_set_tiling {
+typedef struct drm_vc4_set_tiling {
 	__u32 handle;
 	__u32 flags;
 	__u64 modifier;
-};
+} drm_vc4_set_tiling;
 
 /**
  * struct drm_vc4_label_bo - Attach a name to a BO for debug purposes.
  */
-struct drm_vc4_label_bo {
+typedef struct drm_vc4_label_bo {
 	__u32 handle;
 	__u32 len;
 	__u64 name;
-};
+} drm_vc4_label_bo;
 
 /*
  * States prefixed with '__' are internal states and cannot be passed to the
@@ -345,12 +345,12 @@ struct drm_vc4_label_bo {
 #define __VC4_MADV_PURGED			2
 #define __VC4_MADV_NOTSUPP			3
 
-struct drm_vc4_gem_madvise {
+typedef struct drm_vc4_gem_madvise {
 	__u32 handle;
 	__u32 madv;
 	__u32 retained;
 	__u32 pad;
-};
+} drm_vc4_gem_madvise;
 
 #if defined(__cplusplus)
 }

@@ -1,7 +1,8 @@
 #pragma once
 
+#include <stdlib.h>
 
-void* alignedAlloc( unsigned bytes, unsigned alignment = 16 )
+void* alignedAlloc( unsigned bytes, unsigned alignment )
 {
   if( !bytes )
   {

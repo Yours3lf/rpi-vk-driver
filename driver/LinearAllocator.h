@@ -22,6 +22,8 @@ LinearAllocator createLinearAllocator(char* b, unsigned s)
 		.offset = 0,
 		.size = s
 	};
+
+	return la;
 }
 
 void destroyLinearAllocator(LinearAllocator* la)

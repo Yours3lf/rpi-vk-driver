@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <string.h>
 #include "driver/CustomAssert.h"
 
 #include <vulkan/vulkan.h>
@@ -127,22 +128,22 @@ void createInstance() {
 	//glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
 	// Check for extensions
-	//uint32_t extensionCount = 0;
-	//vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+	uint32_t extensionCount = 0;
+	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
-	//if (extensionCount == 0) {
-	//	std::cerr << "no extensions supported!" << std::endl;
-	//	assert(0);
-	//}
+	if (extensionCount == 0) {
+		std::cerr << "no extensions supported!" << std::endl;
+		assert(0);
+	}
 
-	//std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	//vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
+	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
 
-	//std::cout << "supported extensions:" << std::endl;
+	std::cout << "supported extensions:" << std::endl;
 
-	//for (const auto& extension : availableExtensions) {
-	//	std::cout << "\t" << extension.extensionName << std::endl;
-	//}
+	for (const auto& extension : availableExtensions) {
+		std::cout << "\t" << extension.extensionName << std::endl;
+	}
 
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -192,41 +193,41 @@ void findPhysicalDevice() {
 
 	// Check device features
 	// Note: will apiVersion >= appInfo.apiVersion? Probably yes, but spec is unclear.
-	//VkPhysicalDeviceProperties deviceProperties;
-	//VkPhysicalDeviceFeatures deviceFeatures;
-	//vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-	//vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+	VkPhysicalDeviceProperties deviceProperties;
+	VkPhysicalDeviceFeatures deviceFeatures;
+	vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+	vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 
-	//uint32_t supportedVersion[] = {
-	//	VK_VERSION_MAJOR(deviceProperties.apiVersion),
-	//	VK_VERSION_MINOR(deviceProperties.apiVersion),
-	//	VK_VERSION_PATCH(deviceProperties.apiVersion)
-	//};
+	uint32_t supportedVersion[] = {
+		VK_VERSION_MAJOR(deviceProperties.apiVersion),
+		VK_VERSION_MINOR(deviceProperties.apiVersion),
+		VK_VERSION_PATCH(deviceProperties.apiVersion)
+	};
 
-	//std::cout << "physical device supports version " << supportedVersion[0] << "." << supportedVersion[1] << "." << supportedVersion[2] << std::endl;
+	std::cout << "physical device supports version " << supportedVersion[0] << "." << supportedVersion[1] << "." << supportedVersion[2] << std::endl;
 }
 
 void checkSwapChainSupport() {
-	//uint32_t extensionCount = 0;
-	//vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+	uint32_t extensionCount = 0;
+	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
 
-	//if (extensionCount == 0) {
-	//	std::cerr << "physical device doesn't support any extensions" << std::endl;
-	//	assert(0);
-	//}
+	if (extensionCount == 0) {
+		std::cerr << "physical device doesn't support any extensions" << std::endl;
+		assert(0);
+	}
 
-	//std::vector<VkExtensionProperties> deviceExtensions(extensionCount);
-	//vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, deviceExtensions.data());
+	std::vector<VkExtensionProperties> deviceExtensions(extensionCount);
+	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, deviceExtensions.data());
 
-	//for (const auto& extension : deviceExtensions) {
-	//	if (strcmp(extension.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0) {
-	//		std::cout << "physical device supports swap chains" << std::endl;
-	//		return;
-	//	}
-	//}
+	for (const auto& extension : deviceExtensions) {
+		if (strcmp(extension.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0) {
+			std::cout << "physical device supports swap chains" << std::endl;
+			return;
+		}
+	}
 
-	//std::cerr << "physical device doesn't support swap chains" << std::endl;
-	//assert(0);
+	std::cerr << "physical device doesn't support swap chains" << std::endl;
+	assert(0);
 }
 
 void findQueueFamilies() {

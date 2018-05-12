@@ -36,6 +36,8 @@ PoolAllocator createPoolAllocator(char* b, unsigned bs, unsigned s)
 	}
 
 	*(uint32_t*)ptr = 0; //last element
+
+	return pa;
 }
 
 void destroyPoolAllocator(PoolAllocator* pa)

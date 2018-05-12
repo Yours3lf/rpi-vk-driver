@@ -20,6 +20,7 @@ typedef struct VkRpiSurfaceCreateInfoKHR {
 			   //maybe include some other stuff dunno
 		   } VkRpiSurfaceCreateInfoKHR;
 
+//extension name something like: VK_KHR_rpi_surface
 VkResult vkCreateRpiSurfaceKHR(
 			  VkInstance                                  instance,
 			  const VkRpiSurfaceCreateInfoKHR*            pCreateInfo,

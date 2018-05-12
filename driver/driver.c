@@ -52,6 +52,177 @@ void closeIoctl(int fd)
 	close(fd);
 }
 
+VkPhysicalDeviceLimits _limits =
+{
+	//TODO these values might change
+	.maxImageDimension1D = 16384,
+	.maxImageDimension2D = 16384,
+	.maxImageDimension3D = 2084,
+	.maxImageDimensionCube = 16384,
+	.maxImageArrayLayers = 2048,
+	.maxTexelBufferElements = 134217728,
+	.maxUniformBufferRange = 65536,
+	.maxStorageBufferRange = 4294967295,
+	.maxPushConstantsSize = 256,
+	.maxMemoryAllocationCount = 4096,
+	.maxSamplerAllocationCount = 4000,
+	.bufferImageGranularity = 0x400, //TODO 1KB?
+	.sparseAddressSpaceSize = 0xffffffff, //32 bits
+	.maxBoundDescriptorSets = 8,
+	.maxPerStageDescriptorSamplers = 4000,
+	.maxPerStageDescriptorUniformBuffers = 12,
+	.maxPerStageDescriptorStorageBuffers = 4096,
+	.maxPerStageDescriptorSampledImages = 16384,
+	.maxPerStageDescriptorStorageImages = 16384,
+	.maxPerStageDescriptorInputAttachments = 8, //TODO
+	.maxPerStageResources = 53268,
+	.maxDescriptorSetSamplers = 4000,
+	.maxDescriptorSetUniformBuffers = 72, //TODO
+	.maxDescriptorSetUniformBuffersDynamic = 72,
+	.maxDescriptorSetStorageBuffers = 4096,
+	.maxDescriptorSetStorageBuffersDynamic = 16,
+	.maxDescriptorSetSampledImages = 98304,
+	.maxDescriptorSetStorageImages = 98304,
+	.maxDescriptorSetInputAttachments = 8, //TODO
+	.maxVertexInputAttributes = 32,
+	.maxVertexInputBindings = 32,
+	.maxVertexInputAttributeOffset = 2047,
+	.maxVertexInputBindingStride = 2048,
+	.maxVertexOutputComponents = 128,
+	.maxTessellationGenerationLevel = 0, //No tessellation
+	.maxTessellationPatchSize = 0,
+	.maxTessellationControlPerVertexInputComponents = 0,
+	.maxTessellationControlPerVertexOutputComponents = 0,
+	.maxTessellationControlPerPatchOutputComponents = 0,
+	.maxTessellationControlTotalOutputComponents = 0,
+	.maxTessellationEvaluationInputComponents = 0,
+	.maxTessellationEvaluationOutputComponents = 0,
+	.maxGeometryShaderInvocations = 0, //TODO no geometry shaders for now
+	.maxGeometryInputComponents = 0,
+	.maxGeometryOutputComponents = 0,
+	.maxGeometryOutputVertices = 0,
+	.maxGeometryTotalOutputComponents = 0,
+	.maxFragmentInputComponents = 128,
+	.maxFragmentOutputAttachments = 8,
+	.maxFragmentDualSrcAttachments = 1,
+	.maxFragmentCombinedOutputResources = 16,
+	.maxComputeSharedMemorySize = 0, //TODO no compute for now
+	.maxComputeWorkGroupCount = {0,0,0},
+	.maxComputeWorkGroupInvocations = 0,
+	.maxComputeWorkGroupSize = {0,0,0},
+	.subPixelPrecisionBits = 8,
+	.subTexelPrecisionBits = 8,
+	.mipmapPrecisionBits = 8,
+	.maxDrawIndexedIndexValue = 4294967295,
+	.maxDrawIndirectCount = 4294967295,
+	.maxSamplerLodBias = 15,
+	.maxSamplerAnisotropy = 16.0,
+	.maxViewports = 16,
+	.maxViewportDimensions = {16384,16384},
+	.viewportBoundsRange = {-32768,32768},
+	.viewportSubPixelBits = 8,
+	.minMemoryMapAlignment = 0x40, //TODO
+	.minTexelBufferOffsetAlignment = 0x10,
+	.minUniformBufferOffsetAlignment = 0x100,
+	.minStorageBufferOffsetAlignment = 0x20,
+	.minTexelOffset = -8,
+	.maxTexelOffset = 7,
+	.minTexelGatherOffset = -32,
+	.maxTexelGatherOffset = 31,
+	.minInterpolationOffset = -0.5,
+	.maxInterpolationOffset = 0.4375,
+	.subPixelInterpolationOffsetBits = 4,
+	.maxFramebufferWidth = 16384,
+	.maxFramebufferHeight = 16384,
+	.maxFramebufferLayers = 2048,
+	.framebufferColorSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
+	.framebufferDepthSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
+	.framebufferStencilSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
+	.framebufferNoAttachmentsSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
+	.maxColorAttachments = 8,
+	.sampledImageColorSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
+	.sampledImageIntegerSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
+	.sampledImageDepthSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
+	.sampledImageStencilSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
+	.storageImageSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
+	.maxSampleMaskWords = 1,
+	.timestampComputeAndGraphics = 1,
+	.timestampPeriod = 1,
+	.maxClipDistances = 8,
+	.maxCullDistances = 8,
+	.maxCombinedClipAndCullDistances = 8,
+	.discreteQueuePriorities = 1,
+	.pointSizeRange = {1, 189.875},
+	.lineWidthRange = {0.5, 10},
+	.pointSizeGranularity = 0.125,
+	.lineWidthGranularity = 0.125,
+	.strictLines = 0, //TODO
+	.standardSampleLocations = 1,
+	.optimalBufferCopyOffsetAlignment = 0x1,
+	.optimalBufferCopyRowPitchAlignment = 0x1,
+	.nonCoherentAtomSize = 0x40
+};
+
+VkPhysicalDeviceFeatures _features =
+{
+	//TODO this might change
+	.robustBufferAccess = 1,
+	.fullDrawIndexUint32 = 1, //TODO
+	.imageCubeArray = 1, //TODO
+	.independentBlend = 1,
+	.geometryShader = 0,
+	.tessellationShader = 0,
+	.sampleRateShading = 1, //TODO
+	.dualSrcBlend = 1,
+	.logicOp = 1,
+	.multiDrawIndirect = 1,
+	.drawIndirectFirstInstance = 1,
+	.depthClamp = 1,
+	.depthBiasClamp = 1,
+	.fillModeNonSolid = 1,
+	.depthBounds = 1,
+	.wideLines = 1,
+	.largePoints = 1,
+	.alphaToOne = 1,
+	.multiViewport = 1,
+	.samplerAnisotropy = 1,
+	.textureCompressionETC2 = 0,
+	.textureCompressionASTC_LDR = 0,
+	.textureCompressionBC = 0,
+	.occlusionQueryPrecise = 1,
+	.pipelineStatisticsQuery = 1,
+	.vertexPipelineStoresAndAtomics = 1,
+	.fragmentStoresAndAtomics = 1,
+	.shaderTessellationAndGeometryPointSize = 0,
+	.shaderImageGatherExtended = 1,
+	.shaderStorageImageExtendedFormats = 1,
+	.shaderStorageImageMultisample = 1,
+	.shaderStorageImageReadWithoutFormat = 0,
+	.shaderStorageImageWriteWithoutFormat = 0,
+	.shaderUniformBufferArrayDynamicIndexing = 1,
+	.shaderSampledImageArrayDynamicIndexing = 1,
+	.shaderStorageBufferArrayDynamicIndexing = 1,
+	.shaderStorageImageArrayDynamicIndexing = 1,
+	.shaderClipDistance = 1,
+	.shaderCullDistance = 1,
+	.shaderFloat64 = 0,
+	.shaderInt64 = 0,
+	.shaderInt16 = 0,
+	.shaderResourceResidency = 1,
+	.shaderResourceMinLod = 1,
+	.sparseBinding = 1,
+	.sparseResidencyBuffer = 1,
+	.sparseResidencyImage2D = 1,
+	.sparseResidencyImage3D = 1,
+	.sparseResidency2Samples = 1,
+	.sparseResidency4Samples = 1,
+	.sparseResidency8Samples = 1,
+	.sparseResidency16Samples = 0,
+	.sparseResidencyAliased = 1,
+	.variableMultisampleRate = 1,
+	.inheritedQueries = 1,
+};
+
 typedef struct VkInstance_T
 {
 	//supposedly this should contain all the enabled layers?
@@ -74,9 +245,25 @@ typedef struct VkQueue_T
 	int familyIndex;
 } _queue;
 
+typedef enum commandBufferState
+{
+	CMDBUF_STATE_INITIAL = 0,
+	CMDBUF_STATE_RECORDING,
+	CMDBUF_STATE_EXECUTABLE,
+	CMDBUF_STATE_PENDING,
+	CMDBUF_STATE_INVALID,
+	CMDBUF_STATE_LAST
+} commandBufferState;
+
 typedef struct VkCommandBuffer_T
 {
+	//Recorded commands include commands to bind pipelines and descriptor sets to the command buffer, commands to modify dynamic state, commands to draw (for graphics rendering),
+	//commands to dispatch (for compute), commands to execute secondary command buffers (for primary command buffers only), commands to copy buffers and images, and other commands
+
 	drm_vc4_submit_cl cls[100]; //each cl is a draw call
+	unsigned numClsUsed;
+	commandBufferState state;
+	VkCommandBufferUsageFlags usageFlags;
 } _commandBuffer;
 
 typedef struct VkCommandPool_T
@@ -89,10 +276,9 @@ typedef struct VkCommandPool_T
 VkQueueFamilyProperties _queueFamilyProperties[] =
 {
 	{
-		//TODO maybe sparse textures later?
-		.queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT,
+		.queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT,
 		.queueCount = 1,
-		.timestampValidBits = 32, //TODO dunno, 32 for now
+		.timestampValidBits = 64, //TODO
 		.minImageTransferGranularity = {1, 1, 1}
 	}
 };
@@ -106,6 +292,107 @@ _queue _queuesByFamily[][1] =
 		}
 	}
 };
+
+static VkExtensionProperties instanceExtensions[] =
+{
+	{
+		.extensionName = "VK_KHR_surface",
+		.specVersion = 25
+	},
+	{
+		.extensionName = "VK_KHR_display",
+		.specVersion = 21
+	},
+	{
+		.extensionName = "VK_EXT_direct_mode_display",
+		.specVersion = 1
+	},
+	{
+		.extensionName = "VK_EXT_debug_report",
+		.specVersion = 9
+	},
+	{
+		.extensionName = "VK_EXT_debug_utils",
+		.specVersion = 1
+	},
+	{
+		.extensionName = "VK_KHR_rpi_surface",
+		.specVersion = 1
+	}
+};
+const unsigned numInstanceExtensions = sizeof(instanceExtensions) / sizeof(VkExtensionProperties);
+
+static VkExtensionProperties deviceExtensions[] =
+{
+	{
+		.extensionName = "VK_KHR_display_swapchain",
+		.specVersion = 9
+	},
+	{
+		.extensionName = "VK_KHR_maintenance1",
+		.specVersion = 2
+	},
+	{
+		.extensionName = "VK_KHR_maintenance2",
+		.specVersion = 1
+	},
+	{
+		.extensionName = "VK_KHR_maintenance3",
+		.specVersion = 1
+	},
+	{
+		.extensionName = "VK_KHR_swapchain",
+		.specVersion = 70
+	},
+	{
+		.extensionName = "VK_EXT_debug_marker",
+		.specVersion = 4
+	},
+	{
+		.extensionName = "VK_EXT_display_control",
+		.specVersion = 1
+	}
+};
+const unsigned numDeviceExtensions = sizeof(deviceExtensions) / sizeof(VkExtensionProperties);
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateInstanceExtensionProperties
+ * When pLayerName parameter is NULL, only extensions provided by the Vulkan implementation or by implicitly enabled layers are returned. When pLayerName is the name of a layer,
+ * the instance extensions provided by that layer are returned.
+ * If pProperties is NULL, then the number of extensions properties available is returned in pPropertyCount. Otherwise, pPropertyCount must point to a variable set by the user
+ * to the number of elements in the pProperties array, and on return the variable is overwritten with the number of structures actually written to pProperties.
+ * If pPropertyCount is less than the number of extension properties available, at most pPropertyCount structures will be written. If pPropertyCount is smaller than the number of extensions available,
+ * VK_INCOMPLETE will be returned instead of VK_SUCCESS, to indicate that not all the available properties were returned.
+ * Because the list of available layers may change externally between calls to vkEnumerateInstanceExtensionProperties,
+ * two calls may retrieve different results if a pLayerName is available in one call but not in another. The extensions supported by a layer may also change between two calls,
+ * e.g. if the layer implementation is replaced by a different version between those calls.
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(
+	const char*                                 pLayerName,
+	uint32_t*                                   pPropertyCount,
+	VkExtensionProperties*                      pProperties)
+{
+	assert(!pLayerName); //layers ignored for now
+	assert(pPropertyCount);
+
+	if(!pProperties)
+	{
+		*pPropertyCount = numInstanceExtensions;
+		return VK_INCOMPLETE;
+	}
+
+	int arraySize = *pPropertyCount;
+	int elementsWritten = min(numInstanceExtensions, arraySize);
+
+	for(int c = 0; c < elementsWritten; ++c)
+	{
+		pProperties[c] = instanceExtensions[c];
+	}
+
+	*pPropertyCount = elementsWritten;
+
+	return VK_SUCCESS;
+}
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateInstance
@@ -185,6 +472,81 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDevices(
 	{
 		return VK_SUCCESS;
 	}
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceProperties
+ */
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties(
+	VkPhysicalDevice                            physicalDevice,
+	VkPhysicalDeviceProperties*                 pProperties)
+{
+	assert(physicalDevice);
+	assert(pProperties);
+
+	VkPhysicalDeviceSparseProperties sparseProps =
+	{
+		.residencyStandard2DBlockShape = 1,
+		.residencyStandard2DMultisampleBlockShape = 1,
+		.residencyStandard3DBlockShape = 1,
+		.residencyAlignedMipSize = 1,
+		.residencyNonResidentStrict = 1
+	};
+
+	pProperties->apiVersion = VK_MAKE_VERSION(1,1,0);
+	pProperties->driverVersion = 1; //we'll simply call this v1
+	pProperties->vendorID = 0x14E4; //Broadcom
+	pProperties->deviceID = 0; //TODO dunno?
+	pProperties->deviceType = VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+	strcpy(pProperties->deviceName, "VideoCore IV HW");
+	//pProperties->pipelineCacheUUID
+	pProperties->limits = _limits;
+	pProperties->sparseProperties = sparseProps;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceFeatures
+ */
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures(
+	VkPhysicalDevice                            physicalDevice,
+	VkPhysicalDeviceFeatures*                   pFeatures)
+{
+	assert(physicalDevice);
+	assert(pFeatures);
+
+	*pFeatures = _features;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateDeviceExtensionProperties
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(
+	VkPhysicalDevice                            physicalDevice,
+	const char*                                 pLayerName,
+	uint32_t*                                   pPropertyCount,
+	VkExtensionProperties*                      pProperties)
+{
+	assert(physicalDevice);
+	assert(!pLayerName); //layers ignored for now
+	assert(pPropertyCount);
+
+	if(!pProperties)
+	{
+		*pPropertyCount = numDeviceExtensions;
+		return VK_INCOMPLETE;
+	}
+
+	int arraySize = *pPropertyCount;
+	int elementsWritten = min(numDeviceExtensions, arraySize);
+
+	for(int c = 0; c < elementsWritten; ++c)
+	{
+		pProperties[c] = deviceExtensions[c];
+	}
+
+	*pPropertyCount = elementsWritten;
+
+	return VK_SUCCESS;
 }
 
 /*
@@ -626,13 +988,16 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 
 	VkResult res = VK_SUCCESS;
 
-	_commandPool* cp = *(_commandPool*)pAllocateInfo->commandPool;
+	_commandPool* cp = (_commandPool*)pAllocateInfo->commandPool;
 
 	if(cp->usePoolAllocator)
 	{
 		for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
 		{
 			pCommandBuffers[c] = poolAllocte(&cp->pa);
+			pCommandBuffers[c]->numClsUsed = 0;
+			pCommandBuffers[c]->usageFlags = 0;
+			pCommandBuffers[c]->state = CMDBUF_STATE_INITIAL;
 
 			if(!pCommandBuffers[c])
 			{
@@ -646,6 +1011,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 		for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
 		{
 			pCommandBuffers[c] = linearAllocte(&cp->la, sizeof(_commandBuffer));
+			pCommandBuffers[c]->numClsUsed = 0;
+			pCommandBuffers[c]->usageFlags = 0;
+			pCommandBuffers[c]->state = CMDBUF_STATE_INITIAL;
 
 			if(!pCommandBuffers[c])
 			{
@@ -688,7 +1056,20 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
 	assert(commandBuffer);
 	assert(pBeginInfo);
 
-	//TODO
+	//VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+	//specifies that each recording of the command buffer will only be submitted once, and the command buffer will be reset and recorded again between each submission.
+
+	//VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
+	//specifies that a secondary command buffer is considered to be entirely inside a render pass. If this is a primary command buffer, then this bit is ignored
+
+	//VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
+	//specifies that a command buffer can be resubmitted to a queue while it is in the pending state, and recorded into multiple primary command buffers
+
+	//When a command buffer begins recording, all state in that command buffer is undefined
+
+	commandBuffer->usageFlags = pBeginInfo->flags;
+	commandBuffer->numClsUsed = 0;
+	commandBuffer->state = CMDBUF_STATE_RECORDING;
 
 	return VK_SUCCESS;
 }
@@ -762,7 +1143,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEndCommandBuffer(
 {
 	assert(commandBuffer);
 
-	//TODO
+	commandBuffer->state = CMDBUF_STATE_EXECUTABLE;
 
 	return VK_SUCCESS;
 }
@@ -812,7 +1193,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 {
 	assert(queue);
 
-	//TODO
+	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
+	{
+		pSubmits->pCommandBuffers[c]->state = CMDBUF_STATE_PENDING;
+	}
 
 	return VK_SUCCESS;
 }
@@ -898,16 +1282,17 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	_commandPool* cp = *(_commandPool*)commandPool;
+	_commandPool* cp = (_commandPool*)commandPool;
 
 	if(cp->usePoolAllocator)
 	{
 		free(cp->pa.buf);
-		destroyPoolAllocator(cp->pa);
+		destroyPoolAllocator(&cp->pa);
 	}
 	else
 	{
-		free(cp->continuousMem);
+		free(cp->la.buf);
+		destroyLinearAllocator(&cp->la);
 	}
 
 	free(cp);
