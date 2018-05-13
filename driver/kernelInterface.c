@@ -42,6 +42,8 @@ static uint32_t align(uint32_t num, uint32_t alignment)
 
 int vc4_get_chip_info(int fd)
 {
+	assert(fd);
+
 	struct drm_vc4_get_param ident0 = {
 		.param = DRM_VC4_PARAM_V3D_IDENT0,
 	};
@@ -86,6 +88,8 @@ int vc4_get_chip_info(int fd)
 
 int vc4_has_feature(int fd, uint32_t feature)
 {
+	assert(fd);
+
 	struct drm_vc4_get_param p = {
 		.param = feature,
 	};
@@ -99,6 +103,8 @@ int vc4_has_feature(int fd, uint32_t feature)
 
 int vc4_test_tiling(int fd)
 {
+	assert(fd);
+
 	/* Test if the kernel has GET_TILING; it will return -EINVAL if the
 	 * ioctl does not exist, but -ENOENT if we pass an impossible handle.
 	 * 0 cannot be a valid GEM object, so use that.
@@ -117,6 +123,9 @@ int vc4_test_tiling(int fd)
 
 uint64_t vc4_bo_get_tiling(int fd, uint32_t bo, uint64_t mod)
 {
+	assert(fd);
+	assert(bo);
+
 	struct drm_vc4_get_tiling get_tiling = {
 		.handle = bo,
 	};
@@ -131,10 +140,16 @@ uint64_t vc4_bo_get_tiling(int fd, uint32_t bo, uint64_t mod)
 			   (long long)mod, get_tiling.modifier);
 		return 0;
 	}
+
+	return 0;
 }
 
 int vc4_bo_set_tiling(int fd, uint32_t bo, uint64_t mod)
 {
+	assert(fd);
+	assert(bo);
+	assert(mod);
+
 	struct drm_vc4_set_tiling set_tiling = {
 		.handle = bo,
 				.modifier = mod,
@@ -151,6 +166,10 @@ int vc4_bo_set_tiling(int fd, uint32_t bo, uint64_t mod)
 
 void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t size)
 {
+	assert(fd);
+	assert(bo);
+	assert(size);
+
 	uint64_t offset;
 	int ret;
 
@@ -181,6 +200,9 @@ void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t size)
 
 static int vc4_bo_wait_ioctl(int fd, uint32_t handle, uint64_t timeout_ns)
 {
+	assert(fd);
+	assert(handle);
+
 	struct drm_vc4_wait_bo wait = {
 		.handle = handle,
 				.timeout_ns = timeout_ns,
@@ -199,6 +221,9 @@ static int vc4_bo_wait_ioctl(int fd, uint32_t handle, uint64_t timeout_ns)
 
 int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns)
 {
+	assert(fd);
+	assert(bo);
+
 	int ret = vc4_bo_wait_ioctl(fd, bo, timeout_ns);
 	if (ret) {
 		if (ret != -ETIME) {
@@ -213,6 +238,9 @@ int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns)
 
 static int vc4_seqno_wait_ioctl(int fd, uint64_t seqno, uint64_t timeout_ns)
 {
+	assert(fd);
+	assert(seqno);
+
 	struct drm_vc4_wait_seqno wait = {
 		.seqno = seqno,
 				.timeout_ns = timeout_ns,
@@ -231,6 +259,10 @@ static int vc4_seqno_wait_ioctl(int fd, uint64_t seqno, uint64_t timeout_ns)
 
 int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t timeout_ns)
 {
+	assert(fd);
+	assert(lastFinishedSeqno);
+	assert(seqno);
+
 	if (*lastFinishedSeqno >= seqno)
 		return 1;
 
@@ -249,6 +281,10 @@ int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t
 
 int vc4_bo_flink(int fd, uint32_t bo, uint32_t *name)
 {
+	assert(fd);
+	assert(bo);
+	assert(name);
+
 	struct drm_gem_flink flink = {
 		.handle = bo,
 	};
@@ -268,12 +304,16 @@ int vc4_bo_flink(int fd, uint32_t bo, uint32_t *name)
 
 uint32_t vc4_bo_alloc_shader(int fd, const void *data, uint32_t* size)
 {
+	assert(fd);
+	assert(data);
+	assert(size);
+
 	int ret;
 
 	uint32_t alignedSize = align(*size, ARM_PAGE_SIZE);
 
 	struct drm_vc4_create_shader_bo create = {
-		.size = *alignedSize,
+		.size = alignedSize,
 				.data = (uintptr_t)data,
 	};
 
@@ -291,8 +331,10 @@ uint32_t vc4_bo_alloc_shader(int fd, const void *data, uint32_t* size)
 }
 
 uint32_t vc4_bo_open_name(int fd, uint32_t name)
-//uint32_t winsys_stride)
 {
+	assert(fd);
+	assert(name);
+
 	struct drm_gem_open o = {
 		.name = name
 	};
@@ -308,7 +350,9 @@ uint32_t vc4_bo_open_name(int fd, uint32_t name)
 
 uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
 {
-	int cleared_and_retried = 0;
+	assert(fd);
+	assert(size);
+
 	struct drm_vc4_create_bo create;
 	int ret;
 
@@ -342,13 +386,17 @@ uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
 		return 0;
 	}
 
-	vc4_bo_label(screen, bo, "%s", name);
+	vc4_bo_label(fd, handle, name);
 
 	return handle;
 }
 
 void vc4_bo_free(int fd, uint32_t bo, void* mappedAddr, uint32_t size)
 {
+	assert(fd);
+	assert(bo);
+	assert(size);
+
 	if (mappedAddr) {
 		munmap(mappedAddr, size);
 		//VG(VALGRIND_FREELIKE_BLOCK(bo->map, 0));
@@ -366,6 +414,9 @@ void vc4_bo_free(int fd, uint32_t bo, void* mappedAddr, uint32_t size)
 
 int vc4_bo_unpurgeable(int fd, uint32_t bo, int hasMadvise)
 {
+	assert(fd);
+	assert(bo);
+
 	struct drm_vc4_gem_madvise arg = {
 		.handle = bo,
 				.madv = VC4_MADV_WILLNEED,
@@ -382,6 +433,9 @@ int vc4_bo_unpurgeable(int fd, uint32_t bo, int hasMadvise)
 
 void vc4_bo_purgeable(int fd, uint32_t bo, int hasMadvise)
 {
+	assert(fd);
+	assert(bo);
+
 	struct drm_vc4_gem_madvise arg = {
 		.handle = bo,
 				.madv = VC4_MADV_DONTNEED,
@@ -395,18 +449,27 @@ void vc4_bo_purgeable(int fd, uint32_t bo, int hasMadvise)
 
 void vc4_bo_label(int fd, uint32_t bo, const char* name)
 {
+	assert(fd);
+	assert(bo);
+
+	char* str = name;
+	if(!str) str = "";
+
 	//TODO don't use in release!
 
 	struct drm_vc4_label_bo label = {
 		.handle = bo,
-				.len = strlen(name),
-				.name = (uintptr_t)name,
+				.len = strlen(str),
+				.name = (uintptr_t)str,
 	};
 	drmIoctl(fd, DRM_IOCTL_VC4_LABEL_BO, &label);
 }
 
 int vc4_bo_get_dmabuf(int fd, uint32_t bo)
 {
+	assert(fd);
+	assert(bo);
+
 	int boFd;
 	int ret = drmPrimeHandleToFD(fd, bo,
 								 O_CLOEXEC, &boFd);
@@ -421,6 +484,10 @@ int vc4_bo_get_dmabuf(int fd, uint32_t bo)
 
 void* vc4_bo_map(int fd, uint32_t bo, uint32_t size)
 {
+	assert(fd);
+	assert(bo);
+	assert(size);
+
 	void* map = vc4_bo_map_unsynchronized(fd, bo, size);
 
 	//wait infinitely
@@ -433,9 +500,14 @@ void* vc4_bo_map(int fd, uint32_t bo, uint32_t size)
 	return map;
 }
 
-void vc4_cl_submit(int fd, struct drm_vc4_submit_cl submit, uint64_t* lastEmittedSeqno, uint64_t* lastFinishedSeqno)
+void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmittedSeqno, uint64_t* lastFinishedSeqno)
 {
-	int ret = drmIoctl(fd, DRM_IOCTL_VC4_SUBMIT_CL, &submit);
+	assert(fd);
+	assert(submit);
+	assert(lastEmittedSeqno);
+	assert(lastFinishedSeqno);
+
+	int ret = drmIoctl(fd, DRM_IOCTL_VC4_SUBMIT_CL, submit);
 
 	static int warned = 0;
 	if (ret && !warned) {
@@ -443,13 +515,14 @@ void vc4_cl_submit(int fd, struct drm_vc4_submit_cl submit, uint64_t* lastEmitte
 			   "Expect corruption.\n", strerror(errno));
 		warned = 1;
 	} else if (!ret) {
-		*lastEmittedSeqno = submit.seqno;
+		*lastEmittedSeqno = submit->seqno;
 	}
 
 	if (*lastEmittedSeqno - *lastFinishedSeqno > 5) {
 		uint64_t seqno = *lastFinishedSeqno - 5;
 		if (!vc4_seqno_wait(fd,
-							&seqno,
+							lastFinishedSeqno,
+							seqno,
 							WAIT_TIMEOUT_INFINITE))
 		{
 			printf("Job throttling failed\n");

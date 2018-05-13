@@ -20,6 +20,8 @@ extern "C" {
 #include <drm/drm.h>
 #include <drm/drm_fourcc.h>
 #include <drm/vc4_drm.h>
+#include <xf86drm.h>
+#include <xf86drmMode.h>
 
 #define DRM_IOCTL_CTRL_DEV_FILE_NAME "/dev/dri/card0"
 #define DRM_IOCTL_RENDER_DEV_FILE_NAME "/dev/dri/renderD128" //TODO does this need to be dynamic? (eg. iterate through renderDn?)
@@ -53,7 +55,7 @@ void vc4_bo_purgeable(int fd, uint32_t bo, int hasMadvise);
 void vc4_bo_label(int fd, uint32_t bo, const char* name);
 int vc4_bo_get_dmabuf(int fd, uint32_t bo);
 void* vc4_bo_map(int fd, uint32_t bo, uint32_t size);
-void vc4_cl_submit(int fd, struct drm_vc4_submit_cl submit, uint64_t* lastEmittedSeqno, uint64_t* lastFinishedSeqno);
+void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmittedSeqno, uint64_t* lastFinishedSeqno);
 
 //TODO perfmon
 
