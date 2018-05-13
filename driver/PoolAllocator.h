@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #include "CustomAssert.h"
 
 #include <stdint.h>
@@ -78,3 +82,7 @@ void poolFree(PoolAllocator* pa, void* p)
 	//set next free block to the freshly freed block
 	pa->nextFreeBlock = p;
 }
+
+#if defined (__cplusplus)
+}
+#endif

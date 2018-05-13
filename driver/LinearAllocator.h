@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #include "CustomAssert.h"
 
 #include <stdint.h>
@@ -53,4 +57,8 @@ void linearFree(LinearAllocator* la, void* p)
 {
 	//assert(0); //this shouldn't really happen, just destroy/reset the whole allocator
 }
+
+#if defined (__cplusplus)
+}
+#endif
 

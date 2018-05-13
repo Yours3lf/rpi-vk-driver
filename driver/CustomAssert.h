@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #include <signal.h>
 
 enum { HAVE_TRAP_INSTRUCTION = 1, };
@@ -21,4 +25,8 @@ __inline__ static void DEBUG_BREAK(void)
     }
 #else
   #define assert(expr) //do nothing
+#endif
+
+#if defined (__cplusplus)
+}
 #endif
