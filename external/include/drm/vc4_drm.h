@@ -21,8 +21,8 @@
  * IN THE SOFTWARE.
  */
 
-#ifndef _VC4_DRM_H_
-#define _VC4_DRM_H_
+#ifndef _UAPI_VC4_DRM_H_
+#define _UAPI_VC4_DRM_H_
 
 #include "drm.h"
 
@@ -42,6 +42,9 @@ extern "C" {
 #define DRM_VC4_GET_TILING                        0x09
 #define DRM_VC4_LABEL_BO                          0x0a
 #define DRM_VC4_GEM_MADVISE                       0x0b
+#define DRM_VC4_PERFMON_CREATE                    0x0c
+#define DRM_VC4_PERFMON_DESTROY                   0x0d
+#define DRM_VC4_PERFMON_GET_VALUES                0x0e
 
 #define DRM_IOCTL_VC4_SUBMIT_CL           DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_SUBMIT_CL, struct drm_vc4_submit_cl)
 #define DRM_IOCTL_VC4_WAIT_SEQNO          DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_WAIT_SEQNO, struct drm_vc4_wait_seqno)
@@ -55,8 +58,11 @@ extern "C" {
 #define DRM_IOCTL_VC4_GET_TILING          DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_GET_TILING, struct drm_vc4_get_tiling)
 #define DRM_IOCTL_VC4_LABEL_BO            DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_LABEL_BO, struct drm_vc4_label_bo)
 #define DRM_IOCTL_VC4_GEM_MADVISE         DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_GEM_MADVISE, struct drm_vc4_gem_madvise)
+#define DRM_IOCTL_VC4_PERFMON_CREATE      DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_PERFMON_CREATE, struct drm_vc4_perfmon_create)
+#define DRM_IOCTL_VC4_PERFMON_DESTROY     DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_PERFMON_DESTROY, struct drm_vc4_perfmon_destroy)
+#define DRM_IOCTL_VC4_PERFMON_GET_VALUES  DRM_IOWR(DRM_COMMAND_BASE + DRM_VC4_PERFMON_GET_VALUES, struct drm_vc4_perfmon_get_values)
 
-typedef struct drm_vc4_submit_rcl_surface {
+struct drm_vc4_submit_rcl_surface {
 	__u32 hindex; /* Handle index, or ~0 if not present. */
 	__u32 offset; /* Offset to start of buffer. */
 	/*
@@ -67,7 +73,7 @@ typedef struct drm_vc4_submit_rcl_surface {
 
 #define VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES		(1 << 0)
 	__u16 flags;
-} drm_vc4_submit_rcl_surface;
+};
 
 /**
  * struct drm_vc4_submit_cl - ioctl argument for submitting commands to the 3D
@@ -82,7 +88,7 @@ typedef struct drm_vc4_submit_rcl_surface {
  * data to its own address space, and then validates and stores it in a GPU
  * BO.
  */
-typedef struct drm_vc4_submit_cl {
+struct drm_vc4_submit_cl {
 	/* Pointer to the binner command list.
 	 *
 	 * This is the first set of commands executed, which runs the
@@ -173,7 +179,16 @@ typedef struct drm_vc4_submit_cl {
 	 * wait ioctl).
 	 */
 	__u64 seqno;
-} drm_vc4_submit_cl;
+
+	/* ID of the perfmon to attach to this job. 0 means no perfmon. */
+	__u32 perfmonid;
+
+	/* Unused field to align this struct on 64 bits. Must be set to 0.
+	 * If one ever needs to add an u32 field to this struct, this field
+	 * can be used.
+	 */
+	__u32 pad2;
+};
 
 /**
  * struct drm_vc4_wait_seqno - ioctl argument for waiting for
@@ -182,10 +197,10 @@ typedef struct drm_vc4_submit_cl {
  * timeout_ns is the timeout in nanoseconds, where "0" means "don't
  * block, just return the status."
  */
-typedef struct drm_vc4_wait_seqno {
+struct drm_vc4_wait_seqno {
 	__u64 seqno;
 	__u64 timeout_ns;
-} drm_vc4_wait_seqno;
+};
 
 /**
  * struct drm_vc4_wait_bo - ioctl argument for waiting for
@@ -195,11 +210,11 @@ typedef struct drm_vc4_wait_seqno {
  * rendering to a BO and you want to wait for all rendering to be
  * completed.
  */
-typedef struct drm_vc4_wait_bo {
+struct drm_vc4_wait_bo {
 	__u32 handle;
 	__u32 pad;
 	__u64 timeout_ns;
-} drm_vc4_wait_bo;
+};
 
 /**
  * struct drm_vc4_create_bo - ioctl argument for creating VC4 BOs.
@@ -207,13 +222,13 @@ typedef struct drm_vc4_wait_bo {
  * There are currently no values for the flags argument, but it may be
  * used in a future extension.
  */
-typedef struct drm_vc4_create_bo {
+struct drm_vc4_create_bo {
 	__u32 size;
 	__u32 flags;
 	/** Returned GEM handle for the BO. */
 	__u32 handle;
 	__u32 pad;
-} drm_vc4_create_bo;
+};
 
 /**
  * struct drm_vc4_mmap_bo - ioctl argument for mapping VC4 BOs.
@@ -226,13 +241,13 @@ typedef struct drm_vc4_create_bo {
  * There are currently no values for the flags argument, but it may be
  * used in a future extension.
  */
-typedef struct drm_vc4_mmap_bo {
+struct drm_vc4_mmap_bo {
 	/** Handle for the object being mapped. */
 	__u32 handle;
 	__u32 flags;
 	/** offset into the drm node to use for subsequent mmap call. */
 	__u64 offset;
-} drm_vc4_mmap_bo;
+};
 
 /**
  * struct drm_vc4_create_shader_bo - ioctl argument for creating VC4
@@ -242,7 +257,7 @@ typedef struct drm_vc4_mmap_bo {
  * executed from would allow privlege escalation, shaders must be
  * created using this ioctl, and they can't be mmapped later.
  */
-typedef struct drm_vc4_create_shader_bo {
+struct drm_vc4_create_shader_bo {
 	/* Size of the data argument. */
 	__u32 size;
 	/* Flags, currently must be 0. */
@@ -255,20 +270,20 @@ typedef struct drm_vc4_create_shader_bo {
 	__u32 handle;
 	/* Pad, must be 0. */
 	__u32 pad;
-} drm_vc4_create_shader_bo;
+};
 
-typedef struct drm_vc4_get_hang_state_bo {
+struct drm_vc4_get_hang_state_bo {
 	__u32 handle;
 	__u32 paddr;
 	__u32 size;
 	__u32 pad;
-} drm_vc4_get_hang_state_bo;
+};
 
 /**
  * struct drm_vc4_hang_state - ioctl argument for collecting state
  * from a GPU hang for analysis.
 */
-typedef struct drm_vc4_get_hang_state {
+struct drm_vc4_get_hang_state {
 	/** Pointer to array of struct drm_vc4_get_hang_state_bo. */
 	__u64 bo;
 	/**
@@ -298,7 +313,7 @@ typedef struct drm_vc4_get_hang_state {
 
 	/* Pad that we may save more registers into in the future. */
 	__u32 pad[16];
-} drm_vc4_get_hang_state;
+};
 
 #define DRM_VC4_PARAM_V3D_IDENT0		0
 #define DRM_VC4_PARAM_V3D_IDENT1		1
@@ -308,33 +323,34 @@ typedef struct drm_vc4_get_hang_state {
 #define DRM_VC4_PARAM_SUPPORTS_THREADED_FS	5
 #define DRM_VC4_PARAM_SUPPORTS_FIXED_RCL_ORDER	6
 #define DRM_VC4_PARAM_SUPPORTS_MADVISE		7
+#define DRM_VC4_PARAM_SUPPORTS_PERFMON		8
 
-typedef struct drm_vc4_get_param {
+struct drm_vc4_get_param {
 	__u32 param;
 	__u32 pad;
 	__u64 value;
-} drm_vc4_get_param;
+};
 
-typedef struct drm_vc4_get_tiling {
+struct drm_vc4_get_tiling {
 	__u32 handle;
 	__u32 flags;
 	__u64 modifier;
-} drm_vc4_get_tiling;
+};
 
-typedef struct drm_vc4_set_tiling {
+struct drm_vc4_set_tiling {
 	__u32 handle;
 	__u32 flags;
 	__u64 modifier;
-} drm_vc4_set_tiling;
+};
 
 /**
  * struct drm_vc4_label_bo - Attach a name to a BO for debug purposes.
  */
-typedef struct drm_vc4_label_bo {
+struct drm_vc4_label_bo {
 	__u32 handle;
 	__u32 len;
 	__u64 name;
-} drm_vc4_label_bo;
+};
 
 /*
  * States prefixed with '__' are internal states and cannot be passed to the
@@ -345,15 +361,75 @@ typedef struct drm_vc4_label_bo {
 #define __VC4_MADV_PURGED			2
 #define __VC4_MADV_NOTSUPP			3
 
-typedef struct drm_vc4_gem_madvise {
+struct drm_vc4_gem_madvise {
 	__u32 handle;
 	__u32 madv;
 	__u32 retained;
 	__u32 pad;
-} drm_vc4_gem_madvise;
+};
+
+enum {
+	VC4_PERFCNT_FEP_VALID_PRIMS_NO_RENDER,
+	VC4_PERFCNT_FEP_VALID_PRIMS_RENDER,
+	VC4_PERFCNT_FEP_CLIPPED_QUADS,
+	VC4_PERFCNT_FEP_VALID_QUADS,
+	VC4_PERFCNT_TLB_QUADS_NOT_PASSING_STENCIL,
+	VC4_PERFCNT_TLB_QUADS_NOT_PASSING_Z_AND_STENCIL,
+	VC4_PERFCNT_TLB_QUADS_PASSING_Z_AND_STENCIL,
+	VC4_PERFCNT_TLB_QUADS_ZERO_COVERAGE,
+	VC4_PERFCNT_TLB_QUADS_NON_ZERO_COVERAGE,
+	VC4_PERFCNT_TLB_QUADS_WRITTEN_TO_COLOR_BUF,
+	VC4_PERFCNT_PLB_PRIMS_OUTSIDE_VIEWPORT,
+	VC4_PERFCNT_PLB_PRIMS_NEED_CLIPPING,
+	VC4_PERFCNT_PSE_PRIMS_REVERSED,
+	VC4_PERFCNT_QPU_TOTAL_IDLE_CYCLES,
+	VC4_PERFCNT_QPU_TOTAL_CLK_CYCLES_VERTEX_COORD_SHADING,
+	VC4_PERFCNT_QPU_TOTAL_CLK_CYCLES_FRAGMENT_SHADING,
+	VC4_PERFCNT_QPU_TOTAL_CLK_CYCLES_EXEC_VALID_INST,
+	VC4_PERFCNT_QPU_TOTAL_CLK_CYCLES_WAITING_TMUS,
+	VC4_PERFCNT_QPU_TOTAL_CLK_CYCLES_WAITING_SCOREBOARD,
+	VC4_PERFCNT_QPU_TOTAL_CLK_CYCLES_WAITING_VARYINGS,
+	VC4_PERFCNT_QPU_TOTAL_INST_CACHE_HIT,
+	VC4_PERFCNT_QPU_TOTAL_INST_CACHE_MISS,
+	VC4_PERFCNT_QPU_TOTAL_UNIFORM_CACHE_HIT,
+	VC4_PERFCNT_QPU_TOTAL_UNIFORM_CACHE_MISS,
+	VC4_PERFCNT_TMU_TOTAL_TEXT_QUADS_PROCESSED,
+	VC4_PERFCNT_TMU_TOTAL_TEXT_CACHE_MISS,
+	VC4_PERFCNT_VPM_TOTAL_CLK_CYCLES_VDW_STALLED,
+	VC4_PERFCNT_VPM_TOTAL_CLK_CYCLES_VCD_STALLED,
+	VC4_PERFCNT_L2C_TOTAL_L2_CACHE_HIT,
+	VC4_PERFCNT_L2C_TOTAL_L2_CACHE_MISS,
+	VC4_PERFCNT_NUM_EVENTS,
+};
+
+#define DRM_VC4_MAX_PERF_COUNTERS	16
+
+struct drm_vc4_perfmon_create {
+	__u32 id;
+	__u32 ncounters;
+	__u8 events[DRM_VC4_MAX_PERF_COUNTERS];
+};
+
+struct drm_vc4_perfmon_destroy {
+	__u32 id;
+};
+
+/*
+ * Returns the values of the performance counters tracked by this
+ * perfmon (as an array of ncounters u64 values).
+ *
+ * No implicit synchronization is performed, so the user has to
+ * guarantee that any jobs using this perfmon have already been
+ * completed  (probably by blocking on the seqno returned by the
+ * last exec that used the perfmon).
+ */
+struct drm_vc4_perfmon_get_values {
+	__u32 id;
+	__u64 values_ptr;
+};
 
 #if defined(__cplusplus)
 }
 #endif
 
-#endif /* _VC4_DRM_H_ */
+#endif /* _UAPI_VC4_DRM_H_ */

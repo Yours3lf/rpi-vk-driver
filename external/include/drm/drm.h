@@ -36,7 +36,13 @@
 #ifndef _DRM_H_
 #define _DRM_H_
 
-#if   defined(__linux__)
+#if defined(__KERNEL__)
+
+#include <linux/types.h>
+#include <asm/ioctl.h>
+typedef unsigned int drm_handle_t;
+
+#elif defined(__linux__)
 
 #include <linux/types.h>
 #include <asm/ioctl.h>
@@ -61,6 +67,10 @@ typedef unsigned long drm_handle_t;
 
 #if defined(__cplusplus)
 extern "C" {
+#endif
+
+#ifndef __user
+#define __user
 #endif
 
 #define DRM_NAME	"drm"	  /**< Name in kernel, /dev, and /proc */
@@ -135,11 +145,11 @@ struct drm_version {
 	int version_minor;	  /**< Minor version */
 	int version_patchlevel;	  /**< Patch level */
 	__kernel_size_t name_len;	  /**< Length of name buffer */
-	char *name;	  /**< Name of driver */
+	char __user *name;	  /**< Name of driver */
 	__kernel_size_t date_len;	  /**< Length of date buffer */
-	char *date;	  /**< User-space buffer to hold date */
+	char __user *date;	  /**< User-space buffer to hold date */
 	__kernel_size_t desc_len;	  /**< Length of desc buffer */
-	char *desc;	  /**< User-space buffer to hold desc */
+	char __user *desc;	  /**< User-space buffer to hold desc */
 };
 
 /**
@@ -149,12 +159,12 @@ struct drm_version {
  */
 struct drm_unique {
 	__kernel_size_t unique_len;	  /**< Length of unique */
-	char *unique;	  /**< Unique name for driver instantiation */
+	char __user *unique;	  /**< Unique name for driver instantiation */
 };
 
 struct drm_list {
 	int count;		  /**< Length of user-space structures */
-	struct drm_version *version;
+	struct drm_version __user *version;
 };
 
 struct drm_block {
@@ -349,7 +359,7 @@ struct drm_buf_desc {
  */
 struct drm_buf_info {
 	int count;		/**< Entries in list */
-	struct drm_buf_desc *list;
+	struct drm_buf_desc __user *list;
 };
 
 /**
@@ -357,7 +367,7 @@ struct drm_buf_info {
  */
 struct drm_buf_free {
 	int count;
-	int *list;
+	int __user *list;
 };
 
 /**
@@ -369,7 +379,7 @@ struct drm_buf_pub {
 	int idx;		       /**< Index into the master buffer list */
 	int total;		       /**< Buffer size */
 	int used;		       /**< Amount of buffer in use (for DMA) */
-	void *address;	       /**< Address of buffer */
+	void __user *address;	       /**< Address of buffer */
 };
 
 /**
@@ -378,11 +388,11 @@ struct drm_buf_pub {
 struct drm_buf_map {
 	int count;		/**< Length of the buffer list */
 #ifdef __cplusplus
-	void *virt;
+	void __user *virt;
 #else
-	void *virtual;		/**< Mmap'd area in user-virtual */
+	void __user *virtual;		/**< Mmap'd area in user-virtual */
 #endif
-	struct drm_buf_pub *list;	/**< Buffer information */
+	struct drm_buf_pub __user *list;	/**< Buffer information */
 };
 
 /**
@@ -395,13 +405,13 @@ struct drm_buf_map {
 struct drm_dma {
 	int context;			  /**< Context handle */
 	int send_count;			  /**< Number of buffers to send */
-	int *send_indices;	  /**< List of handles to buffers */
-	int *send_sizes;		  /**< Lengths of data to send */
+	int __user *send_indices;	  /**< List of handles to buffers */
+	int __user *send_sizes;		  /**< Lengths of data to send */
 	enum drm_dma_flags flags;	  /**< Flags */
 	int request_count;		  /**< Number of buffers requested */
 	int request_size;		  /**< Desired size for buffers */
-	int *request_indices;	  /**< Buffer information */
-	int *request_sizes;
+	int __user *request_indices;	  /**< Buffer information */
+	int __user *request_sizes;
 	int granted_count;		  /**< Number of buffers granted */
 };
 
@@ -425,7 +435,7 @@ struct drm_ctx {
  */
 struct drm_ctx_res {
 	int count;
-	struct drm_ctx *contexts;
+	struct drm_ctx __user *contexts;
 };
 
 /**
@@ -939,6 +949,7 @@ struct drm_event_crtc_sequence {
 };
 
 /* typedef area */
+#ifndef __KERNEL__
 typedef struct drm_clip_rect drm_clip_rect_t;
 typedef struct drm_drawable_info drm_drawable_info_t;
 typedef struct drm_tex_region drm_tex_region_t;
@@ -980,6 +991,7 @@ typedef struct drm_agp_binding drm_agp_binding_t;
 typedef struct drm_agp_info drm_agp_info_t;
 typedef struct drm_scatter_gather drm_scatter_gather_t;
 typedef struct drm_set_version drm_set_version_t;
+#endif
 
 #if defined(__cplusplus)
 }
