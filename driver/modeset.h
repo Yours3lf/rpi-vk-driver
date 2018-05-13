@@ -39,11 +39,9 @@ typedef struct modeset_dev {
 	drmModeCrtc *saved_crtc;
 } modeset_dev;
 
-int modeset_open(const char* node);
-modeset_dev* modeset_create();
-void modeset_swapbuffer(modeset_dev* dev, unsigned index);
-void modeset_destroy(modeset_dev* dev);
-void modeset_close();
+modeset_dev* modeset_create(int fd);
+void modeset_swapbuffer(int fd, modeset_dev* dev, unsigned index);
+void modeset_destroy(int fd, modeset_dev* dev);
 
 #if defined (__cplusplus)
 }

@@ -2,27 +2,18 @@
 #include "CustomAssert.h"
 #include <string.h>
 #include <stdlib.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <stdint.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-#include <drm/vc4_drm.h>
 
 #include <vulkan/vulkan.h>
 #include "vkExt.h"
 
 #include "modeset.h"
+#include "kernelInterface.h"
 
 #include "AlignedAllocator.h"
 #include "PoolAllocator.h"
 #include "LinearAllocator.h"
-
-#include "drm/vc4_drm.h"
 
 #ifndef min
 #define min(a, b) (a < b ? a : b)
@@ -31,26 +22,6 @@
 #ifndef max
 #define max(a, b) (a > b ? a : b)
 #endif
-
-#define DRM_IOCTL_FILE_NAME "/dev/"DRM_NAME
-
-static int fd = -1;
-
-int openIoctl()
-{
-	fd = open(DRM_IOCTL_FILE_NAME, O_RDWR);
-	if (fd < 0) {
-		printf("Can't open device file: %s\n", DRM_IOCTL_FILE_NAME);
-		return -1;
-	}
-
-	return 0;
-}
-
-void closeIoctl(int fd)
-{
-	close(fd);
-}
 
 VkPhysicalDeviceLimits _limits =
 {
@@ -250,7 +221,7 @@ typedef struct VkCommandBuffer_T
 	//Recorded commands include commands to bind pipelines and descriptor sets to the command buffer, commands to modify dynamic state, commands to draw (for graphics rendering),
 	//commands to dispatch (for compute), commands to execute secondary command buffers (for primary command buffers only), commands to copy buffers and images, and other commands
 
-	drm_vc4_submit_cl cls[100]; //each cl is a draw call
+	struct drm_vc4_submit_cl cls[100]; //each cl is a draw call
 	unsigned numClsUsed;
 	commandBufferState state;
 	VkCommandBufferUsageFlags usageFlags;
@@ -473,6 +444,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 	//TODO ignored for now
 	//pCreateInfo->pApplicationInfo
 
+	int ret = openIoctl(); assert(!ret);
+
+	int chip_info = vc4_get_chip_info(renderFd);
+	int has_tiling = vc4_test_tiling(renderFd);
+
 	return VK_SUCCESS;
 }
 
@@ -666,8 +642,7 @@ VkResult vkCreateRpiSurfaceKHR(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	int ret = modeset_open("/dev/dri/card0"); assert(!ret);
-	*pSurface = (VkSurfaceKHR)modeset_create();
+	*pSurface = (VkSurfaceKHR)modeset_create(controlFd);
 
 	return VK_SUCCESS;
 }
@@ -689,8 +664,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	modeset_destroy((modeset_dev*)surface);
-	modeset_close();
+	modeset_destroy(controlFd, (modeset_dev*)surface);
 }
 
 /*
@@ -1330,7 +1304,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(
 	for(int c = 0; c < pPresentInfo->swapchainCount; ++c)
 	{
 		//TODO
-		modeset_swapbuffer((modeset_dev*)pPresentInfo->pSwapchains[c], pPresentInfo->pImageIndices[c]);
+		modeset_swapbuffer(controlFd, (modeset_dev*)pPresentInfo->pSwapchains[c], pPresentInfo->pImageIndices[c]);
 	}
 
 	return VK_SUCCESS;
@@ -1479,5 +1453,6 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(
 	assert(pAllocator == 0);
 
 	//TODO
+	closeIoctl();
 }
 
