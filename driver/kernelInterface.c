@@ -432,3 +432,27 @@ void* vc4_bo_map(int fd, uint32_t bo, uint32_t size)
 
 		return map;
 }
+
+void vc4_cl_submit(int fd, struct drm_vc4_submit_cl submit, uint64_t* lastEmittedSeqno, uint64_t* lastFinishedSeqno)
+{
+		int ret = drmIoctl(fd, DRM_IOCTL_VC4_SUBMIT_CL, &submit);
+
+		static int warned = 0;
+		if (ret && !warned) {
+				printf("Draw call returned %s.  "
+								"Expect corruption.\n", strerror(errno));
+				warned = 1;
+		} else if (!ret) {
+				*lastEmittedSeqno = submit.seqno;
+		}
+
+		if (*lastEmittedSeqno - *lastFinishedSeqno > 5) {
+				uint64_t seqno = *lastFinishedSeqno - 5;
+				if (!vc4_seqno_wait(fd,
+									&seqno,
+									WAIT_TIMEOUT_INFINITE))
+				{
+						printf("Job throttling failed\n");
+				}
+		}
+}
