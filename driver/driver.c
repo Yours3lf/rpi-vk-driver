@@ -364,9 +364,9 @@ int findDeviceExtension(char* name)
  * e.g. if the layer implementation is replaced by a different version between those calls.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(
-	const char*                                 pLayerName,
-	uint32_t*                                   pPropertyCount,
-	VkExtensionProperties*                      pProperties)
+		const char*                                 pLayerName,
+		uint32_t*                                   pPropertyCount,
+		VkExtensionProperties*                      pProperties)
 {
 	assert(!pLayerName); //TODO layers ignored for now
 	assert(pPropertyCount);
@@ -399,9 +399,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(
  * created and returned to the application.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
-	const VkInstanceCreateInfo*                 pCreateInfo,
-	const VkAllocationCallbacks*                pAllocator,
-	VkInstance*                                 pInstance)
+		const VkInstanceCreateInfo*                 pCreateInfo,
+		const VkAllocationCallbacks*                pAllocator,
+		VkInstance*                                 pInstance)
 {
 	assert(pInstance);
 	assert(pCreateInfo);
@@ -466,9 +466,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
  * available physical devices were returned.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDevices(
-	VkInstance                                  instance,
-	uint32_t*                                   pPhysicalDeviceCount,
-	VkPhysicalDevice*                           pPhysicalDevices)
+		VkInstance                                  instance,
+		uint32_t*                                   pPhysicalDeviceCount,
+		VkPhysicalDevice*                           pPhysicalDevices)
 {
 	assert(instance);
 
@@ -509,8 +509,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDevices(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceProperties
  */
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties(
-	VkPhysicalDevice                            physicalDevice,
-	VkPhysicalDeviceProperties*                 pProperties)
+		VkPhysicalDevice                            physicalDevice,
+		VkPhysicalDeviceProperties*                 pProperties)
 {
 	assert(physicalDevice);
 	assert(pProperties);
@@ -539,8 +539,8 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceFeatures
  */
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures(
-	VkPhysicalDevice                            physicalDevice,
-	VkPhysicalDeviceFeatures*                   pFeatures)
+		VkPhysicalDevice                            physicalDevice,
+		VkPhysicalDeviceFeatures*                   pFeatures)
 {
 	assert(physicalDevice);
 	assert(pFeatures);
@@ -552,10 +552,10 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateDeviceExtensionProperties
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(
-	VkPhysicalDevice                            physicalDevice,
-	const char*                                 pLayerName,
-	uint32_t*                                   pPropertyCount,
-	VkExtensionProperties*                      pProperties)
+		VkPhysicalDevice                            physicalDevice,
+		const char*                                 pLayerName,
+		uint32_t*                                   pPropertyCount,
+		VkExtensionProperties*                      pProperties)
 {
 	assert(physicalDevice);
 	assert(!pLayerName); //layers ignored for now
@@ -588,9 +588,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(
  * is less than the number of queue families available, at most pQueueFamilyPropertyCount structures will be written.
  */
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties(
-	VkPhysicalDevice                            physicalDevice,
-	uint32_t*                                   pQueueFamilyPropertyCount,
-	VkQueueFamilyProperties*                    pQueueFamilyProperties)
+		VkPhysicalDevice                            physicalDevice,
+		uint32_t*                                   pQueueFamilyPropertyCount,
+		VkQueueFamilyProperties*                    pQueueFamilyProperties)
 {
 	assert(physicalDevice);
 	assert(pQueueFamilyPropertyCount);
@@ -617,10 +617,10 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties(
  * does this queue family support presentation to this surface?
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceSupportKHR(
-	VkPhysicalDevice                            physicalDevice,
-	uint32_t                                    queueFamilyIndex,
-	VkSurfaceKHR                                surface,
-	VkBool32*                                   pSupported)
+		VkPhysicalDevice                            physicalDevice,
+		uint32_t                                    queueFamilyIndex,
+		VkSurfaceKHR                                surface,
+		VkBool32*                                   pSupported)
 {
 	assert(pSupported);
 	assert(surface);
@@ -636,10 +636,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceSupportKHR(
  * Implementation of our RPI specific "extension"
  */
 VkResult vkCreateRpiSurfaceKHR(
-			  VkInstance                                  instance,
-			  const VkRpiSurfaceCreateInfoKHR*            pCreateInfo,
-			  const VkAllocationCallbacks*                pAllocator,
-			  VkSurfaceKHR*                               pSurface)
+		VkInstance                                  instance,
+		const VkRpiSurfaceCreateInfoKHR*            pCreateInfo,
+		const VkAllocationCallbacks*                pAllocator,
+		VkSurfaceKHR*                               pSurface)
 {
 	assert(instance);
 	//assert(pCreateInfo); //ignored for now
@@ -659,9 +659,9 @@ VkResult vkCreateRpiSurfaceKHR(
  * (but we'll do so anyways...)
  */
 VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(
-	VkInstance                                  instance,
-	VkSurfaceKHR                                surface,
-	const VkAllocationCallbacks*                pAllocator)
+		VkInstance                                  instance,
+		VkSurfaceKHR                                surface,
+		const VkAllocationCallbacks*                pAllocator)
 {
 	assert(instance);
 	assert(surface);
@@ -684,10 +684,10 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(
  * fail due to lack of device-specific resources (in addition to the other errors). If that occurs, vkCreateDevice will return VK_ERROR_TOO_MANY_OBJECTS.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
-	VkPhysicalDevice                            physicalDevice,
-	const VkDeviceCreateInfo*                   pCreateInfo,
-	const VkAllocationCallbacks*                pAllocator,
-	VkDevice*                                   pDevice)
+		VkPhysicalDevice                            physicalDevice,
+		const VkDeviceCreateInfo*                   pCreateInfo,
+		const VkAllocationCallbacks*                pAllocator,
+		VkDevice*                                   pDevice)
 {
 	assert(physicalDevice);
 	assert(pDevice);
@@ -764,10 +764,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
  * To get queues that were created with a non-zero flags parameter use vkGetDeviceQueue2.
  */
 VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue(
-	VkDevice                                    device,
-	uint32_t                                    queueFamilyIndex,
-	uint32_t                                    queueIndex,
-	VkQueue*                                    pQueue)
+		VkDevice                                    device,
+		uint32_t                                    queueFamilyIndex,
+		uint32_t                                    queueIndex,
+		VkQueue*                                    pQueue)
 {
 	assert(device);
 	assert(pQueue);
@@ -792,10 +792,10 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue(
  * When created, the semaphore is in the unsignaled state.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateSemaphore(
-	VkDevice                                    device,
-	const VkSemaphoreCreateInfo*                pCreateInfo,
-	const VkAllocationCallbacks*                pAllocator,
-	VkSemaphore*                                pSemaphore)
+		VkDevice                                    device,
+		const VkSemaphoreCreateInfo*                pCreateInfo,
+		const VkAllocationCallbacks*                pAllocator,
+		VkSemaphore*                                pSemaphore)
 {
 	assert(device);
 	assert(pSemaphore);
@@ -820,9 +820,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSemaphore(
  * capabilities the specified device supports for a swapchain created for the surface
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-	VkPhysicalDevice                            physicalDevice,
-	VkSurfaceKHR                                surface,
-	VkSurfaceCapabilitiesKHR*                   pSurfaceCapabilities)
+		VkPhysicalDevice                            physicalDevice,
+		VkSurfaceKHR                                surface,
+		VkSurfaceCapabilitiesKHR*                   pSurfaceCapabilities)
 {
 	assert(physicalDevice);
 	assert(surface);
@@ -855,10 +855,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
  * VK_INCOMPLETE will be returned instead of VK_SUCCESS to indicate that not all the available values were returned.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(
-	VkPhysicalDevice                            physicalDevice,
-	VkSurfaceKHR                                surface,
-	uint32_t*                                   pSurfaceFormatCount,
-	VkSurfaceFormatKHR*                         pSurfaceFormats)
+		VkPhysicalDevice                            physicalDevice,
+		VkSurfaceKHR                                surface,
+		uint32_t*                                   pSurfaceFormatCount,
+		VkSurfaceFormatKHR*                         pSurfaceFormats)
 {
 	assert(physicalDevice);
 	assert(surface);
@@ -902,10 +902,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(
  * VK_SUCCESS to indicate that not all the available values were returned.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
-	VkPhysicalDevice                            physicalDevice,
-	VkSurfaceKHR                                surface,
-	uint32_t*                                   pPresentModeCount,
-	VkPresentModeKHR*                           pPresentModes)
+		VkPhysicalDevice                            physicalDevice,
+		VkSurfaceKHR                                surface,
+		uint32_t*                                   pPresentModeCount,
+		VkPresentModeKHR*                           pPresentModes)
 {
 	assert(physicalDevice);
 	assert(surface);
@@ -942,10 +942,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateSwapchainKHR
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
-	VkDevice                                    device,
-	const VkSwapchainCreateInfoKHR*             pCreateInfo,
-	const VkAllocationCallbacks*                pAllocator,
-	VkSwapchainKHR*                             pSwapchain)
+		VkDevice                                    device,
+		const VkSwapchainCreateInfoKHR*             pCreateInfo,
+		const VkAllocationCallbacks*                pAllocator,
+		VkSwapchainKHR*                             pSwapchain)
 {
 	assert(device);
 	assert(pCreateInfo);
@@ -969,10 +969,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
  * indicate that not all the available values were returned.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainImagesKHR(
-	VkDevice                                    device,
-	VkSwapchainKHR                              swapchain,
-	uint32_t*                                   pSwapchainImageCount,
-	VkImage*                                    pSwapchainImages)
+		VkDevice                                    device,
+		VkSwapchainKHR                              swapchain,
+		uint32_t*                                   pSwapchainImageCount,
+		VkImage*                                    pSwapchainImages)
 {
 	assert(device);
 	assert(swapchain);
@@ -1013,10 +1013,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainImagesKHR(
  * as well as operations that allocate, free, and reset command buffers or the pool itself.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
-	VkDevice                                    device,
-	const VkCommandPoolCreateInfo*              pCreateInfo,
-	const VkAllocationCallbacks*                pAllocator,
-	VkCommandPool*                              pCommandPool)
+		VkDevice                                    device,
+		const VkCommandPoolCreateInfo*              pCreateInfo,
+		const VkAllocationCallbacks*                pAllocator,
+		VkCommandPool*                              pCommandPool)
 {
 	assert(device);
 	assert(pCreateInfo);
@@ -1063,9 +1063,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
  * the implementation must destroy all successfully created command buffer objects from this command, set all entries of the pCommandBuffers array to NULL and return the error.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
-	VkDevice                                    device,
-	const VkCommandBufferAllocateInfo*          pAllocateInfo,
-	VkCommandBuffer*                            pCommandBuffers)
+		VkDevice                                    device,
+		const VkCommandBufferAllocateInfo*          pAllocateInfo,
+		VkCommandBuffer*                            pCommandBuffers)
 {
 	assert(device);
 	assert(pAllocateInfo);
@@ -1135,8 +1135,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkBeginCommandBuffer
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
-	VkCommandBuffer                             commandBuffer,
-	const VkCommandBufferBeginInfo*             pBeginInfo)
+		VkCommandBuffer                             commandBuffer,
+		const VkCommandBufferBeginInfo*             pBeginInfo)
 {
 	assert(commandBuffer);
 	assert(pBeginInfo);
@@ -1183,16 +1183,16 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
  * If dependencyFlags includes VK_DEPENDENCY_BY_REGION_BIT, then any dependency between framebuffer-space pipeline stages is framebuffer-local - otherwise it is framebuffer-global.
  */
 VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
-	VkCommandBuffer                             commandBuffer,
-	VkPipelineStageFlags                        srcStageMask,
-	VkPipelineStageFlags                        dstStageMask,
-	VkDependencyFlags                           dependencyFlags,
-	uint32_t                                    memoryBarrierCount,
-	const VkMemoryBarrier*                      pMemoryBarriers,
-	uint32_t                                    bufferMemoryBarrierCount,
-	const VkBufferMemoryBarrier*                pBufferMemoryBarriers,
-	uint32_t                                    imageMemoryBarrierCount,
-	const VkImageMemoryBarrier*                 pImageMemoryBarriers)
+		VkCommandBuffer                             commandBuffer,
+		VkPipelineStageFlags                        srcStageMask,
+		VkPipelineStageFlags                        dstStageMask,
+		VkDependencyFlags                           dependencyFlags,
+		uint32_t                                    memoryBarrierCount,
+		const VkMemoryBarrier*                      pMemoryBarriers,
+		uint32_t                                    bufferMemoryBarrierCount,
+		const VkBufferMemoryBarrier*                pBufferMemoryBarriers,
+		uint32_t                                    imageMemoryBarrierCount,
+		const VkImageMemoryBarrier*                 pImageMemoryBarriers)
 {
 	assert(commandBuffer);
 
@@ -1205,12 +1205,12 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
  * These commands are only allowed outside of a render pass instance.
  */
 VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
-	VkCommandBuffer                             commandBuffer,
-	VkImage                                     image,
-	VkImageLayout                               imageLayout,
-	const VkClearColorValue*                    pColor,
-	uint32_t                                    rangeCount,
-	const VkImageSubresourceRange*              pRanges)
+		VkCommandBuffer                             commandBuffer,
+		VkImage                                     image,
+		VkImageLayout                               imageLayout,
+		const VkClearColorValue*                    pColor,
+		uint32_t                                    rangeCount,
+		const VkImageSubresourceRange*              pRanges)
 {
 	assert(commandBuffer);
 
@@ -1224,7 +1224,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
  * and is moved to the executable state.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkEndCommandBuffer(
-	VkCommandBuffer                             commandBuffer)
+		VkCommandBuffer                             commandBuffer)
 {
 	assert(commandBuffer);
 
@@ -1237,12 +1237,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEndCommandBuffer(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkAcquireNextImageKHR
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(
-	VkDevice                                    device,
-	VkSwapchainKHR                              swapchain,
-	uint64_t                                    timeout,
-	VkSemaphore                                 semaphore,
-	VkFence                                     fence,
-	uint32_t*                                   pImageIndex)
+		VkDevice                                    device,
+		VkSwapchainKHR                              swapchain,
+		uint64_t                                    timeout,
+		VkSemaphore                                 semaphore,
+		VkFence                                     fence,
+		uint32_t*                                   pImageIndex)
 {
 	assert(device);
 	assert(swapchain);
@@ -1271,10 +1271,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(
  * the implementation must return VK_ERROR_DEVICE_LOST. See Lost Device.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
-	VkQueue                                     queue,
-	uint32_t                                    submitCount,
-	const VkSubmitInfo*                         pSubmits,
-	VkFence                                     fence)
+		VkQueue                                     queue,
+		uint32_t                                    submitCount,
+		const VkSubmitInfo*                         pSubmits,
+		VkFence                                     fence)
 {
 	assert(queue);
 
@@ -1300,8 +1300,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
  * the set of queue operations are still considered to be enqueued and thus any semaphore to be waited on gets unsignaled when the corresponding queue operation is complete.
  */
 VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(
-	VkQueue                                     queue,
-	const VkPresentInfoKHR*                     pPresentInfo)
+		VkQueue                                     queue,
+		const VkPresentInfoKHR*                     pPresentInfo)
 {
 	assert(queue);
 	assert(pPresentInfo);
@@ -1366,9 +1366,9 @@ VKAPI_ATTR void VKAPI_CALL vkFreeCommandBuffers(
  * allocated from commandPool recorded into it, becomes invalid.
  */
 VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
-	VkDevice                                    device,
-	VkCommandPool                               commandPool,
-	const VkAllocationCallbacks*                pAllocator)
+		VkDevice                                    device,
+		VkCommandPool                               commandPool,
+		const VkAllocationCallbacks*                pAllocator)
 {
 	assert(device);
 	assert(commandPool);
@@ -1396,9 +1396,9 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroySemaphore
  */
 VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
-	VkDevice                                    device,
-	VkSemaphore                                 semaphore,
-	const VkAllocationCallbacks*                pAllocator)
+		VkDevice                                    device,
+		VkSemaphore                                 semaphore,
+		const VkAllocationCallbacks*                pAllocator)
 {
 	assert(device);
 	assert(semaphore);
@@ -1413,9 +1413,9 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroySwapchainKHR
  */
 VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
-	VkDevice                                    device,
-	VkSwapchainKHR                              swapchain,
-	const VkAllocationCallbacks*                pAllocator)
+		VkDevice                                    device,
+		VkSwapchainKHR                              swapchain,
+		const VkAllocationCallbacks*                pAllocator)
 {
 	assert(device);
 	assert(swapchain);
@@ -1433,8 +1433,8 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
  * first parameter of the corresponding vkCreate* or vkAllocate* command
  */
 VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(
-	VkDevice                                    device,
-	const VkAllocationCallbacks*                pAllocator)
+		VkDevice                                    device,
+		const VkAllocationCallbacks*                pAllocator)
 {
 	assert(device);
 
@@ -1449,8 +1449,8 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(
  *
  */
 VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(
-	VkInstance                                  instance,
-	const VkAllocationCallbacks*                pAllocator)
+		VkInstance                                  instance,
+		const VkAllocationCallbacks*                pAllocator)
 {
 	assert(instance);
 

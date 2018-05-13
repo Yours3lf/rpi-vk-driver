@@ -89,7 +89,7 @@ void mainLoop() {
 	for(int c = 0; c < 120; ++c){
 		draw();
 
-	//	glfwPollEvents();
+		//	glfwPollEvents();
 	}
 }
 
@@ -401,7 +401,7 @@ void createSwapChain() {
 	// Note: AMD driver bug, though it would be nice to implement a workaround that doesn't use transfering
 	//if (!(surfaceCapabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
 	//	std::cerr << "swap chain image does not support VK_IMAGE_TRANSFER_DST usage" << std::endl;
-		//assert(0);
+	//assert(0);
 	//}
 
 	// Determine transformation to use (preferring no transform)

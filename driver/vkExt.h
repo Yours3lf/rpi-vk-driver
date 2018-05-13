@@ -14,18 +14,18 @@ typedef enum VkRpiSurfaceCreateFlagsKHR {
 } VkRpiSurfaceCreateFlagsKHR;
 
 typedef struct VkRpiSurfaceCreateInfoKHR {
-			   VkStructureType               sType;
-			   const void*                   pNext;
-			   VkRpiSurfaceCreateFlagsKHR    flags; //reserved
-			   //maybe include some other stuff dunno
-		   } VkRpiSurfaceCreateInfoKHR;
+	VkStructureType               sType;
+	const void*                   pNext;
+	VkRpiSurfaceCreateFlagsKHR    flags; //reserved
+	//maybe include some other stuff dunno
+} VkRpiSurfaceCreateInfoKHR;
 
 //extension name something like: VK_KHR_rpi_surface
 VkResult vkCreateRpiSurfaceKHR(
-			  VkInstance                                  instance,
-			  const VkRpiSurfaceCreateInfoKHR*            pCreateInfo,
-			  const VkAllocationCallbacks*                pAllocator,
-			  VkSurfaceKHR*                               pSurface);
+		VkInstance                                  instance,
+		const VkRpiSurfaceCreateInfoKHR*            pCreateInfo,
+		const VkAllocationCallbacks*                pAllocator,
+		VkSurfaceKHR*                               pSurface);
 
 
 #ifdef __cplusplus

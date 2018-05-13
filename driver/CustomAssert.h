@@ -14,17 +14,17 @@ __inline__ static void DEBUG_BREAK(void)
 }
 
 #ifdef DEBUG_BUILD
-  #define assert(expr) \
-    if( expr ){} \
-    else \
-    { \
-	  printf("Assert failed: %s\n" \
-			 "File: %s\n" \
-			 "Line: %i\n", #expr, __FILE__, __LINE__); \
-      DEBUG_BREAK(); \
-    }
+#define assert(expr) \
+	if( expr ){} \
+	else \
+{ \
+	printf("Assert failed: %s\n" \
+	"File: %s\n" \
+	"Line: %i\n", #expr, __FILE__, __LINE__); \
+	DEBUG_BREAK(); \
+}
 #else
-  #define assert(expr) //do nothing
+#define assert(expr) //do nothing
 #endif
 
 #if defined (__cplusplus)

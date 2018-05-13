@@ -50,11 +50,11 @@
 //static struct modeset_dev *modeset_list = NULL;
 
 static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
-				 struct modeset_dev *dev);
+							 struct modeset_dev *dev);
 static int modeset_create_fb(int fd, struct modeset_buf *buf);
 static void modeset_destroy_fb(int fd, struct modeset_buf *buf);
 static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
-				 struct modeset_dev *dev);
+							 struct modeset_dev *dev);
 
 
 /*
@@ -144,10 +144,10 @@ modeset_dev* modeset_create(int fd)
 		iter->saved_crtc = drmModeGetCrtc(fd, iter->crtc);
 		buf = &iter->bufs[iter->front_buf];
 		ret = drmModeSetCrtc(fd, iter->crtc, buf->fb, 0, 0,
-					 &iter->conn, 1, &iter->mode);
+							 &iter->conn, 1, &iter->mode);
 		if (ret)
 			printf("cannot set CRTC for connector %u (%d): %m\n",
-				iter->conn, errno);
+				   iter->conn, errno);
 	}
 
 	return ret_dev;
@@ -162,21 +162,21 @@ modeset_dev* modeset_create(int fd)
  */
 
 static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
-			     struct modeset_dev *dev)
+							 struct modeset_dev *dev)
 {
 	int ret;
 
 	// check if a monitor is connected
 	if (conn->connection != DRM_MODE_CONNECTED) {
 		printf("ignoring unused connector %u\n",
-			conn->connector_id);
+			   conn->connector_id);
 		return -ENOENT;
 	}
 
 	// check if there is at least one valid mode
 	if (conn->count_modes == 0) {
 		printf("no valid mode for connector %u\n",
-			conn->connector_id);
+			   conn->connector_id);
 		return -EFAULT;
 	}
 
@@ -187,13 +187,13 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 	dev->bufs[1].width = conn->modes[0].hdisplay;
 	dev->bufs[1].height = conn->modes[0].vdisplay;
 	printf("mode for connector %u is %ux%u\n",
-		conn->connector_id, dev->bufs[0].width, dev->bufs[0].height);
+		   conn->connector_id, dev->bufs[0].width, dev->bufs[0].height);
 
 	// find a crtc for this connector
 	ret = modeset_find_crtc(fd, res, conn, dev);
 	if (ret) {
 		printf("no valid crtc for connector %u\n",
-			conn->connector_id);
+			   conn->connector_id);
 		return ret;
 	}
 
@@ -201,7 +201,7 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 	ret = modeset_create_fb(fd, &dev->bufs[0]);
 	if (ret) {
 		printf("cannot create framebuffer for connector %u\n",
-			conn->connector_id);
+			   conn->connector_id);
 		return ret;
 	}
 
@@ -209,7 +209,7 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 	ret = modeset_create_fb(fd, &dev->bufs[1]);
 	if (ret) {
 		printf("cannot create framebuffer for connector %u\n",
-			conn->connector_id);
+			   conn->connector_id);
 		modeset_destroy_fb(fd, &dev->bufs[0]);
 		return ret;
 	}
@@ -222,7 +222,7 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
  */
 
 static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
-				 modeset_dev *dev)
+							 modeset_dev *dev)
 {
 	drmModeEncoder *enc;
 	unsigned int i, j;
@@ -263,7 +263,7 @@ static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 		enc = drmModeGetEncoder(fd, conn->encoders[i]);
 		if (!enc) {
 			printf("cannot retrieve encoder %u:%u (%d): %m\n",
-				i, conn->encoders[i], errno);
+				   i, conn->encoders[i], errno);
 			continue;
 		}
 
@@ -294,7 +294,7 @@ static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 	}
 
 	printf("cannot find suitable CRTC for connector %u\n",
-		conn->connector_id);
+		   conn->connector_id);
 	return -ENOENT;
 }
 
@@ -320,7 +320,7 @@ static int modeset_create_fb(int fd, struct modeset_buf *buf)
 	ret = drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &creq);
 	if (ret < 0) {
 		printf("cannot create dumb buffer (%d): %m\n",
-			errno);
+			   errno);
 		return -errno;
 	}
 	buf->stride = creq.pitch;
@@ -329,10 +329,10 @@ static int modeset_create_fb(int fd, struct modeset_buf *buf)
 
 	// create framebuffer object for the dumb-buffer
 	ret = drmModeAddFB(fd, buf->width, buf->height, 24, 32, buf->stride,
-			   buf->handle, &buf->fb);
+					   buf->handle, &buf->fb);
 	if (ret) {
 		printf("cannot create framebuffer (%d): %m\n",
-			errno);
+			   errno);
 		ret = -errno;
 
 		memset(&dreq, 0, sizeof(dreq));
@@ -347,7 +347,7 @@ static int modeset_create_fb(int fd, struct modeset_buf *buf)
 	ret = drmIoctl(fd, DRM_IOCTL_MODE_MAP_DUMB, &mreq);
 	if (ret) {
 		printf("cannot map dumb buffer (%d): %m\n",
-			errno);
+			   errno);
 		ret = -errno;
 
 		drmModeRmFB(fd, buf->fb);
@@ -359,10 +359,10 @@ static int modeset_create_fb(int fd, struct modeset_buf *buf)
 
 	// perform actual memory mapping
 	buf->map = mmap(0, buf->size, PROT_READ | PROT_WRITE, MAP_SHARED,
-		        fd, mreq.offset);
+					fd, mreq.offset);
 	if (buf->map == MAP_FAILED) {
 		printf("cannot mmap dumb buffer (%d): %m\n",
-			errno);
+			   errno);
 		ret = -errno;
 
 		drmModeRmFB(fd, buf->fb);
@@ -447,10 +447,10 @@ void modeset_swapbuffer(int fd, modeset_dev* dev, unsigned index)
 		buf = &iter->bufs[iter->front_buf ^ 1];
 
 		ret = drmModeSetCrtc(fd, iter->crtc, buf->fb, 0, 0,
-					 &iter->conn, 1, &iter->mode);
+							 &iter->conn, 1, &iter->mode);
 		if (ret)
 			printf("cannot flip CRTC for connector %u (%d): %m\n",
-				iter->conn, errno);
+				   iter->conn, errno);
 		else
 			iter->front_buf ^= 1;
 	}
@@ -472,13 +472,13 @@ void modeset_destroy(int fd, modeset_dev* dev)
 
 		// restore saved CRTC configuration
 		drmModeSetCrtc(fd,
-			       iter->saved_crtc->crtc_id,
-			       iter->saved_crtc->buffer_id,
-			       iter->saved_crtc->x,
-			       iter->saved_crtc->y,
-			       &iter->conn,
-			       1,
-			       &iter->saved_crtc->mode);
+					   iter->saved_crtc->crtc_id,
+					   iter->saved_crtc->buffer_id,
+					   iter->saved_crtc->x,
+					   iter->saved_crtc->y,
+					   &iter->conn,
+					   1,
+					   &iter->saved_crtc->mode);
 		drmModeFreeCrtc(iter->saved_crtc);
 
 		// destroy framebuffers
