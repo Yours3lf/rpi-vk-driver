@@ -449,6 +449,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 	int chip_info = vc4_get_chip_info(renderFd);
 	int has_tiling = vc4_test_tiling(renderFd);
 
+	int has_control_flow = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_BRANCHES);
+	int has_etc1 = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_ETC1);
+	int has_threaded_fs = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_THREADED_FS);
+	int has_madvise = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_MADVISE);
+
 	return VK_SUCCESS;
 }
 

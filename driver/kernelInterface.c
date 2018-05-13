@@ -27,6 +27,19 @@ void closeIoctl()
 	close(renderFd);
 }
 
+static uint32_t align(uint32_t num, uint32_t alignment)
+{
+	uint32_t mod = num%alignment;
+	if(!mod)
+	{
+		return num;
+	}
+	else
+	{
+		return num + alignment - mod;
+	}
+}
+
 int vc4_get_chip_info(int fd)
 {
 		struct drm_vc4_get_param ident0 = {
@@ -109,7 +122,6 @@ uint64_t vc4_bo_get_tiling(int fd, uint32_t bo, uint64_t mod)
 	};
 	int ret = drmIoctl(fd, DRM_IOCTL_VC4_GET_TILING, &get_tiling);
 
-	//TODO
 	if (ret != 0) {
 			return DRM_FORMAT_MOD_LINEAR;
 	} else if (mod == DRM_FORMAT_MOD_INVALID) {
@@ -167,7 +179,7 @@ void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t size)
 		return mapPtr;
 }
 
-int vc4_bo_wait_ioctl(int fd, uint32_t handle, uint64_t timeout_ns)
+static int vc4_bo_wait_ioctl(int fd, uint32_t handle, uint64_t timeout_ns)
 {
 		struct drm_vc4_wait_bo wait = {
 				.handle = handle,
@@ -185,7 +197,21 @@ int vc4_bo_wait_ioctl(int fd, uint32_t handle, uint64_t timeout_ns)
 		}
 }
 
-int vc4_seqno_wait_ioctl(int fd, uint64_t seqno, uint64_t timeout_ns)
+int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns)
+{
+		int ret = vc4_bo_wait_ioctl(fd, bo, timeout_ns);
+		if (ret) {
+				if (ret != -ETIME) {
+						fprintf(stderr, "wait failed: %d\n", ret);
+				}
+
+				return 0;
+		}
+
+		return 1;
+}
+
+static int vc4_seqno_wait_ioctl(int fd, uint64_t seqno, uint64_t timeout_ns)
 {
 		struct drm_vc4_wait_seqno wait = {
 				.seqno = seqno,
@@ -201,7 +227,24 @@ int vc4_seqno_wait_ioctl(int fd, uint64_t seqno, uint64_t timeout_ns)
 		{
 			return 1;
 		}
+}
 
+int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t timeout_ns)
+{
+		if (*lastFinishedSeqno >= seqno)
+				return 1;
+
+		int ret = vc4_seqno_wait_ioctl(fd, seqno, timeout_ns);
+		if (ret) {
+				if (ret != -ETIME) {
+						printf("wait failed: %d\n", ret);
+				}
+
+				return 0;
+		}
+
+		*lastFinishedSeqno = seqno;
+		return 1;
 }
 
 int vc4_bo_flink(int fd, uint32_t bo, uint32_t *name)
@@ -227,11 +270,10 @@ uint32_t vc4_bo_alloc_shader(int fd, const void *data, uint32_t* size)
 {
 		int ret;
 
-		//TODO
-		uint32_t alignedSize = *size;//align(*size, 4096);
+		uint32_t alignedSize = align(*size, ARM_PAGE_SIZE);
 
 		struct drm_vc4_create_shader_bo create = {
-				.size = *size, //TODO why isn't this alignedSize?
+				.size = *alignedSize,
 				.data = (uintptr_t)data,
 		};
 
@@ -261,9 +303,7 @@ uint32_t vc4_bo_open_name(int fd, uint32_t name)
 				return 0;
 		}
 
-		//TODO
-		//return vc4_bo_open_handle(screen, winsys_stride, o.handle, o.size);
-		return 1;
+		return o.handle;
 }
 
 uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
@@ -272,8 +312,7 @@ uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
 		struct drm_vc4_create_bo create;
 		int ret;
 
-		//TODO
-		uint32_t alignedSize = size;//align(size, 4096);
+		uint32_t alignedSize = align(size, ARM_PAGE_SIZE);
 
 		/*bo = vc4_bo_from_cache(screen, size, name);
 		if (bo) {
@@ -303,8 +342,7 @@ uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
 				return 0;
 		}
 
-		//TODO
-		//vc4_bo_label(screen, bo, "%s", name);
+		vc4_bo_label(screen, bo, "%s", name);
 
 		return handle;
 }
@@ -365,4 +403,32 @@ void vc4_bo_label(int fd, uint32_t bo, const char* name)
 			.name = (uintptr_t)name,
 	};
 	drmIoctl(fd, DRM_IOCTL_VC4_LABEL_BO, &label);
+}
+
+int vc4_bo_get_dmabuf(int fd, uint32_t bo)
+{
+		int boFd;
+		int ret = drmPrimeHandleToFD(fd, bo,
+									 O_CLOEXEC, &boFd);
+		if (ret != 0) {
+				printf("Failed to export gem bo %d to dmabuf\n",
+						bo);
+				return 0;
+		}
+
+		return boFd;
+}
+
+void* vc4_bo_map(int fd, uint32_t bo, uint32_t size)
+{
+		void* map = vc4_bo_map_unsynchronized(fd, bo, size);
+
+		//wait infinitely
+		int ok = vc4_bo_wait(fd, bo, WAIT_TIMEOUT_INFINITE);
+		if (!ok) {
+				printf("BO wait for map failed\n");
+				return 0;
+		}
+
+		return map;
 }
