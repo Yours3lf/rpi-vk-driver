@@ -8,8 +8,8 @@ extern "C" {
 
 typedef struct ControlListAddress
 {
-	uint32_t address;
-	uint32_t offset;
+	uint32_t handle; //handle to buffer object
+	uint32_t offset; //offset within buffer object
 } ControlListAddress;
 
 static inline void clEmitShaderRelocation(struct ControlList* cl, const ControlListAddress* address);
@@ -37,6 +37,7 @@ void clInit(ControlList* cl)
 {
 	assert(cl);
 	cl->nextFreeByte = &buffer[0];
+	cl->nextFreeHandle = &handlesBuffer[0];
 }
 
 void clInsertHalt(ControlList* cl)
@@ -95,22 +96,26 @@ void clInsertWaitOnSemaphore(ControlList* cl)
 	cl->nextFreeByte++;
 }
 
-void clInsertBranch(ControlList* cl)
+//input: 2 cls (cl, handles cl)
+void clInsertBranch(ControlList* cls, ControlListAddress address)
 {
-	assert(cl);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_BRANCH_opcode;
-	//TODO
-	cl->nextFreeByte++;
+	assert(cls);
+	assert(cls->nextFreeByte);
+	*cls->nextFreeByte = V3D21_BRANCH_opcode; cls->nextFreeByte++;
+	//TODO is this correct?
+	clEmitShaderRelocation(cls, &address);
+	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
 }
 
-void clInsertBranchToSubList(ControlList* cl)
+//input: 2 cls (cl, handles cl)
+void clInsertBranchToSubList(ControlList* cls, ControlListAddress address)
 {
-	assert(cl);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_BRANCH_TO_SUB_LIST_opcode;
-	//TODO
-	cl->nextFreeByte++;
+	assert(cls);
+	assert(cls->nextFreeByte);
+	*cls->nextFreeByte = V3D21_BRANCH_TO_SUB_LIST_opcode; cls->nextFreeByte++;
+	//TODO is this correct?
+	clEmitShaderRelocation(cls, &address);
+	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
 }
 
 void clInsertReturnFromSubList(ControlList* cl)
@@ -137,40 +142,115 @@ void clInsertStoreMultiSampleResolvedTileColorBufferAndEOF(ControlList* cl)
 	cl->nextFreeByte++;
 }
 
-void clInsertStoreFullResolutionTileBuffer(ControlList* cl)
+//input: 2 cls (cl, handles cl)
+void clInsertStoreFullResolutionTileBuffer(ControlList* cls,
+										   ControlListAddress address,
+										   uint32_t lastTile, //0/1
+										   uint32_t disableClearOnWrite, //0/1
+										   uint32_t disableZStencilBufferWrite, //0/1
+										   uint32_t disableColorBufferWrite) //0/1
 {
-	assert(cl);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_STORE_FULL_RESOLUTION_TILE_BUFFER_opcode;
-	//TODO
-	cl->nextFreeByte++;
+	assert(cls);
+	assert(cls->nextFreeByte);
+	*cls->nextFreeByte = V3D21_STORE_FULL_RESOLUTION_TILE_BUFFER_opcode; cls->nextFreeByte++;
+	//TODO is this correct?
+	clEmitShaderRelocation(cls, &address);
+	*(uint32_t*)cls->nextFreeByte =
+			moveBits(disableColorBufferWrite, 1, 0) |
+			moveBits(disableZStencilBufferWrite, 1, 1) |
+			moveBits(disableClearOnWrite, 1, 2) |
+			moveBits(lastTile, 1, 3) |
+			moveBits(address.offset, 28, 4);
+	cls->nextFreeByte += 4;
 }
 
-void clInsertReLoadFullResolutionTileBuffer(ControlList* cl)
+//input: 2 cls (cl, handles cl)
+void clInsertReLoadFullResolutionTileBuffer(ControlList* cls,
+											ControlListAddress address,
+											uint32_t disableZStencilBufferRead, //0/1
+											uint32_t disableColorBufferRead) //0/1
 {
-	assert(cl);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_RE_LOAD_FULL_RESOLUTION_TILE_BUFFER_opcode;
-	//TODO
-	cl->nextFreeByte++;
+	assert(cls);
+	assert(cls->nextFreeByte);
+	*cls->nextFreeByte = V3D21_RE_LOAD_FULL_RESOLUTION_TILE_BUFFER_opcode; cls->nextFreeByte++;
+	//TODO is this correct?
+	clEmitShaderRelocation(cls, &address);
+	*(uint32_t*)cls->nextFreeByte =
+			moveBits(disableColorBufferRead, 1, 0) |
+			moveBits(disableZStencilBufferRead, 1, 1) |
+			moveBits(address.offset, 28, 4);
+	cls->nextFreeByte += 4;
 }
 
-void clInsertStoreTileBufferGeneral(ControlList* cl)
+//input: 2 cls (cl, handles cl)
+void clInsertStoreTileBufferGeneral(ControlList* cls,
+									ControlListAddress address,
+									uint32_t lastTileOfFrame, //0/1
+									uint32_t disableZStencilBufferDump, //0/1
+									uint32_t disableColorBufferDump, //0/1
+									uint32_t disableZStencilBufferClearOnStoreDump, //0/1
+									uint32_t disableColorBufferClearOnStoreDump, //0/1
+									uint32_t disableDoubleBufferSwap, //0/1
+									uint32_t pixelColorFormat, //0/1/2 RGBA8/BGR565dither/BGR565nodither
+									uint32_t mode, //0/1/2 sample0/decimate4x/decimate16x
+									uint32_t format, //0/1/2 raster/t/lt
+									uint32_t bufferToStore) //0/1/2/3/5 none/color/zstencil/z/full
 {
-	assert(cl);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_STORE_TILE_BUFFER_GENERAL_opcode;
-	//TODO
-	cl->nextFreeByte++;
+	assert(cls);
+	assert(cls->nextFreeByte);
+	*cls->nextFreeByte = V3D21_STORE_TILE_BUFFER_GENERAL_opcode; cls->nextFreeByte++;
+	//TODO is this correct?
+	*cls->nextFreeByte =
+			moveBits(bufferToStore, 3, 0) |
+			moveBits(format, 2, 4) |
+			moveBits(mode, 2, 6);
+	cls->nextFreeByte++;
+	*cls->nextFreeByte =
+			moveBits(pixelColorFormat, 2, 0) |
+			moveBits(disableDoubleBufferSwap, 1, 4) |
+			moveBits(disableColorBufferClearOnStoreDump, 1, 5) |
+			moveBits(disableZStencilBufferClearOnStoreDump, 1, 6) |
+			moveBits(1, 1, 7); //disable vg mask
+	cls->nextFreeByte++;
+	clEmitShaderRelocation(cls, &address);
+	*(uint32_t*)cls->nextFreeByte =
+			moveBits(disableColorBufferDump, 1, 0) |
+			moveBits(disableZStencilBufferDump, 1, 1) |
+			moveBits(1, 1, 2) | //disable vg mask
+			moveBits(lastTileOfFrame, 1, 3) |
+			moveBits(address.offset, 28, 4);
+	cls->nextFreeByte += 4;
 }
 
-void clInsertLoadTileBufferGeneral(ControlList* cl)
+//input: 2 cls (cl, handles cl)
+void clInsertLoadTileBufferGeneral(ControlList* cls,
+								   ControlListAddress address,
+								   uint32_t disableZStencilBufferLoad, //0/1
+								   uint32_t disableColorBufferLoad, //0/1
+								   uint32_t pixelColorFormat, //0/1/2 RGBA8/BGR565dither/BGR565nodither
+								   uint32_t mode, //0/1/2 sample0/decimate4x/decimate16x
+								   uint32_t format, //0/1/2 raster/t/lt
+								   uint32_t bufferToLoad) //0/1/2/3/5 none/color/zstencil/z/full
 {
-	assert(cl);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_LOAD_TILE_BUFFER_GENERAL_opcode;
-	//TODO
-	cl->nextFreeByte++;
+	assert(cls);
+	assert(cls->nextFreeByte);
+	*cls->nextFreeByte = V3D21_LOAD_TILE_BUFFER_GENERAL_opcode; cls->nextFreeByte++;
+	//TODO is this correct?
+	*cls->nextFreeByte =
+			moveBits(bufferToLoad, 3, 0) |
+			moveBits(format, 2, 4);
+	cls->nextFreeByte++;
+	*cls->nextFreeByte =
+			moveBits(pixelColorFormat, 2, 0);
+	cls->nextFreeByte++;
+	clEmitShaderRelocation(cls, &address);
+	*(uint32_t*)cls->nextFreeByte =
+			moveBits(disableColorBufferLoad, 1, 0) |
+			moveBits(disableZStencilBufferLoad, 1, 1) |
+			moveBits(1, 1, 2) | //disable vg mask
+			moveBits(address.offset, 28, 4);
+	cls->nextFreeByte += 4;
+
 }
 
 void clInsertIndexedPrimitiveList(ControlList* cl,
@@ -307,7 +387,7 @@ void clInsertRHTXBoundary(ControlList* cl,
 	assert(cl);
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_RHT_X_BOUNDARY_opcode; cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte = moveBits(boundary, 16, 0); cl->nextFreeByte += 2;
+	*(uint16_t*)cl->nextFreeByte = moveBits(boundary, 16, 0); cl->nextFreeByte += 2;
 }
 
 void clInsertDepthOffset(ControlList* cl,
@@ -410,7 +490,8 @@ void clInsertTileBinningModeConfiguration(ControlList* cl,
 			moveBits(doubleBufferInNonMsMode, 1, 7); cl->nextFreeByte++;
 }
 
-void clInsertTileRenderingModeConfiguration(ControlList* cl,
+void clInsertTileRenderingModeConfiguration(ControlList* cls,
+						ControlListAddress address,
 						uint32_t doubleBufferInNonMsMode, //0/1
 						uint32_t earlyZEarlyCovDisable, //0/1
 						uint32_t earlyZUpdateDirection, //0/1 lt,le/gt,ge
@@ -418,15 +499,29 @@ void clInsertTileRenderingModeConfiguration(ControlList* cl,
 						uint32_t memoryFormat, //0/1/2 linear/t/lt
 						uint32_t decimateMode, //0/1/2 0x/4x/16x
 						uint32_t nonHDRFrameFormatColorFormat, //0/1/2 bgr565dithered/rgba8/bgr565nodither
+						uint32_t tileBufferHDRMode, //0/1
 						uint32_t multisampleMode4x, //0/1
 						uint32_t widthPixels,
-						uint32_t heightPixels,
-						ControlListAddress memoryAddress)
+						uint32_t heightPixels)
 {
-	assert(cl);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_TILE_RENDERING_MODE_CONFIGURATION_opcode; cl->nextFreeByte++;
-	//TODO
+	assert(cls);
+	assert(cls->nextFreeByte);
+	*cls->nextFreeByte = V3D21_TILE_RENDERING_MODE_CONFIGURATION_opcode; cls->nextFreeByte++;
+	//TODO is this correct?
+	clEmitShaderRelocation(cls, &address);
+	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
+	*(uint32_t*)cls->nextFreeByte = moveBits(widthPixels, 16, 0) | moveBits(heightPixels, 16, 16); cls->nextFreeByte += 4;
+	*(uint16_t*)cls->nextFreeByte =
+			moveBits(multisampleMode4x, 1, 0) |
+			moveBits(tileBufferHDRMode, 1, 1) |
+			moveBits(nonHDRFrameFormatColorFormat, 2, 2) |
+			moveBits(decimateMode, 2, 4) |
+			moveBits(memoryFormat, 2, 6) |
+			moveBits(0, 1, 8) | //vg buffer enable
+			moveBits(selectCoverageMode, 1, 9) |
+			moveBits(earlyZUpdateDirection, 1, 10) |
+			moveBits(earlyZEarlyCovDisable, 1, 11) |
+			moveBits(doubleBufferInNonMsMode, 1, 12); cls->nextFreeByte += 2;
 }
 
 void clInsertTileCoordinates(ControlList* cl,
@@ -436,7 +531,7 @@ void clInsertTileCoordinates(ControlList* cl,
 	assert(cl);
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_TILE_COORDINATES_opcode; cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte = moveBits(tileColumnNumber, 8, 0) | moveBits(tileRowNumber, 8, 8); cl->nextFreeByte += 2;
+	*(uint16_t*)cl->nextFreeByte = moveBits(tileColumnNumber, 8, 0) | moveBits(tileRowNumber, 8, 8); cl->nextFreeByte += 2;
 }
 
 void clInsertGEMRelocations(ControlList* cl,
@@ -450,40 +545,98 @@ void clInsertGEMRelocations(ControlList* cl,
 	*(uint32_t*)cl->nextFreeByte = buffer1; cl->nextFreeByte += 4;
 }
 
-void clInsertShaderRecord(ControlList* cl,
+//input: 2 cls (cl, handles cl)
+void clInsertShaderRecord(ControlList* cls,
 						  uint32_t fragmentShaderIsSingleThreaded, //0/1
 						  uint32_t pointSizeIncludedInShadedVertexData, //0/1
 						  uint32_t enableClipping, //0/1
 						  uint32_t fragmentNumberOfUnusedUniforms,
 						  uint32_t fragmentNumberOfVaryings,
-						  ControlListAddress fragmentCodeAddress,
 						  uint32_t fragmentUniformsAddress,
+						  ControlListAddress fragmentCodeAddress,
 						  uint32_t vertexNumberOfUnusedUniforms,
 						  uint32_t vertexAttributeArraySelectBits,
 						  uint32_t vertexTotalAttributesSize,
-						  ControlListAddress vertexCodeAddress,
-						  uint32_t vertexUniformsAddress)
+						  uint32_t vertexUniformsAddress,
+						  ControlListAddress vertexCodeAddress)
 {
-	assert(cl);
-	assert(cl->nextFreeByte);
-	//TODO
+	assert(cls);
+	assert(cls->nextFreeByte);
+	//TODO is this correct?
+	*cls->nextFreeByte =
+			moveBits(fragmentShaderIsSingleThreaded, 1, 0) |
+			moveBits(pointSizeIncludedInShadedVertexData, 1, 1) |
+			moveBits(enableClipping, 1, 2); cls->nextFreeByte++;
+	*cls->nextFreeByte = 0; cls->nextFreeByte++;
+	*(uint16_t*)cls->nextFreeByte = moveBits(fragmentNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte += 2;
+	*cls->nextFreeByte = fragmentNumberOfVaryings; cls->nextFreeByte++;
+	clEmitShaderRelocation(cls, &fragmentCodeAddress);
+	*(uint32_t*)cls->nextFreeByte = fragmentCodeAddress.offset; cls->nextFreeByte += 4;
+	*(uint32_t*)cls->nextFreeByte = fragmentUniformsAddress; cls->nextFreeByte += 4;
+
+	*(uint16_t*)cls->nextFreeByte = moveBits(vertexNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte += 2;
+	*cls->nextFreeByte = vertexAttributeArraySelectBits; cls->nextFreeByte++;
+	*cls->nextFreeByte = vertexTotalAttributesSize; cls->nextFreeByte++;
+	clEmitShaderRelocation(cls, &vertexCodeAddress);
+	*(uint32_t*)cls->nextFreeByte = moveBits(vertexCodeAddress.offset, 32, 0) | moveBits(vertexUniformsAddress, 32, 0); cls->nextFreeByte += 4; //???
+	cls->nextFreeByte += 4;
+	//skip coordinate shader stuff
+	cls->nextFreeByte += 16;
 }
 
-void clInsertAttributeRecord(ControlList* cl,
+//input: 2 cls (cl, handles cl)
+void clInsertAttributeRecord(ControlList* cls,
 						  ControlListAddress address,
 						  uint32_t sizeBytes,
 						  uint32_t stride,
 						  uint32_t vertexVPMOffset)
 {
-	assert(cl);
-	assert(cl->nextFreeByte);
+	assert(cls);
+	assert(cls->nextFreeByte);
 	uint32_t sizeBytesMinusOne = sizeBytes - 1;
-	//TODO
+	//TODO is this correct?
+	clEmitShaderRelocation(cls, &address);
+	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
+	*cls->nextFreeByte = sizeBytesMinusOne; cls->nextFreeByte++;
+	*cls->nextFreeByte = stride; cls->nextFreeByte++;
+	*cls->nextFreeByte = vertexVPMOffset; cls->nextFreeByte++;
+	cls->nextFreeByte++; //skip coordinate shader stuff
 }
 
-static inline void clEmitShaderRelocation(struct ControlList* cl, const ControlListAddress* address)
+//input: 2 cls (cl + handles cl)
+static inline void clEmitShaderRelocation(struct ControlList* cls, const ControlListAddress* address)
 {
-	//TODO
+	assert(cls);
+	assert(address);
+	assert(address->handle);
+
+	//search for handle in handles cl
+	//if found insert handle index
+
+	ControlList* cl = cls;
+	ControlList* handlesCl = cls + 1;
+
+	uint32_t c = 0;
+
+	uint32_t numHandles = (handlesCl->nextFreeByte - handlesCl->buffer) / 4;
+
+	for(; c < numHandles; ++c)
+	{
+		if(((uint32_t*)handlesCl->buffer)[c] == address->handle)
+		{
+			//found
+			*(uint32_t*)cl->nextFreeByte = c; //store offset within handles in cl
+			cl->nextFreeByte += 4;
+			return;
+		}
+	}
+
+	//else write handle to handles cl
+	*(uint32_t*)handlesCl->nextFreeByte = address->handle;
+	handlesCl->nextFreeByte += 4;
+
+	*(uint32_t*)cl->nextFreeByte = c; //store offset within handles in cl
+	cl->nextFreeByte += 4;
 }
 
 #if defined (__cplusplus)
