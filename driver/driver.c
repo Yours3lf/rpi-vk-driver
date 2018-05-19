@@ -10,6 +10,7 @@
 
 #include "modeset.h"
 #include "kernelInterface.h"
+#include "ControlListUtil.h"
 
 #include "AlignedAllocator.h"
 #include "PoolAllocator.h"

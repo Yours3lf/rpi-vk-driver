@@ -12,7 +12,13 @@ typedef struct ControlListAddress
 	uint32_t offset; //offset within buffer object
 } ControlListAddress;
 
-static inline void clEmitShaderRelocation(struct ControlList* cl, const ControlListAddress* address);
+typedef struct ControlList
+{
+	uint8_t buffer[4092]; //TODO size?
+	uint8_t* nextFreeByte; //pointer to the next available free byte
+} ControlList;
+
+static inline void clEmitShaderRelocation(ControlList* cl, const ControlListAddress* address);
 
 #define __gen_user_data struct ControlList
 #define __gen_address_type ControlListAddress
@@ -20,12 +26,6 @@ static inline void clEmitShaderRelocation(struct ControlList* cl, const ControlL
 #define __gen_emit_reloc clEmitShaderRelocation
 
 #include <broadcom/v3d_packet_v21_pack.h>
-
-typedef struct ControlList
-{
-	uint8_t buffer[4092]; //TODO size?
-	uint8_t* nextFreeByte; //pointer to the next available free byte
-} ControlList;
 
 //move bits to offset, mask rest to 0
 uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset)
@@ -36,8 +36,7 @@ uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset)
 void clInit(ControlList* cl)
 {
 	assert(cl);
-	cl->nextFreeByte = &buffer[0];
-	cl->nextFreeHandle = &handlesBuffer[0];
+	cl->nextFreeByte = &cl->buffer[0];
 }
 
 void clInsertHalt(ControlList* cl)
@@ -338,7 +337,7 @@ void clInsertConfigurationBits(ControlList* cl,
 	assert(cl);
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_CONFIGURATION_BITS_opcode; cl->nextFreeByte++;
-	*(uint32_t)cl->nextFreeByte =
+	*(uint32_t*)cl->nextFreeByte =
 			moveBits(enableForwardFacingPrimitive, 1, 0) |
 			moveBits(enableReverseFacingPrimitive, 1, 1) |
 			moveBits(clockwisePrimitives, 1, 2) |
@@ -415,7 +414,7 @@ void clInsertClipWindow(ControlList* cl,
 
 void clInsertViewPortOffset(ControlList* cl,
 						uint32_t x, //sint16
-						uint32_t y, //sint16
+						uint32_t y //sint16
 						)
 {
 	assert(cl);
@@ -426,7 +425,7 @@ void clInsertViewPortOffset(ControlList* cl,
 
 void clInsertZMinMaxClippingPlanes(ControlList* cl,
 						float minZw,
-						float maxZw,
+						float maxZw
 						)
 {
 	assert(cl);
@@ -438,7 +437,7 @@ void clInsertZMinMaxClippingPlanes(ControlList* cl,
 
 void clInsertClipperXYScaling(ControlList* cl,
 						float width, //half height in 1/16 of pixel
-						float height, //half width in 1/16 of pixel
+						float height //half width in 1/16 of pixel
 						)
 {
 	assert(cl);
@@ -450,7 +449,7 @@ void clInsertClipperXYScaling(ControlList* cl,
 
 void clInsertClipperZScaleOffset(ControlList* cl,
 						float zOffset, //zc to zs
-						float zScale, //zc to zs
+						float zScale //zc to zs
 						)
 {
 	assert(cl);
@@ -604,7 +603,7 @@ void clInsertAttributeRecord(ControlList* cls,
 }
 
 //input: 2 cls (cl + handles cl)
-static inline void clEmitShaderRelocation(struct ControlList* cls, const ControlListAddress* address)
+static inline void clEmitShaderRelocation(ControlList* cls, const ControlListAddress* address)
 {
 	assert(cls);
 	assert(address);
