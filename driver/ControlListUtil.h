@@ -12,9 +12,12 @@ typedef struct ControlListAddress
 	uint32_t offset; //offset within buffer object
 } ControlListAddress;
 
+#define CONTROL_LIST_SIZE 4096
+
 typedef struct ControlList
 {
-	uint8_t buffer[4092]; //TODO size?
+	uint8_t* buffer; //TODO size?
+	uint32_t numBlocks;
 	uint8_t* nextFreeByte; //pointer to the next available free byte
 } ControlList;
 
@@ -33,15 +36,38 @@ uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset)
 	return (d << offset) & (~(~0 << bits) << offset);
 }
 
+uint32_t clSize(ControlList* cl)
+{
+	assert(cl);
+	assert(cl->buffer);
+	assert(cl->nextFreeByte);
+	return cl->nextFreeByte - cl->buffer;
+}
+
+void clAllocateSpace(ControlList* cl, uint32_t size)
+{
+	uint32_t currSize = clSize(cl);
+	if(currSize + size < CONTROL_LIST_SIZE - 5)
+	{
+		return; //fits!
+	}
+	else
+	{
+
+	}
+}
+
 void clInit(ControlList* cl)
 {
 	assert(cl);
+	assert(cl->buffer);
 	cl->nextFreeByte = &cl->buffer[0];
 }
 
 void clInsertHalt(ControlList* cl)
 {
 	assert(cl);
+	assert(cl->buffer);
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_HALT_opcode;
 	cl->nextFreeByte++;
@@ -50,6 +76,7 @@ void clInsertHalt(ControlList* cl)
 void clInsertNop(ControlList* cl)
 {
 	assert(cl);
+	assert(cl->buffer);
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_NOP_opcode;
 	cl->nextFreeByte++;

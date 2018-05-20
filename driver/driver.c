@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <pthread.h>
+#include <semaphore.h>
 
 #include <vulkan/vulkan.h>
 #include "vkExt.h"
@@ -14,6 +16,7 @@
 
 #include "AlignedAllocator.h"
 #include "PoolAllocator.h"
+#include "ConsecutivePoolAllocator.h"
 #include "LinearAllocator.h"
 
 #ifndef min
@@ -222,8 +225,11 @@ typedef struct VkCommandBuffer_T
 	//Recorded commands include commands to bind pipelines and descriptor sets to the command buffer, commands to modify dynamic state, commands to draw (for graphics rendering),
 	//commands to dispatch (for compute), commands to execute secondary command buffers (for primary command buffers only), commands to copy buffers and images, and other commands
 
-	struct drm_vc4_submit_cl cls[100]; //each cl is a draw call
-	unsigned numClsUsed;
+	ControlList binCl;
+	ControlList shaderRecCl;
+	uint32_t shaderRecCount;
+	ControlList uniformsCl;
+	ControlList handlesCl;
 	commandBufferState state;
 	VkCommandBufferUsageFlags usageFlags;
 } _commandBuffer;
@@ -314,6 +320,12 @@ typedef struct VkInstance_T
 	int enabledExtensions[numInstanceExtensions];
 	int numEnabledExtensions;
 	_physicalDevice dev;
+	int chipVersion;
+	int hasTiling;
+	int hasControlFlow;
+	int hasEtc1;
+	int hasThreadedFs;
+	int hasMadvise;
 } _instance;
 
 typedef struct VkDevice_T
@@ -447,13 +459,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 
 	int ret = openIoctl(); assert(!ret);
 
-	int chip_info = vc4_get_chip_info(renderFd);
-	int has_tiling = vc4_test_tiling(renderFd);
+	(*pInstance)->chipVersion = vc4_get_chip_info(renderFd);
+	(*pInstance)->hasTiling = vc4_test_tiling(renderFd);
 
-	int has_control_flow = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_BRANCHES);
-	int has_etc1 = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_ETC1);
-	int has_threaded_fs = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_THREADED_FS);
-	int has_madvise = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_MADVISE);
+	(*pInstance)->hasControlFlow = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_BRANCHES);
+	(*pInstance)->hasEtc1 = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_ETC1);
+	(*pInstance)->hasThreadedFs = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_THREADED_FS);
+	(*pInstance)->hasMadvise = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_MADVISE);
 
 	return VK_SUCCESS;
 }
@@ -752,6 +764,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 		for(int c = 0; c < pCreateInfo->queueCreateInfoCount; ++c)
 		{
 			(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex] = malloc(sizeof(_queue)*pCreateInfo->pQueueCreateInfos[c].queueCount);
+
+			if(!(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex])
+			{
+				return VK_ERROR_OUT_OF_HOST_MEMORY;
+			}
+
 			(*pDevice)->numQueues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex] = pCreateInfo->pQueueCreateInfos[c].queueCount;
 		}
 	}
@@ -805,7 +823,14 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSemaphore(
 	assert(pAllocator == 0);
 
 	//we'll probably just use an IOCTL to wait for a GPU sequence number to complete.
-	*pSemaphore = -1;
+	sem_t* s = malloc(sizeof(sem_t));
+	if(!s)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+	sem_init(s, 0, 0);
+
+	*pSemaphore = (VkSemaphore)s;
 
 	return VK_SUCCESS;
 }
@@ -1038,6 +1063,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
 
 	_commandPool* cp = malloc(sizeof(_commandPool));
 
+	if(!cp)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
 	//initial number of command buffers to hold
 	int numCommandBufs = 100;
 
@@ -1045,12 +1075,22 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
 	{
 		//use pool allocator
 		cp->usePoolAllocator = 1;
-		cp->pa = createPoolAllocator(malloc(numCommandBufs * sizeof(_commandBuffer)), sizeof(_commandBuffer), numCommandBufs * sizeof(_commandBuffer));
+		void* cpmem = malloc(numCommandBufs * sizeof(_commandBuffer));
+		if(!cpmem)
+		{
+			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
+		cp->pa = createPoolAllocator(cpmem, sizeof(_commandBuffer), numCommandBufs * sizeof(_commandBuffer));
 	}
 	else
 	{
 		cp->usePoolAllocator = 0;
-		cp->la = createLinearAllocator(malloc(numCommandBufs * sizeof(_commandBuffer)), numCommandBufs * sizeof(_commandBuffer));
+		void* cpmem = malloc(numCommandBufs * sizeof(_commandBuffer));
+		if(!cpmem)
+		{
+			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
+		cp->la = createLinearAllocator(cpmem, numCommandBufs * sizeof(_commandBuffer));
 	}
 
 	*pCommandPool = (VkCommandPool)cp;
@@ -1080,8 +1120,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 	{
 		for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
 		{
-			pCommandBuffers[c] = poolAllocte(&cp->pa);
-			pCommandBuffers[c]->numClsUsed = 0;
+			pCommandBuffers[c] = poolAllocate(&cp->pa);
+			pCommandBuffers[c]->shaderRecCount = 0;
 			pCommandBuffers[c]->usageFlags = 0;
 			pCommandBuffers[c]->state = CMDBUF_STATE_INITIAL;
 
@@ -1097,7 +1137,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 		for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
 		{
 			pCommandBuffers[c] = linearAllocte(&cp->la, sizeof(_commandBuffer));
-			pCommandBuffers[c]->numClsUsed = 0;
+			pCommandBuffers[c]->shaderRecCount = 0;
 			pCommandBuffers[c]->usageFlags = 0;
 			pCommandBuffers[c]->state = CMDBUF_STATE_INITIAL;
 
@@ -1154,8 +1194,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
 	//When a command buffer begins recording, all state in that command buffer is undefined
 
 	commandBuffer->usageFlags = pBeginInfo->flags;
-	commandBuffer->numClsUsed = 0;
+	commandBuffer->shaderRecCount = 0;
 	commandBuffer->state = CMDBUF_STATE_RECORDING;
+	clInit(&commandBuffer->binCl);
+	clInit(&commandBuffer->handlesCl);
+	clInit(&commandBuffer->shaderRecCl);
+	clInit(&commandBuffer->uniformsCl);
 
 	return VK_SUCCESS;
 }
@@ -1229,6 +1273,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEndCommandBuffer(
 {
 	assert(commandBuffer);
 
+	//TODO add increment semaphore and flush
+
 	commandBuffer->state = CMDBUF_STATE_EXECUTABLE;
 
 	return VK_SUCCESS;
@@ -1248,7 +1294,23 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(
 	assert(device);
 	assert(swapchain);
 
-	//TODO
+	assert(semaphore != VK_NULL_HANDLE || fence != VK_NULL_HANDLE);
+
+	//TODO is this necessary?
+	sem_wait((sem_t*)semaphore);
+
+	//TODO we need to keep track of currently acquired images?
+
+	//TODO wait timeout?
+	VkSurfaceKHR surf = (VkSurfaceKHR)swapchain;
+
+	*pImageIndex = ((modeset_dev*)surf)->front_buf ^ 1; //return back buffer index
+
+	//signal semaphore
+	int semVal; sem_getvalue((sem_t*)semaphore, &semVal); assert(semVal <= 0); //make sure semaphore is unsignalled
+	sem_post((sem_t*)semaphore);
+
+	//TODO signal fence
 
 	return VK_SUCCESS;
 }
@@ -1279,9 +1341,71 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 {
 	assert(queue);
 
+	for(int c = 0; c < pSubmits->waitSemaphoreCount; ++c)
+	{
+		sem_wait((sem_t*)pSubmits->pWaitSemaphores[c]);
+	}
+
+	//TODO: deal with pSubmits->pWaitDstStageMask
+
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
 	{
-		pSubmits->pCommandBuffers[c]->state = CMDBUF_STATE_PENDING;
+		if(pSubmits->pCommandBuffers[c]->state == CMDBUF_STATE_EXECUTABLE)
+		{
+			pSubmits->pCommandBuffers[c]->state = CMDBUF_STATE_PENDING;
+		}
+	}
+
+	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
+	{
+		struct drm_vc4_submit_cl submitCl =
+		{
+			.color_read.hindex = ~0,
+			.zs_read.hindex = ~0,
+			.color_write.hindex = ~0,
+			.msaa_color_write.hindex = ~0,
+			.zs_write.hindex = ~0,
+			.msaa_zs_write.hindex = ~0,
+		};
+
+		//TODO set rcl flags
+
+		submitCl.bo_handles = pSubmits->pCommandBuffers[c]->handlesCl.buffer;
+		submitCl.bo_handle_count = clSize(&pSubmits->pCommandBuffers[c]->handlesCl) / 4;
+		submitCl.bin_cl = pSubmits->pCommandBuffers[c]->binCl.buffer;
+		submitCl.bin_cl_size = clSize(&pSubmits->pCommandBuffers[c]->binCl);
+		submitCl.shader_rec = pSubmits->pCommandBuffers[c]->shaderRecCl.buffer;
+		submitCl.shader_rec_size = clSize(&pSubmits->pCommandBuffers[c]->shaderRecCl);
+		submitCl.shader_rec_count = pSubmits->pCommandBuffers[c]->shaderRecCount;
+		submitCl.uniforms = pSubmits->pCommandBuffers[c]->uniformsCl.buffer;
+		submitCl.uniforms_size = clSize(&pSubmits->pCommandBuffers[c]->uniformsCl);
+
+		//TODO set draw flags
+
+		//submit ioctl
+		uint64_t lastEmitSequno; //TODO
+		uint64_t lastFinishedSequno;
+		vc4_cl_submit(renderFd, &submitCl, &lastEmitSequno, &lastFinishedSequno);
+	}
+
+	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
+	{
+		if(pSubmits->pCommandBuffers[c]->state == CMDBUF_STATE_PENDING)
+		{
+			if(pSubmits->pCommandBuffers[c]->usageFlags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)
+			{
+				pSubmits->pCommandBuffers[c]->state = CMDBUF_STATE_INVALID;
+			}
+			else
+			{
+				pSubmits->pCommandBuffers[c]->state = CMDBUF_STATE_EXECUTABLE;
+			}
+		}
+	}
+
+	for(int c = 0; c < pSubmits->signalSemaphoreCount; ++c)
+	{
+		sem_post((sem_t*)pSubmits->pSignalSemaphores[c]);
 	}
 
 	return VK_SUCCESS;
@@ -1307,9 +1431,14 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(
 	assert(queue);
 	assert(pPresentInfo);
 
+	//wait for semaphore in present info set by submit ioctl to make sure cls are flushed
+	for(int c = 0; c < pPresentInfo->waitSemaphoreCount; ++c)
+	{
+		sem_wait((sem_t*)pPresentInfo->pWaitSemaphores[c]);
+	}
+
 	for(int c = 0; c < pPresentInfo->swapchainCount; ++c)
 	{
-		//TODO
 		modeset_swapbuffer(controlFd, (modeset_dev*)pPresentInfo->pSwapchains[c], pPresentInfo->pImageIndices[c]);
 	}
 
@@ -1407,7 +1536,8 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	//TODO
+	sem_wait((sem_t*)semaphore); //must be externally synced
+	sem_destroy((sem_t*)semaphore);
 }
 
 /*
