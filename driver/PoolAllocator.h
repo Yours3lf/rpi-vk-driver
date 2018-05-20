@@ -11,7 +11,7 @@ extern "C" {
 typedef struct PoolAllocator
 {
 	char* buf; //preallocated buffer
-	char* nextFreeBlock;
+	uint32_t* nextFreeBlock;
 	unsigned blockSize;
 	unsigned size; //size is exact multiple of block size
 } PoolAllocator;
@@ -32,14 +32,14 @@ PoolAllocator createPoolAllocator(char* b, unsigned bs, unsigned s)
 	};
 
 	//initialize linked list of free pointers
-	char* ptr = pa.nextFreeBlock;
+	uint32_t* ptr = pa.nextFreeBlock;
 	for(unsigned c = 0; c < s/bs - 1; ++c)
 	{
-		*(uint32_t*)ptr = ptr + bs;
+		*ptr = ptr + bs;
 		ptr += bs;
 	}
 
-	*(uint32_t*)ptr = 0; //last element
+	*ptr = 0; //last element
 
 	return pa;
 }
@@ -53,7 +53,7 @@ void destroyPoolAllocator(PoolAllocator* pa)
 	pa->size = 0;
 }
 
-void* poolAllocte(PoolAllocator* pa)
+void* poolAllocate(PoolAllocator* pa)
 {
 	assert(pa->buf);
 
@@ -66,7 +66,7 @@ void* poolAllocte(PoolAllocator* pa)
 	void* ret = pa->nextFreeBlock;
 
 	//set next free block to the one the current next points to
-	pa->nextFreeBlock = *(uint32_t*)pa->nextFreeBlock;
+	pa->nextFreeBlock = *pa->nextFreeBlock;
 
 	return ret;
 }
