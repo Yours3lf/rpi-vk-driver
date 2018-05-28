@@ -95,32 +95,6 @@ typedef struct VkDevice_T
 	int numQueues[numQueueFamilies];
 } _device;
 
-int findInstanceExtension(char* name)
-{
-	for(int c = 0; c < numInstanceExtensions; ++c)
-	{
-		if(strcmp(instanceExtensions[c].extensionName, name) == 0)
-		{
-			return c;
-		}
-	}
-
-	return -1;
-}
-
-int findDeviceExtension(char* name)
-{
-	for(int c = 0; c < numDeviceExtensions; ++c)
-	{
-		if(strcmp(deviceExtensions[c].extensionName, name) == 0)
-		{
-			return c;
-		}
-	}
-
-	return -1;
-}
-
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateInstanceExtensionProperties
  * When pLayerName parameter is NULL, only extensions provided by the Vulkan implementation or by implicitly enabled layers are returned. When pLayerName is the name of a layer,

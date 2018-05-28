@@ -246,3 +246,29 @@ static VkExtensionProperties deviceExtensions[] =
 	}
 };
 #define numDeviceExtensions (sizeof(deviceExtensions) / sizeof(VkExtensionProperties))
+
+int findInstanceExtension(char* name)
+{
+	for(int c = 0; c < numInstanceExtensions; ++c)
+	{
+		if(strcmp(instanceExtensions[c].extensionName, name) == 0)
+		{
+			return c;
+		}
+	}
+
+	return -1;
+}
+
+int findDeviceExtension(char* name)
+{
+	for(int c = 0; c < numDeviceExtensions; ++c)
+	{
+		if(strcmp(deviceExtensions[c].extensionName, name) == 0)
+		{
+			return c;
+		}
+	}
+
+	return -1;
+}
