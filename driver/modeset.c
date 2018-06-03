@@ -51,8 +51,6 @@
 
 static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 							 struct modeset_dev *dev);
-static int modeset_create_fb(int fd, struct modeset_buf *buf);
-static void modeset_destroy_fb(int fd, struct modeset_buf *buf);
 static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 							 struct modeset_dev *dev);
 
@@ -138,19 +136,25 @@ modeset_dev* modeset_create(int fd)
 	// free resources again
 	drmModeFreeResources(res);
 
+	return ret_dev;
+}
+
+int modeset_fb_for_dev(int fd, modeset_dev* dev, _image* buffer)
+{
+	int ret;
+
 	struct modeset_dev *iter;
-	struct modeset_buf *buf;
-	for (iter = ret_dev; iter; iter = iter->next) {
+	//struct modeset_buf *buf;
+	for (iter = dev; iter; iter = iter->next) {
 		iter->saved_crtc = drmModeGetCrtc(fd, iter->crtc);
-		buf = &iter->bufs[iter->front_buf];
-		ret = drmModeSetCrtc(fd, iter->crtc, buf->fb, 0, 0,
+		ret = drmModeSetCrtc(fd, iter->crtc, buffer->fb, 0, 0,
 							 &iter->conn, 1, &iter->mode);
 		if (ret)
 			printf("cannot set CRTC for connector %u (%d): %m\n",
 				   iter->conn, errno);
 	}
 
-	return ret_dev;
+	return 0;
 }
 
 /*
@@ -182,12 +186,10 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 
 	// copy the mode information into our device structure and into both buffers
 	memcpy(&dev->mode, &conn->modes[0], sizeof(dev->mode));
-	dev->bufs[0].width = conn->modes[0].hdisplay;
-	dev->bufs[0].height = conn->modes[0].vdisplay;
-	dev->bufs[1].width = conn->modes[0].hdisplay;
-	dev->bufs[1].height = conn->modes[0].vdisplay;
+	dev->width = conn->modes[0].hdisplay;
+	dev->height = conn->modes[0].vdisplay;
 	printf("mode for connector %u is %ux%u\n",
-		   conn->connector_id, dev->bufs[0].width, dev->bufs[0].height);
+		   conn->connector_id, dev->width, dev->height);
 
 	// find a crtc for this connector
 	ret = modeset_find_crtc(fd, res, conn, dev);
@@ -196,6 +198,14 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 			   conn->connector_id);
 		return ret;
 	}
+
+	return 0;
+}
+
+
+/*static int modeset_create_swapchain(int fd, drmModeConnector *conn, struct modeset_dev *dev)
+{
+	int ret;
 
 	// create framebuffer #1 for this CRTC
 	ret = modeset_create_fb(fd, &dev->bufs[0]);
@@ -215,7 +225,7 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 	}
 
 	return 0;
-}
+}*/
 
 /*
  * modeset_find_crtc() stays the same.
@@ -305,7 +315,7 @@ static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
  * modeset_setup_dev() so we can use them here.
  */
 
-static int modeset_create_fb(int fd, struct modeset_buf *buf)
+int modeset_create_fb(int fd, _image *buf)
 {
 	struct drm_mode_create_dumb creq;
 	struct drm_mode_destroy_dumb dreq;
@@ -341,6 +351,7 @@ static int modeset_create_fb(int fd, struct modeset_buf *buf)
 		return ret;
 	}
 
+	/**
 	// prepare buffer for memory mapping
 	memset(&mreq, 0, sizeof(mreq));
 	mreq.handle = buf->handle;
@@ -374,6 +385,7 @@ static int modeset_create_fb(int fd, struct modeset_buf *buf)
 
 	// clear the framebuffer to 0
 	memset(buf->map, 0, buf->size);
+	/**/
 
 	return 0;
 }
@@ -385,12 +397,12 @@ static int modeset_create_fb(int fd, struct modeset_buf *buf)
  * We simply unmap the buffer, remove the drm-FB and destroy the memory buffer.
  */
 
-static void modeset_destroy_fb(int fd, struct modeset_buf *buf)
+void modeset_destroy_fb(int fd, _image* buf)
 {
 	struct drm_mode_destroy_dumb dreq;
 
 	// unmap buffer
-	munmap(buf->map, buf->size);
+	//munmap(buf->map, buf->size);
 
 	// delete framebuffer
 	drmModeRmFB(fd, buf->fb);
@@ -435,24 +447,25 @@ static void modeset_destroy_fb(int fd, struct modeset_buf *buf)
  * vertical-sync.
  */
 
-void modeset_swapbuffer(int fd, modeset_dev* dev, unsigned index)
+void modeset_present_buffer(int fd, modeset_dev* dev, _image* buffer)
 {
 	//TODO use index!!
 
 	struct modeset_dev *iter;
-	struct modeset_buf *buf;
+	//struct modeset_buf *buf;
 	int ret;
 
-	for (iter = dev; iter; iter = iter->next) {
-		buf = &iter->bufs[iter->front_buf ^ 1];
+	for (iter = dev; iter; iter = iter->next)
+	{
+		//buf = &iter->bufs[iter->front_buf ^ 1];
 
-		ret = drmModeSetCrtc(fd, iter->crtc, buf->fb, 0, 0,
+		ret = drmModeSetCrtc(fd, iter->crtc, buffer->fb, 0, 0,
 							 &iter->conn, 1, &iter->mode);
 		if (ret)
 			printf("cannot flip CRTC for connector %u (%d): %m\n",
 				   iter->conn, errno);
-		else
-			iter->front_buf ^= 1;
+		//else
+		//	iter->front_buf ^= 1;
 	}
 }
 
@@ -482,8 +495,8 @@ void modeset_destroy(int fd, modeset_dev* dev)
 		drmModeFreeCrtc(iter->saved_crtc);
 
 		// destroy framebuffers
-		modeset_destroy_fb(fd, &iter->bufs[1]);
-		modeset_destroy_fb(fd, &iter->bufs[0]);
+		//modeset_destroy_fb(fd, &iter->bufs[1]);
+		//modeset_destroy_fb(fd, &iter->bufs[0]);
 
 		// free allocated memory
 		free(iter);

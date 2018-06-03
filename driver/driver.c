@@ -95,6 +95,14 @@ typedef struct VkDevice_T
 	int numQueues[numQueueFamilies];
 } _device;
 
+typedef struct VkSwapchain_T
+{
+	_image* images;
+	uint32_t numImages;
+	uint32_t backbufferIdx;
+	VkSurfaceKHR surface;
+} _swapchain;
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateInstanceExtensionProperties
  * When pLayerName parameter is NULL, only extensions provided by the Vulkan implementation or by implicitly enabled layers are returned. When pLayerName is the name of a layer,
@@ -587,12 +595,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
 
 	pSurfaceCapabilities->minImageCount = 1; //min 1
 	pSurfaceCapabilities->maxImageCount = 2; //TODO max 2 for double buffering for now...
-	pSurfaceCapabilities->currentExtent.width = ((modeset_dev*)surface)->bufs[0].width;
-	pSurfaceCapabilities->currentExtent.height = ((modeset_dev*)surface)->bufs[0].height;
-	pSurfaceCapabilities->minImageExtent.width = ((modeset_dev*)surface)->bufs[0].width; //TODO
-	pSurfaceCapabilities->minImageExtent.height = ((modeset_dev*)surface)->bufs[0].height; //TODO
-	pSurfaceCapabilities->maxImageExtent.width = ((modeset_dev*)surface)->bufs[0].width; //TODO
-	pSurfaceCapabilities->maxImageExtent.height = ((modeset_dev*)surface)->bufs[0].height; //TODO
+	pSurfaceCapabilities->currentExtent.width = ((modeset_dev*)surface)->width;
+	pSurfaceCapabilities->currentExtent.height = ((modeset_dev*)surface)->height;
+	pSurfaceCapabilities->minImageExtent.width = ((modeset_dev*)surface)->width; //TODO
+	pSurfaceCapabilities->minImageExtent.height = ((modeset_dev*)surface)->height; //TODO
+	pSurfaceCapabilities->maxImageExtent.width = ((modeset_dev*)surface)->width; //TODO
+	pSurfaceCapabilities->maxImageExtent.height = ((modeset_dev*)surface)->height; //TODO
 	pSurfaceCapabilities->maxImageArrayLayers = 1; //TODO maybe more layers for cursor etc.
 	pSurfaceCapabilities->supportedTransforms = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR; //TODO no rotation for now
 	pSurfaceCapabilities->currentTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR; //TODO get this from dev
@@ -711,7 +719,43 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	*pSwapchain = pCreateInfo->surface; //TODO
+	*pSwapchain = malloc(sizeof(_swapchain));
+	if(!*pSwapchain)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	_swapchain* s = *pSwapchain;
+
+	//TODO flags, layers, queue sharing, pretransform, composite alpha, present mode..., clipped, oldswapchain
+	//TODO external sync on surface, oldswapchain
+
+	s->images = malloc(sizeof(_image) * pCreateInfo->minImageCount);
+	if(!s->images)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	s->backbufferIdx = 0;
+	s->numImages = pCreateInfo->minImageCount;
+	s->surface = pCreateInfo->surface;
+
+	for(int c = 0; c < pCreateInfo->minImageCount; ++c)
+	{
+		//TODO image format, color space
+		//rest is filled out by create fb
+		s->images[c].width = pCreateInfo->imageExtent.width;
+		s->images[c].height = pCreateInfo->imageExtent.height;
+		s->images[c].depth = 1;
+		s->images[c].layers = 1;
+		s->images[c].miplevels = 1;
+		s->images[c].samples = 1; //TODO
+		s->images[c].usageBits = pCreateInfo->imageUsage;
+
+		int res = modeset_create_fb(controlFd, &s->images[c]); assert(res == 0);
+
+		res = modeset_fb_for_dev(controlFd, s->surface, &s->images[c]); assert(res == 0);
+	}
 
 	return VK_SUCCESS;
 }
@@ -735,26 +779,26 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainImagesKHR(
 	assert(swapchain);
 	assert(pSwapchainImageCount);
 
-	const int numImages = 2;
+	_swapchain* s = swapchain;
 
 	if(!pSwapchainImages)
 	{
-		*pSwapchainImageCount = numImages;
+		*pSwapchainImageCount = s->numImages;
 		return VK_SUCCESS;
 	}
 
 	int arraySize = *pSwapchainImageCount;
-	int elementsWritten = min(numImages, arraySize);
+	int elementsWritten = min(s->numImages, arraySize);
 
 	for(int c = 0; c < elementsWritten; ++c)
 	{
 		//TODO
-		pSwapchainImages[c] = c;
+		pSwapchainImages[c] = &s->images[c];
 	}
 
 	*pSwapchainImageCount = elementsWritten;
 
-	if(elementsWritten < numImages)
+	if(elementsWritten < s->numImages)
 	{
 		return VK_INCOMPLETE;
 	}
@@ -993,7 +1037,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 {
 	assert(commandBuffer);
 
-	//TODO
+	//TODO implement VkImage to be able to clear backbuffer
 }
 
 /*
@@ -1043,9 +1087,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(
 	//TODO we need to keep track of currently acquired images?
 
 	//TODO wait timeout?
-	VkSurfaceKHR surf = (VkSurfaceKHR)swapchain;
 
-	*pImageIndex = ((modeset_dev*)surf)->front_buf ^ 1; //return back buffer index
+	*pImageIndex = ((_swapchain*)swapchain)->backbufferIdx; //return back buffer index
 
 	//signal semaphore
 	int semVal; sem_getvalue((sem_t*)semaphore, &semVal); assert(semVal <= 0); //make sure semaphore is unsignalled
@@ -1180,7 +1223,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(
 
 	for(int c = 0; c < pPresentInfo->swapchainCount; ++c)
 	{
-		modeset_swapbuffer(controlFd, (modeset_dev*)pPresentInfo->pSwapchains[c], pPresentInfo->pImageIndices[c]);
+		_swapchain* s = pPresentInfo->pSwapchains[c];
+		modeset_present_buffer(controlFd, (modeset_dev*)s->surface, &s->images[s->backbufferIdx]);
+		s->backbufferIdx = (s->backbufferIdx + 1) % s->numImages;
 	}
 
 	return VK_SUCCESS;
@@ -1292,7 +1337,17 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	//TODO
+	//TODO flush all ops
+
+	_swapchain* s = swapchain;
+
+	for(int c = 0; c < s->numImages; ++c)
+	{
+		modeset_destroy_fb(controlFd, &s->images[c]);
+	}
+
+	free(s->images);
+	free(s);
 }
 
 /*
