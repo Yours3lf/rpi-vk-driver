@@ -30,6 +30,11 @@ static inline void clEmitShaderRelocation(ControlList* cl, const ControlListAddr
 
 #include <broadcom/v3d_packet_v21_pack.h>
 
+uint32_t divRoundUp(uint32_t n, uint32_t d)
+{
+	return (((n) + (d) - 1) / (d));
+}
+
 //move bits to offset, mask rest to 0
 uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset)
 {
@@ -535,7 +540,11 @@ void clInsertTileBinningModeConfiguration(ControlList* cl,
 	*(uint32_t*)cl->nextFreeByte = tileAllocationMemoryAddress; cl->nextFreeByte += 4;
 	*(uint32_t*)cl->nextFreeByte = tileAllocationMemorySize; cl->nextFreeByte += 4;
 	*(uint32_t*)cl->nextFreeByte = tileStateDataArrayAddress; cl->nextFreeByte += 4;
-	*(uint32_t*)cl->nextFreeByte = widthInPixels; cl->nextFreeByte += 4;
+	uint32_t tileSize = multisampleMode4x ? 32 : 64;
+	uint32_t widthInTiles = divRoundUp(widthInPixels, tileSize);
+	uint32_t heightInTiles = divRoundUp(heightInPixels, tileSize);
+	*(uint8_t*)cl->nextFreeByte = widthInTiles; cl->nextFreeByte++;
+	*(uint8_t*)cl->nextFreeByte = heightInTiles; cl->nextFreeByte++;
 	*cl->nextFreeByte =
 			moveBits(multisampleMode4x, 1, 0) |
 			moveBits(tileBuffer64BitColorDepth, 1, 1) |

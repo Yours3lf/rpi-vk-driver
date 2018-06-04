@@ -33,10 +33,11 @@ ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, un
 
 	//initialize linked list of free pointers
 	uint32_t* ptr = pa.nextFreeBlock;
-	for(unsigned c = 0; c < s/bs - 1; ++c)
+	unsigned last = s/bs - 1;
+	for(unsigned c = 0; c < last; ++c)
 	{
-		*ptr = ptr + bs;
-		ptr += bs;
+		*ptr = ptr + bs/4;
+		ptr += bs/4;
 	}
 
 	*ptr = 0; //last element

@@ -19,6 +19,8 @@
 #include "ConsecutivePoolAllocator.h"
 #include "LinearAllocator.h"
 
+#include "kernel/vc4_packet.h"
+
 #ifndef min
 #define min(a, b) (a < b ? a : b)
 #endif
@@ -44,6 +46,7 @@ typedef struct VkCommandPool_T
 {
 	PoolAllocator pa;
 	ConsecutivePoolAllocator cpa;
+	uint32_t queueFamilyIndex;
 } _commandPool;
 
 typedef enum commandBufferState
@@ -60,6 +63,8 @@ typedef struct VkCommandBuffer_T
 {
 	//Recorded commands include commands to bind pipelines and descriptor sets to the command buffer, commands to modify dynamic state, commands to draw (for graphics rendering),
 	//commands to dispatch (for compute), commands to execute secondary command buffers (for primary command buffers only), commands to copy buffers and images, and other commands
+
+	struct drm_vc4_submit_cl submitCl;
 
 	ControlList binCl;
 	ControlList shaderRecCl;
@@ -102,6 +107,16 @@ typedef struct VkSwapchain_T
 	uint32_t backbufferIdx;
 	VkSurfaceKHR surface;
 } _swapchain;
+
+void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize)
+{
+	if(!clHasEnoughSpace(cl, commandSize))
+	{
+		uint32_t currSize = clSize(cl);
+		cl->buffer = consecutivePoolReAllocate(&cb->cp->cpa, cl->buffer, cl->numBlocks); assert(cl->buffer);
+		cl->nextFreeByte = cl->buffer + currSize;
+	}
+}
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateInstanceExtensionProperties
@@ -567,7 +582,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSemaphore(
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
-	sem_init(s, 0, 0);
+	sem_init(s, 0, 0); //create semaphore unsignalled, shared between threads
 
 	*pSemaphore = (VkSemaphore)s;
 
@@ -753,9 +768,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 		s->images[c].usageBits = pCreateInfo->imageUsage;
 
 		int res = modeset_create_fb(controlFd, &s->images[c]); assert(res == 0);
-
-		res = modeset_fb_for_dev(controlFd, s->surface, &s->images[c]); assert(res == 0);
 	}
+
+	int res = modeset_fb_for_dev(controlFd, s->surface, &s->images[s->backbufferIdx]); assert(res == 0);
 
 	return VK_SUCCESS;
 }
@@ -842,6 +857,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
+
+	cp->queueFamilyIndex = pCreateInfo->queueFamilyIndex;
 
 	//initial number of command buffers to hold
 	int numCommandBufs = 100;
@@ -975,9 +992,21 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
 
 	//When a command buffer begins recording, all state in that command buffer is undefined
 
+	struct drm_vc4_submit_cl submitCl =
+	{
+		.color_read.hindex = ~0,
+		.zs_read.hindex = ~0,
+		.color_write.hindex = ~0,
+		.msaa_color_write.hindex = ~0,
+		.zs_write.hindex = ~0,
+		.msaa_zs_write.hindex = ~0,
+	};
+
 	commandBuffer->usageFlags = pBeginInfo->flags;
 	commandBuffer->shaderRecCount = 0;
 	commandBuffer->state = CMDBUF_STATE_RECORDING;
+	commandBuffer->submitCl = submitCl;
+
 
 	return VK_SUCCESS;
 }
@@ -1022,6 +1051,23 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
 	//TODO
 }
 
+uint32_t packVec4IntoRGBA8(const float rgba[4])
+{
+	uint8_t r, g, b, a;
+	r = rgba[0] * 255.0;
+	g = rgba[1] * 255.0;
+	b = rgba[2] * 255.0;
+	a = rgba[3] * 255.0;
+
+	uint32_t res = 0 |
+			(a << 0) |
+			(b << 8) |
+			(g << 16) |
+			(r << 24);
+
+	return res;
+}
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdClearColorImage
  * Color and depth/stencil images can be cleared outside a render pass instance using vkCmdClearColorImage or vkCmdClearDepthStencilImage, respectively.
@@ -1036,8 +1082,74 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 		const VkImageSubresourceRange*              pRanges)
 {
 	assert(commandBuffer);
+	assert(image);
+	assert(pColor);
 
-	//TODO implement VkImage to be able to clear backbuffer
+	//TODO in the end this should be a draw call, as this can only be used outside a render pass
+	//TODO ranges support
+
+	assert(imageLayout == VK_IMAGE_LAYOUT_GENERAL ||
+		   imageLayout == VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR ||
+		   imageLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	assert(commandBuffer->state	 == CMDBUF_STATE_RECORDING);
+	assert(_queueFamilyProperties[commandBuffer->cp->queueFamilyIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT || _queueFamilyProperties[commandBuffer->cp->queueFamilyIndex].queueFlags & VK_QUEUE_COMPUTE_BIT);
+
+	//TODO externally sync cmdbuf, cmdpool
+
+	_image* i = image;
+
+	assert(i->usageBits & VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
+	clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
+										 0, 0, 0, 0,
+										 0, //TODO 64bit color
+										 i->samples > 1, //msaa
+										 i->width, i->height, 0, 0, 0);
+
+	//START_TILE_BINNING resets the statechange counters in the hardware,
+	//which are what is used when a primitive is binned to a tile to
+	//figure out what new state packets need to be written to that tile's
+	//command list.
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
+	clInsertStartTileBinning(&commandBuffer->binCl);
+
+	//Reset the current compressed primitives format.  This gets modified
+	//by VC4_PACKET_GL_INDEXED_PRIMITIVE and
+	//VC4_PACKET_GL_ARRAY_PRIMITIVE, so it needs to be reset at the start
+	//of every tile.
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_PRIMITIVE_LIST_FORMAT_length);
+	clInsertPrimitiveListFormat(&commandBuffer->binCl,
+								1, //16 bit
+								2); //tris
+
+	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, i->handle);
+	commandBuffer->submitCl.color_write.hindex = idx;
+	commandBuffer->submitCl.color_write.offset = 0;
+	commandBuffer->submitCl.color_write.flags = 0;
+	//TODO format, tiling
+	commandBuffer->submitCl.color_write.bits =
+			VC4_SET_FIELD(VC4_RENDER_CONFIG_FORMAT_RGBA8888, VC4_RENDER_CONFIG_FORMAT) |
+			VC4_SET_FIELD(VC4_TILING_FORMAT_LINEAR, VC4_RENDER_CONFIG_MEMORY_FORMAT);
+
+	//TODO msaa?
+
+	commandBuffer->submitCl.clear_color[0] =
+			commandBuffer->submitCl.clear_color[1] = packVec4IntoRGBA8(pColor->float32);
+	//TODO ranges
+	commandBuffer->submitCl.min_x_tile = 0;
+	commandBuffer->submitCl.min_y_tile = 0;
+	commandBuffer->submitCl.max_x_tile = (i->width - 1) / (i->samples > 1 ? 32 : 64);
+	commandBuffer->submitCl.max_y_tile = (i->height - 1) / (i->samples > 1 ? 32 : 64);
+	commandBuffer->submitCl.width = i->width;
+	commandBuffer->submitCl.height = i->height;
+	commandBuffer->submitCl.flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+	commandBuffer->submitCl.clear_z = 0; //TODO
+	commandBuffer->submitCl.clear_s = 0;
+
+	//TODO I suppose this should be a submit itself?
 }
 
 /*
@@ -1056,8 +1168,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEndCommandBuffer(
 	//until the FLUSH completes.
 	//The FLUSH caps all of our bin lists with a
 	//VC4_PACKET_RETURN.
-	clHasEnoughSpace(&commandBuffer->binCl, V3D21_INCREMENT_SEMAPHORE_length);
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_INCREMENT_SEMAPHORE_length);
 	clInsertIncrementSemaphore(&commandBuffer->binCl);
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLUSH_length);
 	clInsertFlush(&commandBuffer->binCl);
 
 	commandBuffer->state = CMDBUF_STATE_EXECUTABLE;
@@ -1081,8 +1194,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(
 
 	assert(semaphore != VK_NULL_HANDLE || fence != VK_NULL_HANDLE);
 
-	//TODO is this necessary?
-	sem_wait((sem_t*)semaphore);
+	sem_t* s = semaphore;
 
 	//TODO we need to keep track of currently acquired images?
 
@@ -1091,8 +1203,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(
 	*pImageIndex = ((_swapchain*)swapchain)->backbufferIdx; //return back buffer index
 
 	//signal semaphore
-	int semVal; sem_getvalue((sem_t*)semaphore, &semVal); assert(semVal <= 0); //make sure semaphore is unsignalled
-	sem_post((sem_t*)semaphore);
+	int semVal; sem_getvalue(s, &semVal); assert(semVal <= 0); //make sure semaphore is unsignalled
+	sem_post(s);
 
 	//TODO signal fence
 
@@ -1142,7 +1254,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
 	{
-		struct drm_vc4_submit_cl submitCl =
+		/*struct drm_vc4_submit_cl submitCl =
 		{
 			.color_read.hindex = ~0,
 			.zs_read.hindex = ~0,
@@ -1150,26 +1262,24 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 			.msaa_color_write.hindex = ~0,
 			.zs_write.hindex = ~0,
 			.msaa_zs_write.hindex = ~0,
-		};
+		};*/
 
-		//TODO set rcl flags
+		VkCommandBuffer cmdbuf = pSubmits->pCommandBuffers[c];
 
-		submitCl.bo_handles = pSubmits->pCommandBuffers[c]->handlesCl.buffer;
-		submitCl.bo_handle_count = clSize(&pSubmits->pCommandBuffers[c]->handlesCl) / 4;
-		submitCl.bin_cl = pSubmits->pCommandBuffers[c]->binCl.buffer;
-		submitCl.bin_cl_size = clSize(&pSubmits->pCommandBuffers[c]->binCl);
-		submitCl.shader_rec = pSubmits->pCommandBuffers[c]->shaderRecCl.buffer;
-		submitCl.shader_rec_size = clSize(&pSubmits->pCommandBuffers[c]->shaderRecCl);
-		submitCl.shader_rec_count = pSubmits->pCommandBuffers[c]->shaderRecCount;
-		submitCl.uniforms = pSubmits->pCommandBuffers[c]->uniformsCl.buffer;
-		submitCl.uniforms_size = clSize(&pSubmits->pCommandBuffers[c]->uniformsCl);
-
-		//TODO set draw flags
+		cmdbuf->submitCl.bo_handles = cmdbuf->handlesCl.buffer;
+		cmdbuf->submitCl.bo_handle_count = clSize(&cmdbuf->handlesCl) / 4;
+		cmdbuf->submitCl.bin_cl = cmdbuf->binCl.buffer;
+		cmdbuf->submitCl.bin_cl_size = clSize(&cmdbuf->binCl);
+		cmdbuf->submitCl.shader_rec = cmdbuf->shaderRecCl.buffer;
+		cmdbuf->submitCl.shader_rec_size = clSize(&cmdbuf->shaderRecCl);
+		cmdbuf->submitCl.shader_rec_count = cmdbuf->shaderRecCount;
+		cmdbuf->submitCl.uniforms = cmdbuf->uniformsCl.buffer;
+		cmdbuf->submitCl.uniforms_size = clSize(&cmdbuf->uniformsCl);
 
 		//submit ioctl
 		uint64_t lastEmitSequno; //TODO
 		uint64_t lastFinishedSequno;
-		vc4_cl_submit(renderFd, &submitCl, &lastEmitSequno, &lastFinishedSequno);
+		vc4_cl_submit(renderFd, &cmdbuf->submitCl, &lastEmitSequno, &lastFinishedSequno);
 	}
 
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
@@ -1319,7 +1429,6 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	sem_wait((sem_t*)semaphore); //must be externally synced
 	sem_destroy((sem_t*)semaphore);
 }
 
