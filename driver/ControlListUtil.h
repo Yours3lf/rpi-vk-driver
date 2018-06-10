@@ -185,6 +185,7 @@ void clInsertStoreMultiSampleResolvedTileColorBufferAndEOF(ControlList* cl)
 	cl->nextFreeByte++;
 }
 
+/*
 //input: 2 cls (cl, handles cl)
 void clInsertStoreFullResolutionTileBuffer(ControlList* cls,
 										   ControlListAddress address,
@@ -207,7 +208,9 @@ void clInsertStoreFullResolutionTileBuffer(ControlList* cls,
 			moveBits(address.offset, 28, 4);
 	cls->nextFreeByte += 4;
 }
+*/
 
+/*
 //input: 2 cls (cl, handles cl)
 void clInsertReLoadFullResolutionTileBuffer(ControlList* cls,
 											ControlListAddress address,
@@ -226,7 +229,9 @@ void clInsertReLoadFullResolutionTileBuffer(ControlList* cls,
 			moveBits(address.offset, 28, 4);
 	cls->nextFreeByte += 4;
 }
+*/
 
+/*
 //input: 2 cls (cl, handles cl)
 void clInsertStoreTileBufferGeneral(ControlList* cls,
 									ControlListAddress address,
@@ -267,7 +272,9 @@ void clInsertStoreTileBufferGeneral(ControlList* cls,
 			moveBits(address.offset, 28, 4);
 	cls->nextFreeByte += 4;
 }
+*/
 
+/*
 //input: 2 cls (cl, handles cl)
 void clInsertLoadTileBufferGeneral(ControlList* cls,
 								   ControlListAddress address,
@@ -299,6 +306,7 @@ void clInsertLoadTileBufferGeneral(ControlList* cls,
 	cls->nextFreeByte += 4;
 
 }
+*/
 
 void clInsertIndexedPrimitiveList(ControlList* cl,
 								  uint32_t maxIndex,
@@ -356,6 +364,7 @@ void clInsertShaderState(ControlList* cl,
 			moveBits(numberOfAttributeArrays, 3, 0); cl->nextFreeByte += 4;
 }
 
+/*
 void clInsertClearColors(ControlList* cl,
 						uint32_t clearStencil,
 						uint32_t clearZ, //24 bit Z
@@ -369,6 +378,7 @@ void clInsertClearColors(ControlList* cl,
 	*(uint32_t*)cl->nextFreeByte = clearZ; cl->nextFreeByte += 4; //24 bits for Z, 8 bit for vg mask (unused)
 	*cl->nextFreeByte = clearStencil; cl->nextFreeByte++;
 }
+*/
 
 void clInsertConfigurationBits(ControlList* cl,
 						uint32_t earlyZUpdatesEnable, //0/1
@@ -554,6 +564,7 @@ void clInsertTileBinningModeConfiguration(ControlList* cl,
 			moveBits(doubleBufferInNonMsMode, 1, 7); cl->nextFreeByte++;
 }
 
+/*
 void clInsertTileRenderingModeConfiguration(ControlList* cls,
 						ControlListAddress address,
 						uint32_t doubleBufferInNonMsMode, //0/1
@@ -588,7 +599,9 @@ void clInsertTileRenderingModeConfiguration(ControlList* cls,
 			moveBits(earlyZEarlyCovDisable, 1, 11) |
 			moveBits(doubleBufferInNonMsMode, 1, 12); cls->nextFreeByte += 2;
 }
+*/
 
+/*
 void clInsertTileCoordinates(ControlList* cl,
 						uint32_t tileColumnNumber, //int8
 						uint32_t tileRowNumber) //int8
@@ -599,6 +612,7 @@ void clInsertTileCoordinates(ControlList* cl,
 	*cl->nextFreeByte = V3D21_TILE_COORDINATES_opcode; cl->nextFreeByte++;
 	*(uint16_t*)cl->nextFreeByte = moveBits(tileColumnNumber, 8, 0) | moveBits(tileRowNumber, 8, 8); cl->nextFreeByte += 2;
 }
+*/
 
 void clInsertGEMRelocations(ControlList* cl,
 							uint32_t buffer0,
