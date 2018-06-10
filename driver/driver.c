@@ -1124,6 +1124,8 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 								1, //16 bit
 								2); //tris
 
+	//TODO primitive list format must be followed by shader state
+
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
 	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, i->handle);
 	commandBuffer->submitCl.color_write.hindex = idx;
@@ -1148,6 +1150,50 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 	commandBuffer->submitCl.flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
 	commandBuffer->submitCl.clear_z = 0; //TODO
 	commandBuffer->submitCl.clear_s = 0;
+
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
+	clInsertClipWindow(&commandBuffer->binCl, i->width, i->height, 0, 0); //TODO should this be configurable?
+
+	//TODO
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
+	clInsertConfigurationBits(&commandBuffer->binCl,
+							  0,
+							  0,
+							  0,
+							  V3D_COMPARE_FUNC_ALWAYS,
+							  0,
+							  0,
+							  0,
+							  0,
+							  0,
+							  0,
+							  0,
+							  1,
+							  1);
+
+	//TODO
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_DEPTH_OFFSET_length);
+	clInsertDepthOffset(&commandBuffer->binCl, 0, 0);
+
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_POINT_SIZE_length);
+	clInsertPointSize(&commandBuffer->binCl, 1.0f);
+
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_LINE_WIDTH_length);
+	clInsertLineWidth(&commandBuffer->binCl, 1.0f);
+
+	//TODO
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_XY_SCALING_length);
+	clInsertClipperXYScaling(&commandBuffer->binCl, 1.0f, 1.0f);
+
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_Z_SCALE_AND_OFFSET_length);
+	clInsertClipperZScaleOffset(&commandBuffer->binCl, 0.0f, 1.0f);
+
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
+	clInsertViewPortOffset(&commandBuffer->binCl, 0, 0);
+
+	//TODO
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLAT_SHADE_FLAGS_length);
+	clInsertFlatShadeFlags(&commandBuffer->binCl, 0);
 
 	//TODO I suppose this should be a submit itself?
 }
@@ -1265,6 +1311,22 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 		};*/
 
 		VkCommandBuffer cmdbuf = pSubmits->pCommandBuffers[c];
+
+		//Control List contents
+		//tile binning mode config
+		//start tile binning
+		//binning memory for the PTB???
+		//primitive list format
+		//shader state
+		//clip window
+		//rasterizer state
+		//clipper xy scaling
+		//clipper z scale and offset
+		//viewport offset
+		//flat shade flags
+		//increment semaphore to signal fragment processing can begin
+		//flush command
+		//
 
 		cmdbuf->submitCl.bo_handles = cmdbuf->handlesCl.buffer;
 		cmdbuf->submitCl.bo_handle_count = clSize(&cmdbuf->handlesCl) / 4;
