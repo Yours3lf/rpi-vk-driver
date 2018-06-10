@@ -1125,6 +1125,8 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 								2); //tris
 
 	//TODO primitive list format must be followed by shader state
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
+	clInsertShaderState(&commandBuffer->binCl, 0, 0, 0);
 
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
 	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, i->handle);
