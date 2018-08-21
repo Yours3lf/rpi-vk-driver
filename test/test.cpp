@@ -547,7 +547,7 @@ void createCommandQueues() {
 
 	// Note: contains value for each subresource range
 	VkClearColorValue clearColor = {
-		{ 0.4f, 0.6f, 0.9f, 1.0f } // R, G, B, A
+		{ 0.8f, 0.2f, 0.5f, 1.0f } // R, G, B, A
 	};
 
 	VkImageSubresourceRange subResourceRange = {};

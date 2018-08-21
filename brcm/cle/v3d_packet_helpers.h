@@ -24,14 +24,17 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <assert.h>
+#include "../../driver/CustomAssert.h"
 #include <math.h>
+//#include <gallium/auxiliary/util/u_math.h>
 
 #ifdef HAVE_VALGRIND
 #include <valgrind.h>
 #include <memcheck.h>
 #define VG(x) x
+#ifndef NDEBUG
 #define __gen_validate_value(x) VALGRIND_CHECK_MEM_IS_DEFINED(&(x), sizeof(x))
+#endif
 #else
 #define VG(x)
 #endif
@@ -64,7 +67,7 @@ __gen_uint(uint64_t v, uint32_t start, uint32_t end)
 {
    __gen_validate_value(v);
 
-#if DEBUG
+#ifndef NDEBUG
    const int width = end - start + 1;
    if (width < 64) {
       const uint64_t max = (1ull << width) - 1;
@@ -82,7 +85,7 @@ __gen_sint(int64_t v, uint32_t start, uint32_t end)
 
    __gen_validate_value(v);
 
-#if DEBUG
+#ifndef NDEBUG
    if (width < 64) {
       const int64_t max = (1ll << (width - 1)) - 1;
       const int64_t min = -(1ll << (width - 1));
@@ -99,7 +102,7 @@ static inline uint64_t
 __gen_offset(uint64_t v, uint32_t start, uint32_t end)
 {
    __gen_validate_value(v);
-#if DEBUG
+#ifndef NDEBUG
    uint64_t mask = (~0ull >> (64 - (end - start + 1))) << start;
 
    assert((v & ~mask) == 0);
@@ -122,7 +125,7 @@ __gen_sfixed(float v, uint32_t start, uint32_t end, uint32_t fract_bits)
 
    const float factor = (1 << fract_bits);
 
-#if DEBUG
+#ifndef NDEBUG
    const float max = ((1 << (end - start)) - 1) / factor;
    const float min = -(1 << (end - start)) / factor;
    assert(min <= v && v <= max);
@@ -141,7 +144,7 @@ __gen_ufixed(float v, uint32_t start, uint32_t end, uint32_t fract_bits)
 
    const float factor = (1 << fract_bits);
 
-#if DEBUG
+#ifndef NDEBUG
    const float max = ((1 << (end - start + 1)) - 1) / factor;
    const float min = 0.0f;
    assert(min <= v && v <= max);
@@ -201,5 +204,14 @@ __gen_unpack_float(const uint8_t *restrict cl, uint32_t start, uint32_t end)
    struct PACKED { float f; } *f = (void *)(cl + (start / 8));
 
    return f->f;
+}
+
+static inline float
+__gen_unpack_f187(const uint8_t *restrict cl, uint32_t start, uint32_t end)
+{
+   assert(end - start == 15);
+   uint32_t bits = __gen_unpack_uint(cl, start, end);
+   bits = (bits << 16);
+   return *(float*)bits;
 }
 

@@ -20,6 +20,8 @@
 #include "LinearAllocator.h"
 
 #include "kernel/vc4_packet.h"
+#include "../brcm/cle/v3d_decoder.h"
+#include "../brcm/clif/clif_dump.h"
 
 #ifndef min
 #define min(a, b) (a < b ? a : b)
@@ -116,6 +118,57 @@ void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize)
 		cl->buffer = consecutivePoolReAllocate(&cb->cp->cpa, cl->buffer, cl->numBlocks); assert(cl->buffer);
 		cl->nextFreeByte = cl->buffer + currSize;
 	}
+}
+
+void clDump(void* cl, uint32_t size)
+{
+		struct v3d_device_info devinfo = {
+				/* While the driver supports V3D 2.1 and 2.6, we haven't split
+				 * off a 2.6 XML yet (there are a couple of fields different
+				 * in render target formatting)
+				 */
+				.ver = 21,
+		};
+		struct v3d_spec* spec = v3d_spec_load(&devinfo);
+
+		struct clif_dump *clif = clif_dump_init(&devinfo, stderr, true);
+
+		uint32_t offset = 0, hw_offset = 0;
+		uint8_t *p = cl;
+
+		while (offset < size) {
+				struct v3d_group *inst = v3d_spec_find_instruction(spec, p);
+				uint8_t header = *p;
+				uint32_t length;
+
+				if (inst == NULL) {
+						printf("0x%08x 0x%08x: Unknown packet 0x%02x (%d)!\n",
+								offset, hw_offset, header, header);
+						return;
+				}
+
+				length = v3d_group_get_length(inst);
+
+				printf("0x%08x 0x%08x: 0x%02x %s\n",
+						offset, hw_offset, header, v3d_group_get_name(inst));
+
+				v3d_print_group(clif, inst, offset, p);
+
+				switch (header) {
+				case VC4_PACKET_HALT:
+				case VC4_PACKET_STORE_MS_TILE_BUFFER_AND_EOF:
+						return;
+				default:
+						break;
+				}
+
+				offset += length;
+				if (header != VC4_PACKET_GEM_HANDLES)
+						hw_offset += length;
+				p += length;
+		}
+
+		clif_dump_destroy(clif);
 }
 
 /*
@@ -1051,6 +1104,104 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
 	//TODO
 }
 
+/*static inline void
+util_pack_color(const float rgba[4], enum pipe_format format, union util_color *uc)
+{
+   ubyte r = 0;
+   ubyte g = 0;
+   ubyte b = 0;
+   ubyte a = 0;
+
+   if (util_format_get_component_bits(format, UTIL_FORMAT_COLORSPACE_RGB, 0) <= 8) {
+	  r = float_to_ubyte(rgba[0]);
+	  g = float_to_ubyte(rgba[1]);
+	  b = float_to_ubyte(rgba[2]);
+	  a = float_to_ubyte(rgba[3]);
+   }
+
+   switch (format) {
+   case PIPE_FORMAT_ABGR8888_UNORM:
+	  {
+		 uc->ui[0] = (r << 24) | (g << 16) | (b << 8) | a;
+	  }
+	  return;
+   case PIPE_FORMAT_XBGR8888_UNORM:
+	  {
+		 uc->ui[0] = (r << 24) | (g << 16) | (b << 8) | 0xff;
+	  }
+	  return;
+   case PIPE_FORMAT_BGRA8888_UNORM:
+	  {
+		 uc->ui[0] = (a << 24) | (r << 16) | (g << 8) | b;
+	  }
+	  return;
+   case PIPE_FORMAT_BGRX8888_UNORM:
+	  {
+		 uc->ui[0] = (0xffu << 24) | (r << 16) | (g << 8) | b;
+	  }
+	  return;
+   case PIPE_FORMAT_ARGB8888_UNORM:
+	  {
+		 uc->ui[0] = (b << 24) | (g << 16) | (r << 8) | a;
+	  }
+	  return;
+   case PIPE_FORMAT_XRGB8888_UNORM:
+	  {
+		 uc->ui[0] = (b << 24) | (g << 16) | (r << 8) | 0xff;
+	  }
+	  return;
+   case PIPE_FORMAT_B5G6R5_UNORM:
+	  {
+		 uc->us = ((r & 0xf8) << 8) | ((g & 0xfc) << 3) | (b >> 3);
+	  }
+	  return;
+   case PIPE_FORMAT_B5G5R5X1_UNORM:
+	  {
+		 uc->us = ((0x80) << 8) | ((r & 0xf8) << 7) | ((g & 0xf8) << 2) | (b >> 3);
+	  }
+	  return;
+   case PIPE_FORMAT_B5G5R5A1_UNORM:
+	  {
+		 uc->us = ((a & 0x80) << 8) | ((r & 0xf8) << 7) | ((g & 0xf8) << 2) | (b >> 3);
+	  }
+	  return;
+   case PIPE_FORMAT_B4G4R4A4_UNORM:
+	  {
+		 uc->us = ((a & 0xf0) << 8) | ((r & 0xf0) << 4) | ((g & 0xf0) << 0) | (b >> 4);
+	  }
+	  return;
+   case PIPE_FORMAT_A8_UNORM:
+	  {
+		 uc->ub = a;
+	  }
+	  return;
+   case PIPE_FORMAT_L8_UNORM:
+   case PIPE_FORMAT_I8_UNORM:
+	  {
+		 uc->ub = r;
+	  }
+	  return;
+   case PIPE_FORMAT_R32G32B32A32_FLOAT:
+	  {
+		 uc->f[0] = rgba[0];
+		 uc->f[1] = rgba[1];
+		 uc->f[2] = rgba[2];
+		 uc->f[3] = rgba[3];
+	  }
+	  return;
+   case PIPE_FORMAT_R32G32B32_FLOAT:
+	  {
+		 uc->f[0] = rgba[0];
+		 uc->f[1] = rgba[1];
+		 uc->f[2] = rgba[2];
+	  }
+	  return;
+
+   default:
+	  util_format_write_4f(format, rgba, 0, uc, 0, 0, 0, 1, 1);
+   }
+}*/
+
 uint32_t packVec4IntoRGBA8(const float rgba[4])
 {
 	uint8_t r, g, b, a;
@@ -1124,9 +1275,10 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 								1, //16 bit
 								2); //tris
 
+
 	//TODO primitive list format must be followed by shader state
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
-	clInsertShaderState(&commandBuffer->binCl, 0, 0, 0);
+	//clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
+	//clInsertShaderState(&commandBuffer->binCl, 0, 0, 0);
 
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
 	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, i->handle);
@@ -1136,7 +1288,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 	//TODO format, tiling
 	commandBuffer->submitCl.color_write.bits =
 			VC4_SET_FIELD(VC4_RENDER_CONFIG_FORMAT_RGBA8888, VC4_RENDER_CONFIG_FORMAT) |
-			VC4_SET_FIELD(VC4_TILING_FORMAT_LINEAR, VC4_RENDER_CONFIG_MEMORY_FORMAT);
+			VC4_SET_FIELD(VC4_TILING_FORMAT_T, VC4_RENDER_CONFIG_MEMORY_FORMAT);
 
 	//TODO msaa?
 
@@ -1153,9 +1305,10 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 	commandBuffer->submitCl.clear_z = 0; //TODO
 	commandBuffer->submitCl.clear_s = 0;
 
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
-	clInsertClipWindow(&commandBuffer->binCl, i->width, i->height, 0, 0); //TODO should this be configurable?
+	//clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
+	//clInsertClipWindow(&commandBuffer->binCl, i->width, i->height, 0, 0); //TODO should this be configurable?
 
+	/*
 	//TODO
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
 	clInsertConfigurationBits(&commandBuffer->binCl,
@@ -1198,6 +1351,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 	clInsertFlatShadeFlags(&commandBuffer->binCl, 0);
 
 	//TODO I suppose this should be a submit itself?
+	*/
 }
 
 /*
@@ -1339,6 +1493,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 		cmdbuf->submitCl.shader_rec_count = cmdbuf->shaderRecCount;
 		cmdbuf->submitCl.uniforms = cmdbuf->uniformsCl.buffer;
 		cmdbuf->submitCl.uniforms_size = clSize(&cmdbuf->uniformsCl);
+
+		clDump(cmdbuf->submitCl.bin_cl, cmdbuf->submitCl.bin_cl_size);
 
 		//submit ioctl
 		uint64_t lastEmitSequno; //TODO

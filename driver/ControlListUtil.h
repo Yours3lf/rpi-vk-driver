@@ -28,7 +28,7 @@ static inline void clEmitShaderRelocation(ControlList* cl, const ControlListAddr
 #define __gen_address_offset(reloc) ((reloc)->offset)
 #define __gen_emit_reloc clEmitShaderRelocation
 
-#include <broadcom/v3d_packet_v21_pack.h>
+#include "brcm/cle/v3d_packet_v21_pack.h"
 
 uint32_t divRoundUp(uint32_t n, uint32_t d)
 {
