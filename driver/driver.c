@@ -1494,7 +1494,21 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 		cmdbuf->submitCl.uniforms = cmdbuf->uniformsCl.buffer;
 		cmdbuf->submitCl.uniforms_size = clSize(&cmdbuf->uniformsCl);
 
+		printf("BCL:\n");
 		clDump(cmdbuf->submitCl.bin_cl, cmdbuf->submitCl.bin_cl_size);
+		printf("width height: %u, %u\n", cmdbuf->submitCl.width, cmdbuf->submitCl.height);
+		printf("tile min/max: %u,%u %u,%u\n", cmdbuf->submitCl.min_x_tile, cmdbuf->submitCl.min_y_tile, cmdbuf->submitCl.max_x_tile, cmdbuf->submitCl.max_y_tile);
+		printf("color read surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.color_read.hindex, cmdbuf->submitCl.color_read.offset, cmdbuf->submitCl.color_read.bits, cmdbuf->submitCl.color_read.flags);
+		printf("color write surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.color_write.hindex, cmdbuf->submitCl.color_write.offset, cmdbuf->submitCl.color_write.bits, cmdbuf->submitCl.color_write.flags);
+		printf("zs read surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.zs_read.hindex, cmdbuf->submitCl.zs_read.offset, cmdbuf->submitCl.zs_read.bits, cmdbuf->submitCl.zs_read.flags);
+		printf("zs write surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.zs_write.hindex, cmdbuf->submitCl.zs_write.offset, cmdbuf->submitCl.zs_write.bits, cmdbuf->submitCl.zs_write.flags);
+		printf("msaa color write surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.msaa_color_write.hindex, cmdbuf->submitCl.msaa_color_write.offset, cmdbuf->submitCl.msaa_color_write.bits, cmdbuf->submitCl.msaa_color_write.flags);
+		printf("msaa zs write surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.msaa_zs_write.hindex, cmdbuf->submitCl.msaa_zs_write.offset, cmdbuf->submitCl.msaa_zs_write.bits, cmdbuf->submitCl.msaa_zs_write.flags);
+		printf("clear color packed rgba %u %u\n", cmdbuf->submitCl.clear_color[0], cmdbuf->submitCl.clear_color[1]);
+		printf("clear z %u\n", cmdbuf->submitCl.clear_z);
+		printf("clear s %u\n", cmdbuf->submitCl.clear_s);
+		printf("flags %u\n", cmdbuf->submitCl.flags);
+
 
 		//submit ioctl
 		uint64_t lastEmitSequno; //TODO

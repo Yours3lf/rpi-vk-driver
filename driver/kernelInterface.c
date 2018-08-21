@@ -227,7 +227,7 @@ int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns)
 	int ret = vc4_bo_wait_ioctl(fd, bo, timeout_ns);
 	if (ret) {
 		if (ret != -ETIME) {
-			fprintf(stderr, "wait failed: %d\n", ret);
+			printf("wait failed: %d\n", ret);
 		}
 
 		return 0;

@@ -38,7 +38,7 @@ clif_dump_add_address_to_worklist(struct clif_dump *clif,
                                   uint32_t addr)
 {
         struct reloc_worklist_entry *entry =
-				calloc(1, sizeof(struct reloc_worklist_entry));
+                rzalloc(clif, struct reloc_worklist_entry);
         if (!entry)
                 return NULL;
 
@@ -54,7 +54,7 @@ struct clif_dump *
 clif_dump_init(const struct v3d_device_info *devinfo,
                FILE *out, bool pretty)
 {
-		struct clif_dump *clif = calloc(1, sizeof(struct clif_dump));
+        struct clif_dump *clif = rzalloc(NULL, struct clif_dump);
 
         clif->devinfo = devinfo;
         clif->out = out;
@@ -282,7 +282,7 @@ clif_dump_buffers(struct clif_dump *clif)
                 num_relocs++;
         }
         struct reloc_worklist_entry **relocs =
-				malloc(sizeof(struct reloc_worklist_entry *) * num_relocs);
+                ralloc_array(clif, struct reloc_worklist_entry *, num_relocs);
         int i = 0;
         list_for_each_entry(struct reloc_worklist_entry, reloc,
                             &clif->worklist, link) {
@@ -428,7 +428,8 @@ clif_dump_add_bo(struct clif_dump *clif, const char *name,
 {
         if (clif->bo_count >= clif->bo_array_size) {
                 clif->bo_array_size = MAX2(4, clif->bo_array_size * 2);
-				clif->bo = realloc(clif->bo, sizeof(struct clif_bo) * clif->bo_array_size);
+                clif->bo = reralloc(clif, clif->bo, struct clif_bo,
+                                    clif->bo_array_size);
         }
 
         /* CLIF relocs use the buffer name, so make sure they're unique. */

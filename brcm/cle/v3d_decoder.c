@@ -134,10 +134,10 @@ fail(struct location *loc, const char *msg, ...)
         va_list ap;
 
         va_start(ap, msg);
-        fprintf(stderr, "%s:%d: error: ",
+		printf("%s:%d: error: ",
                 loc->filename, loc->line_number);
-        vfprintf(stderr, msg, ap);
-        fprintf(stderr, "\n");
+		vprintf(msg, ap);
+		printf("\n");
         va_end(ap);
         exit(EXIT_FAILURE);
 }
@@ -146,7 +146,7 @@ static void *
 fail_on_null(void *p)
 {
         if (p == NULL) {
-                fprintf(stderr, "aubinator: out of memory\n");
+				printf("aubinator: out of memory\n");
                 exit(EXIT_FAILURE);
         }
 
@@ -666,7 +666,7 @@ v3d_spec_load(const struct v3d_device_info *devinfo)
         }
 
         if (text_length == 0) {
-                fprintf(stderr, "unable to find gen (%u) data\n", devinfo->ver);
+				printf("unable to find gen (%u) data\n", devinfo->ver);
                 return NULL;
         }
 
@@ -675,7 +675,7 @@ v3d_spec_load(const struct v3d_device_info *devinfo)
         ctx.devinfo = devinfo;
         XML_SetUserData(ctx.parser, &ctx);
         if (ctx.parser == NULL) {
-                fprintf(stderr, "failed to create parser\n");
+				printf("failed to create parser\n");
                 return NULL;
         }
 
@@ -689,12 +689,16 @@ v3d_spec_load(const struct v3d_device_info *devinfo)
                                     (void **) &text_data);
         assert(text_offset + text_length <= total_length);
 
+		//test if everything is fine
+		//FILE* f = fopen("file.xml", "w");
+		//fwrite(text_data, 1, total_length,  f);
+		//fclose(f);
+
         buf = XML_GetBuffer(ctx.parser, text_length);
         memcpy(buf, &text_data[text_offset], text_length);
 
         if (XML_ParseBuffer(ctx.parser, text_length, true) == 0) {
-                fprintf(stderr,
-                        "Error parsing XML at line %ld col %ld byte %ld/%u: %s\n",
+				printf("Error parsing XML at line %ld col %ld byte %ld/%u: %s\n",
                         XML_GetCurrentLineNumber(ctx.parser),
                         XML_GetCurrentColumnNumber(ctx.parser),
                         XML_GetCurrentByteIndex(ctx.parser), text_length,
@@ -988,10 +992,10 @@ v3d_print_group(struct clif_dump *clif, struct v3d_group *group,
                         continue;
 
                 if (clif->pretty) {
-                        fprintf(clif->out, "    %s: %s\n",
+						printf("    %s: %s\n",
                                 iter.name, iter.value);
                 } else {
-                        fprintf(clif->out, "  /* %30s: */ %s\n",
+						printf("  /* %30s: */ %s\n",
                                 iter.name, iter.value);
                 }
                 if (iter.struct_desc) {

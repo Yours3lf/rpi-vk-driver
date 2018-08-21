@@ -353,6 +353,6 @@ v3d_qpu_dump(const struct v3d_device_info *devinfo,
              const struct v3d_qpu_instr *instr)
 {
         const char *decoded = v3d_qpu_decode(devinfo, instr);
-        fprintf(stderr, "%s", decoded);
+		printf("%s", decoded);
         ralloc_free((char *)decoded);
 }
