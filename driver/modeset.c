@@ -88,11 +88,12 @@ modeset_dev* modeset_create(int fd)
 	struct modeset_dev *dev;
 	int ret;
 
-	uint64_t has_dumb;
+	//we'll use a buffer created by the vc4 kernel module instead
+	/*uint64_t has_dumb;
 	if (drmGetCap(fd, DRM_CAP_DUMB_BUFFER, &has_dumb) < 0 || !has_dumb) {
 		printf("drm device does not support dumb buffers\n");
 		return 0;
-	}
+	}*/
 
 	// retrieve resources
 	res = drmModeGetResources(fd);
@@ -317,13 +318,14 @@ static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 
 int modeset_create_fb(int fd, _image *buf)
 {
-	struct drm_mode_create_dumb creq;
-	struct drm_mode_destroy_dumb dreq;
-	struct drm_mode_map_dumb mreq;
+	//struct drm_mode_create_dumb creq;
+	//struct drm_mode_destroy_dumb dreq;
+	//struct drm_mode_map_dumb mreq;
 	int ret;
 
+	//we'll use a buffer created by vc4 instead
 	// create dumb buffer
-	memset(&creq, 0, sizeof(creq));
+	/*memset(&creq, 0, sizeof(creq));
 	creq.width = buf->width;
 	creq.height = buf->height;
 	creq.bpp = 32;
@@ -335,7 +337,7 @@ int modeset_create_fb(int fd, _image *buf)
 	}
 	buf->stride = creq.pitch;
 	buf->size = creq.size;
-	buf->handle = creq.handle;
+	buf->handle = creq.handle;*/
 
 	// create framebuffer object for the dumb-buffer
 	ret = drmModeAddFB(fd, buf->width, buf->height, 24, 32, buf->stride,
@@ -345,9 +347,9 @@ int modeset_create_fb(int fd, _image *buf)
 			   errno);
 		ret = -errno;
 
-		memset(&dreq, 0, sizeof(dreq));
-		dreq.handle = buf->handle;
-		drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
+		//memset(&dreq, 0, sizeof(dreq));
+		//dreq.handle = buf->handle;
+		//drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
 		return ret;
 	}
 
@@ -399,7 +401,7 @@ int modeset_create_fb(int fd, _image *buf)
 
 void modeset_destroy_fb(int fd, _image* buf)
 {
-	struct drm_mode_destroy_dumb dreq;
+	//struct drm_mode_destroy_dumb dreq;
 
 	// unmap buffer
 	//munmap(buf->map, buf->size);
@@ -408,9 +410,9 @@ void modeset_destroy_fb(int fd, _image* buf)
 	drmModeRmFB(fd, buf->fb);
 
 	// delete dumb buffer
-	memset(&dreq, 0, sizeof(dreq));
+	/*memset(&dreq, 0, sizeof(dreq));
 	dreq.handle = buf->handle;
-	drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
+	drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);*/
 }
 
 /*
@@ -450,6 +452,11 @@ void modeset_destroy_fb(int fd, _image* buf)
 void modeset_present_buffer(int fd, modeset_dev* dev, _image* buffer)
 {
 	//TODO use index!!
+
+	if(!dev->saved_crtc)
+	{
+		int res = modeset_fb_for_dev(fd, dev, buffer); assert(res == 0);
+	}
 
 	struct modeset_dev *iter;
 	//struct modeset_buf *buf;

@@ -16,13 +16,15 @@ extern "C" {
 #include <unistd.h>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
+#include "CustomAssert.h"
 
 typedef struct VkImage_T
 {
 	uint32_t handle;
 	uint32_t fb; //needed for swapchain
 	uint32_t width, height, depth;
-	uint32_t miplevels, layers, samples, size, stride;
+	uint32_t miplevels, layers, samples, size;
+	uint32_t stride; //the number of bytes from one row of pixels in memory to the next row of pixels in memory (aka pitch)
 	uint32_t usageBits;
 } _image;
 
@@ -38,6 +40,7 @@ typedef struct modeset_dev {
 	drmModeCrtc *saved_crtc;
 	uint32_t width;
 	uint32_t height;
+	uint32_t handle;
 } modeset_dev;
 
 modeset_dev* modeset_create(int fd);

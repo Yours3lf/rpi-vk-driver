@@ -23,8 +23,13 @@ extern "C" {
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 
+//normal nodes?
+//modesetting can be done
 #define DRM_IOCTL_CTRL_DEV_FILE_NAME "/dev/dri/card0"
-#define DRM_IOCTL_RENDER_DEV_FILE_NAME "/dev/dri/renderD128" //TODO does this need to be dynamic? (eg. iterate through renderDn?)
+
+//render nodes
+//no modesetting --> so only for offscreen rendering
+#define DRM_IOCTL_RENDER_DEV_FILE_NAME "/dev/dri/renderD128"
 
 #define WAIT_TIMEOUT_INFINITE 0xffffffffffffffffull
 #define ARM_PAGE_SIZE 4096

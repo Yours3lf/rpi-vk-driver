@@ -266,13 +266,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 
 	int ret = openIoctl(); assert(!ret);
 
-	(*pInstance)->chipVersion = vc4_get_chip_info(renderFd);
-	(*pInstance)->hasTiling = vc4_test_tiling(renderFd);
+	(*pInstance)->chipVersion = vc4_get_chip_info(controlFd);
+	(*pInstance)->hasTiling = vc4_test_tiling(controlFd);
 
-	(*pInstance)->hasControlFlow = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_BRANCHES);
-	(*pInstance)->hasEtc1 = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_ETC1);
-	(*pInstance)->hasThreadedFs = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_THREADED_FS);
-	(*pInstance)->hasMadvise = vc4_has_feature(renderFd, DRM_VC4_PARAM_SUPPORTS_MADVISE);
+	(*pInstance)->hasControlFlow = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_BRANCHES);
+	(*pInstance)->hasEtc1 = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_ETC1);
+	(*pInstance)->hasThreadedFs = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_THREADED_FS);
+	(*pInstance)->hasMadvise = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_MADVISE);
 
 	return VK_SUCCESS;
 }
@@ -820,13 +820,18 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 		s->images[c].samples = 1; //TODO
 		s->images[c].usageBits = pCreateInfo->imageUsage;
 
-		//TODO create this through VC4 instead (create BO)
-		//would still need to point KMS to our BO
-		//but hopefully the GPU could touch the buffer then
+		//TODO determine pixel size from format
+		//we only support RGBA8 with SRGB now
+		uint32_t pixelSizeBytes = 4;
+		s->images[c].size = pCreateInfo->imageExtent.width * pCreateInfo->imageExtent.height * pixelSizeBytes;
+		s->images[c].stride = s->images[c].width * pixelSizeBytes;
+		s->images[c].handle = vc4_bo_alloc(controlFd, s->images[c].size, "swapchain image"); assert(s->images[c].handle);
+		int ret = vc4_bo_set_tiling(controlFd, s->images[c].handle, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
 		int res = modeset_create_fb(controlFd, &s->images[c]); assert(res == 0);
 	}
 
-	int res = modeset_fb_for_dev(controlFd, s->surface, &s->images[s->backbufferIdx]); assert(res == 0);
+	//defer to first swapbuffer (or at least later, getting swapchain != presenting immediately)
+	//int res = modeset_fb_for_dev(controlFd, s->surface, &s->images[s->backbufferIdx]); assert(res == 0);
 
 	return VK_SUCCESS;
 }
@@ -1523,7 +1528,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 		uint64_t lastEmitSequno = 0; //TODO
 		uint64_t lastFinishedSequno = 0;
 		printf("submit ioctl\n");
-		vc4_cl_submit(renderFd, &cmdbuf->submitCl, &lastEmitSequno, &lastFinishedSequno);
+		vc4_cl_submit(controlFd, &cmdbuf->submitCl, &lastEmitSequno, &lastFinishedSequno);
 	}
 
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
@@ -1696,6 +1701,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
 
 	for(int c = 0; c < s->numImages; ++c)
 	{
+		vc4_bo_free(controlFd, s->images[c].handle, 0, s->images->size);
 		modeset_destroy_fb(controlFd, &s->images[c]);
 	}
 
