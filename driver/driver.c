@@ -820,6 +820,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 		s->images[c].samples = 1; //TODO
 		s->images[c].usageBits = pCreateInfo->imageUsage;
 
+		//TODO create this through VC4 instead (create BO)
+		//would still need to point KMS to our BO
+		//but hopefully the GPU could touch the buffer then
 		int res = modeset_create_fb(controlFd, &s->images[c]); assert(res == 0);
 	}
 
@@ -1280,6 +1283,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 	//clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
 	//clInsertShaderState(&commandBuffer->binCl, 0, 0, 0);
 
+	//TODO submit handle of created BO instead
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
 	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, i->handle);
 	commandBuffer->submitCl.color_write.hindex = idx;
@@ -1496,7 +1500,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 
 		printf("BCL:\n");
 		clDump(cmdbuf->submitCl.bin_cl, cmdbuf->submitCl.bin_cl_size);
-		printf("width height: %u, %u\n", cmdbuf->submitCl.width, cmdbuf->submitCl.height);
+		printf("BO handles: ");
+		for(int d = 0; d < cmdbuf->submitCl.bo_handle_count; ++d)
+		{
+			printf("%u ", *((uint32_t*)(cmdbuf->submitCl.bo_handles)+d));
+		}
+		printf("\nwidth height: %u, %u\n", cmdbuf->submitCl.width, cmdbuf->submitCl.height);
 		printf("tile min/max: %u,%u %u,%u\n", cmdbuf->submitCl.min_x_tile, cmdbuf->submitCl.min_y_tile, cmdbuf->submitCl.max_x_tile, cmdbuf->submitCl.max_y_tile);
 		printf("color read surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.color_read.hindex, cmdbuf->submitCl.color_read.offset, cmdbuf->submitCl.color_read.bits, cmdbuf->submitCl.color_read.flags);
 		printf("color write surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.color_write.hindex, cmdbuf->submitCl.color_write.offset, cmdbuf->submitCl.color_write.bits, cmdbuf->submitCl.color_write.flags);
@@ -1511,8 +1520,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 
 
 		//submit ioctl
-		uint64_t lastEmitSequno; //TODO
-		uint64_t lastFinishedSequno;
+		uint64_t lastEmitSequno = 0; //TODO
+		uint64_t lastFinishedSequno = 0;
+		printf("submit ioctl\n");
 		vc4_cl_submit(renderFd, &cmdbuf->submitCl, &lastEmitSequno, &lastFinishedSequno);
 	}
 
