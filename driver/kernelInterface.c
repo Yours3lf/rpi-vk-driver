@@ -544,7 +544,7 @@ void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmitt
 	}
 
 	if (*lastEmittedSeqno - *lastFinishedSeqno > 5) {
-		uint64_t seqno = *lastFinishedSeqno - 5;
+		uint64_t seqno = *lastEmittedSeqno - 5;
 		if (!vc4_seqno_wait(fd,
 							lastFinishedSeqno,
 							seqno,

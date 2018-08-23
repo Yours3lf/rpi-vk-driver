@@ -171,6 +171,85 @@ void clDump(void* cl, uint32_t size)
 		clif_dump_destroy(clif);
 }
 
+//Textures in T format:
+//formed out of 4KB tiles, which have 1KB subtiles (see page 105 in VC4 arch guide)
+//1KB subtiles have 512b microtiles.
+//Width/height of the 512b microtiles is the following:
+// 64bpp: 2x4
+// 32bpp: 4x4
+// 16bpp: 8x4
+// 8bpp:  8x8
+// 4bpp:  16x8
+// 1bpp:  32x16
+//Therefore width/height of 1KB subtiles is the following:
+// 64bpp: 8x16
+// 32bpp: 16x16
+// 16bpp: 32x16
+// 8bpp:  32x32
+// 4bpp:  64x32
+// 1bpp:  128x64
+//Finally width/height of the 4KB tiles:
+// 64bpp: 16x32
+// 32bpp: 32x32
+// 16bpp: 64x32
+// 8bpp:  64x64
+// 4bpp:  128x64
+// 1bpp:  256x128
+void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, uint32_t* paddedWidth, uint32_t* paddedHeight)
+{
+	assert(paddedWidth);
+	assert(paddedHeight);
+	uint32_t tileW = 0;
+	uint32_t tileH = 0;
+
+	switch(bpp)
+	{
+	case 64:
+	{
+		tileW = 16;
+		tileH = 32;
+		break;
+	}
+	case 32:
+	{
+		tileW = 32;
+		tileH = 32;
+		break;
+	}
+	case 16:
+	{
+		tileW = 64;
+		tileH = 32;
+		break;
+	}
+	case 8:
+	{
+		tileW = 64;
+		tileH = 64;
+		break;
+	}
+	case 4:
+	{
+		tileW = 128;
+		tileH = 64;
+		break;
+	}
+	case 1:
+	{
+		tileW = 256;
+		tileH = 128;
+		break;
+	}
+	default:
+	{
+		assert(0); //unsupported
+	}
+	}
+
+	*paddedWidth = ((tileW - (width % tileW)) % tileW) + width;
+	*paddedHeight = ((tileH - (height % tileH)) % tileH) + height;
+}
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateInstanceExtensionProperties
  * When pLayerName parameter is NULL, only extensions provided by the Vulkan implementation or by implicitly enabled layers are returned. When pLayerName is the name of a layer,
@@ -822,9 +901,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 
 		//TODO determine pixel size from format
 		//we only support RGBA8 with SRGB now
-		uint32_t pixelSizeBytes = 4;
-		s->images[c].size = pCreateInfo->imageExtent.width * pCreateInfo->imageExtent.height * pixelSizeBytes;
-		s->images[c].stride = s->images[c].width * pixelSizeBytes;
+		//TODO texture/image BO alloc should be moved into a function that determines whether to use T or LT layout
+		uint32_t bpp = 32;
+		uint32_t pixelSizeBytes = bpp / 8;
+		getPaddedTextureDimensionsT(s->images[c].width, s->images[c].height, bpp, &s->images[c].paddedWidth, &s->images[c].paddedHeight);
+		s->images[c].size = s->images[c].paddedWidth * s->images[c].paddedHeight * pixelSizeBytes;
+		s->images[c].stride = s->images[c].paddedWidth * pixelSizeBytes;
 		s->images[c].handle = vc4_bo_alloc(controlFd, s->images[c].size, "swapchain image"); assert(s->images[c].handle);
 		int ret = vc4_bo_set_tiling(controlFd, s->images[c].handle, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
 		int res = modeset_create_fb(controlFd, &s->images[c]); assert(res == 0);
@@ -1210,7 +1292,7 @@ util_pack_color(const float rgba[4], enum pipe_format format, union util_color *
    }
 }*/
 
-uint32_t packVec4IntoRGBA8(const float rgba[4])
+uint32_t packVec4IntoABGR8(const float rgba[4])
 {
 	uint8_t r, g, b, a;
 	r = rgba[0] * 255.0;
@@ -1219,10 +1301,10 @@ uint32_t packVec4IntoRGBA8(const float rgba[4])
 	a = rgba[3] * 255.0;
 
 	uint32_t res = 0 |
-			(a << 0) |
-			(b << 8) |
-			(g << 16) |
-			(r << 24);
+			(a << 24) |
+			(b << 16) |
+			(g << 8) |
+			(r << 0);
 
 	return res;
 }
@@ -1302,7 +1384,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 	//TODO msaa?
 
 	commandBuffer->submitCl.clear_color[0] =
-			commandBuffer->submitCl.clear_color[1] = packVec4IntoRGBA8(pColor->float32);
+			commandBuffer->submitCl.clear_color[1] = packVec4IntoABGR8(pColor->float32);
 	//TODO ranges
 	commandBuffer->submitCl.min_x_tile = 0;
 	commandBuffer->submitCl.min_y_tile = 0;
