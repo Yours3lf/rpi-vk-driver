@@ -179,11 +179,24 @@ VkQueueFamilyProperties _queueFamilyProperties[] =
 	{
 		.queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT,
 		.queueCount = 1,
-		.timestampValidBits = 64, //TODO
+		.timestampValidBits = 64, //wait timeout is 64bits
 		.minImageTransferGranularity = {1, 1, 1}
 	}
 };
 #define numQueueFamilies (sizeof(_queueFamilyProperties)/sizeof(VkQueueFamilyProperties))
+
+VkSurfaceFormatKHR supportedSurfaceFormats[] =
+{
+	{
+		.format = VK_FORMAT_R8G8B8A8_UNORM,
+		.colorSpace = VK_COLOR_SPACE_PASS_THROUGH_EXT
+	},
+	{
+		.format = VK_FORMAT_R16G16B16A16_SFLOAT,
+		.colorSpace = VK_COLOR_SPACE_PASS_THROUGH_EXT
+	}
+};
+#define numSupportedSurfaceFormats (sizeof(supportedSurfaceFormats) / sizeof(VkSurfaceFormatKHR))
 
 static VkExtensionProperties instanceExtensions[] =
 {

@@ -24,10 +24,21 @@ typedef struct VkImage_T
 	uint32_t fb; //needed for swapchain
 	uint32_t width, height, depth;
 	uint32_t paddedWidth, paddedHeight;
-	uint32_t miplevels, layers, samples, size;
+	uint32_t miplevels, samples;
+	uint32_t layers; //number of views for multiview/stereo
+	uint32_t size; //overall size including padding
 	uint32_t stride; //the number of bytes from one row of pixels in memory to the next row of pixels in memory (aka pitch)
 	uint32_t usageBits;
 	uint32_t format;
+	uint32_t imageSpace;
+	uint32_t tiling;
+	uint32_t concurrentAccess; //TODO
+	uint32_t numQueueFamiliesWithAccess;
+	uint32_t* queueFamiliesWithAccess;
+	uint32_t preTransformMode;
+	uint32_t compositeAlpha;
+	uint32_t presentMode;
+	uint32_t clipped;
 } _image;
 
 typedef struct modeset_dev {

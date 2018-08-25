@@ -41,7 +41,7 @@ typedef struct VkPhysicalDevice_T
 
 typedef struct VkQueue_T
 {
-	int dummy;
+	uint64_t lastEmitSeqno;
 } _queue;
 
 typedef struct VkCommandPool_T
@@ -248,6 +248,182 @@ void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, 
 
 	*paddedWidth = ((tileW - (width % tileW)) % tileW) + width;
 	*paddedHeight = ((tileH - (height % tileH)) % tileH) + height;
+}
+
+uint32_t getFormatBpp(VkFormat f)
+{
+	switch(f)
+	{
+	case VK_FORMAT_R16G16B16A16_SFLOAT:
+		return 64;
+	case VK_FORMAT_R8G8B8_UNORM: //padded to 32
+	case VK_FORMAT_R8G8B8A8_UNORM:
+		return 32;
+		return 32;
+	case VK_FORMAT_R5G5B5A1_UNORM_PACK16:
+	case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
+	case VK_FORMAT_R5G6B5_UNORM_PACK16:
+	case VK_FORMAT_R8G8_UNORM:
+	case VK_FORMAT_R16_SFLOAT:
+	case VK_FORMAT_R16_SINT:
+		return 16;
+	case VK_FORMAT_R8_UNORM:
+	case VK_FORMAT_R8_SINT:
+		return 8;
+	default:
+		assert(0);
+		return 0;
+	}
+}
+
+void createImageBO(_image* i)
+{
+	assert(i);
+	assert(i->format);
+	assert(i->width);
+	assert(i->height);
+
+	uint32_t bpp = getFormatBpp(i->format);
+	uint32_t pixelSizeBytes = bpp / 8;
+	uint32_t nonPaddedSize = i->width * i->height * pixelSizeBytes;
+	i->paddedWidth = i->width;
+	i->paddedHeight = i->height;
+
+	//need to pad to T format, as HW automatically chooses that
+	if(nonPaddedSize > 4096)
+	{
+		getPaddedTextureDimensionsT(i->width, i->height, bpp, &i->paddedWidth, &i->paddedHeight);
+	}
+
+	i->size = i->paddedWidth * i->paddedHeight * pixelSizeBytes;
+	i->stride = i->paddedWidth * pixelSizeBytes;
+	i->handle = vc4_bo_alloc(controlFd, i->size, "swapchain image"); assert(i->handle);
+
+	//set tiling to T if size > 4KB
+	if(nonPaddedSize > 4096)
+	{
+		int ret = vc4_bo_set_tiling(controlFd, i->handle, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
+		i->tiling = VC4_TILING_FORMAT_T;
+	}
+	else
+	{
+		int ret = vc4_bo_set_tiling(controlFd, i->handle, DRM_FORMAT_MOD_LINEAR); assert(ret);
+		i->tiling = VC4_TILING_FORMAT_LT;
+	}
+}
+
+/*static inline void util_pack_color(const float rgba[4], enum pipe_format format, union util_color *uc)
+{
+   ubyte r = 0;
+   ubyte g = 0;
+   ubyte b = 0;
+   ubyte a = 0;
+
+   if (util_format_get_component_bits(format, UTIL_FORMAT_COLORSPACE_RGB, 0) <= 8) {
+	  r = float_to_ubyte(rgba[0]);
+	  g = float_to_ubyte(rgba[1]);
+	  b = float_to_ubyte(rgba[2]);
+	  a = float_to_ubyte(rgba[3]);
+   }
+
+   switch (format) {
+   case PIPE_FORMAT_ABGR8888_UNORM:
+	  {
+		 uc->ui[0] = (r << 24) | (g << 16) | (b << 8) | a;
+	  }
+	  return;
+   case PIPE_FORMAT_XBGR8888_UNORM:
+	  {
+		 uc->ui[0] = (r << 24) | (g << 16) | (b << 8) | 0xff;
+	  }
+	  return;
+   case PIPE_FORMAT_BGRA8888_UNORM:
+	  {
+		 uc->ui[0] = (a << 24) | (r << 16) | (g << 8) | b;
+	  }
+	  return;
+   case PIPE_FORMAT_BGRX8888_UNORM:
+	  {
+		 uc->ui[0] = (0xffu << 24) | (r << 16) | (g << 8) | b;
+	  }
+	  return;
+   case PIPE_FORMAT_ARGB8888_UNORM:
+	  {
+		 uc->ui[0] = (b << 24) | (g << 16) | (r << 8) | a;
+	  }
+	  return;
+   case PIPE_FORMAT_XRGB8888_UNORM:
+	  {
+		 uc->ui[0] = (b << 24) | (g << 16) | (r << 8) | 0xff;
+	  }
+	  return;
+   case PIPE_FORMAT_B5G6R5_UNORM:
+	  {
+		 uc->us = ((r & 0xf8) << 8) | ((g & 0xfc) << 3) | (b >> 3);
+	  }
+	  return;
+   case PIPE_FORMAT_B5G5R5X1_UNORM:
+	  {
+		 uc->us = ((0x80) << 8) | ((r & 0xf8) << 7) | ((g & 0xf8) << 2) | (b >> 3);
+	  }
+	  return;
+   case PIPE_FORMAT_B5G5R5A1_UNORM:
+	  {
+		 uc->us = ((a & 0x80) << 8) | ((r & 0xf8) << 7) | ((g & 0xf8) << 2) | (b >> 3);
+	  }
+	  return;
+   case PIPE_FORMAT_B4G4R4A4_UNORM:
+	  {
+		 uc->us = ((a & 0xf0) << 8) | ((r & 0xf0) << 4) | ((g & 0xf0) << 0) | (b >> 4);
+	  }
+	  return;
+   case PIPE_FORMAT_A8_UNORM:
+	  {
+		 uc->ub = a;
+	  }
+	  return;
+   case PIPE_FORMAT_L8_UNORM:
+   case PIPE_FORMAT_I8_UNORM:
+	  {
+		 uc->ub = r;
+	  }
+	  return;
+   case PIPE_FORMAT_R32G32B32A32_FLOAT:
+	  {
+		 uc->f[0] = rgba[0];
+		 uc->f[1] = rgba[1];
+		 uc->f[2] = rgba[2];
+		 uc->f[3] = rgba[3];
+	  }
+	  return;
+   case PIPE_FORMAT_R32G32B32_FLOAT:
+	  {
+		 uc->f[0] = rgba[0];
+		 uc->f[1] = rgba[1];
+		 uc->f[2] = rgba[2];
+	  }
+	  return;
+
+   default:
+	  util_format_write_4f(format, rgba, 0, uc, 0, 0, 0, 1, 1);
+   }
+}*/
+
+uint32_t packVec4IntoABGR8(const float rgba[4])
+{
+	uint8_t r, g, b, a;
+	r = rgba[0] * 255.0;
+	g = rgba[1] * 255.0;
+	b = rgba[2] * 255.0;
+	a = rgba[3] * 255.0;
+
+	uint32_t res = 0 |
+			(a << 24) |
+			(b << 16) |
+			(g << 8) |
+			(r << 0);
+
+	return res;
 }
 
 /*
@@ -527,7 +703,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceSupportKHR(
 
 	assert(queueFamilyIndex < numQueueFamilies);
 
-	*pSupported = VK_TRUE; //TODO suuure for now, but we should verify if queue supports presenting to surface
+	//TODO if we plan to support headless rendering, there should be 2 families
+	//one using /dev/dri/card0 which has modesetting
+	//other using /dev/dri/renderD128 which does not support modesetting, this would say false here
+	*pSupported = VK_TRUE;
 	return VK_SUCCESS;
 }
 
@@ -654,6 +833,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 			if(!(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex])
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
+			}
+
+			for(int d = 0; d < pCreateInfo->pQueueCreateInfos[c].queueCount; ++d)
+			{
+				(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex][d].lastEmitSeqno = 0;
 			}
 
 			(*pDevice)->numQueues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex] = pCreateInfo->pQueueCreateInfos[c].queueCount;
@@ -789,9 +973,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(
 
 	for(int c = 0; c < elementsWritten; ++c)
 	{
-		//TODO
-		pSurfaceFormats[c].colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-		pSurfaceFormats[c].format = VK_FORMAT_R8G8B8A8_UNORM;
+		pSurfaceFormats[c] = supportedSurfaceFormats[c];
 	}
 
 	*pSurfaceFormatCount = elementsWritten;
@@ -889,26 +1071,28 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 
 	for(int c = 0; c < pCreateInfo->minImageCount; ++c)
 	{
-		//TODO image format, color space
-		//rest is filled out by create fb
 		s->images[c].width = pCreateInfo->imageExtent.width;
 		s->images[c].height = pCreateInfo->imageExtent.height;
 		s->images[c].depth = 1;
-		s->images[c].layers = 1;
+		s->images[c].layers = pCreateInfo->imageArrayLayers;
 		s->images[c].miplevels = 1;
 		s->images[c].samples = 1; //TODO
 		s->images[c].usageBits = pCreateInfo->imageUsage;
+		s->images[c].format = pCreateInfo->imageFormat;
+		s->images[c].imageSpace = pCreateInfo->imageColorSpace;
+		s->images[c].concurrentAccess = pCreateInfo->imageSharingMode;
+		s->images[c].numQueueFamiliesWithAccess = pCreateInfo->queueFamilyIndexCount;
+		if(s->images[c].concurrentAccess)
+		{
+			s->images[c].queueFamiliesWithAccess = malloc(sizeof(uint32_t)*s->images[c].numQueueFamiliesWithAccess);
+			memcpy(s->images[c].queueFamiliesWithAccess, pCreateInfo->pQueueFamilyIndices, sizeof(uint32_t)*s->images[c].numQueueFamiliesWithAccess);
+		}
+		s->images[c].preTransformMode = pCreateInfo->preTransform;
+		s->images[c].compositeAlpha = pCreateInfo->compositeAlpha;
+		s->images[c].presentMode = pCreateInfo->presentMode;
+		s->images[c].clipped = pCreateInfo->clipped;
 
-		//TODO determine pixel size from format
-		//we only support RGBA8 with SRGB now
-		//TODO texture/image BO alloc should be moved into a function that determines whether to use T or LT layout
-		uint32_t bpp = 32;
-		uint32_t pixelSizeBytes = bpp / 8;
-		getPaddedTextureDimensionsT(s->images[c].width, s->images[c].height, bpp, &s->images[c].paddedWidth, &s->images[c].paddedHeight);
-		s->images[c].size = s->images[c].paddedWidth * s->images[c].paddedHeight * pixelSizeBytes;
-		s->images[c].stride = s->images[c].paddedWidth * pixelSizeBytes;
-		s->images[c].handle = vc4_bo_alloc(controlFd, s->images[c].size, "swapchain image"); assert(s->images[c].handle);
-		int ret = vc4_bo_set_tiling(controlFd, s->images[c].handle, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
+		createImageBO(&s->images[c]);
 		int res = modeset_create_fb(controlFd, &s->images[c]); assert(res == 0);
 	}
 
@@ -950,7 +1134,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainImagesKHR(
 
 	for(int c = 0; c < elementsWritten; ++c)
 	{
-		//TODO
 		pSwapchainImages[c] = &s->images[c];
 	}
 
@@ -1124,6 +1307,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
 	assert(commandBuffer);
 	assert(pBeginInfo);
 
+	//TODO
+
 	//VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
 	//specifies that each recording of the command buffer will only be submitted once, and the command buffer will be reset and recorded again between each submission.
 
@@ -1194,121 +1379,6 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
 	//TODO
 }
 
-/*static inline void
-util_pack_color(const float rgba[4], enum pipe_format format, union util_color *uc)
-{
-   ubyte r = 0;
-   ubyte g = 0;
-   ubyte b = 0;
-   ubyte a = 0;
-
-   if (util_format_get_component_bits(format, UTIL_FORMAT_COLORSPACE_RGB, 0) <= 8) {
-	  r = float_to_ubyte(rgba[0]);
-	  g = float_to_ubyte(rgba[1]);
-	  b = float_to_ubyte(rgba[2]);
-	  a = float_to_ubyte(rgba[3]);
-   }
-
-   switch (format) {
-   case PIPE_FORMAT_ABGR8888_UNORM:
-	  {
-		 uc->ui[0] = (r << 24) | (g << 16) | (b << 8) | a;
-	  }
-	  return;
-   case PIPE_FORMAT_XBGR8888_UNORM:
-	  {
-		 uc->ui[0] = (r << 24) | (g << 16) | (b << 8) | 0xff;
-	  }
-	  return;
-   case PIPE_FORMAT_BGRA8888_UNORM:
-	  {
-		 uc->ui[0] = (a << 24) | (r << 16) | (g << 8) | b;
-	  }
-	  return;
-   case PIPE_FORMAT_BGRX8888_UNORM:
-	  {
-		 uc->ui[0] = (0xffu << 24) | (r << 16) | (g << 8) | b;
-	  }
-	  return;
-   case PIPE_FORMAT_ARGB8888_UNORM:
-	  {
-		 uc->ui[0] = (b << 24) | (g << 16) | (r << 8) | a;
-	  }
-	  return;
-   case PIPE_FORMAT_XRGB8888_UNORM:
-	  {
-		 uc->ui[0] = (b << 24) | (g << 16) | (r << 8) | 0xff;
-	  }
-	  return;
-   case PIPE_FORMAT_B5G6R5_UNORM:
-	  {
-		 uc->us = ((r & 0xf8) << 8) | ((g & 0xfc) << 3) | (b >> 3);
-	  }
-	  return;
-   case PIPE_FORMAT_B5G5R5X1_UNORM:
-	  {
-		 uc->us = ((0x80) << 8) | ((r & 0xf8) << 7) | ((g & 0xf8) << 2) | (b >> 3);
-	  }
-	  return;
-   case PIPE_FORMAT_B5G5R5A1_UNORM:
-	  {
-		 uc->us = ((a & 0x80) << 8) | ((r & 0xf8) << 7) | ((g & 0xf8) << 2) | (b >> 3);
-	  }
-	  return;
-   case PIPE_FORMAT_B4G4R4A4_UNORM:
-	  {
-		 uc->us = ((a & 0xf0) << 8) | ((r & 0xf0) << 4) | ((g & 0xf0) << 0) | (b >> 4);
-	  }
-	  return;
-   case PIPE_FORMAT_A8_UNORM:
-	  {
-		 uc->ub = a;
-	  }
-	  return;
-   case PIPE_FORMAT_L8_UNORM:
-   case PIPE_FORMAT_I8_UNORM:
-	  {
-		 uc->ub = r;
-	  }
-	  return;
-   case PIPE_FORMAT_R32G32B32A32_FLOAT:
-	  {
-		 uc->f[0] = rgba[0];
-		 uc->f[1] = rgba[1];
-		 uc->f[2] = rgba[2];
-		 uc->f[3] = rgba[3];
-	  }
-	  return;
-   case PIPE_FORMAT_R32G32B32_FLOAT:
-	  {
-		 uc->f[0] = rgba[0];
-		 uc->f[1] = rgba[1];
-		 uc->f[2] = rgba[2];
-	  }
-	  return;
-
-   default:
-	  util_format_write_4f(format, rgba, 0, uc, 0, 0, 0, 1, 1);
-   }
-}*/
-
-uint32_t packVec4IntoABGR8(const float rgba[4])
-{
-	uint8_t r, g, b, a;
-	r = rgba[0] * 255.0;
-	g = rgba[1] * 255.0;
-	b = rgba[2] * 255.0;
-	a = rgba[3] * 255.0;
-
-	uint32_t res = 0 |
-			(a << 24) |
-			(b << 16) |
-			(g << 8) |
-			(r << 0);
-
-	return res;
-}
-
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdClearColorImage
  * Color and depth/stencil images can be cleared outside a render pass instance using vkCmdClearColorImage or vkCmdClearDepthStencilImage, respectively.
@@ -1326,7 +1396,14 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 	assert(image);
 	assert(pColor);
 
-	//TODO in the end this should be a draw call, as this can only be used outside a render pass
+	//TODO this should only flag an image for clearing. This can only be called outside a renderpass
+	//actual clearing would only happen:
+	// -if image is rendered to (insert clear before first draw call)
+	// -if the image is bound for sampling (submit a CL with a clear)
+	// -if the command buffer is closed without any rendering (insert clear)
+	// -etc.
+	//we shouldn't clear an image if noone uses it
+
 	//TODO ranges support
 
 	assert(imageLayout == VK_IMAGE_LAYOUT_GENERAL ||
@@ -1345,7 +1422,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
 	clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
 										 0, 0, 0, 0,
-										 0, //TODO 64bit color
+										 getFormatBpp(i->format) == 64, //64 bit color mode
 										 i->samples > 1, //msaa
 										 i->width, i->height, 0, 0, 0);
 
@@ -1365,21 +1442,15 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 								1, //16 bit
 								2); //tris
 
-
-	//TODO primitive list format must be followed by shader state
-	//clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
-	//clInsertShaderState(&commandBuffer->binCl, 0, 0, 0);
-
-	//TODO submit handle of created BO instead
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
 	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, i->handle);
 	commandBuffer->submitCl.color_write.hindex = idx;
 	commandBuffer->submitCl.color_write.offset = 0;
 	commandBuffer->submitCl.color_write.flags = 0;
-	//TODO format, tiling
+	//TODO format
 	commandBuffer->submitCl.color_write.bits =
 			VC4_SET_FIELD(VC4_RENDER_CONFIG_FORMAT_RGBA8888, VC4_RENDER_CONFIG_FORMAT) |
-			VC4_SET_FIELD(VC4_TILING_FORMAT_T, VC4_RENDER_CONFIG_MEMORY_FORMAT);
+			VC4_SET_FIELD(i->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
 
 	//TODO msaa?
 
@@ -1388,13 +1459,35 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 	//TODO ranges
 	commandBuffer->submitCl.min_x_tile = 0;
 	commandBuffer->submitCl.min_y_tile = 0;
-	commandBuffer->submitCl.max_x_tile = (i->width - 1) / (i->samples > 1 ? 32 : 64);
-	commandBuffer->submitCl.max_y_tile = (i->height - 1) / (i->samples > 1 ? 32 : 64);
+
+	uint32_t tileSizeW = 64;
+	uint32_t tileSizeH = 64;
+
+	if(i->samples > 1)
+	{
+		tileSizeW >>= 1;
+		tileSizeH >>= 1;
+	}
+
+	if(getFormatBpp(i->format) == 64)
+	{
+		tileSizeH >>= 1;
+	}
+
+	uint32_t widthInTiles = divRoundUp(i->width, tileSizeW);
+	uint32_t heightInTiles = divRoundUp(i->height, tileSizeH);
+
+	commandBuffer->submitCl.max_x_tile = widthInTiles - 1;
+	commandBuffer->submitCl.max_y_tile = heightInTiles - 1;
 	commandBuffer->submitCl.width = i->width;
 	commandBuffer->submitCl.height = i->height;
 	commandBuffer->submitCl.flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
 	commandBuffer->submitCl.clear_z = 0; //TODO
 	commandBuffer->submitCl.clear_s = 0;
+
+	//TODO primitive list format must be followed by shader state
+	//clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
+	//clInsertShaderState(&commandBuffer->binCl, 0, 0, 0);
 
 	//clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
 	//clInsertClipWindow(&commandBuffer->binCl, i->width, i->height, 0, 0); //TODO should this be configurable?
@@ -1537,6 +1630,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 
 	//TODO: deal with pSubmits->pWaitDstStageMask
 
+	//TODO wait for fence??
+
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
 	{
 		if(pSubmits->pCommandBuffers[c]->state == CMDBUF_STATE_EXECUTABLE)
@@ -1547,33 +1642,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
 	{
-		/*struct drm_vc4_submit_cl submitCl =
-		{
-			.color_read.hindex = ~0,
-			.zs_read.hindex = ~0,
-			.color_write.hindex = ~0,
-			.msaa_color_write.hindex = ~0,
-			.zs_write.hindex = ~0,
-			.msaa_zs_write.hindex = ~0,
-		};*/
-
 		VkCommandBuffer cmdbuf = pSubmits->pCommandBuffers[c];
-
-		//Control List contents
-		//tile binning mode config
-		//start tile binning
-		//binning memory for the PTB???
-		//primitive list format
-		//shader state
-		//clip window
-		//rasterizer state
-		//clipper xy scaling
-		//clipper z scale and offset
-		//viewport offset
-		//flat shade flags
-		//increment semaphore to signal fragment processing can begin
-		//flush command
-		//
 
 		cmdbuf->submitCl.bo_handles = cmdbuf->handlesCl.buffer;
 		cmdbuf->submitCl.bo_handle_count = clSize(&cmdbuf->handlesCl) / 4;
@@ -1607,10 +1676,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 
 
 		//submit ioctl
-		uint64_t lastEmitSequno = 0; //TODO
-		static uint64_t lastFinishedSequno = 0;
-		printf("submit ioctl\n");
-		vc4_cl_submit(controlFd, &cmdbuf->submitCl, &lastEmitSequno, &lastFinishedSequno);
+		static uint64_t lastFinishedSeqno = 0;
+		vc4_cl_submit(controlFd, &cmdbuf->submitCl, &queue->lastEmitSeqno, &lastFinishedSeqno);
 	}
 
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
@@ -1681,8 +1748,14 @@ VKAPI_ATTR VkResult VKAPI_CALL vkDeviceWaitIdle(
 {
 	assert(device);
 
-	//TODO
-	//possibly wait on ioctl
+	for(int c = 0; c < numQueueFamilies; ++c)
+	{
+		for(int d = 0; d < device->numQueues[c]; ++d)
+		{
+			uint64_t lastFinishedSeqno;
+			vc4_seqno_wait(controlFd, &lastFinishedSeqno, device->queues[c][d].lastEmitSeqno, WAIT_TIMEOUT_INFINITE);
+		}
+	}
 
 	return VK_SUCCESS;
 }
@@ -1698,7 +1771,7 @@ VKAPI_ATTR void VKAPI_CALL vkFreeCommandBuffers(
 		const VkCommandBuffer*                      pCommandBuffers)
 {
 	assert(device);
-	//assert(commandPool); //TODO
+	assert(commandPool);
 	assert(pCommandBuffers);
 
 	_commandPool* cp = (_commandPool*)commandPool;

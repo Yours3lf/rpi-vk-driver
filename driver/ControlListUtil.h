@@ -550,9 +550,22 @@ void clInsertTileBinningModeConfiguration(ControlList* cl,
 	*(uint32_t*)cl->nextFreeByte = tileAllocationMemoryAddress; cl->nextFreeByte += 4;
 	*(uint32_t*)cl->nextFreeByte = tileAllocationMemorySize; cl->nextFreeByte += 4;
 	*(uint32_t*)cl->nextFreeByte = tileStateDataArrayAddress; cl->nextFreeByte += 4;
-	uint32_t tileSize = multisampleMode4x ? 32 : 64;
-	uint32_t widthInTiles = divRoundUp(widthInPixels, tileSize);
-	uint32_t heightInTiles = divRoundUp(heightInPixels, tileSize);
+	uint32_t tileSizeW = 64;
+	uint32_t tileSizeH = 64;
+
+	if(multisampleMode4x)
+	{
+		tileSizeW >>= 1;
+		tileSizeH >>= 1;
+	}
+
+	if(tileBuffer64BitColorDepth)
+	{
+		tileSizeH >>= 1;
+	}
+
+	uint32_t widthInTiles = divRoundUp(widthInPixels, tileSizeW);
+	uint32_t heightInTiles = divRoundUp(heightInPixels, tileSizeH);
 	*(uint8_t*)cl->nextFreeByte = widthInTiles; cl->nextFreeByte++;
 	*(uint8_t*)cl->nextFreeByte = heightInTiles; cl->nextFreeByte++;
 	*cl->nextFreeByte =
