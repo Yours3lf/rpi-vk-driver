@@ -5,6 +5,7 @@ extern "C" {
 #endif
 
 #include <signal.h>
+#include <stdio.h>
 
 enum { HAVE_TRAP_INSTRUCTION = 1, };
 __attribute__((gnu_inline, always_inline))

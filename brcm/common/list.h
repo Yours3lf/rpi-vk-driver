@@ -41,10 +41,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 //#include "c99_compat.h"
-//#include "../../driver/CustomAssert.h"
+#include "../../driver/CustomAssert.h"
 
 
-typedef struct list_head
+struct list_head
 {
     struct list_head *prev;
     struct list_head *next;

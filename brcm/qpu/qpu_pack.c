@@ -22,6 +22,7 @@
  */
 
 #include <string.h>
+#include <strings.h>
 #include "../common/macros.h"
 
 #include "../common/v3d_device_info.h"

@@ -22,6 +22,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "../common/macros.h"
 #include "../common/v3d_device_info.h"
 #include "qpu_instr.h"
@@ -207,6 +208,7 @@ v3d_qpu_cond_name(enum v3d_qpu_cond cond)
                 return ".ifnb";
         default:
                 unreachable("bad cond value");
+				return 0;
         }
 }
 
@@ -230,6 +232,7 @@ v3d_qpu_branch_cond_name(enum v3d_qpu_branch_cond cond)
                 return ".allna";
         default:
                 unreachable("bad branch cond value");
+				return 0;
         }
 }
 
@@ -245,6 +248,7 @@ v3d_qpu_msfign_name(enum v3d_qpu_msfign msfign)
                 return "q";
         default:
                 unreachable("bad branch cond value");
+				return 0;
         }
 }
 
@@ -262,6 +266,7 @@ v3d_qpu_pf_name(enum v3d_qpu_pf pf)
                 return ".pushc";
         default:
                 unreachable("bad pf value");
+				return 0;
         }
 }
 
@@ -297,6 +302,7 @@ v3d_qpu_uf_name(enum v3d_qpu_uf uf)
                 return ".nornc";
         default:
                 unreachable("bad pf value");
+				return 0;
         }
 }
 
@@ -312,6 +318,7 @@ v3d_qpu_pack_name(enum v3d_qpu_output_pack pack)
                 return ".h";
         default:
                 unreachable("bad pack value");
+				return 0;
         }
 }
 
@@ -337,6 +344,7 @@ v3d_qpu_unpack_name(enum v3d_qpu_input_unpack unpack)
                 return ".swp";
         default:
                 unreachable("bad unpack value");
+				return 0;
         }
 }
 
