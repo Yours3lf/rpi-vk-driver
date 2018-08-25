@@ -32,6 +32,9 @@ typedef struct VkImage_T
 	uint32_t format;
 	uint32_t imageSpace;
 	uint32_t tiling;
+	uint32_t needToClear;
+	uint32_t clearColor[2];
+	uint32_t layout;
 	uint32_t concurrentAccess; //TODO
 	uint32_t numQueueFamiliesWithAccess;
 	uint32_t* queueFamiliesWithAccess;
