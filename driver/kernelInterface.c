@@ -135,16 +135,16 @@ uint64_t vc4_bo_get_tiling(int fd, uint32_t bo, uint64_t mod)
 	int ret = drmIoctl(fd, DRM_IOCTL_VC4_GET_TILING, &get_tiling);
 
 	if (ret != 0) {
-		return DRM_FORMAT_MOD_LINEAR;
+		return DRM_FORMAT_MOD_LINEAR; //0
 	} else if (mod == DRM_FORMAT_MOD_INVALID) {
 		return get_tiling.modifier;
 	} else if (mod != get_tiling.modifier) {
 		printf("Modifier 0x%llx vs. tiling (0x%llx) mismatch\n",
 			   (long long)mod, get_tiling.modifier);
-		return 0;
+		return -1;
 	}
 
-	return 0;
+	return -1;
 }
 
 int vc4_bo_set_tiling(int fd, uint32_t bo, uint64_t mod)
@@ -203,33 +203,19 @@ void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t size)
 	return mapPtr;
 }
 
-static int vc4_bo_wait_ioctl(int fd, uint32_t handle, uint64_t timeout_ns)
-{
-	assert(fd);
-	assert(handle);
-
-	struct drm_vc4_wait_bo wait = {
-		.handle = handle,
-				.timeout_ns = timeout_ns,
-	};
-	int ret = drmIoctl(fd, DRM_IOCTL_VC4_WAIT_BO, &wait);
-	if (ret == -1)
-	{
-		printf("bo wait fail: %s", strerror(errno));
-		return 0;
-	}
-	else
-	{
-		return 1;
-	}
-}
-
 int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns)
 {
 	assert(fd);
 	assert(bo);
 
-	int ret = vc4_bo_wait_ioctl(fd, bo, timeout_ns);
+	struct drm_vc4_wait_bo wait = {
+		.handle = bo,
+				.timeout_ns = timeout_ns,
+	};
+
+	printf("Wait for BO: %u\n", bo);
+
+	int ret = drmIoctl(fd, DRM_IOCTL_VC4_WAIT_BO, &wait);
 	if (ret) {
 		if (ret != -ETIME) {
 			printf("BO wait failed: %s\n",
@@ -242,27 +228,6 @@ int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns)
 	return 1;
 }
 
-static int vc4_seqno_wait_ioctl(int fd, uint64_t seqno, uint64_t timeout_ns)
-{
-	assert(fd);
-	assert(seqno);
-
-	struct drm_vc4_wait_seqno wait = {
-		.seqno = seqno,
-				.timeout_ns = timeout_ns,
-	};
-	int ret = drmIoctl(fd, DRM_IOCTL_VC4_WAIT_SEQNO, &wait);
-	if (ret == -1)
-	{
-		printf("bo wait fail: %s", strerror(errno));
-		return 0;
-	}
-	else
-	{
-		return 1;
-	}
-}
-
 int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t timeout_ns)
 {
 	assert(fd);
@@ -272,7 +237,14 @@ int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t
 	if (*lastFinishedSeqno >= seqno)
 		return 1;
 
-	int ret = vc4_seqno_wait_ioctl(fd, seqno, timeout_ns);
+	struct drm_vc4_wait_seqno wait = {
+		.seqno = seqno,
+				.timeout_ns = timeout_ns,
+	};
+
+	printf("Wait for seqno: %llu\n", seqno);
+
+	int ret = drmIoctl(fd, DRM_IOCTL_VC4_WAIT_SEQNO, &wait);
 	if (ret) {
 		if (ret != -ETIME) {
 			printf("Seqno wait failed: %s\n",
@@ -544,10 +516,9 @@ void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmitt
 	}
 
 	if (*lastEmittedSeqno - *lastFinishedSeqno > 5) {
-		uint64_t seqno = *lastEmittedSeqno - 5;
 		if (!vc4_seqno_wait(fd,
 							lastFinishedSeqno,
-							seqno,
+							*lastFinishedSeqno > 0 ? *lastEmittedSeqno - 5 : *lastEmittedSeqno,
 							WAIT_TIMEOUT_INFINITE))
 		{
 			printf("Job throttling failed\n");

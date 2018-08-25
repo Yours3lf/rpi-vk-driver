@@ -1608,7 +1608,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 
 		//submit ioctl
 		uint64_t lastEmitSequno = 0; //TODO
-		uint64_t lastFinishedSequno = 0;
+		static uint64_t lastFinishedSequno = 0;
 		printf("submit ioctl\n");
 		vc4_cl_submit(controlFd, &cmdbuf->submitCl, &lastEmitSequno, &lastFinishedSequno);
 	}
