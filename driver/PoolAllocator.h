@@ -26,7 +26,7 @@ PoolAllocator createPoolAllocator(char* b, unsigned bs, unsigned s)
 	PoolAllocator pa =
 	{
 		.buf = b,
-		.nextFreeBlock = b,
+		.nextFreeBlock = (uint32_t*)b,
 		.blockSize = bs,
 		.size = s
 	};
@@ -35,7 +35,7 @@ PoolAllocator createPoolAllocator(char* b, unsigned bs, unsigned s)
 	uint32_t* ptr = pa.nextFreeBlock;
 	for(unsigned c = 0; c < s/bs - 1; ++c)
 	{
-		*ptr = ptr + bs;
+		*ptr = (uint32_t)ptr + bs;
 		ptr += bs;
 	}
 
@@ -66,7 +66,7 @@ void* poolAllocate(PoolAllocator* pa)
 	void* ret = pa->nextFreeBlock;
 
 	//set next free block to the one the current next points to
-	pa->nextFreeBlock = *pa->nextFreeBlock;
+	pa->nextFreeBlock = (uint32_t*)*pa->nextFreeBlock;
 
 	return ret;
 }
@@ -77,7 +77,7 @@ void poolFree(PoolAllocator* pa, void* p)
 	assert(p);
 
 	//set block to be freed to point to the current next free block
-	*(uint32_t*)p = pa->nextFreeBlock;
+	*(uint32_t*)p = (uint32_t)pa->nextFreeBlock;
 
 	//set next free block to the freshly freed block
 	pa->nextFreeBlock = p;

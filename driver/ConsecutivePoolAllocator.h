@@ -26,7 +26,7 @@ ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, un
 	ConsecutivePoolAllocator pa =
 	{
 		.buf = b,
-		.nextFreeBlock = b,
+		.nextFreeBlock = (uint32_t*)b,
 		.blockSize = bs,
 		.size = s
 	};
@@ -36,7 +36,7 @@ ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, un
 	unsigned last = s/bs - 1;
 	for(unsigned c = 0; c < last; ++c)
 	{
-		*ptr = ptr + bs/4;
+		*ptr = (uint32_t)ptr + bs;
 		ptr += bs/4;
 	}
 
@@ -65,11 +65,11 @@ void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 	}
 
 	void* ret = 0;
-	for(uint32_t* candidate = pa->nextFreeBlock; candidate; candidate = *candidate)
+	for(uint32_t* candidate = pa->nextFreeBlock; candidate; candidate = (uint32_t*)*candidate)
 	{
 		uint32_t found = 1;
 		uint32_t* prevBlock = candidate;
-		uint32_t* blockAfterCandidate = *candidate;
+		uint32_t* blockAfterCandidate = (uint32_t*)*candidate;
 		//check if there are enough consecutive free blocks
 		for(uint32_t c = 0; c < numBlocks - 1; ++c)
 		{
@@ -80,7 +80,7 @@ void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 				break;
 			}
 			prevBlock = blockAfterCandidate;
-			blockAfterCandidate = *blockAfterCandidate;
+			blockAfterCandidate = (uint32_t*)*blockAfterCandidate;
 		}
 
 		//numblocks consecutive blocks found
@@ -95,11 +95,11 @@ void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 			else
 			{
 				//somewhere the linked list would point to candidate, we need to correct this
-				for(uint32_t* nextFreeBlockCandidate = pa->nextFreeBlock; nextFreeBlockCandidate; nextFreeBlockCandidate = *nextFreeBlockCandidate)
+				for(uint32_t* nextFreeBlockCandidate = pa->nextFreeBlock; nextFreeBlockCandidate; nextFreeBlockCandidate = (uint32_t*)*nextFreeBlockCandidate)
 				{
-					if(*nextFreeBlockCandidate == candidate)
+					if((uint32_t*)*nextFreeBlockCandidate == candidate)
 					{
-						*nextFreeBlockCandidate = blockAfterCandidate;
+						*nextFreeBlockCandidate = (uint32_t)blockAfterCandidate;
 						break;
 					}
 				}
@@ -117,34 +117,34 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 	assert(pa->buf);
 	assert(p);
 
-	if(pa->nextFreeBlock > p)
+	if((void*)pa->nextFreeBlock > p)
 	{
 		for(uint32_t c = 0; c < numBlocks - 1; ++c)
 		{
 			//set each allocated block to form a linked list
-			*(uint32_t*)((char*)p + c * pa->blockSize) = (char*)p + (c + 1) * pa->blockSize;
+			*(uint32_t*)((char*)p + c * pa->blockSize) = (uint32_t)((char*)p + (c + 1) * pa->blockSize);
 		}
 		//set last block to point to the next free
-		*(uint32_t*)((char*)p + (numBlocks - 1) * pa->blockSize) = pa->nextFreeBlock;
+		*(uint32_t*)((char*)p + (numBlocks - 1) * pa->blockSize) = (uint32_t)pa->nextFreeBlock;
 		//set next free to the newly freed block
 		pa->nextFreeBlock = p;
 		return;
 	}
 
 	//somewhere the linked list may point after the free block (or null), we need to correct this
-	for(uint32_t* nextFreeBlockCandidate = pa->nextFreeBlock; nextFreeBlockCandidate; nextFreeBlockCandidate = *nextFreeBlockCandidate)
+	for(uint32_t* nextFreeBlockCandidate = pa->nextFreeBlock; nextFreeBlockCandidate; nextFreeBlockCandidate = (uint32_t*)*nextFreeBlockCandidate)
 	{
-		if(*nextFreeBlockCandidate > p || !*nextFreeBlockCandidate)
+		if((void*)*nextFreeBlockCandidate > p || !*nextFreeBlockCandidate)
 		{
 			for(uint32_t c = 0; c < numBlocks - 1; ++c)
 			{
 				//set each allocated block to form a linked list
-				*(uint32_t*)((char*)p + c * pa->blockSize) = (char*)p + (c + 1) * pa->blockSize;
+				*(uint32_t*)((char*)p + c * pa->blockSize) = (uint32_t)((char*)p + (c + 1) * pa->blockSize);
 			}
 			//set last block to point to the next free
 			*(uint32_t*)((char*)p + (numBlocks - 1) * pa->blockSize) = *nextFreeBlockCandidate;
 
-			*nextFreeBlockCandidate = p;
+			*nextFreeBlockCandidate = (uint32_t)p;
 			break;
 		}
 	}
@@ -154,10 +154,10 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 //else it frees current block and allocates a new one
 void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks)
 {
-	if(pa->nextFreeBlock == (char*)currentMem + currNumBlocks * pa->blockSize)
+	if(pa->nextFreeBlock == (uint32_t*)((char*)currentMem + currNumBlocks * pa->blockSize))
 	{
 		//we have one more block after current one, so just expand current
-		pa->nextFreeBlock = *pa->nextFreeBlock;
+		pa->nextFreeBlock = (uint32_t*)*pa->nextFreeBlock;
 		return currentMem;
 	}
 	else
