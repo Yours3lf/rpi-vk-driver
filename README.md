@@ -7,3 +7,4 @@
   - [ ] shader from assembly, hardcoded vertices
   - [ ] vertices/indices from vertex/index buffer object
   - [ ] uniforms for matrix multiplication and animation
+  - [ ] texture coordinates and texture sampling
