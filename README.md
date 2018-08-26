@@ -3,4 +3,7 @@
 
 ## Milestones
 - [x] clear screen example working
-- [ ] triangle example working (vertex/index buffer object, shader from assembly)
+- [ ] triangle example working
+  - [ ] shader from assembly, hardcoded vertices
+  - [ ] vertices/indices from vertex/index buffer object
+  - [ ] uniforms for matrix multiplication and animation
