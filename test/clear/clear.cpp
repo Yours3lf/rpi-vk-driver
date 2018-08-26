@@ -86,8 +86,8 @@ void setupVulkan() {
 
 void mainLoop() {
 	//while (!glfwWindowShouldClose(window)) {
-	//for(int c = 0; c < 120; ++c){
-	for(int c = 0; c < 1; ++c){
+	for(int c = 0; c < 10; ++c){
+	//for(int c = 0; c < 1; ++c){
 		draw();
 
 		//	glfwPollEvents();
