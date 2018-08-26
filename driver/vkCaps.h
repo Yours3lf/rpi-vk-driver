@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
-VkPhysicalDeviceLimits _limits =
+static VkPhysicalDeviceLimits _limits =
 {
 	//TODO these values might change
 	.maxImageDimension1D = 16384,
@@ -113,7 +113,7 @@ VkPhysicalDeviceLimits _limits =
 	.nonCoherentAtomSize = 0x40
 };
 
-VkPhysicalDeviceFeatures _features =
+static VkPhysicalDeviceFeatures _features =
 {
 	//TODO this might change
 	.robustBufferAccess = 1,
@@ -174,7 +174,7 @@ VkPhysicalDeviceFeatures _features =
 };
 #define numFeatures (sizeof(_features)/sizeof(VkBool32))
 
-VkQueueFamilyProperties _queueFamilyProperties[] =
+static VkQueueFamilyProperties _queueFamilyProperties[] =
 {
 	{
 		.queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT,
@@ -185,7 +185,7 @@ VkQueueFamilyProperties _queueFamilyProperties[] =
 };
 #define numQueueFamilies (sizeof(_queueFamilyProperties)/sizeof(VkQueueFamilyProperties))
 
-VkSurfaceFormatKHR supportedSurfaceFormats[] =
+static VkSurfaceFormatKHR supportedSurfaceFormats[] =
 {
 	{
 		.format = VK_FORMAT_R8G8B8A8_UNORM,
@@ -259,29 +259,3 @@ static VkExtensionProperties deviceExtensions[] =
 	}
 };
 #define numDeviceExtensions (sizeof(deviceExtensions) / sizeof(VkExtensionProperties))
-
-int findInstanceExtension(char* name)
-{
-	for(int c = 0; c < numInstanceExtensions; ++c)
-	{
-		if(strcmp(instanceExtensions[c].extensionName, name) == 0)
-		{
-			return c;
-		}
-	}
-
-	return -1;
-}
-
-int findDeviceExtension(char* name)
-{
-	for(int c = 0; c < numDeviceExtensions; ++c)
-	{
-		if(strcmp(deviceExtensions[c].extensionName, name) == 0)
-		{
-			return c;
-		}
-	}
-
-	return -1;
-}
