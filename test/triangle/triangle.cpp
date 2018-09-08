@@ -897,7 +897,6 @@ void CreatePipeline()
 
 	VkPipelineColorBlendStateCreateInfo blendCreateInfo = {};
 	blendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	blendCreateInfo.logicOp = VK_LOGIC_OP_COPY;
 	blendCreateInfo.attachmentCount = 1;
 	blendCreateInfo.pAttachments = &blendAttachState;
 
