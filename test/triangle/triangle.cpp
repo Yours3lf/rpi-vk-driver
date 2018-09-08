@@ -21,13 +21,15 @@
 #define WINDOW_HEIGHT 480
 
 const char* fragShader =
-"#version 400\n"
-"layout(location = 0) out vec4 out_Color;\n"
-"void main() { out_Color = vec4( 0.0, 0.4, 1.0, 1.0 ); }";
+		"#version 100\n"
+		"precision mediump float;\n"
+		"void main() { gl_FragColor = vec4(0.8, 0.3, 0.5, 1.0); }\n";
 
 const char* vertShader =
-"#version 400\n"
-"void main() { vec2 pos[3] = vec2[3]( vec2(-0.7, 0.7), vec2(0.7, 0.7), vec2(0.0, -0.7) ); gl_Position = vec4( pos[gl_VertexIndex], 0.0, 1.0 ); }";
+		"#version 100\n"
+		"precision highp float;\n"
+		"attribute vec2 vertex;\n"
+		"void main(){ gl_Position = vec4(vertex, 0, 1); }\n";
 
 // Note: support swap chain recreation (not only required for resized windows!)
 // Note: window resize may not result in Vulkan telling that the swap chain should be recreated, should be handled explicitly!
@@ -49,6 +51,7 @@ void CreateRenderPass();
 void CreateFramebuffer();
 void CreateShaders();
 void CreatePipeline();
+void CreateVertexBuffer();
 void recordCommandBuffers();
 VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
@@ -71,6 +74,9 @@ VkShaderModule fsModule; //
 VkPipeline pipeline; //
 VkQueue graphicsQueue;
 VkQueue presentQueue;
+VkBuffer vertexBuffer;
+VkDeviceMemory vertexBufferMemory;
+VkPhysicalDeviceMemoryProperties pdmp;
 std::vector<VkImageView> views; //?
 
 uint32_t graphicsQueueFamily;
@@ -142,6 +148,7 @@ void setupVulkan() {
 	CreateFramebuffer();
 	CreateShaders();
 	CreatePipeline();
+	CreateVertexBuffer();
 	recordCommandBuffers();
 }
 
@@ -641,6 +648,9 @@ void recordCommandBuffers()
 
 		vkCmdSetScissor(presentCommandBuffers[i], 0, 1, &scissor);
 
+		VkDeviceSize offsets = 0;
+		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer, &offsets );
+
 		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
 
 		vkCmdEndRenderPass(presentCommandBuffers[i]);
@@ -885,6 +895,133 @@ void CreatePipeline()
 	VkResult res = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &pipeline);
 
 	printf("Graphics pipeline created\n");
+}
+
+uint32_t getMemoryTypeIndex(VkPhysicalDeviceMemoryProperties deviceMemoryProperties, uint32_t typeBits, VkMemoryPropertyFlags properties)
+{
+	// Iterate over all memory types available for the device used in this example
+	for (uint32_t i = 0; i < deviceMemoryProperties.memoryTypeCount; i++)
+	{
+		if ((typeBits & 1) == 1)
+		{
+			if ((deviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				return i;
+			}
+		}
+		typeBits >>= 1;
+	}
+
+	assert(0);
+}
+
+void CreateVertexBuffer()
+{
+	unsigned vboSize = sizeof(float) * 2 * 3; //3 x vec2
+
+	VkMemoryRequirements mr;
+	VkBuffer stagingVertexBuffer;
+	VkDeviceMemory stagingVertexBufferMemory;
+
+	{ //create staging buffer
+		VkBufferCreateInfo stagingci = {};
+		stagingci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		stagingci.size = vboSize;
+		stagingci.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+		VkResult res = vkCreateBuffer(device, &stagingci, 0, &stagingVertexBuffer);
+
+		vkGetBufferMemoryRequirements(device, stagingVertexBuffer, &mr);
+
+		VkMemoryAllocateInfo stagingmai = {};
+		stagingmai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		stagingmai.allocationSize = mr.size;
+		stagingmai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		res = vkAllocateMemory(device, &stagingmai, 0, &stagingVertexBufferMemory);
+
+		float vertices[] =
+		{
+			-1, -1,
+			1, -1,
+			0, 1
+		};
+
+		void* data;
+		res = vkMapMemory(device, stagingVertexBufferMemory, 0, mr.size, 0, &data);
+		memcpy(data, vertices, mr.size);
+		vkUnmapMemory(device, stagingVertexBufferMemory);
+
+		res = vkBindBufferMemory(device, stagingVertexBuffer, stagingVertexBufferMemory, 0);
+	}
+
+	{ //final vertex buffer
+		VkBufferCreateInfo ci = {};
+		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		ci.size = vboSize;
+		ci.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+		VkResult res = vkCreateBuffer(device, &ci, 0, &vertexBuffer);
+
+		VkMemoryAllocateInfo mai = {};
+		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		mai.allocationSize = mr.size;
+		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		res = vkAllocateMemory(device, &mai, 0, &vertexBufferMemory);
+
+		res = vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
+	}
+
+	{ //copy from staging to final
+		VkCommandBuffer cmdBuffer;
+
+		VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
+		cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		cmdBufAllocateInfo.commandPool = commandPool;
+		cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		cmdBufAllocateInfo.commandBufferCount = 1;
+
+		VkResult res = vkAllocateCommandBuffers(device, &cmdBufAllocateInfo, &cmdBuffer);
+
+		// If requested, also start the new command buffer
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		res = vkBeginCommandBuffer(cmdBuffer, &beginInfo);
+
+		VkBufferCopy copyRegion = {};
+		copyRegion.size = vboSize;
+		vkCmdCopyBuffer(cmdBuffer, stagingVertexBuffer, vertexBuffer, 1, &copyRegion);
+
+		res = vkEndCommandBuffer(cmdBuffer);
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &cmdBuffer;
+
+		// Create fence to ensure that the command buffer has finished executing
+		VkFenceCreateInfo fenceCreateInfo = {};
+		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceCreateInfo.flags = 0;
+		VkFence fence;
+		res = vkCreateFence(device, &fenceCreateInfo, nullptr, &fence);
+
+		// Submit to the queue
+		res = vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
+		// Wait for the fence to signal that command buffer has finished executing
+		res = vkWaitForFences(device, 1, &fence, VK_TRUE, -1);
+
+		vkDestroyFence(device, fence, nullptr);
+		vkFreeCommandBuffers(device, commandPool, 1, &cmdBuffer);
+
+		//clean up staging
+		vkDestroyBuffer(device, stagingVertexBuffer, 0);
+		vkFreeMemory(device, stagingVertexBufferMemory, 0);
+	}
+
+	printf("Vertex buffer created\n");
 }
 
 int main() {
