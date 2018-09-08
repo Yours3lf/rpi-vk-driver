@@ -239,6 +239,8 @@ void findPhysicalDevice() {
 
 	std::cout << "physical device with vulkan support found" << std::endl;
 
+	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &pdmp);
+
 	// Check device features
 	// Note: will apiVersion >= appInfo.apiVersion? Probably yes, but spec is unclear.
 	VkPhysicalDeviceProperties deviceProperties;
@@ -840,8 +842,27 @@ void CreatePipeline()
 	shaderStageCreateInfo[1].module = fsModule;
 	shaderStageCreateInfo[1].pName = "main";
 
+	VkVertexInputBindingDescription vertexInputBindingDescription =
+	{
+		0,
+		sizeof(float) * 2,
+		VK_VERTEX_INPUT_RATE_VERTEX
+	};
+
+	VkVertexInputAttributeDescription vertexInputAttributeDescription =
+	{
+		0,
+		0,
+		VK_FORMAT_R32G32_SFLOAT,
+		0
+	};
+
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputInfo.vertexAttributeDescriptionCount = 1;
+	vertexInputInfo.pVertexAttributeDescriptions = &vertexInputAttributeDescription;
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
 
 	VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {};
 	pipelineIACreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -863,7 +884,7 @@ void CreatePipeline()
 	VkPipelineRasterizationStateCreateInfo rastCreateInfo = {};
 	rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-	rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+	rastCreateInfo.cullMode = VK_CULL_MODE_NONE;
 	rastCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rastCreateInfo.lineWidth = 1.0f;
 
@@ -872,12 +893,17 @@ void CreatePipeline()
 
 	VkPipelineColorBlendAttachmentState blendAttachState = {};
 	blendAttachState.colorWriteMask = 0xf;
+	blendAttachState.blendEnable = false;
 
 	VkPipelineColorBlendStateCreateInfo blendCreateInfo = {};
 	blendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	blendCreateInfo.logicOp = VK_LOGIC_OP_COPY;
 	blendCreateInfo.attachmentCount = 1;
 	blendCreateInfo.pAttachments = &blendAttachState;
+
+	VkPipelineDepthStencilStateCreateInfo depthStencilState = {};
+	depthStencilState.depthTestEnable = false;
+	depthStencilState.stencilTestEnable = false;
 
 	VkGraphicsPipelineCreateInfo pipelineInfo = {};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -891,6 +917,7 @@ void CreatePipeline()
 	pipelineInfo.pColorBlendState = &blendCreateInfo;
 	pipelineInfo.renderPass = renderPass;
 	pipelineInfo.basePipelineIndex = -1;
+	pipelineInfo.pDepthStencilState = &depthStencilState;
 
 	VkResult res = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &pipeline);
 
