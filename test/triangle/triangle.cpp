@@ -146,9 +146,9 @@ void setupVulkan() {
 	createCommandQueues();
 	CreateRenderPass();
 	CreateFramebuffer();
+	CreateVertexBuffer();
 	CreateShaders();
 	CreatePipeline();
-	CreateVertexBuffer();
 	recordCommandBuffers();
 }
 
@@ -946,25 +946,23 @@ void CreateVertexBuffer()
 	unsigned vboSize = sizeof(float) * 2 * 3; //3 x vec2
 
 	VkMemoryRequirements mr;
-	VkBuffer stagingVertexBuffer;
-	VkDeviceMemory stagingVertexBufferMemory;
 
 	{ //create staging buffer
-		VkBufferCreateInfo stagingci = {};
-		stagingci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		stagingci.size = vboSize;
-		stagingci.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		VkBufferCreateInfo ci = {};
+		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		ci.size = vboSize;
+		ci.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-		VkResult res = vkCreateBuffer(device, &stagingci, 0, &stagingVertexBuffer);
+		VkResult res = vkCreateBuffer(device, &ci, 0, &vertexBuffer);
 
-		vkGetBufferMemoryRequirements(device, stagingVertexBuffer, &mr);
+		vkGetBufferMemoryRequirements(device, vertexBuffer, &mr);
 
-		VkMemoryAllocateInfo stagingmai = {};
-		stagingmai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		stagingmai.allocationSize = mr.size;
-		stagingmai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		VkMemoryAllocateInfo mai = {};
+		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		mai.allocationSize = mr.size;
+		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-		res = vkAllocateMemory(device, &stagingmai, 0, &stagingVertexBufferMemory);
+		res = vkAllocateMemory(device, &mai, 0, &vertexBufferMemory);
 
 		float vertices[] =
 		{
@@ -974,77 +972,11 @@ void CreateVertexBuffer()
 		};
 
 		void* data;
-		res = vkMapMemory(device, stagingVertexBufferMemory, 0, mr.size, 0, &data);
-		memcpy(data, vertices, mr.size);
-		vkUnmapMemory(device, stagingVertexBufferMemory);
-
-		res = vkBindBufferMemory(device, stagingVertexBuffer, stagingVertexBufferMemory, 0);
-	}
-
-	{ //final vertex buffer
-		VkBufferCreateInfo ci = {};
-		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		ci.size = vboSize;
-		ci.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
-		VkResult res = vkCreateBuffer(device, &ci, 0, &vertexBuffer);
-
-		VkMemoryAllocateInfo mai = {};
-		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		mai.allocationSize = mr.size;
-		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		res = vkAllocateMemory(device, &mai, 0, &vertexBufferMemory);
+		res = vkMapMemory(device, vertexBufferMemory, 0, mr.size, 0, &data);
+		memcpy(data, vertices, vboSize);
+		vkUnmapMemory(device, vertexBufferMemory);
 
 		res = vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
-	}
-
-	{ //copy from staging to final
-		VkCommandBuffer cmdBuffer;
-
-		VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
-		cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		cmdBufAllocateInfo.commandPool = commandPool;
-		cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		cmdBufAllocateInfo.commandBufferCount = 1;
-
-		VkResult res = vkAllocateCommandBuffers(device, &cmdBufAllocateInfo, &cmdBuffer);
-
-		// If requested, also start the new command buffer
-		VkCommandBufferBeginInfo beginInfo = {};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-		res = vkBeginCommandBuffer(cmdBuffer, &beginInfo);
-
-		VkBufferCopy copyRegion = {};
-		copyRegion.size = vboSize;
-		vkCmdCopyBuffer(cmdBuffer, stagingVertexBuffer, vertexBuffer, 1, &copyRegion);
-
-		res = vkEndCommandBuffer(cmdBuffer);
-
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &cmdBuffer;
-
-		// Create fence to ensure that the command buffer has finished executing
-		VkFenceCreateInfo fenceCreateInfo = {};
-		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceCreateInfo.flags = 0;
-		VkFence fence;
-		res = vkCreateFence(device, &fenceCreateInfo, nullptr, &fence);
-
-		// Submit to the queue
-		res = vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
-		// Wait for the fence to signal that command buffer has finished executing
-		res = vkWaitForFences(device, 1, &fence, VK_TRUE, -1);
-
-		vkDestroyFence(device, fence, nullptr);
-		vkFreeCommandBuffers(device, commandPool, 1, &cmdBuffer);
-
-		//clean up staging
-		vkDestroyBuffer(device, stagingVertexBuffer, 0);
-		vkFreeMemory(device, stagingVertexBufferMemory, 0);
 	}
 
 	printf("Vertex buffer created\n");
