@@ -21,7 +21,7 @@ void createImageBO(_image* i)
 		getPaddedTextureDimensionsT(i->width, i->height, bpp, &i->paddedWidth, &i->paddedHeight);
 	}
 
-	i->size = i->paddedWidth * i->paddedHeight * pixelSizeBytes;
+	i->size = getBOAlignedSize(i->paddedWidth * i->paddedHeight * pixelSizeBytes);
 	i->stride = i->paddedWidth * pixelSizeBytes;
 	i->handle = vc4_bo_alloc(controlFd, i->size, "swapchain image"); assert(i->handle);
 
@@ -327,6 +327,332 @@ uint32_t packVec4IntoABGR8(const float rgba[4])
    }
 }*/
 
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBeginRenderPass
+ */
+void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents)
+{
+
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBindPipeline
+ */
+void vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
+{
+
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetViewport
+ */
+void vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
+{
+
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetScissor
+ */
+void vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors)
+{
+
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdDraw
+ */
+void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+{
+
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdEndRenderPass
+ */
+void vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
+{
+
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateRenderPass
+ */
+VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
+{
+	assert(device);
+	assert(pCreateInfo);
+	assert(pRenderPass);
+
+	assert(pAllocator == 0); //TODO allocators not supported yet
+
+	_renderpass* rp = malloc(sizeof(_renderpass));
+	if(!rp)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	*pRenderPass = rp;
+
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateImageView
+ */
+VkResult vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView)
+{
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateFramebuffer
+ */
+VkResult vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
+{
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateShaderModule
+ */
+VkResult vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
+{
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateGraphicsPipelines
+ */
+VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
+{
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceMemoryProperties
+ */
+void vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties)
+{
+	assert(physicalDevice);
+	assert(pMemoryProperties);
+
+	if(memoryHeaps[0].size == 0)
+	{
+		//TODO is this the correct way of getting amount of video mem?
+		char buf[4096];
+		int fd = open("/proc/meminfo", O_RDONLY);
+		read(fd, buf, 4096);
+		close(fd);
+		char* cma = strstr(buf, "CmaTotal");
+		char* cmaend = strstr(cma, "\n");
+		char cmaAmount[4096];
+		char* cmaPtr = cmaAmount;
+		while(cma != cmaend)
+		{
+			if(*cma >= '0' && *cma <= '9')
+			{
+				//number
+				*cmaPtr = *cma; //copy char
+				cmaPtr++;
+			}
+
+			cma++;
+		}
+		*cmaPtr = '\0';
+		unsigned amount = atoi(cmaAmount);
+		//printf("%i\n", amount);
+
+		//all heaps share the same memory
+		for(int c = 0; c < numMemoryHeaps; ++c)
+		{
+			memoryHeaps[c].size = amount;
+		}
+	}
+
+	pMemoryProperties->memoryTypeCount = numMemoryTypes;
+	for(int c = 0; c < numMemoryTypes; ++c)
+	{
+		pMemoryProperties->memoryTypes[c] = memoryTypes[c];
+	}
+
+	pMemoryProperties->memoryHeapCount = numMemoryHeaps;
+	for(int c = 0; c < numMemoryHeaps; ++c)
+	{
+		pMemoryProperties->memoryHeaps[c] = memoryHeaps[c];
+	}
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBindVertexBuffers
+ */
+void vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
+{
+
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateBuffer
+ */
+VkResult vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer)
+{
+	assert(device);
+	assert(pCreateInfo);
+	assert(pBuffer);
+
+	assert(pAllocator == 0); //TODO
+
+	_buffer* buf = malloc(sizeof(_buffer));
+	if(!buf)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	buf->size = pCreateInfo->size;
+	buf->usage = pCreateInfo->usage;
+	buf->boundMem = 0;
+	buf->alignment = ARM_PAGE_SIZE; //TODO
+	buf->alignedSize = getBOAlignedSize(buf->size);
+
+	*pBuffer = buf;
+
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetBufferMemoryRequirements
+ */
+void vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryRequirements* pMemoryRequirements)
+{
+	assert(device);
+	assert(buffer);
+	assert(pMemoryRequirements);
+
+	pMemoryRequirements->alignment = ((_buffer*)buffer)->alignment;
+	pMemoryRequirements->size = ((_buffer*)buffer)->alignedSize;
+	pMemoryRequirements->memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; //TODO
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkAllocateMemory
+ */
+VkResult vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
+{
+	assert(device);
+	assert(pAllocateInfo);
+	assert(pMemory);
+
+	assert(pAllocator == 0); //TODO
+
+	uint32_t bo = vc4_bo_alloc(controlFd, pAllocateInfo->allocationSize, "vkAllocateMemory");
+	if(!bo)
+	{
+		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
+	}
+
+	_deviceMemory* mem = malloc(sizeof(_deviceMemory));
+	if(!mem)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	mem->bo = bo;
+	mem->size = pAllocateInfo->allocationSize;
+	mem->memTypeIndex = pAllocateInfo->memoryTypeIndex;
+	mem->mappedPtr = 0;
+
+	*pMemory = mem;
+
+	//TODO max number of allocations
+
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkMapMemory
+ */
+VkResult vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData)
+{
+	assert(device);
+	assert(memory);
+	assert(size);
+	assert(ppData);
+
+	assert(memoryTypes[((_deviceMemory*)memory)->memTypeIndex].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	assert(!((_deviceMemory*)memory)->mappedPtr);
+	assert(offset < ((_deviceMemory*)memory)->size);
+	if(size != VK_WHOLE_SIZE)
+	{
+		assert(size > 0);
+		assert(size <= ((_deviceMemory*)memory)->size - offset);
+	}
+
+	//TODO check ppdata alignment
+	//TODO multiple instances?
+
+	void* ptr = vc4_bo_map(controlFd, ((_deviceMemory*)memory)->bo, offset, size);
+	if(!ptr)
+	{
+		return VK_ERROR_MEMORY_MAP_FAILED;
+	}
+
+	((_deviceMemory*)memory)->mappedPtr = ptr;
+	((_deviceMemory*)memory)->mappedOffset = offset;
+	((_deviceMemory*)memory)->mappedSize = size;
+	*ppData = ptr;
+
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkUnmapMemory
+ */
+void vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
+{
+	assert(device);
+	assert(memory);
+
+	vc4_bo_unmap_unsynchronized(controlFd, ((_deviceMemory*)memory)->mappedPtr, ((_deviceMemory*)memory)->mappedSize);
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkBindBufferMemory
+ */
+VkResult vkBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset)
+{
+	assert(device);
+	assert(buffer);
+	assert(memory);
+
+	_buffer* buf = buffer;
+	_deviceMemory* mem = memory;
+
+	assert(!buf->boundMem);
+	assert(memoryOffset < mem->size);
+	assert(memoryOffset % buf->alignment == 0);
+	assert(buf->alignedSize <= mem->size - memoryOffset);
+
+	buf->boundMem = mem;
+	buf->boundOffset = memoryOffset;
+
+	return VK_SUCCESS;
+}
+
+
+
+
+
+
+void vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator)
+{
+
+}
+
+void vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
+{
+
+}
+
 void vkDestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator)
 {
 
@@ -344,7 +670,14 @@ void vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAl
 
 void vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
 {
+	assert(device);
+	assert(renderPass);
 
+	assert(pAllocator == 0); //TODO
+
+	//TODO?
+
+	free(renderPass);
 }
 
 void vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, const VkAllocationCallbacks* pAllocator)
@@ -355,59 +688,4 @@ void vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, const V
 void vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
 {
 
-}
-
-void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents)
-{
-
-}
-
-void vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
-{
-
-}
-
-void vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
-{
-
-}
-
-void vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors)
-{
-
-}
-
-void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
-{
-
-}
-
-void vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
-{
-
-}
-
-VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
-{
-	return VK_SUCCESS;
-}
-
-VkResult vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView)
-{
-	return VK_SUCCESS;
-}
-
-VkResult vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
-{
-	return VK_SUCCESS;
-}
-
-VkResult vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
-{
-	return VK_SUCCESS;
-}
-
-VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
-{
-	return VK_SUCCESS;
 }

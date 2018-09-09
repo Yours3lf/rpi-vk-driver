@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <drm/drm.h>
 #include <drm/drm_fourcc.h>
@@ -111,6 +111,30 @@ typedef struct VkSwapchain_T
 	uint32_t backbufferIdx;
 	VkSurfaceKHR surface;
 } _swapchain;
+
+typedef struct VkRenderPass_T
+{
+	//TODO
+} _renderpass;
+
+typedef struct VkDeviceMemory_T
+{
+	uint32_t size;
+	uint32_t bo;
+	uint32_t memTypeIndex;
+	void* mappedPtr;
+	uint32_t mappedOffset, mappedSize;
+} _deviceMemory;
+
+typedef struct VkBuffer_T
+{
+	uint32_t size;
+	VkBufferUsageFlags usage;
+	_deviceMemory* boundMem;
+	uint32_t boundOffset;
+	uint32_t alignment;
+	uint32_t alignedSize;
+} _buffer;
 
 void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, uint32_t* paddedWidth, uint32_t* paddedHeight);
 uint32_t getFormatBpp(VkFormat f);

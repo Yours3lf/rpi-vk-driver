@@ -169,13 +169,12 @@ int vc4_bo_set_tiling(int fd, uint32_t bo, uint64_t mod)
 	return 1;
 }
 
-void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t size)
+void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t offset, uint32_t size)
 {
 	assert(fd);
 	assert(bo);
 	assert(size);
 
-	uint64_t offset;
 	int ret;
 
 	//if (bo->map)
@@ -185,22 +184,30 @@ void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t size)
 	memset(&map, 0, sizeof(map));
 	map.handle = bo;
 	ret = drmIoctl(fd, DRM_IOCTL_VC4_MMAP_BO, &map);
-	offset = map.offset;
 	if (ret != 0) {
 		printf("Couldn't map unsync: %s\n", strerror(errno));
 		return 0;
 	}
 
 	void* mapPtr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED,
-						fd, offset);
+						fd, map.offset + offset);
 	if (mapPtr == MAP_FAILED) {
 		printf("mmap of bo %d (offset 0x%016llx, size %d) failed\n",
-			   bo, (long long)offset, size);
+			   bo, (long long)map.offset + offset, size);
 		return 0;
 	}
 	//VG(VALGRIND_MALLOCLIKE_BLOCK(bo->map, bo->size, 0, false));
 
 	return mapPtr;
+}
+
+void vc4_bo_unmap_unsynchronized(int fd, void* ptr, uint32_t size)
+{
+	assert(fd);
+	assert(ptr);
+	assert(size);
+
+	munmap(ptr, size);
 }
 
 int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns)
@@ -281,6 +288,11 @@ int vc4_bo_flink(int fd, uint32_t bo, uint32_t *name)
 	return 1;
 }
 
+uint32_t getBOAlignedSize(uint32_t size)
+{
+	return align(size, ARM_PAGE_SIZE);
+}
+
 uint32_t vc4_bo_alloc_shader(int fd, const void *data, uint32_t* size)
 {
 	assert(fd);
@@ -289,7 +301,7 @@ uint32_t vc4_bo_alloc_shader(int fd, const void *data, uint32_t* size)
 
 	int ret;
 
-	uint32_t alignedSize = align(*size, ARM_PAGE_SIZE);
+	uint32_t alignedSize = getBOAlignedSize(*size);
 
 	struct drm_vc4_create_shader_bo create = {
 		.size = alignedSize,
@@ -336,8 +348,6 @@ uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
 	struct drm_vc4_create_bo create;
 	int ret;
 
-	uint32_t alignedSize = align(size, ARM_PAGE_SIZE);
-
 	/*bo = vc4_bo_from_cache(screen, size, name);
 		if (bo) {
 				if (dump_stats) {
@@ -349,7 +359,7 @@ uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
 		}*/
 
 	memset(&create, 0, sizeof(create));
-	create.size = alignedSize;
+	create.size = size;
 
 	ret = drmIoctl(fd, DRM_IOCTL_VC4_CREATE_BO, &create);
 	uint32_t handle = create.handle;
@@ -381,7 +391,7 @@ void vc4_bo_free(int fd, uint32_t bo, void* mappedAddr, uint32_t size)
 	assert(size);
 
 	if (mappedAddr) {
-		munmap(mappedAddr, size);
+		vc4_bo_unmap_unsynchronized(fd, mappedAddr, size);
 		//VG(VALGRIND_FREELIKE_BLOCK(bo->map, 0));
 	}
 
@@ -479,13 +489,13 @@ int vc4_bo_get_dmabuf(int fd, uint32_t bo)
 	return boFd;
 }
 
-void* vc4_bo_map(int fd, uint32_t bo, uint32_t size)
+void* vc4_bo_map(int fd, uint32_t bo, uint32_t offset, uint32_t size)
 {
 	assert(fd);
 	assert(bo);
 	assert(size);
 
-	void* map = vc4_bo_map_unsynchronized(fd, bo, size);
+	void* map = vc4_bo_map_unsynchronized(fd, bo, offset, size);
 
 	//wait infinitely
 	int ok = vc4_bo_wait(fd, bo, WAIT_TIMEOUT_INFINITE);

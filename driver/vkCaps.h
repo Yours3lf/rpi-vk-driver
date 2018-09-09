@@ -259,3 +259,25 @@ static VkExtensionProperties deviceExtensions[] =
 	}
 };
 #define numDeviceExtensions (sizeof(deviceExtensions) / sizeof(VkExtensionProperties))
+
+static VkMemoryType memoryTypes[] =
+{
+	{
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		0
+	},
+	{
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		0
+	},
+};
+#define numMemoryTypes (sizeof(memoryTypes) / sizeof(VkMemoryType))
+
+static VkMemoryHeap memoryHeaps[] =
+{
+	{
+		0, //will be filled from /proc/meminfo
+		VK_MEMORY_HEAP_DEVICE_LOCAL_BIT
+	}
+};
+#define numMemoryHeaps (sizeof(memoryHeaps) / sizeof(VkMemoryHeap))

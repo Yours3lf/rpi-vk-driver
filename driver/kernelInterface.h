@@ -45,7 +45,8 @@ int vc4_has_feature(int fd, uint32_t feature);
 int vc4_test_tiling(int fd);
 uint64_t vc4_bo_get_tiling(int fd, uint32_t bo, uint64_t mod);
 int vc4_bo_set_tiling(int fd, uint32_t bo, uint64_t mod);
-void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t size);
+void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t offset, uint32_t size);
+void vc4_bo_unmap_unsynchronized(int fd, void* ptr, uint32_t size);
 //int vc4_bo_wait_ioctl(int fd, uint32_t handle, uint64_t timeout_ns);
 int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns);
 //int vc4_seqno_wait_ioctl(int fd, uint64_t seqno, uint64_t timeout_ns);
@@ -59,8 +60,9 @@ int vc4_bo_unpurgeable(int fd, uint32_t bo, int hasMadvise);
 void vc4_bo_purgeable(int fd, uint32_t bo, int hasMadvise);
 void vc4_bo_label(int fd, uint32_t bo, const char* name);
 int vc4_bo_get_dmabuf(int fd, uint32_t bo);
-void* vc4_bo_map(int fd, uint32_t bo, uint32_t size);
+void* vc4_bo_map(int fd, uint32_t bo, uint32_t offset, uint32_t size);
 void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmittedSeqno, uint64_t* lastFinishedSeqno);
+uint32_t getBOAlignedSize(uint32_t size);
 
 //TODO perfmon
 
