@@ -21,7 +21,6 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-#include "modeset.h"
 #include "kernelInterface.h"
 #include "ControlListUtil.h"
 
@@ -104,17 +103,27 @@ typedef struct VkDevice_T
 	int numQueues[numQueueFamilies];
 } _device;
 
-typedef struct VkSwapchain_T
-{
-	_image* images;
-	uint32_t numImages;
-	uint32_t backbufferIdx;
-	VkSurfaceKHR surface;
-} _swapchain;
-
 typedef struct VkRenderPass_T
 {
-	//TODO
+	//collection of:
+	//attachments, subpasses, dependencies between subpasses
+	//describes how attachments are used in subpasses
+
+	//attachment describes:
+	//format, sample count, how contents are treated at start/end of a renderpass
+
+	//subpasses render to same dimensions and fragments
+
+	//framebuffer objects specify views for attachements
+
+	VkAttachmentDescription* attachments;
+	uint32_t numAttachments;
+
+	VkSubpassDescription* subpasses;
+	uint32_t numSubpasses;
+
+	VkSubpassDependency* subpassDependencies;
+	uint32_t numSubpassDependencies;
 } _renderpass;
 
 typedef struct VkDeviceMemory_T
@@ -135,6 +144,62 @@ typedef struct VkBuffer_T
 	uint32_t alignment;
 	uint32_t alignedSize;
 } _buffer;
+
+typedef struct VkImage_T
+{
+	uint32_t handle;
+	uint32_t fb; //needed for swapchain
+	uint32_t width, height, depth;
+	uint32_t paddedWidth, paddedHeight;
+	uint32_t miplevels, samples;
+	uint32_t layers; //number of views for multiview/stereo
+	uint32_t size; //overall size including padding
+	uint32_t stride; //the number of bytes from one row of pixels in memory to the next row of pixels in memory (aka pitch)
+	uint32_t usageBits;
+	uint32_t format;
+	uint32_t imageSpace;
+	uint32_t tiling;
+	uint32_t needToClear;
+	uint32_t clearColor[2];
+	uint32_t layout;
+	uint32_t concurrentAccess; //TODO
+	uint32_t numQueueFamiliesWithAccess;
+	uint32_t* queueFamiliesWithAccess;
+	uint32_t preTransformMode;
+	uint32_t compositeAlpha;
+	uint32_t presentMode;
+	uint32_t clipped;
+} _image;
+
+typedef struct VkImageView_T
+{
+	_image* image;
+	VkImageViewType viewType;
+	VkFormat interpretedFormat;
+	VkComponentMapping swizzle;
+	VkImageSubresourceRange subresourceRange;
+} _imageView;
+
+typedef struct VkSwapchain_T
+{
+	_image* images;
+	uint32_t numImages;
+	uint32_t backbufferIdx;
+	VkSurfaceKHR surface;
+} _swapchain;
+
+typedef struct VkFramebuffer_T
+{
+	_renderpass* renderpass;
+	_imageView* attachmentViews;
+	uint32_t numAttachmentViews;
+	uint32_t width, height, layers;
+} _framebuffer;
+
+typedef struct VkShaderModule_T
+{
+	uint32_t bo;
+} _shaderModule;
 
 void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, uint32_t* paddedWidth, uint32_t* paddedHeight);
 uint32_t getFormatBpp(VkFormat f);

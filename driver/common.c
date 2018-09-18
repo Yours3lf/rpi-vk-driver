@@ -386,11 +386,87 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
 
 	assert(pAllocator == 0); //TODO allocators not supported yet
 
+	//just copy all data from create info
+	//we'll later need to bake the control list based on this
+
 	_renderpass* rp = malloc(sizeof(_renderpass));
 	if(!rp)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
+
+	rp->numAttachments = pCreateInfo->attachmentCount;
+	rp->attachments = malloc(sizeof(VkAttachmentDescription)*rp->numAttachments);
+	if(!rp->attachments)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	memcpy(rp->attachments, pCreateInfo->pAttachments, sizeof(VkAttachmentDescription)*rp->numAttachments);
+
+	rp->numSubpasses = pCreateInfo->subpassCount;
+	rp->subpasses = malloc(sizeof(VkSubpassDescription)*rp->numSubpasses);
+	if(!rp->subpasses)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	for(int c = 0; c < rp->numSubpasses; ++c)
+	{
+		rp->subpasses[c].flags = pCreateInfo->pSubpasses[c].flags;
+		rp->subpasses[c].pipelineBindPoint = pCreateInfo->pSubpasses[c].pipelineBindPoint;
+		rp->subpasses[c].inputAttachmentCount = pCreateInfo->pSubpasses[c].inputAttachmentCount;
+		rp->subpasses[c].colorAttachmentCount = pCreateInfo->pSubpasses[c].colorAttachmentCount;
+		rp->subpasses[c].preserveAttachmentCount = pCreateInfo->pSubpasses[c].preserveAttachmentCount;
+
+		rp->subpasses[c].pInputAttachments = malloc(sizeof(VkAttachmentReference)*rp->subpasses[c].inputAttachmentCount);
+		if(!rp->subpasses[c].pInputAttachments)
+		{
+			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
+
+		memcpy(rp->subpasses[c].pInputAttachments, pCreateInfo->pSubpasses[c].pInputAttachments, sizeof(VkAttachmentReference)*rp->subpasses[c].inputAttachmentCount);
+
+		rp->subpasses[c].pColorAttachments = malloc(sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount);
+		if(!rp->subpasses[c].pColorAttachments)
+		{
+			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
+
+		rp->subpasses[c].pResolveAttachments = malloc(sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount);
+		if(!rp->subpasses[c].pResolveAttachments)
+		{
+			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
+
+		memcpy(rp->subpasses[c].pColorAttachments, pCreateInfo->pSubpasses[c].pColorAttachments, sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount);
+		memcpy(rp->subpasses[c].pResolveAttachments, pCreateInfo->pSubpasses[c].pResolveAttachments, sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount);
+
+		rp->subpasses[c].pDepthStencilAttachment = malloc(sizeof(VkAttachmentReference));
+		if(!rp->subpasses[c].pDepthStencilAttachment)
+		{
+			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
+
+		memcpy(rp->subpasses[c].pDepthStencilAttachment, pCreateInfo->pSubpasses[c].pDepthStencilAttachment, sizeof(VkAttachmentReference));
+
+		rp->subpasses[c].pPreserveAttachments = malloc(sizeof(uint32_t)*rp->subpasses[c].preserveAttachmentCount);
+		if(!rp->subpasses[c].pPreserveAttachments)
+		{
+			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
+
+		memcpy(rp->subpasses[c].pPreserveAttachments, pCreateInfo->pSubpasses[c].pPreserveAttachments, sizeof(uint32_t)*rp->subpasses[c].preserveAttachmentCount);
+	}
+
+	rp->numSubpassDependencies = pCreateInfo->dependencyCount;
+	rp->subpassDependencies = malloc(sizeof(VkSubpassDependency)*rp->numSubpassDependencies);
+	if(!rp->subpassDependencies)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	memcpy(rp->subpassDependencies, pCreateInfo->pDependencies, sizeof(VkSubpassDependency)*rp->numSubpassDependencies);
 
 	*pRenderPass = rp;
 
@@ -402,6 +478,29 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
  */
 VkResult vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView)
 {
+	assert(device);
+	assert(pCreateInfo);
+	assert(pView);
+
+	assert(pAllocator == 0); //TODO
+
+	_imageView* view = malloc(sizeof(_imageView));
+
+	if(!view)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	view->image = pCreateInfo->image;
+	view->viewType = pCreateInfo->viewType;
+	view->interpretedFormat = pCreateInfo->format;
+	view->swizzle = pCreateInfo->components;
+	view->subresourceRange = pCreateInfo->subresourceRange;
+
+	//TODO errors/validation
+
+	*pView = view;
+
 	return VK_SUCCESS;
 }
 
@@ -410,6 +509,64 @@ VkResult vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCreate
  */
 VkResult vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
 {
+	assert(device);
+	assert(pCreateInfo);
+	assert(pFramebuffer);
+
+	assert(pAllocator == 0); //TODO
+
+	_framebuffer* fb = malloc(sizeof(_framebuffer));
+
+	if(!fb)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	fb->renderpass = pCreateInfo->renderPass;
+
+	fb->numAttachmentViews = pCreateInfo->attachmentCount;
+	fb->attachmentViews = malloc(sizeof(_imageView) * fb->numAttachmentViews);
+
+	if(!fb->attachmentViews)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	memcpy(fb->attachmentViews, pCreateInfo->pAttachments, sizeof(_imageView) * fb->numAttachmentViews);
+
+	fb->width = pCreateInfo->width;
+	fb->height = pCreateInfo->height;
+	fb->layers = pCreateInfo->layers;
+
+	//TODO errors/validation
+
+	*pFramebuffer = fb;
+
+	return VK_SUCCESS;
+}
+
+
+VkResult vkCreateShaderModuleFromRpiAssemblyKHR(VkDevice device, uint32_t numBytes, char* byteStream, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
+{
+	assert(device);
+	assert(numBytes > 0);
+	assert(byteStream);
+	assert(pShaderModule);
+
+	assert(pAllocator == 0); //TODO
+
+	_shaderModule* shader = malloc(sizeof(_shaderModule));
+
+	if(!shader)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	uint32_t size = numBytes;
+	shader->bo = vc4_bo_alloc_shader(controlFd, byteStream, &size);
+
+	*pShaderModule = shader;
+
 	return VK_SUCCESS;
 }
 

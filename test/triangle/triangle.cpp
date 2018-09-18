@@ -792,17 +792,19 @@ void CreateFramebuffer()
 	printf("Frame buffers created\n");
 }
 
-VkShaderModule VulkanCreateShaderModule(VkDevice& device, char* code)
+VkShaderModule VulkanCreateShaderModule(VkDevice& device, char* byteStream, uint32_t byteStreamSize)
 {
-	int codeSize = strlen(code);
+	VkShaderModule shaderModule;
 
-	VkShaderModuleCreateInfo shaderCreateInfo = {};
+	/*VkShaderModuleCreateInfo shaderCreateInfo = {};
 	shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	shaderCreateInfo.codeSize = codeSize;
 	shaderCreateInfo.pCode = (const uint32_t*)code;
 
-	VkShaderModule shaderModule;
-	VkResult res = vkCreateShaderModule(device, &shaderCreateInfo, NULL, &shaderModule);
+	VkResult res = vkCreateShaderModule(device, &shaderCreateInfo, NULL, &shaderModule);*/
+
+	VkResult res = vkCreateShaderModuleFromRpiAssemblyKHR(device, byteStreamSize, byteStream, NULL, &shaderModule);
+
 	printf("Created shader\n");
 
 	return shaderModule;
@@ -816,10 +818,10 @@ void CreateShaders()
 	char* fptr = (char*)malloc(strlen(fragShader) + 1);
 	memcpy(fptr, fragShader, strlen(fragShader) + 1);
 
-	vsModule = VulkanCreateShaderModule(device, vptr);
+	vsModule = VulkanCreateShaderModule(device, vptr, strlen(vptr));
 	assert(vsModule);
 
-	fsModule = VulkanCreateShaderModule(device, fptr);
+	fsModule = VulkanCreateShaderModule(device, fptr, strlen(fptr));
 	assert(fsModule);
 
 	free(vptr);

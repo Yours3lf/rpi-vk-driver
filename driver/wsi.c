@@ -1,4 +1,5 @@
 #include "common.h"
+#include "modeset.h"
 
 /*
  * Implementation of our RPI specific "extension"
