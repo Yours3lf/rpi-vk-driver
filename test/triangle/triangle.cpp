@@ -31,6 +31,37 @@ const char* vertShader =
 		"attribute vec2 vertex;\n"
 		"void main(){ gl_Position = vec4(vertex, 0, 1); }\n";
 
+const char fragBytes[] =
+{
+	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10, 00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10,
+	0x80, 0x7d, 0x82, 0x15, 0xa7, 0xb, 0x2, 0x10, 00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x30,
+	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10, 00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x50
+};
+
+const char vertBytes[] =
+{
+	0x80, 0x1f, 0x82, 0x2, 0x27, 0x10, 0x2, 0xd0, 00, 0x1a, 0x20, 00, 0x67, 0x4c, 0x2, 0xe0,
+	0x37, 00, 0xc2, 0x20, 0xe0, 0x49, 00, 0x10, 0x7, 00, 0x9c, 0x20, 0xe1, 0x49, 00, 0x10,
+	0x77, 0x2, 0xc2, 0x27, 0x22, 0x40, 0x12, 0x10, 0x17, 00, 0x9c, 0x20, 0xe3, 0x49, 00, 0x10,
+	0xc0, 0x76, 0x9e, 0x7, 0x27, 00, 0x22, 0x10, 00, 0x1a, 00, 00, 0x67, 0x5c, 0x2, 0xe0,
+	0x80, 0x7d, 0x2, 0x15, 0x27, 0xc, 0x2, 0x10, 0x80, 0x7d, 0x82, 0x15, 0x27, 0xc, 0x2, 0x10,
+	0xc0, 0xf, 0x9c, 0x15, 0x27, 0xc, 0x2, 0x10, 00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x30,
+	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10, 00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10,
+};
+
+const char coordinateBytes[] =
+{
+	00, 0x1a, 0x20, 00, 0x67, 0x4c, 0x2, 0xe0, 0x80, 0x7d, 0xc2, 0x15, 0xa7, 0x8, 0x2, 0x10,
+	00, 0x1a, 00, 00, 0x67, 0x5c, 0x2, 0xe0, 0x92, 0x7d, 0xc2, 0x95, 0xf0, 0x48, 0x2, 0x10,
+	0xde, 0x76, 0x82, 0x35, 0x21, 0x4c, 0x2, 0x10, 0x80, 0x1f, 0x82, 0x2, 0xe7, 0x8, 0x2, 0xd0,
+	0x16, 0x70, 0x82, 0x20, 0xe2, 0x49, 00, 0x10, 0x13, 0x70, 0x9e, 0x20, 0xe0, 0x49, 00, 0x10,
+	0xb, 0x70, 0x9e, 0x27, 0x21, 0x40, 0x12, 0x10, 0x40, 0x72, 0x9e, 0x7, 0x27, 00, 0x22, 0x10,
+	0xc0, 0xf, 0x9c, 0x15, 0x27, 0xc, 0x2, 0xd0, 0xc0, 0xf, 0x9e, 0x15, 0x27, 0xc, 0x2, 0xd0,
+	0x80, 0x7d, 0x2, 0x15, 0x27, 0xc, 0x2, 0x10, 0x80, 0x7d, 0x82, 0x15, 0x27, 0xc, 0x2, 0x10,
+	0xc0, 0x76, 0x9e, 0x15, 0x27, 0xc, 0x2, 0x10, 00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x30,
+	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10, 00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10,
+};
+
 // Note: support swap chain recreation (not only required for resized windows!)
 // Note: window resize may not result in Vulkan telling that the swap chain should be recreated, should be handled explicitly!
 void run();
@@ -796,14 +827,14 @@ VkShaderModule VulkanCreateShaderModule(VkDevice& device, char* byteStream, uint
 {
 	VkShaderModule shaderModule;
 
-	/*VkShaderModuleCreateInfo shaderCreateInfo = {};
+	VkShaderModuleCreateInfo shaderCreateInfo = {};
 	shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	shaderCreateInfo.codeSize = codeSize;
-	shaderCreateInfo.pCode = (const uint32_t*)code;
+	shaderCreateInfo.codeSize = byteStreamSize;
+	shaderCreateInfo.pCode = (const uint32_t*)byteStream;
 
-	VkResult res = vkCreateShaderModule(device, &shaderCreateInfo, NULL, &shaderModule);*/
+	VkResult res = vkCreateShaderModule(device, &shaderCreateInfo, NULL, &shaderModule);
 
-	VkResult res = vkCreateShaderModuleFromRpiAssemblyKHR(device, byteStreamSize, byteStream, NULL, &shaderModule);
+	//VkResult res = vkCreateShaderModuleFromRpiAssemblyKHR(device, byteStreamSize, byteStream, NULL, &shaderModule);
 
 	printf("Created shader\n");
 
@@ -812,20 +843,64 @@ VkShaderModule VulkanCreateShaderModule(VkDevice& device, char* byteStream, uint
 
 void CreateShaders()
 {
-	char* vptr = (char*)malloc(strlen(vertShader) + 1);
-	memcpy(vptr, vertShader, strlen(vertShader) + 1);
+	//char* vptr = (char*)malloc(strlen(vertShader) + 1);
+	//memcpy(vptr, vertShader, strlen(vertShader) + 1);
 
-	char* fptr = (char*)malloc(strlen(fragShader) + 1);
-	memcpy(fptr, fragShader, strlen(fragShader) + 1);
+	//char* fptr = (char*)malloc(strlen(fragShader) + 1);
+	//memcpy(fptr, fragShader, strlen(fragShader) + 1);
 
-	vsModule = VulkanCreateShaderModule(device, vptr, strlen(vptr));
+	char* vptr = (char*)malloc(sizeof(vertBytes));
+	memcpy(vptr, vertBytes, sizeof(vertBytes));
+
+	char* fptr = (char*)malloc(sizeof(fragBytes));
+	memcpy(fptr, fragBytes, sizeof(fragBytes));
+
+	char* cptr = (char*)malloc(sizeof(coordinateBytes));
+	memcpy(cptr, coordinateBytes, sizeof(coordinateBytes));
+
+	VkRpiAssemblyTypeKHR types[] =
+	{
+		VK_RPI_ASSEMBLY_TYPE_COORDINATE, VK_RPI_ASSEMBLY_TYPE_VERTEX
+	};
+
+	VkRpiAssemblyTypeKHR fragtypes[] =
+	{
+		VK_RPI_ASSEMBLY_TYPE_FRAGMENT
+	};
+
+	char* streams[] =
+	{
+		cptr, vptr
+	};
+
+	uint32_t numbytes[] =
+	{
+		sizeof(coordinateBytes), sizeof(vertBytes)
+	};
+
+	uint32_t fragsize = sizeof(fragBytes);
+
+	VkRpiShaderModuleAssemblyCreateInfoKHR vertexShaderModuleCreateInfo;
+	vertexShaderModuleCreateInfo.arraySize = 2;
+	vertexShaderModuleCreateInfo.assemblyTypes = types;
+	vertexShaderModuleCreateInfo.byteStreamArray = streams;
+	vertexShaderModuleCreateInfo.numBytesArray = numbytes;
+
+	VkRpiShaderModuleAssemblyCreateInfoKHR fragShaderModuleCreateInfo;
+	fragShaderModuleCreateInfo.arraySize = 1;
+	fragShaderModuleCreateInfo.assemblyTypes = fragtypes;
+	fragShaderModuleCreateInfo.byteStreamArray = &fptr;
+	fragShaderModuleCreateInfo.numBytesArray = &fragsize;
+
+	VkResult res = vkCreateShaderModuleFromRpiAssemblyKHR(device, &vertexShaderModuleCreateInfo, 0, &vsModule);
 	assert(vsModule);
 
-	fsModule = VulkanCreateShaderModule(device, fptr, strlen(fptr));
+	res = vkCreateShaderModuleFromRpiAssemblyKHR(device, &fragShaderModuleCreateInfo, 0, &fsModule);
 	assert(fsModule);
 
 	free(vptr);
 	free(fptr);
+	free(cptr);
 }
 
 

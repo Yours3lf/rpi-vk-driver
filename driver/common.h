@@ -198,8 +198,61 @@ typedef struct VkFramebuffer_T
 
 typedef struct VkShaderModule_T
 {
-	uint32_t bo;
+	uint32_t* bos;
+	VkRpiAssemblyTypeKHR* assemblyTypes;
+	uint32_t numBos;
 } _shaderModule;
+
+typedef struct VkPipeline_T
+{
+	VkShaderModule modules[6];
+	char* names[6];
+	uint32_t vertexBindingDescriptionCount;
+	VkVertexInputBindingDescription* vertexBindingDescriptions;
+	uint32_t vertexAttributeDescriptionCount;
+	VkVertexInputAttributeDescription* vertexAttributeDescriptions;
+	VkPrimitiveTopology topology;
+	VkBool32 primitiveRestartEnable;
+	uint32_t viewportCount;
+	VkViewport* viewports;
+	uint32_t scissorCount;
+	VkRect2D* scissors;
+	VkBool32 depthClampEnable;
+	VkBool32 rasterizerDiscardEnable;
+	VkPolygonMode polygonMode;
+	VkCullModeFlags cullMode;
+	VkFrontFace frontFace;
+	VkBool32 depthBiasEnable;
+	float depthBiasConstantFactor;
+	float depthBiasClamp;
+	float depthBiasSlopeFactor;
+	float lineWidth;
+	VkSampleCountFlagBits rasterizationSamples;
+	VkBool32 sampleShadingEnable;
+	float minSampleShading;
+	VkSampleMask sampleMask;
+	VkBool32 alphaToCoverageEnable;
+	VkBool32 alphaToOneEnable;
+	VkBool32 depthTestEnable;
+	VkBool32  depthWriteEnable;
+	VkCompareOp depthCompareOp;
+	VkBool32 depthBoundsTestEnable;
+	VkBool32 stencilTestEnable;
+	VkStencilOpState front;
+	VkStencilOpState back;
+	float minDepthBounds;
+	float maxDepthBounds;
+	VkBool32 logicOpEnable;
+	VkLogicOp logicOp;
+	uint32_t attachmentCount;
+	VkPipelineColorBlendAttachmentState* attachmentBlendStates;
+	float blendConstants[4];
+	uint32_t dynamicStateCount;
+	VkDynamicState* dynamicStates;
+	VkPipelineLayout layout;
+	_renderpass* renderPass;
+	uint32_t subpass;
+} _pipeline;
 
 void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, uint32_t* paddedWidth, uint32_t* paddedHeight);
 uint32_t getFormatBpp(VkFormat f);

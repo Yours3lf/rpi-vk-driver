@@ -13,12 +13,29 @@ typedef enum VkRpiSurfaceCreateFlagsKHR {
 	VK_RPI_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkRpiSurfaceCreateFlagsKHR;
 
+typedef enum VkRpiAssemblyTypeKHR {
+	VK_RPI_ASSEMBLY_TYPE_COORDINATE = 0,
+	VK_RPI_ASSEMBLY_TYPE_VERTEX = 1,
+	VK_RPI_ASSEMBLY_TYPE_FRAGMENT = 2,
+	VK_RPI_ASSEMBLY_TYPE_COMPUTE = 3,
+	VK_RPI_ASSEMBLY_TYPE_MAX,
+} VkRpiAssemblyTypeKHR;
+
 typedef struct VkRpiSurfaceCreateInfoKHR {
 	VkStructureType               sType;
 	const void*                   pNext;
 	VkRpiSurfaceCreateFlagsKHR    flags; //reserved
 	//maybe include some other stuff dunno
 } VkRpiSurfaceCreateInfoKHR;
+
+typedef struct VkRpiShaderModuleAssemblyCreateInfoKHR {
+	VkStructureType               sType;
+	const void*                   pNext;
+	char**						  byteStreamArray;
+	uint32_t*					  numBytesArray;
+	VkRpiAssemblyTypeKHR*		  assemblyTypes;
+	uint32_t					  arraySize;
+} VkRpiShaderModuleAssemblyCreateInfoKHR;
 
 //extension name something like: VK_KHR_rpi_surface
 //extension that allows developers to create a surface to render to on Raspbian Stretch Lite
@@ -31,9 +48,8 @@ VkResult vkCreateRpiSurfaceKHR(
 //extension that allows developers to submit QPU assembly directly and thus hand optimise code
 VkResult vkCreateShaderModuleFromRpiAssemblyKHR(
 		VkDevice									device,
-		uint32_t									numBytes,
-		char*										byteStream,
-		const VkAllocationCallbacks*				pAllocator,
+		VkRpiShaderModuleAssemblyCreateInfoKHR*		pCreateInfo,
+		const VkAllocationCallbacks*                pAllocator,
 		VkShaderModule*								pShaderModule
 		);
 
