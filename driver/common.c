@@ -327,12 +327,57 @@ uint32_t packVec4IntoABGR8(const float rgba[4])
    }
 }*/
 
+int isDepthStencilFormat(VkFormat format)
+{
+	switch(format)
+	{
+	case VK_FORMAT_D16_UNORM:
+	case VK_FORMAT_X8_D24_UNORM_PACK32:
+	case VK_FORMAT_D32_SFLOAT:
+	case VK_FORMAT_S8_UINT:
+	case VK_FORMAT_D16_UNORM_S8_UINT:
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+	case VK_FORMAT_D32_SFLOAT_S8_UINT:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBeginRenderPass
  */
 void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents)
 {
+	assert(commandBuffer);
+	assert(pRenderPassBegin);
 
+
+	//TODO subpass contents ignored
+
+	//TODO add state tracking to command buffer
+	//only bake into control list when a draw call is issued or similar
+	_commandBuffer* cb = commandBuffer;
+	cb->fbo = pRenderPassBegin->framebuffer;
+	cb->renderpass = pRenderPassBegin->renderPass;
+	cb->renderArea = pRenderPassBegin->renderArea;
+
+	for(int c = 0; c < pRenderPassBegin->clearValueCount; ++c)
+	{
+		if(cb->renderpass->attachments[c].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+		{
+			cb->fbo->attachmentViews[c].image->needToClear = 1;
+			cb->fbo->attachmentViews[c].image->clearColor = packVec4IntoABGR8(pRenderPassBegin->pClearValues->color.float32);
+		}
+		else if(isDepthStencilFormat(cb->renderpass->attachments[c].format) && cb->renderpass->attachments[c].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+		{
+			//TODO how to pack depth/stencil clear values???
+			//cb->fbo->attachmentViews[c].image->needToClear = 1;
+			//cb->fbo->attachmentViews[c].image->clearColor = packVec4IntoABGR8(pRenderPassBegin->pClearValues->depthStencil.depth);
+		}
+	}
+
+	cb->currentSubpass = 0;
 }
 
 /*
@@ -340,7 +385,17 @@ void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBegin
  */
 void vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
 {
+	assert(commandBuffer);
 
+	_commandBuffer* cb = commandBuffer;
+	if(pipelineBindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS)
+	{
+		cb->graphicsPipeline = pipeline;
+	}
+	else if(pipelineBindPoint == VK_PIPELINE_BIND_POINT_COMPUTE)
+	{
+		cb->computePipeline = pipeline;
+	}
 }
 
 /*
@@ -348,7 +403,7 @@ void vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipeli
  */
 void vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
 {
-
+	//TODO
 }
 
 /*
@@ -356,7 +411,7 @@ void vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uin
  */
 void vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors)
 {
-
+	//TODO
 }
 
 /*
@@ -364,7 +419,126 @@ void vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint3
  */
 void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
+	assert(commandBuffer);
 
+	//stuff needed to submit a draw call:
+	//Tile Binning Mode Configuration
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
+	clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
+										 0, 0, 0, 0,
+										 getFormatBpp(i->format) == 64, //64 bit color mode
+										 i->samples > 1, //msaa
+										 i->width, i->height, 0, 0, 0);
+
+	//Start Tile Binning
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
+	clInsertStartTileBinning(&commandBuffer->binCl);
+
+	//Primitive List Format
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_PRIMITIVE_LIST_FORMAT_length);
+	clInsertPrimitiveListFormat(&commandBuffer->binCl,
+								1, //16 bit
+								2); //tris
+
+	//Clip Window
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
+	clInsertClipWindow(&commandBuffer->binCl, width, height, 0, 0);
+
+	//Configuration Bits
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
+	clInsertConfigurationBits(&commandBuffer->binCl,
+							  1, //earlyz updates
+							  1, //earlyz enable
+							  1, //z updates
+							  V3D_COMPARE_FUNC_ALWAYS, //depth compare func
+							  0,
+							  0,
+							  0,
+							  0,
+							  0,
+							  0, //depth offset enable
+							  1, //clockwise
+							  1, //enable back facing primitives
+							  1); //enable front facing primitives
+
+	//Depth Offset
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_DEPTH_OFFSET_length);
+	clInsertDepthOffset(&commandBuffer->binCl, 0, 0);
+
+	//Point size
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_POINT_SIZE_length);
+	clInsertPointSize(&commandBuffer->binCl, 1.0f);
+
+	//Line width
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_LINE_WIDTH_length);
+	clInsertLineWidth(&commandBuffer->binCl, 1.0f);
+
+	//Clipper XY Scaling
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_XY_SCALING_length);
+	clInsertClipperXYScaling(&commandBuffer->binCl, 1.0f, 1.0f);
+
+	//Clipper Z Scale and Offset
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_Z_SCALE_AND_OFFSET_length);
+	clInsertClipperZScaleOffset(&commandBuffer->binCl, 1.0f, 1.0f);
+
+	//Viewport Offset
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
+	clInsertViewPortOffset(&commandBuffer->binCl, 0, 0);
+
+	//Flat Shade Flags
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLAT_SHADE_FLAGS_length);
+	clInsertFlatShadeFlags(&commandBuffer->binCl, 0);
+
+	//GL Shader State
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
+	clInsertShaderState(&commandBuffer->binCl, 0, 0, 0);
+
+	//Vertex Array Primitives (draw call)
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
+	clInsertVertexArrayPrimitives(&commandBuffer->binCl, 0, 0, V3D_PRIM_TRIANGLES);
+
+	//Insert image handle index
+	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, i->handle);
+	commandBuffer->submitCl.color_write.hindex = idx;
+	commandBuffer->submitCl.color_write.offset = 0;
+	commandBuffer->submitCl.color_write.flags = 0;
+	//TODO format
+	commandBuffer->submitCl.color_write.bits =
+			VC4_SET_FIELD(VC4_RENDER_CONFIG_FORMAT_RGBA8888, VC4_RENDER_CONFIG_FORMAT) |
+			VC4_SET_FIELD(i->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
+
+	commandBuffer->submitCl.clear_color[0] = i->clearColor[0];
+	commandBuffer->submitCl.clear_color[1] = i->clearColor[1];
+
+	//TODO ranges
+	commandBuffer->submitCl.min_x_tile = 0;
+	commandBuffer->submitCl.min_y_tile = 0;
+
+	uint32_t tileSizeW = 64;
+	uint32_t tileSizeH = 64;
+
+	if(i->samples > 1)
+	{
+		tileSizeW >>= 1;
+		tileSizeH >>= 1;
+	}
+
+	if(getFormatBpp(i->format) == 64)
+	{
+		tileSizeH >>= 1;
+	}
+
+	uint32_t widthInTiles = divRoundUp(i->width, tileSizeW);
+	uint32_t heightInTiles = divRoundUp(i->height, tileSizeH);
+
+	commandBuffer->submitCl.max_x_tile = widthInTiles - 1;
+	commandBuffer->submitCl.max_y_tile = heightInTiles - 1;
+	commandBuffer->submitCl.width = i->width;
+	commandBuffer->submitCl.height = i->height;
+	commandBuffer->submitCl.flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+	commandBuffer->submitCl.clear_z = 0; //TODO
+	commandBuffer->submitCl.clear_s = 0;
 }
 
 /*
@@ -372,7 +546,10 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
  */
 void vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
 {
+	assert(commandBuffer);
 
+	//TODO switch command buffer to next control record stream?
+	//Ending a render pass instance performs any multisample resolve operations on the final subpass
 }
 
 /*
@@ -858,7 +1035,15 @@ void vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhys
  */
 void vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
 {
+	assert(commandBuffer);
 
+	_commandBuffer* cb = commandBuffer;
+
+	for(int c = 0; c < bindingCount; ++c)
+	{
+		cb->vertexBuffers[firstBinding + c] = pBuffers[c];
+		cb->vertexBufferOffsets[firstBinding + c] = pOffsets[c];
+	}
 }
 
 /*

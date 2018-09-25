@@ -77,6 +77,16 @@ typedef struct VkCommandBuffer_T
 	commandBufferState state;
 	VkCommandBufferUsageFlags usageFlags;
 	_commandPool* cp;
+
+	VkRect2D renderArea;
+	_renderpass* renderpass;
+	_framebuffer* fbo;
+	uint32_t currentSubpass;
+	_pipeline* graphicsPipeline;
+	_pipeline* computePipeline;
+
+	uint32_t vertexBufferOffsets[VkPhysicalDeviceLimits::maxVertexInputBindings];
+	_buffer* vertexBuffers[VkPhysicalDeviceLimits::maxVertexInputBindings];
 } _commandBuffer;
 
 typedef struct VkInstance_T

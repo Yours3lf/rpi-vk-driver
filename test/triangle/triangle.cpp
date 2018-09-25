@@ -677,9 +677,9 @@ void recordCommandBuffers()
 
 		vkCmdBindPipeline(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-		vkCmdSetViewport(presentCommandBuffers[i], 0, 1, &viewport);
+		//vkCmdSetViewport(presentCommandBuffers[i], 0, 1, &viewport);
 
-		vkCmdSetScissor(presentCommandBuffers[i], 0, 1, &scissor);
+		//vkCmdSetScissor(presentCommandBuffers[i], 0, 1, &scissor);
 
 		VkDeviceSize offsets = 0;
 		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer, &offsets );

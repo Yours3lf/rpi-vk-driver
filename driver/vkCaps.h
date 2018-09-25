@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
+//https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#features-limits
 static VkPhysicalDeviceLimits _limits =
 {
 	//TODO these values might change
