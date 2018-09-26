@@ -452,6 +452,7 @@ void clInsertClipWindow(ControlList* cl,
 	*(uint32_t*)cl->nextFreeByte = moveBits(width, 16, 0) | moveBits(height, 16, 16); cl->nextFreeByte += 4;
 }
 
+//viewport centre x/y coordinate
 void clInsertViewPortOffset(ControlList* cl,
 						uint32_t x, //sint16
 						uint32_t y //sint16
@@ -477,8 +478,8 @@ void clInsertZMinMaxClippingPlanes(ControlList* cl,
 }
 
 void clInsertClipperXYScaling(ControlList* cl,
-						float width, //half height in 1/16 of pixel
-						float height //half width in 1/16 of pixel
+						float width, //half width in 1/16 of pixel
+						float height //half height in 1/16 of pixel
 						)
 {
 	assert(cl);

@@ -62,33 +62,6 @@ typedef enum commandBufferState
 	CMDBUF_STATE_LAST
 } commandBufferState;
 
-typedef struct VkCommandBuffer_T
-{
-	//Recorded commands include commands to bind pipelines and descriptor sets to the command buffer, commands to modify dynamic state, commands to draw (for graphics rendering),
-	//commands to dispatch (for compute), commands to execute secondary command buffers (for primary command buffers only), commands to copy buffers and images, and other commands
-
-	struct drm_vc4_submit_cl submitCl;
-
-	ControlList binCl;
-	ControlList shaderRecCl;
-	uint32_t shaderRecCount;
-	ControlList uniformsCl;
-	ControlList handlesCl;
-	commandBufferState state;
-	VkCommandBufferUsageFlags usageFlags;
-	_commandPool* cp;
-
-	VkRect2D renderArea;
-	_renderpass* renderpass;
-	_framebuffer* fbo;
-	uint32_t currentSubpass;
-	_pipeline* graphicsPipeline;
-	_pipeline* computePipeline;
-
-	uint32_t vertexBufferOffsets[VkPhysicalDeviceLimits::maxVertexInputBindings];
-	_buffer* vertexBuffers[VkPhysicalDeviceLimits::maxVertexInputBindings];
-} _commandBuffer;
-
 typedef struct VkInstance_T
 {
 	//supposedly this should contain all the enabled layers?
@@ -263,6 +236,33 @@ typedef struct VkPipeline_T
 	_renderpass* renderPass;
 	uint32_t subpass;
 } _pipeline;
+
+typedef struct VkCommandBuffer_T
+{
+	//Recorded commands include commands to bind pipelines and descriptor sets to the command buffer, commands to modify dynamic state, commands to draw (for graphics rendering),
+	//commands to dispatch (for compute), commands to execute secondary command buffers (for primary command buffers only), commands to copy buffers and images, and other commands
+
+	struct drm_vc4_submit_cl submitCl;
+
+	ControlList binCl;
+	ControlList shaderRecCl;
+	uint32_t shaderRecCount;
+	ControlList uniformsCl;
+	ControlList handlesCl;
+	commandBufferState state;
+	VkCommandBufferUsageFlags usageFlags;
+	_commandPool* cp;
+
+	VkRect2D renderArea;
+	_renderpass* renderpass;
+	_framebuffer* fbo;
+	uint32_t currentSubpass;
+	_pipeline* graphicsPipeline;
+	_pipeline* computePipeline;
+
+	uint32_t vertexBufferOffsets[8];
+	_buffer* vertexBuffers[8];
+} _commandBuffer;
 
 void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, uint32_t* paddedWidth, uint32_t* paddedHeight);
 uint32_t getFormatBpp(VkFormat f);

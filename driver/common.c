@@ -367,7 +367,7 @@ void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBegin
 		if(cb->renderpass->attachments[c].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
 		{
 			cb->fbo->attachmentViews[c].image->needToClear = 1;
-			cb->fbo->attachmentViews[c].image->clearColor = packVec4IntoABGR8(pRenderPassBegin->pClearValues->color.float32);
+			cb->fbo->attachmentViews[c].image->clearColor[0] = cb->fbo->attachmentViews[c].image->clearColor[1] = packVec4IntoABGR8(pRenderPassBegin->pClearValues->color.float32);
 		}
 		else if(isDepthStencilFormat(cb->renderpass->attachments[c].format) && cb->renderpass->attachments[c].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
 		{
@@ -414,12 +414,84 @@ void vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint3
 	//TODO
 }
 
+uint32_t getDepthCompareOp(VkCompareOp op)
+{
+	switch(op)
+	{
+	case VK_COMPARE_OP_NEVER:
+		return V3D_COMPARE_FUNC_NEVER;
+	case VK_COMPARE_OP_LESS:
+		return V3D_COMPARE_FUNC_LESS;
+	case VK_COMPARE_OP_EQUAL:
+		return V3D_COMPARE_FUNC_EQUAL;
+	case VK_COMPARE_OP_LESS_OR_EQUAL:
+		return V3D_COMPARE_FUNC_LEQUAL;
+	case VK_COMPARE_OP_GREATER:
+		return V3D_COMPARE_FUNC_GREATER;
+	case VK_COMPARE_OP_NOT_EQUAL:
+		return V3D_COMPARE_FUNC_NOTEQUAL;
+	case VK_COMPARE_OP_GREATER_OR_EQUAL:
+		return V3D_COMPARE_FUNC_GEQUAL;
+	case VK_COMPARE_OP_ALWAYS:
+		return V3D_COMPARE_FUNC_ALWAYS;
+	default:
+		return -1;
+	}
+}
+
+uint32_t getTopology(VkPrimitiveTopology topology)
+{
+	switch(topology)
+	{
+	case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		return 0;
+	case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+	case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+		return 1;
+	case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+	case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+	case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+		return 2;
+	default:
+		return -1;
+	}
+}
+
+uint32_t getPrimitiveMode(VkPrimitiveTopology topology)
+{
+	switch(topology)
+	{
+	case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+		return V3D_PRIM_POINTS;
+	case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		return V3D_PRIM_LINES;
+	case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+		return V3D_PRIM_LINE_STRIP;
+	case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+		return V3D_PRIM_TRIANGLES;
+	case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+		return V3D_PRIM_TRIANGLE_STRIP;
+	case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+		return V3D_PRIM_TRIANGLE_FAN;
+	default:
+		return -1;
+	}
+}
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdDraw
  */
 void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
 	assert(commandBuffer);
+
+	_commandBuffer* cb = commandBuffer;
+	_renderpass* rp = cb->renderpass;
+	_framebuffer* fb = cb->fbo;
+
+	//TODO handle multiple attachments etc.
+	_image* i = fb->attachmentViews[rp->subpasses[cb->currentSubpass].pColorAttachments[0].attachment].image;
+
 
 	//stuff needed to submit a draw call:
 	//Tile Binning Mode Configuration
@@ -438,32 +510,32 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_PRIMITIVE_LIST_FORMAT_length);
 	clInsertPrimitiveListFormat(&commandBuffer->binCl,
 								1, //16 bit
-								2); //tris
+								getTopology(cb->graphicsPipeline->topology)); //tris
 
 	//Clip Window
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
-	clInsertClipWindow(&commandBuffer->binCl, width, height, 0, 0);
+	clInsertClipWindow(&commandBuffer->binCl, i->width, i->height, 0, 0);
 
 	//Configuration Bits
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
 	clInsertConfigurationBits(&commandBuffer->binCl,
-							  1, //earlyz updates
-							  1, //earlyz enable
-							  1, //z updates
-							  V3D_COMPARE_FUNC_ALWAYS, //depth compare func
+							  1, //TODO earlyz updates
+							  0, //TODO earlyz enable
+							  0, //TODO z updates
+							  getDepthCompareOp(cb->graphicsPipeline->depthCompareOp), //depth compare func
 							  0,
 							  0,
 							  0,
 							  0,
 							  0,
-							  0, //depth offset enable
-							  1, //clockwise
-							  1, //enable back facing primitives
-							  1); //enable front facing primitives
+							  cb->graphicsPipeline->depthBiasEnable, //depth offset enable
+							  cb->graphicsPipeline->frontFace == VK_FRONT_FACE_CLOCKWISE, //clockwise
+							  cb->graphicsPipeline->cullMode & VK_CULL_MODE_BACK_BIT, //enable back facing primitives
+							  cb->graphicsPipeline->cullMode & VK_CULL_MODE_FRONT_BIT); //enable front facing primitives
 
-	//Depth Offset
+	//TODO Depth Offset
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_DEPTH_OFFSET_length);
-	clInsertDepthOffset(&commandBuffer->binCl, 0, 0);
+	clInsertDepthOffset(&commandBuffer->binCl, cb->graphicsPipeline->depthBiasConstantFactor, cb->graphicsPipeline->depthBiasSlopeFactor);
 
 	//Point size
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_POINT_SIZE_length);
@@ -471,31 +543,38 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 	//Line width
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_LINE_WIDTH_length);
-	clInsertLineWidth(&commandBuffer->binCl, 1.0f);
+	clInsertLineWidth(&commandBuffer->binCl, cb->graphicsPipeline->lineWidth);
 
+	//TODO why flipped???
 	//Clipper XY Scaling
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_XY_SCALING_length);
-	clInsertClipperXYScaling(&commandBuffer->binCl, 1.0f, 1.0f);
+	clInsertClipperXYScaling(&commandBuffer->binCl, (float)(i->width) * 0.5f * 16.0f, -1.0f * (float)(i->height) * 0.5f * 16.0f);
 
+	//TODO how is this calculated?
+	//seems to go from -1.0 .. 1.0 to 0.0 .. 1.0
+	//eg. x * 0.5 + 0.5
+	//cb->graphicsPipeline->minDepthBounds;
 	//Clipper Z Scale and Offset
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_Z_SCALE_AND_OFFSET_length);
-	clInsertClipperZScaleOffset(&commandBuffer->binCl, 1.0f, 1.0f);
+	clInsertClipperZScaleOffset(&commandBuffer->binCl, 0.5f, 0.5f);
 
 	//Viewport Offset
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
-	clInsertViewPortOffset(&commandBuffer->binCl, 0, 0);
+	clInsertViewPortOffset(&commandBuffer->binCl, i->width >> 1, i->height >> 1);
 
+	//TODO?
 	//Flat Shade Flags
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLAT_SHADE_FLAGS_length);
 	clInsertFlatShadeFlags(&commandBuffer->binCl, 0);
 
+	//TODO how to get address?
 	//GL Shader State
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
-	clInsertShaderState(&commandBuffer->binCl, 0, 0, 0);
+	clInsertShaderState(&commandBuffer->binCl, 0, 0, cb->graphicsPipeline->vertexAttributeDescriptionCount);
 
 	//Vertex Array Primitives (draw call)
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
-	clInsertVertexArrayPrimitives(&commandBuffer->binCl, 0, 0, V3D_PRIM_TRIANGLES);
+	clInsertVertexArrayPrimitives(&commandBuffer->binCl, firstVertex, vertexCount, getPrimitiveMode(cb->graphicsPipeline->topology));
 
 	//Insert image handle index
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);

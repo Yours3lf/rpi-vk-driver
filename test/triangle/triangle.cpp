@@ -109,6 +109,7 @@ VkBuffer vertexBuffer;
 VkDeviceMemory vertexBufferMemory;
 VkPhysicalDeviceMemoryProperties pdmp;
 std::vector<VkImageView> views; //?
+VkSurfaceFormatKHR swapchainFormat;
 
 uint32_t graphicsQueueFamily;
 uint32_t presentQueueFamily;
@@ -473,7 +474,7 @@ void createSwapChain() {
 	std::cout << "using " << imageCount << " images for swap chain" << std::endl;
 
 	// Select a surface format
-	VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(surfaceFormats);
+	swapchainFormat = chooseSurfaceFormat(surfaceFormats);
 
 	// Select swap chain size
 	VkExtent2D swapChainExtent = chooseSwapExtent(surfaceCapabilities);
@@ -502,8 +503,8 @@ void createSwapChain() {
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createInfo.surface = windowSurface;
 	createInfo.minImageCount = imageCount;
-	createInfo.imageFormat = surfaceFormat.format;
-	createInfo.imageColorSpace = surfaceFormat.colorSpace;
+	createInfo.imageFormat = swapchainFormat.format;
+	createInfo.imageColorSpace = swapchainFormat.colorSpace;
 	createInfo.imageExtent = swapChainExtent;
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -763,13 +764,14 @@ void CreateRenderPass()
 	subpassDesc.pColorAttachments = &attachRef;
 
 	VkAttachmentDescription attachDesc = {};
-	attachDesc.format = VkFormat::VK_FORMAT_R8G8B8A8_UNORM; //Todo
+	attachDesc.format = swapchainFormat.format; //Todo
 	attachDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	attachDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachDesc.initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	attachDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	attachDesc.samples = VK_SAMPLE_COUNT_1_BIT;
 
 	VkRenderPassCreateInfo renderPassCreateInfo = {};
 	renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -794,7 +796,7 @@ void CreateFramebuffer()
 		VkImageViewCreateInfo ViewCreateInfo = {};
 		ViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		ViewCreateInfo.image = swapChainImages[i];
-		ViewCreateInfo.format = VkFormat::VK_FORMAT_R8G8B8A8_UNORM; //Todo
+		ViewCreateInfo.format = swapchainFormat.format; //Todo
 		ViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		ViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		ViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
