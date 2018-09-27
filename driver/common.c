@@ -478,6 +478,31 @@ uint32_t getPrimitiveMode(VkPrimitiveTopology topology)
 	}
 }
 
+uint32_t getFormatByteSize(VkFormat format)
+{
+	switch(format)
+	{
+	case VK_FORMAT_R16_SFLOAT:
+		return 2;
+	case VK_FORMAT_R16G16_SFLOAT:
+		return 4;
+	case VK_FORMAT_R16G16B16_SFLOAT:
+		return 6;
+	case VK_FORMAT_R16G16B16A16_SFLOAT:
+		return 8;
+	case VK_FORMAT_R32_SFLOAT:
+		return 4;
+	case VK_FORMAT_R32G32_SFLOAT:
+		return 8;
+	case VK_FORMAT_R32G32B32_SFLOAT:
+		return 8;
+	case VK_FORMAT_R32G32B32A32_SFLOAT:
+		return 8;
+	default:
+		return -1;
+	}
+}
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdDraw
  */
@@ -576,10 +601,76 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
 	clInsertVertexArrayPrimitives(&commandBuffer->binCl, firstVertex, vertexCount, getPrimitiveMode(cb->graphicsPipeline->topology));
 
+	//emit shader record
+	ControlListAddress fragCode = {
+		.handle = (_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_FRAGMENT_BIT])->bos[VK_RPI_ASSEMBLY_TYPE_FRAGMENT],
+		.offset = 0,
+	};
+
+	ControlListAddress vertCode = {
+		.handle = (_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_VERTEX_BIT])->bos[VK_RPI_ASSEMBLY_TYPE_VERTEX],
+		.offset = 0,
+	};
+
+	ControlListAddress coordCode = {
+		.handle = (_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_VERTEX_BIT])->bos[VK_RPI_ASSEMBLY_TYPE_COORDINATE],
+		.offset = 0,
+	};
+
+	//TODO
+	clFit(commandBuffer, &commandBuffer->shaderRecCl, V3D21_SHADER_RECORD_length);
+	clInsertShaderRecord(commandBuffer->shaderRecCl,
+						 0, //single threaded?
+						 0, //point size included in shaded vertex data?
+						 0, //enable clipping?
+						 0, //fragment number of unused uniforms?
+						 0, //fragment number of varyings?
+						 0, //fragment uniform address?
+						 fragCode, //fragment code address
+						 0, //vertex number of unused uniforms?
+						 1, //vertex attribute array select bits
+						 1, //vertex total attribute size
+						 0, //vertex uniform address
+						 vertCode, //vertex shader code address
+						 0, //coordinate number of unused uniforms?
+						 1, //coordinate attribute array select bits
+						 1, //coordinate total attribute size
+						 0, //coordinate uniform address
+						 coordCode  //coordinate shader code address
+						 );
+
+	ControlListAddress vertexBuffer = {
+		.handle = cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[0].location]->boundMem->bo,
+		.offset = 0,
+	};
+
+	clFit(commandBuffer, &commandBuffer->shaderRecCl, V3D21_ATTRIBUTE_RECORD_length);
+	clInsertAttributeRecord(commandBuffer->shaderRecCl,
+							vertexBuffer, //address
+							getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[0].format),
+							cb->graphicsPipeline->vertexBindingDescriptions[0].stride, //stride
+							0, //TODO vertex vpm offset
+							0  //TODO coordinte vpm offset
+							);
+
+	//insert vertex buffer handle
+	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	uint32_t vboIdx = clGetHandleIndex(&commandBuffer->handlesCl, vertexBuffer.handle);
+
+	//insert shader code handles
+	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	uint32_t vertIdx = clGetHandleIndex(&commandBuffer->handlesCl, vertCode.handle);
+	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	uint32_t coordIdx = clGetHandleIndex(&commandBuffer->handlesCl, coordCode.handle);
+	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	uint32_t fragIdx = clGetHandleIndex(&commandBuffer->handlesCl, fragCode.handle);
+
 	//Insert image handle index
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, i->handle);
-	commandBuffer->submitCl.color_write.hindex = idx;
+	uint32_t imageIdx = clGetHandleIndex(&commandBuffer->handlesCl, i->handle);
+
+	//fill out submit cl fields
+	commandBuffer->submitCl.color_write.hindex = imageIdx;
 	commandBuffer->submitCl.color_write.offset = 0;
 	commandBuffer->submitCl.color_write.flags = 0;
 	//TODO format
@@ -590,7 +681,6 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	commandBuffer->submitCl.clear_color[0] = i->clearColor[0];
 	commandBuffer->submitCl.clear_color[1] = i->clearColor[1];
 
-	//TODO ranges
 	commandBuffer->submitCl.min_x_tile = 0;
 	commandBuffer->submitCl.min_y_tile = 0;
 
@@ -856,28 +946,17 @@ VkResult vkCreateShaderModuleFromRpiAssemblyKHR(VkDevice device, VkRpiShaderModu
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
-	shader->bos = malloc(sizeof(uint32_t)*pCreateInfo->arraySize);
-
-	if(!shader->bos)
+	for(int c = 0; c < VK_RPI_ASSEMBLY_TYPE_MAX; ++c)
 	{
-		return VK_ERROR_OUT_OF_HOST_MEMORY;
-	}
-
-	shader->assemblyTypes = malloc(sizeof(VkRpiAssemblyTypeKHR)*pCreateInfo->arraySize);
-
-	if(!shader->assemblyTypes)
-	{
-		return VK_ERROR_OUT_OF_HOST_MEMORY;
-	}
-
-	memcpy(shader->assemblyTypes, pCreateInfo->assemblyTypes, sizeof(VkRpiAssemblyTypeKHR)*pCreateInfo->arraySize);
-
-	shader->numBos = pCreateInfo->arraySize;
-
-	for(int c = 0; c < pCreateInfo->arraySize; ++c)
-	{
-		uint32_t size = pCreateInfo->numBytesArray[c];
-		shader->bos[c] = vc4_bo_alloc_shader(controlFd, pCreateInfo->byteStreamArray[c], &size);
+		if(pCreateInfo->byteStreamArray[c])
+		{
+			uint32_t size = pCreateInfo->numBytesArray[c];
+			shader->bos[c] = vc4_bo_alloc_shader(controlFd, pCreateInfo->byteStreamArray[c], &size);
+		}
+		else
+		{
+			shader->bos[c] = 0;
+		}
 	}
 
 	*pShaderModule = shader;

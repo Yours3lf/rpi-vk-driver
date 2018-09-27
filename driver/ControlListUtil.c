@@ -626,7 +626,12 @@ void clInsertShaderRecord(ControlList* cls,
 						  uint32_t vertexAttributeArraySelectBits,
 						  uint32_t vertexTotalAttributesSize,
 						  uint32_t vertexUniformsAddress,
-						  ControlListAddress vertexCodeAddress)
+						  ControlListAddress vertexCodeAddress,
+						  uint32_t coordinateNumberOfUnusedUniforms,
+						  uint32_t coordinateAttributeArraySelectBits,
+						  uint32_t coordinateTotalAttributesSize,
+						  uint32_t coordinateUniformsAddress,
+						  ControlListAddress coordinateCodeAddress)
 {
 	assert(cls);
 	assert(cls->buffer);
@@ -647,10 +652,16 @@ void clInsertShaderRecord(ControlList* cls,
 	*cls->nextFreeByte = vertexAttributeArraySelectBits; cls->nextFreeByte++;
 	*cls->nextFreeByte = vertexTotalAttributesSize; cls->nextFreeByte++;
 	clEmitShaderRelocation(cls, &vertexCodeAddress);
-	*(uint32_t*)cls->nextFreeByte = moveBits(vertexCodeAddress.offset, 32, 0) | moveBits(vertexUniformsAddress, 32, 0); cls->nextFreeByte += 4; //???
+	//TODO wtf???
+	*(uint32_t*)cls->nextFreeByte = moveBits(vertexCodeAddress.offset, 32, 0) | moveBits(vertexUniformsAddress, 32, 0); cls->nextFreeByte += 4;
 	cls->nextFreeByte += 4;
-	//skip coordinate shader stuff
-	cls->nextFreeByte += 16;
+
+	*(uint16_t*)cls->nextFreeByte = moveBits(coordinateNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte += 2;
+	*cls->nextFreeByte = coordinateAttributeArraySelectBits; cls->nextFreeByte++;
+	*cls->nextFreeByte = coordinateTotalAttributesSize; cls->nextFreeByte++;
+	clEmitShaderRelocation(cls, &coordinateCodeAddress);
+	*(uint32_t*)cls->nextFreeByte = coordinateCodeAddress.offset; cls->nextFreeByte += 4;
+	*(uint32_t*)cls->nextFreeByte = coordinateUniformsAddress; cls->nextFreeByte += 4;
 }
 
 //input: 2 cls (cl, handles cl)
@@ -658,7 +669,8 @@ void clInsertAttributeRecord(ControlList* cls,
 						  ControlListAddress address,
 						  uint32_t sizeBytes,
 						  uint32_t stride,
-						  uint32_t vertexVPMOffset)
+						  uint32_t vertexVPMOffset,
+						  uint32_t coordinateVPMOffset)
 {
 	assert(cls);
 	assert(cls->buffer);
@@ -670,7 +682,7 @@ void clInsertAttributeRecord(ControlList* cls,
 	*cls->nextFreeByte = sizeBytesMinusOne; cls->nextFreeByte++;
 	*cls->nextFreeByte = stride; cls->nextFreeByte++;
 	*cls->nextFreeByte = vertexVPMOffset; cls->nextFreeByte++;
-	cls->nextFreeByte++; //skip coordinate shader stuff
+	*cls->nextFreeByte = coordinateVPMOffset; cls->nextFreeByte++;
 }
 
 uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handle)

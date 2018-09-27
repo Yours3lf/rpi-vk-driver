@@ -860,39 +860,33 @@ void CreateShaders()
 	char* cptr = (char*)malloc(sizeof(coordinateBytes));
 	memcpy(cptr, coordinateBytes, sizeof(coordinateBytes));
 
-	VkRpiAssemblyTypeKHR types[] =
+	char* vertStreams[] =
 	{
-		VK_RPI_ASSEMBLY_TYPE_COORDINATE, VK_RPI_ASSEMBLY_TYPE_VERTEX
+		cptr, vptr, 0, 0
 	};
 
-	VkRpiAssemblyTypeKHR fragtypes[] =
+	char* fragStreams[] =
 	{
-		VK_RPI_ASSEMBLY_TYPE_FRAGMENT
+		0, 0, fptr, 0
 	};
 
-	char* streams[] =
+	uint32_t vertNumbytes[] =
 	{
-		cptr, vptr
+		sizeof(coordinateBytes), sizeof(vertBytes), 0, 0
 	};
 
-	uint32_t numbytes[] =
+	uint32_t fragNumbytes[] =
 	{
-		sizeof(coordinateBytes), sizeof(vertBytes)
+		0, 0, sizeof(fragBytes), 0
 	};
-
-	uint32_t fragsize = sizeof(fragBytes);
 
 	VkRpiShaderModuleAssemblyCreateInfoKHR vertexShaderModuleCreateInfo;
-	vertexShaderModuleCreateInfo.arraySize = 2;
-	vertexShaderModuleCreateInfo.assemblyTypes = types;
-	vertexShaderModuleCreateInfo.byteStreamArray = streams;
-	vertexShaderModuleCreateInfo.numBytesArray = numbytes;
+	vertexShaderModuleCreateInfo.byteStreamArray = vertStreams;
+	vertexShaderModuleCreateInfo.numBytesArray = vertNumbytes;
 
 	VkRpiShaderModuleAssemblyCreateInfoKHR fragShaderModuleCreateInfo;
-	fragShaderModuleCreateInfo.arraySize = 1;
-	fragShaderModuleCreateInfo.assemblyTypes = fragtypes;
-	fragShaderModuleCreateInfo.byteStreamArray = &fptr;
-	fragShaderModuleCreateInfo.numBytesArray = &fragsize;
+	fragShaderModuleCreateInfo.byteStreamArray = fragStreams;
+	fragShaderModuleCreateInfo.numBytesArray = fragNumbytes;
 
 	VkResult res = vkCreateShaderModuleFromRpiAssemblyKHR(device, &vertexShaderModuleCreateInfo, 0, &vsModule);
 	assert(vsModule);

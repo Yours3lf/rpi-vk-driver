@@ -138,12 +138,18 @@ void clInsertShaderRecord(ControlList* cls,
 						  uint32_t vertexAttributeArraySelectBits,
 						  uint32_t vertexTotalAttributesSize,
 						  uint32_t vertexUniformsAddress,
-						  ControlListAddress vertexCodeAddress);
+						  ControlListAddress vertexCodeAddress,
+						  uint32_t coordinateNumberOfUnusedUniforms,
+						  uint32_t coordinateAttributeArraySelectBits,
+						  uint32_t coordinateTotalAttributesSize,
+						  uint32_t coordinateUniformsAddress,
+						  ControlListAddress coordinateCodeAddress);
 void clInsertAttributeRecord(ControlList* cls,
 						  ControlListAddress address,
 						  uint32_t sizeBytes,
 						  uint32_t stride,
-						  uint32_t vertexVPMOffset);
+						  uint32_t vertexVPMOffset,
+						  uint32_t coordinateVPMOffset);
 uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handle);
 
 #if defined (__cplusplus)
