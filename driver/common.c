@@ -603,23 +603,23 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 	//emit shader record
 	ControlListAddress fragCode = {
-		.handle = (_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_FRAGMENT_BIT])->bos[VK_RPI_ASSEMBLY_TYPE_FRAGMENT],
+		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_FRAGMENT_BIT]))->bos[VK_RPI_ASSEMBLY_TYPE_FRAGMENT],
 		.offset = 0,
 	};
 
 	ControlListAddress vertCode = {
-		.handle = (_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_VERTEX_BIT])->bos[VK_RPI_ASSEMBLY_TYPE_VERTEX],
+		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_VERTEX_BIT]))->bos[VK_RPI_ASSEMBLY_TYPE_VERTEX],
 		.offset = 0,
 	};
 
 	ControlListAddress coordCode = {
-		.handle = (_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_VERTEX_BIT])->bos[VK_RPI_ASSEMBLY_TYPE_COORDINATE],
+		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_VERTEX_BIT]))->bos[VK_RPI_ASSEMBLY_TYPE_COORDINATE],
 		.offset = 0,
 	};
 
 	//TODO
 	clFit(commandBuffer, &commandBuffer->shaderRecCl, V3D21_SHADER_RECORD_length);
-	clInsertShaderRecord(commandBuffer->shaderRecCl,
+	clInsertShaderRecord(&commandBuffer->shaderRecCl,
 						 0, //single threaded?
 						 0, //point size included in shaded vertex data?
 						 0, //enable clipping?
@@ -645,7 +645,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	};
 
 	clFit(commandBuffer, &commandBuffer->shaderRecCl, V3D21_ATTRIBUTE_RECORD_length);
-	clInsertAttributeRecord(commandBuffer->shaderRecCl,
+	clInsertAttributeRecord(&commandBuffer->shaderRecCl,
 							vertexBuffer, //address
 							getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[0].format),
 							cb->graphicsPipeline->vertexBindingDescriptions[0].stride, //stride
@@ -935,7 +935,6 @@ VkResult vkCreateShaderModuleFromRpiAssemblyKHR(VkDevice device, VkRpiShaderModu
 	assert(pShaderModule);
 	assert(pCreateInfo->byteStreamArray);
 	assert(pCreateInfo->numBytesArray);
-	assert(pCreateInfo->arraySize > 0);
 
 	assert(pAllocator == 0); //TODO
 

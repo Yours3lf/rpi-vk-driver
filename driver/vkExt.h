@@ -31,8 +31,8 @@ typedef struct VkRpiSurfaceCreateInfoKHR {
 typedef struct VkRpiShaderModuleAssemblyCreateInfoKHR {
 	VkStructureType               sType;
 	const void*                   pNext;
-	char*						  byteStreamArray[VK_RPI_ASSEMBLY_TYPE_MAX];
-	uint32_t					  numBytesArray[VK_RPI_ASSEMBLY_TYPE_MAX];
+	char**						  byteStreamArray;
+	uint32_t*					  numBytesArray;
 } VkRpiShaderModuleAssemblyCreateInfoKHR;
 
 //extension name something like: VK_KHR_rpi_surface
