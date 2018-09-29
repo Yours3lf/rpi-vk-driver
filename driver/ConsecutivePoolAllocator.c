@@ -24,8 +24,8 @@ ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, un
 	unsigned last = s/bs - 1;
 	for(unsigned c = 0; c < last; ++c)
 	{
-		*ptr = (uint32_t)ptr + bs;
-		ptr += bs/4;
+		*ptr = (char*)ptr + bs;
+		ptr = (char*)ptr + bs;
 	}
 
 	*ptr = 0; //last element

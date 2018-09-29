@@ -21,10 +21,11 @@ PoolAllocator createPoolAllocator(char* b, unsigned bs, unsigned s)
 
 	//initialize linked list of free pointers
 	uint32_t* ptr = pa.nextFreeBlock;
-	for(unsigned c = 0; c < s/bs - 1; ++c)
+	unsigned last = s/bs - 1;
+	for(unsigned c = 0; c < last; ++c)
 	{
-		*ptr = (uint32_t)ptr + bs;
-		ptr += bs;
+		*ptr = (char*)ptr + bs;
+		ptr = (char*)ptr + bs;
 	}
 
 	*ptr = 0; //last element
