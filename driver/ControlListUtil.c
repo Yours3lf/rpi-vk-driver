@@ -34,7 +34,6 @@ uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size)
 	}
 }
 
-
 void clInit(ControlList* cl, void* buffer)
 {
 	assert(cl);
@@ -42,6 +41,27 @@ void clInit(ControlList* cl, void* buffer)
 	cl->buffer = buffer;
 	cl->numBlocks = 1;
 	cl->nextFreeByte = &cl->buffer[0];
+}
+
+void clInsertUniformConstant(ControlList* cl, uint32_t data)
+{
+	assert(cl);
+	*(uint32_t*)cl->nextFreeByte = data;
+	cl->nextFreeByte += 4;
+}
+
+void clInsertUniformXYScale(ControlList* cl, float data)
+{
+	assert(cl);
+	*(float*)cl->nextFreeByte = data;
+	cl->nextFreeByte += 4;
+}
+
+void clInsertUniformZOffset(ControlList* cl, float data)
+{
+	assert(cl);
+	*(float*)cl->nextFreeByte = data;
+	cl->nextFreeByte += 4;
 }
 
 void clInsertHalt(ControlList* cl)

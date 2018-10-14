@@ -629,6 +629,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clFit(commandBuffer, &commandBuffer->shaderRecCl, V3D21_SHADER_RECORD_length);
 	ControlList relocCl = commandBuffer->shaderRecCl;
 	//TODO number of attribs
+	//3 is the number of type of possible shaders
 	int numAttribs = 1;
 	for(int c = 0; c < (3 + numAttribs)*4; ++c)
 	{
@@ -637,21 +638,21 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clInsertShaderRecord(&commandBuffer->shaderRecCl,
 						 &relocCl,
 						 &commandBuffer->handlesCl,
-						 0, //single threaded?
+						 1, //TODO single threaded?
 						 0, //point size included in shaded vertex data?
-						 0, //enable clipping?
+						 1, //enable clipping?
 						 0, //fragment number of unused uniforms?
 						 0, //fragment number of varyings?
 						 0, //fragment uniform address?
 						 fragCode, //fragment code address
 						 0, //vertex number of unused uniforms?
 						 1, //TODO vertex attribute array select bits
-						 1, //TODO vertex total attribute size
+						 8, //TODO vertex total attribute size
 						 0, //vertex uniform address
 						 vertCode, //vertex shader code address
 						 0, //coordinate number of unused uniforms?
 						 1, //TODO coordinate attribute array select bits
-						 1, //TODO coordinate total attribute size
+						 8, //TODO coordinate total attribute size
 						 0, //coordinate uniform address
 						 coordCode  //coordinate shader code address
 						 );
@@ -727,6 +728,44 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	commandBuffer->submitCl.flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
 	commandBuffer->submitCl.clear_z = 0; //TODO
 	commandBuffer->submitCl.clear_s = 0;
+
+	//write uniforms
+	//TODO
+	/**
+	//FS
+	uniform count : 1
+	tex sample count : 0
+	uniform constant : 4291579008
+
+	//VS
+	uniform count : 4
+	tex sample count : 0
+	uniform constant : 1065353216
+	uniform viewport xscale : 15360.000000
+	uniform viewport yscale : -8640.000000
+	uniform viewport zoffset : 0.500000
+
+	//CS (same as VS)
+	uniform count : 4
+	tex sample count : 0
+	uniform viewport yscale : -8640.000000
+	uniform constant : 1065353216
+	uniform viewport xscale : 15360.000000
+	uniform viewport zoffset : 0.500000
+	/**/
+	clFit(commandBuffer, &commandBuffer->uniformsCl, 4*(1+4+4));
+	//FS
+	clInsertUniformConstant(&commandBuffer->uniformsCl, 4291579008);
+	//VS
+	clInsertUniformConstant(&commandBuffer->uniformsCl, 1065353216);
+	clInsertUniformXYScale(&commandBuffer->uniformsCl, (float)(i->width) * 0.5f * 16.0f);
+	clInsertUniformXYScale(&commandBuffer->uniformsCl, -1.0f * (float)(i->height) * 0.5f * 16.0f);
+	clInsertUniformZOffset(&commandBuffer->uniformsCl, 0.5f);
+	//CS
+	clInsertUniformXYScale(&commandBuffer->uniformsCl, -1.0f * (float)(i->height) * 0.5f * 16.0f);
+	clInsertUniformConstant(&commandBuffer->uniformsCl, 1065353216);
+	clInsertUniformXYScale(&commandBuffer->uniformsCl, (float)(i->width) * 0.5f * 16.0f);
+	clInsertUniformZOffset(&commandBuffer->uniformsCl, 0.5f);
 }
 
 /*
