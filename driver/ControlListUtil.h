@@ -21,12 +21,13 @@ typedef struct ControlList
 	uint8_t* nextFreeByte; //pointer to the next available free byte
 } ControlList;
 
-void clEmitShaderRelocation(ControlList* cl, const ControlListAddress* address);
+void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, const ControlListAddress* address);
+void clDummyRelocation(ControlList* relocCl, const ControlListAddress* address);
 
 #define __gen_user_data struct ControlList
 #define __gen_address_type ControlListAddress
 #define __gen_address_offset(reloc) ((reloc)->offset)
-#define __gen_emit_reloc clEmitShaderRelocation
+#define __gen_emit_reloc clDummyRelocation
 
 #include "brcm/cle/v3d_packet_v21_pack.h"
 
@@ -95,8 +96,8 @@ void clInsertClipWindow(ControlList* cl,
 						uint32_t bottomPixelCoord, //uint16
 						uint32_t leftPixelCoord);  //uint16
 void clInsertViewPortOffset(ControlList* cl,
-						uint32_t x, //sint16
-						uint32_t y //sint16
+						int16_t x, //sint16
+						int16_t y //sint16
 						);
 void clInsertZMinMaxClippingPlanes(ControlList* cl,
 						float minZw,
@@ -127,6 +128,8 @@ void clInsertGEMRelocations(ControlList* cl,
 							uint32_t buffer0,
 							uint32_t buffer1);
 void clInsertShaderRecord(ControlList* cls,
+						  ControlList* relocCl,
+						  ControlList* handlesCl,
 						  uint32_t fragmentShaderIsSingleThreaded, //0/1
 						  uint32_t pointSizeIncludedInShadedVertexData, //0/1
 						  uint32_t enableClipping, //0/1
@@ -145,6 +148,8 @@ void clInsertShaderRecord(ControlList* cls,
 						  uint32_t coordinateUniformsAddress,
 						  ControlListAddress coordinateCodeAddress);
 void clInsertAttributeRecord(ControlList* cls,
+							 ControlList* relocCl,
+							 ControlList* handlesCl,
 						  ControlListAddress address,
 						  uint32_t sizeBytes,
 						  uint32_t stride,

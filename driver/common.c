@@ -503,6 +503,13 @@ uint32_t getFormatByteSize(VkFormat format)
 	}
 }
 
+uint32_t ulog2(uint32_t v)
+{
+	uint32_t ret = 0;
+	while(v >>= 1) ret++;
+	return ret;
+}
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdDraw
  */
@@ -547,7 +554,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 							  1, //TODO earlyz updates
 							  0, //TODO earlyz enable
 							  0, //TODO z updates
-							  getDepthCompareOp(cb->graphicsPipeline->depthCompareOp), //depth compare func
+							  cb->graphicsPipeline->depthTestEnable ? getDepthCompareOp(cb->graphicsPipeline->depthCompareOp) : V3D_COMPARE_FUNC_ALWAYS, //depth compare func
 							  0,
 							  0,
 							  0,
@@ -555,8 +562,8 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 							  0,
 							  cb->graphicsPipeline->depthBiasEnable, //depth offset enable
 							  cb->graphicsPipeline->frontFace == VK_FRONT_FACE_CLOCKWISE, //clockwise
-							  cb->graphicsPipeline->cullMode & VK_CULL_MODE_BACK_BIT, //enable back facing primitives
-							  cb->graphicsPipeline->cullMode & VK_CULL_MODE_FRONT_BIT); //enable front facing primitives
+							  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_BACK_BIT), //enable back facing primitives
+							  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_FRONT_BIT)); //enable front facing primitives
 
 	//TODO Depth Offset
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_DEPTH_OFFSET_length);
@@ -603,23 +610,33 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 	//emit shader record
 	ControlListAddress fragCode = {
-		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_FRAGMENT_BIT]))->bos[VK_RPI_ASSEMBLY_TYPE_FRAGMENT],
+		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]))->bos[VK_RPI_ASSEMBLY_TYPE_FRAGMENT],
 		.offset = 0,
 	};
 
 	ControlListAddress vertCode = {
-		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_VERTEX_BIT]))->bos[VK_RPI_ASSEMBLY_TYPE_VERTEX],
+		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]))->bos[VK_RPI_ASSEMBLY_TYPE_VERTEX],
 		.offset = 0,
 	};
 
 	ControlListAddress coordCode = {
-		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[VK_SHADER_STAGE_VERTEX_BIT]))->bos[VK_RPI_ASSEMBLY_TYPE_COORDINATE],
+		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]))->bos[VK_RPI_ASSEMBLY_TYPE_COORDINATE],
 		.offset = 0,
 	};
 
 	//TODO
+	commandBuffer->shaderRecCount++;
 	clFit(commandBuffer, &commandBuffer->shaderRecCl, V3D21_SHADER_RECORD_length);
+	ControlList relocCl = commandBuffer->shaderRecCl;
+	//TODO number of attribs
+	int numAttribs = 1;
+	for(int c = 0; c < (3 + numAttribs)*4; ++c)
+	{
+		clInsertNop(&commandBuffer->shaderRecCl);
+	}
 	clInsertShaderRecord(&commandBuffer->shaderRecCl,
+						 &relocCl,
+						 &commandBuffer->handlesCl,
 						 0, //single threaded?
 						 0, //point size included in shaded vertex data?
 						 0, //enable clipping?
@@ -628,13 +645,13 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 						 0, //fragment uniform address?
 						 fragCode, //fragment code address
 						 0, //vertex number of unused uniforms?
-						 1, //vertex attribute array select bits
-						 1, //vertex total attribute size
+						 1, //TODO vertex attribute array select bits
+						 1, //TODO vertex total attribute size
 						 0, //vertex uniform address
 						 vertCode, //vertex shader code address
 						 0, //coordinate number of unused uniforms?
-						 1, //coordinate attribute array select bits
-						 1, //coordinate total attribute size
+						 1, //TODO coordinate attribute array select bits
+						 1, //TODO coordinate total attribute size
 						 0, //coordinate uniform address
 						 coordCode  //coordinate shader code address
 						 );
@@ -646,6 +663,8 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 	clFit(commandBuffer, &commandBuffer->shaderRecCl, V3D21_ATTRIBUTE_RECORD_length);
 	clInsertAttributeRecord(&commandBuffer->shaderRecCl,
+							&relocCl,
+							&commandBuffer->handlesCl,
 							vertexBuffer, //address
 							getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[0].format),
 							cb->graphicsPipeline->vertexBindingDescriptions[0].stride, //stride
@@ -654,16 +673,16 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 							);
 
 	//insert vertex buffer handle
-	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	uint32_t vboIdx = clGetHandleIndex(&commandBuffer->handlesCl, vertexBuffer.handle);
+	//clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	//uint32_t vboIdx = clGetHandleIndex(&commandBuffer->handlesCl, vertexBuffer.handle);
 
 	//insert shader code handles
-	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	uint32_t vertIdx = clGetHandleIndex(&commandBuffer->handlesCl, vertCode.handle);
-	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	uint32_t coordIdx = clGetHandleIndex(&commandBuffer->handlesCl, coordCode.handle);
-	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	uint32_t fragIdx = clGetHandleIndex(&commandBuffer->handlesCl, fragCode.handle);
+	//clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	//uint32_t vertIdx = clGetHandleIndex(&commandBuffer->handlesCl, vertCode.handle);
+	//clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	//uint32_t coordIdx = clGetHandleIndex(&commandBuffer->handlesCl, coordCode.handle);
+	//clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	//uint32_t fragIdx = clGetHandleIndex(&commandBuffer->handlesCl, fragCode.handle);
 
 	//Insert image handle index
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
@@ -914,7 +933,10 @@ VkResult vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCr
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
-	memcpy(fb->attachmentViews, pCreateInfo->pAttachments, sizeof(_imageView) * fb->numAttachmentViews);
+	for(int c = 0; c < fb->numAttachmentViews; ++c)
+	{
+		memcpy(&fb->attachmentViews[c], pCreateInfo->pAttachments[c], sizeof(_imageView));
+	}
 
 	fb->width = pCreateInfo->width;
 	fb->height = pCreateInfo->height;
@@ -969,13 +991,6 @@ VkResult vkCreateShaderModuleFromRpiAssemblyKHR(VkDevice device, VkRpiShaderModu
 VkResult vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
 {
 	return VK_SUCCESS;
-}
-
-uint32_t ulog2(uint32_t v)
-{
-	uint32_t ret = 0;
-	while(v >>= 1) ret++;
-	return ret;
 }
 
 /*

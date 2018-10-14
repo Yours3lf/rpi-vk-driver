@@ -17,8 +17,8 @@
 
 //GLFWwindow * window;
 
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 480
+//#define WINDOW_WIDTH 640
+//#define WINDOW_HEIGHT 480
 
 const char* fragShader =
 		"#version 100\n"
@@ -110,6 +110,7 @@ VkDeviceMemory vertexBufferMemory;
 VkPhysicalDeviceMemoryProperties pdmp;
 std::vector<VkImageView> views; //?
 VkSurfaceFormatKHR swapchainFormat;
+VkExtent2D swapChainExtent;
 
 uint32_t graphicsQueueFamily;
 uint32_t presentQueueFamily;
@@ -186,7 +187,7 @@ void setupVulkan() {
 
 void mainLoop() {
 	//while (!glfwWindowShouldClose(window)) {
-	for(int c = 0; c < 10; ++c){
+	for(int c = 0; c < 1; ++c){
 		draw();
 
 		//glfwPollEvents();
@@ -477,7 +478,7 @@ void createSwapChain() {
 	swapchainFormat = chooseSurfaceFormat(surfaceFormats);
 
 	// Select swap chain size
-	VkExtent2D swapChainExtent = chooseSwapExtent(surfaceCapabilities);
+	swapChainExtent = chooseSwapExtent(surfaceCapabilities);
 
 	// Check if swap chain supports being the destination of an image transfer
 	// Note: AMD driver bug, though it would be nice to implement a workaround that doesn't use transfering
@@ -568,8 +569,8 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities)
 
 #define min(a, b) (a < b ? a : b)
 #define max(a, b) (a > b ? a : b)
-		swapChainExtent.width = min(max(WINDOW_WIDTH, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
-		swapChainExtent.height = min(max(WINDOW_HEIGHT, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
+		swapChainExtent.width = min(max(640, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
+		swapChainExtent.height = min(max(480, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
 
 		return swapChainExtent;
 	}
@@ -650,20 +651,20 @@ void recordCommandBuffers()
 	renderPassInfo.renderPass = renderPass;
 	renderPassInfo.renderArea.offset.x = 0;
 	renderPassInfo.renderArea.offset.y = 0;
-	renderPassInfo.renderArea.extent.width = WINDOW_WIDTH;
-	renderPassInfo.renderArea.extent.height = WINDOW_HEIGHT;
+	renderPassInfo.renderArea.extent.width = swapChainExtent.width;
+	renderPassInfo.renderArea.extent.height = swapChainExtent.height;
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearValue;
 
 	VkViewport viewport = { 0 };
-	viewport.height = (float)WINDOW_HEIGHT;
-	viewport.width = (float)WINDOW_WIDTH;
+	viewport.height = (float)swapChainExtent.width;
+	viewport.width = (float)swapChainExtent.height;
 	viewport.minDepth = (float)0.0f;
 	viewport.maxDepth = (float)1.0f;
 
 	VkRect2D scissor = { 0 };
-	scissor.extent.width = WINDOW_WIDTH;
-	scissor.extent.height = WINDOW_HEIGHT;
+	scissor.extent.width = swapChainExtent.width;
+	scissor.extent.height = swapChainExtent.height;
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
 
@@ -815,8 +816,8 @@ void CreateFramebuffer()
 		fbCreateInfo.renderPass = renderPass;
 		fbCreateInfo.attachmentCount = 1;
 		fbCreateInfo.pAttachments = &views[i];
-		fbCreateInfo.width = WINDOW_WIDTH;
-		fbCreateInfo.height = WINDOW_HEIGHT;
+		fbCreateInfo.width = swapChainExtent.width;
+		fbCreateInfo.height = swapChainExtent.height;
 		fbCreateInfo.layers = 1;
 
 		res = vkCreateFramebuffer(device, &fbCreateInfo, NULL, &fbs[i]);
@@ -944,8 +945,8 @@ void CreatePipeline()
 	VkViewport vp = {};
 	vp.x = 0.0f;
 	vp.y = 0.0f;
-	vp.width = (float)WINDOW_WIDTH;
-	vp.height = (float)WINDOW_HEIGHT;
+	vp.width = (float)swapChainExtent.width;
+	vp.height = (float)swapChainExtent.height;
 	vp.minDepth = 0.0f;
 	vp.maxDepth = 1.0f;
 

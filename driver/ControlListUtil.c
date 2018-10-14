@@ -115,7 +115,7 @@ void clInsertBranch(ControlList* cls, ControlListAddress address)
 	assert(cls->nextFreeByte);
 	*cls->nextFreeByte = V3D21_BRANCH_opcode; cls->nextFreeByte++;
 	//TODO is this correct?
-	clEmitShaderRelocation(cls, &address);
+	//clEmitShaderRelocation(cls, &address);
 	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
 }
 
@@ -127,7 +127,7 @@ void clInsertBranchToSubList(ControlList* cls, ControlListAddress address)
 	assert(cls->nextFreeByte);
 	*cls->nextFreeByte = V3D21_BRANCH_TO_SUB_LIST_opcode; cls->nextFreeByte++;
 	//TODO is this correct?
-	clEmitShaderRelocation(cls, &address);
+	//clEmitShaderRelocation(cls, &address);
 	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
 }
 
@@ -385,7 +385,7 @@ void clInsertConfigurationBits(ControlList* cl,
 			moveBits(depthTestFunction, 3, 12) |
 			moveBits(zUpdatesEnable, 1, 15) |
 			moveBits(earlyZEnable, 1, 16) |
-			moveBits(earlyZUpdatesEnable, 1, 17); cl->nextFreeByte += 4;
+			moveBits(earlyZUpdatesEnable, 1, 17); cl->nextFreeByte += 3;
 }
 
 void clInsertFlatShadeFlags(ControlList* cl,
@@ -454,15 +454,16 @@ void clInsertClipWindow(ControlList* cl,
 
 //viewport centre x/y coordinate
 void clInsertViewPortOffset(ControlList* cl,
-						uint32_t x, //sint16
-						uint32_t y //sint16
+						int16_t x, //sint16
+						int16_t y //sint16
 						)
 {
 	assert(cl);
 	assert(cl->buffer);
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_VIEWPORT_OFFSET_opcode; cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte = moveBits(x, 16, 0) | moveBits(y, 16, 16); cl->nextFreeByte += 4;
+	*(int16_t*)cl->nextFreeByte = x * 16; cl->nextFreeByte += 2;
+	*(int16_t*)cl->nextFreeByte = y * 16; cl->nextFreeByte += 2;
 }
 
 void clInsertZMinMaxClippingPlanes(ControlList* cl,
@@ -615,6 +616,8 @@ void clInsertGEMRelocations(ControlList* cl,
 
 //input: 2 cls (cl, handles cl)
 void clInsertShaderRecord(ControlList* cls,
+						  ControlList* relocCl,
+						  ControlList* handlesCl,
 						  uint32_t fragmentShaderIsSingleThreaded, //0/1
 						  uint32_t pointSizeIncludedInShadedVertexData, //0/1
 						  uint32_t enableClipping, //0/1
@@ -644,14 +647,14 @@ void clInsertShaderRecord(ControlList* cls,
 	*cls->nextFreeByte = 0; cls->nextFreeByte++;
 	*(uint16_t*)cls->nextFreeByte = moveBits(fragmentNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte += 2;
 	*cls->nextFreeByte = fragmentNumberOfVaryings; cls->nextFreeByte++;
-	clEmitShaderRelocation(cls, &fragmentCodeAddress);
+	clEmitShaderRelocation(relocCl, handlesCl, &fragmentCodeAddress);
 	*(uint32_t*)cls->nextFreeByte = fragmentCodeAddress.offset; cls->nextFreeByte += 4;
 	*(uint32_t*)cls->nextFreeByte = fragmentUniformsAddress; cls->nextFreeByte += 4;
 
 	*(uint16_t*)cls->nextFreeByte = moveBits(vertexNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte += 2;
 	*cls->nextFreeByte = vertexAttributeArraySelectBits; cls->nextFreeByte++;
 	*cls->nextFreeByte = vertexTotalAttributesSize; cls->nextFreeByte++;
-	clEmitShaderRelocation(cls, &vertexCodeAddress);
+	clEmitShaderRelocation(relocCl, handlesCl, &vertexCodeAddress);
 	//TODO wtf???
 	*(uint32_t*)cls->nextFreeByte = moveBits(vertexCodeAddress.offset, 32, 0) | moveBits(vertexUniformsAddress, 32, 0); cls->nextFreeByte += 4;
 	cls->nextFreeByte += 4;
@@ -659,13 +662,15 @@ void clInsertShaderRecord(ControlList* cls,
 	*(uint16_t*)cls->nextFreeByte = moveBits(coordinateNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte += 2;
 	*cls->nextFreeByte = coordinateAttributeArraySelectBits; cls->nextFreeByte++;
 	*cls->nextFreeByte = coordinateTotalAttributesSize; cls->nextFreeByte++;
-	clEmitShaderRelocation(cls, &coordinateCodeAddress);
+	clEmitShaderRelocation(relocCl, handlesCl, &coordinateCodeAddress);
 	*(uint32_t*)cls->nextFreeByte = coordinateCodeAddress.offset; cls->nextFreeByte += 4;
 	*(uint32_t*)cls->nextFreeByte = coordinateUniformsAddress; cls->nextFreeByte += 4;
 }
 
 //input: 2 cls (cl, handles cl)
 void clInsertAttributeRecord(ControlList* cls,
+							 ControlList* relocCl,
+							 ControlList* handlesCl,
 						  ControlListAddress address,
 						  uint32_t sizeBytes,
 						  uint32_t stride,
@@ -677,7 +682,7 @@ void clInsertAttributeRecord(ControlList* cls,
 	assert(cls->nextFreeByte);
 	uint32_t sizeBytesMinusOne = sizeBytes - 1;
 	//TODO is this correct?
-	clEmitShaderRelocation(cls, &address);
+	clEmitShaderRelocation(relocCl, handlesCl, &address);
 	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
 	*cls->nextFreeByte = sizeBytesMinusOne; cls->nextFreeByte++;
 	*cls->nextFreeByte = stride; cls->nextFreeByte++;
@@ -708,21 +713,21 @@ uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handle)
 }
 
 //input: 2 cls (cl + handles cl)
-inline void clEmitShaderRelocation(ControlList* cls, const ControlListAddress* address)
+inline void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, const ControlListAddress* address)
 {
-	assert(cls);
-	assert(cls->buffer);
-	assert(cls->nextFreeByte);
+	assert(relocCl);
+	assert(relocCl->buffer);
+	assert(relocCl->nextFreeByte);
+	assert(handlesCl);
+	assert(handlesCl->buffer);
+	assert(handlesCl->nextFreeByte);
 	assert(address);
 	assert(address->handle);
 
-	//search for handle in handles cl
-	//if found insert handle index
-
-	ControlList* cl = cls;
-	ControlList* handlesCl = cls + 1;
-
 	//store offset within handles in cl
-	*(uint32_t*)cl->nextFreeByte = clGetHandleIndex(handlesCl, address->handle);
-	cl->nextFreeByte += 4;
+	*(uint32_t*)relocCl->nextFreeByte = clGetHandleIndex(handlesCl, address->handle);
+	relocCl->nextFreeByte += 4;
 }
+
+inline void clDummyRelocation(ControlList* relocCl, const ControlListAddress* address)
+{}
