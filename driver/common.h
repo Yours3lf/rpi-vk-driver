@@ -182,6 +182,7 @@ typedef struct VkFramebuffer_T
 typedef struct VkShaderModule_T
 {
 	uint32_t bos[VK_RPI_ASSEMBLY_TYPE_MAX];
+	uint32_t sizes[VK_RPI_ASSEMBLY_TYPE_MAX];
 } _shaderModule;
 
 typedef struct VkPipeline_T

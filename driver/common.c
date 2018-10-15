@@ -1012,6 +1012,7 @@ VkResult vkCreateShaderModuleFromRpiAssemblyKHR(VkDevice device, VkRpiShaderModu
 		{
 			uint32_t size = pCreateInfo->numBytesArray[c];
 			shader->bos[c] = vc4_bo_alloc_shader(controlFd, pCreateInfo->byteStreamArray[c], &size);
+			shader->sizes[c] = size;
 		}
 		else
 		{
@@ -1411,27 +1412,53 @@ VkResult vkBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory mem
 
 void vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator)
 {
+	assert(device);
+	assert(buffer);
 
+	assert(pAllocator == 0); //TODO
+
+	_buffer* buf = buffer;
+	free(buf);
 }
 
 void vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
+	assert(device);
+	assert(memory);
 
+	assert(pAllocator == 0); //TODO
+
+	_deviceMemory* mem = memory;
+	vc4_bo_free(controlFd, mem->bo, mem->mappedPtr, mem->size);
+	free(mem);
 }
 
 void vkDestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator)
 {
-
+	//TODO
 }
 
 void vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator)
 {
+	assert(device);
+	assert(imageView);
 
+	assert(pAllocator == 0); //TODO
+
+	_imageView* view = imageView;
+	free(view);
 }
 
 void vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator)
 {
+	assert(device);
+	assert(framebuffer);
 
+	assert(pAllocator == 0); //TODO
+
+	_framebuffer* fb = framebuffer;
+	free(fb->attachmentViews);
+	free(fb);
 }
 
 void vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
@@ -1441,17 +1468,66 @@ void vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAlloc
 
 	assert(pAllocator == 0); //TODO
 
-	//TODO?
+	_renderpass* rp = renderPass;
 
-	free(renderPass);
+	free(rp->subpassDependencies);
+
+	for(int c = 0; c < rp->numSubpasses; ++c)
+	{
+		free(rp->subpasses[c].pInputAttachments);
+		free(rp->subpasses[c].pColorAttachments);
+		free(rp->subpasses[c].pResolveAttachments);
+		free(rp->subpasses[c].pDepthStencilAttachment);
+		free(rp->subpasses[c].pPreserveAttachments);
+	}
+
+	free(rp->subpasses);
+
+	free(rp->attachments);
+
+	free(rp);
 }
 
 void vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, const VkAllocationCallbacks* pAllocator)
 {
+	assert(device);
+	assert(shaderModule);
 
+	assert(pAllocator == 0);
+
+	_shaderModule* shader = shaderModule;
+
+	for(int c = 0; c < VK_RPI_ASSEMBLY_TYPE_MAX; ++c)
+	{
+		if(shader->bos[c])
+		{
+			vc4_bo_free(controlFd, shader->bos[c], 0, shader->sizes[c]);
+		}
+	}
+
+	free(shader);
 }
 
 void vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
 {
+	assert(device);
+	assert(pipeline);
 
+	assert(pAllocator == 0); //TODO
+
+	_pipeline* pip = pipeline;
+
+	free(pip->dynamicStates);
+	free(pip->attachmentBlendStates);
+	free(pip->scissors);
+	free(pip->viewports);
+	free(pip->vertexBindingDescriptions);
+	free(pip->vertexAttributeDescriptions);
+
+	for(int c = 0; c < 6; ++c)
+	{
+		free(pip->names[c]);
+	}
+
+	free(pip);
 }
