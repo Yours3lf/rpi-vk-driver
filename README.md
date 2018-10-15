@@ -3,8 +3,8 @@
 
 ## Milestones
 - [x] clear screen example working
-- [ ] triangle example working
-  - [ ] shader from assembly, vertices from vertex buffer object, no uniforms, color hardcoded
+- [x] triangle example working
+  - [x] shader from assembly, vertices from vertex buffer object, no uniforms, color hardcoded
   - [ ] uniforms for matrix multiplication and animation
   - [ ] texture coordinates and texture sampling
   - [ ] shader compiled from spirv
