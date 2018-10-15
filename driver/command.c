@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include "command.h"
+
 #include "kernel/vc4_packet.h"
 #include "../brcm/cle/v3d_decoder.h"
 #include "../brcm/clif/clif_dump.h"

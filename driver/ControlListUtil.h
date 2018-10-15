@@ -29,6 +29,8 @@ void clDummyRelocation(ControlList* relocCl, const ControlListAddress* address);
 #define __gen_address_offset(reloc) ((reloc)->offset)
 #define __gen_emit_reloc clDummyRelocation
 
+#include <string.h>
+
 #include "brcm/cle/v3d_packet_v21_pack.h"
 
 uint32_t divRoundUp(uint32_t n, uint32_t d);

@@ -263,9 +263,15 @@ typedef struct VkCommandBuffer_T
 	_buffer* vertexBuffers[8];
 } _commandBuffer;
 
-void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, uint32_t* paddedWidth, uint32_t* paddedHeight);
 uint32_t getFormatBpp(VkFormat f);
 uint32_t packVec4IntoABGR8(const float rgba[4]);
+void createImageBO(_image* i);
 int findInstanceExtension(char* name);
 int findDeviceExtension(char* name);
-void createImageBO(_image* i);
+void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, uint32_t* paddedWidth, uint32_t* paddedHeight);
+int isDepthStencilFormat(VkFormat format);
+uint32_t getDepthCompareOp(VkCompareOp op);
+uint32_t getTopology(VkPrimitiveTopology topology);
+uint32_t getPrimitiveMode(VkPrimitiveTopology topology);
+uint32_t getFormatByteSize(VkFormat format);
+uint32_t ulog2(uint32_t v);
