@@ -119,6 +119,18 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	//TODO
 	closeIoctl();
+
+	free(instance);
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateInstanceVersion
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceVersion(
+	uint32_t*                                   pApiVersion)
+{
+	assert(pApiVersion);
+	*pApiVersion = VK_MAKE_VERSION(1, 1, 0);
+	return VK_SUCCESS;
 }

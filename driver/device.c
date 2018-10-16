@@ -310,5 +310,48 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
+	_device* dev = device;
+	for(int c = 0; c < numQueueFamilies; ++c)
+	{
+		for(int d = 0; d < dev->numQueues[c]; ++d)
+		{
+			free(dev->queues[d]);
+		}
+	}
+
+	free(dev);
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumeratePhysicalDeviceGroups
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDeviceGroups(
+	VkInstance                                  instance,
+	uint32_t*                                   pPhysicalDeviceGroupCount,
+	VkPhysicalDeviceGroupProperties*            pPhysicalDeviceGroupProperties)
+{
+	assert(instance);
+	assert(pPhysicalDeviceGroupCount);
+
+	if(!pPhysicalDeviceGroupProperties)
+	{
+		*pPhysicalDeviceGroupCount = 1;
+		return VK_SUCCESS;
+	}
+
 	//TODO
+	uint32_t c = 0;
+	for(; c < *pPhysicalDeviceGroupCount; ++c)
+	{
+		pPhysicalDeviceGroupProperties[c].physicalDeviceCount = 1;
+		pPhysicalDeviceGroupProperties[c].physicalDevices = &instance->dev;
+		pPhysicalDeviceGroupProperties[c].subsetAllocation = 0;
+	}
+
+	if(c < 1)
+	{
+		return VK_INCOMPLETE;
+	}
+
+	return VK_SUCCESS;
 }

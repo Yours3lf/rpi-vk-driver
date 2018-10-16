@@ -389,63 +389,48 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
 	free(cp);
 }
 
-void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize)
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkTrimCommandPool
+ */
+VKAPI_ATTR void VKAPI_CALL vkTrimCommandPool(
+	VkDevice                                    device,
+	VkCommandPool                               commandPool,
+	VkCommandPoolTrimFlags                      flags)
 {
-	if(!clHasEnoughSpace(cl, commandSize))
-	{
-		uint32_t currSize = clSize(cl);
-		cl->buffer = consecutivePoolReAllocate(&cb->cp->cpa, cl->buffer, cl->numBlocks); assert(cl->buffer);
-		cl->nextFreeByte = cl->buffer + currSize;
-	}
+	assert(device);
+	assert(commandPool);
+
+	_commandPool* cp = commandPool;
+
+	//TODO??
 }
 
-void clDump(void* cl, uint32_t size)
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkResetCommandPool
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandPool(
+	VkDevice                                    device,
+	VkCommandPool                               commandPool,
+	VkCommandPoolResetFlags                     flags)
 {
-		struct v3d_device_info devinfo = {
-				/* While the driver supports V3D 2.1 and 2.6, we haven't split
-				 * off a 2.6 XML yet (there are a couple of fields different
-				 * in render target formatting)
-				 */
-				.ver = 21,
-		};
-		struct v3d_spec* spec = v3d_spec_load(&devinfo);
+	assert(device);
+	assert(commandPool);
 
-		struct clif_dump *clif = clif_dump_init(&devinfo, stderr, true);
+	_commandPool* cp = commandPool;
 
-		uint32_t offset = 0, hw_offset = 0;
-		uint8_t *p = cl;
+	//TODO??
+}
 
-		while (offset < size) {
-				struct v3d_group *inst = v3d_spec_find_instruction(spec, p);
-				uint8_t header = *p;
-				uint32_t length;
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkResetCommandBuffer
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandBuffer(
+	VkCommandBuffer                             commandBuffer,
+	VkCommandBufferResetFlags                   flags)
+{
+	assert(commandBuffer);
 
-				if (inst == NULL) {
-						printf("0x%08x 0x%08x: Unknown packet 0x%02x (%d)!\n",
-								offset, hw_offset, header, header);
-						return;
-				}
+	_commandBuffer* cb = commandBuffer;
 
-				length = v3d_group_get_length(inst);
-
-				printf("0x%08x 0x%08x: 0x%02x %s\n",
-						offset, hw_offset, header, v3d_group_get_name(inst));
-
-				v3d_print_group(clif, inst, offset, p);
-
-				switch (header) {
-				case VC4_PACKET_HALT:
-				case VC4_PACKET_STORE_MS_TILE_BUFFER_AND_EOF:
-						return;
-				default:
-						break;
-				}
-
-				offset += length;
-				if (header != VC4_PACKET_GEM_HANDLES)
-						hw_offset += length;
-				p += length;
-		}
-
-		clif_dump_destroy(clif);
+	//TODO??
 }

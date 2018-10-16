@@ -440,3 +440,63 @@ uint32_t ulog2(uint32_t v)
 	return ret;
 }
 
+void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize)
+{
+	if(!clHasEnoughSpace(cl, commandSize))
+	{
+		uint32_t currSize = clSize(cl);
+		cl->buffer = consecutivePoolReAllocate(&cb->cp->cpa, cl->buffer, cl->numBlocks); assert(cl->buffer);
+		cl->nextFreeByte = cl->buffer + currSize;
+	}
+}
+
+void clDump(void* cl, uint32_t size)
+{
+		struct v3d_device_info devinfo = {
+				/* While the driver supports V3D 2.1 and 2.6, we haven't split
+				 * off a 2.6 XML yet (there are a couple of fields different
+				 * in render target formatting)
+				 */
+				.ver = 21,
+		};
+		struct v3d_spec* spec = v3d_spec_load(&devinfo);
+
+		struct clif_dump *clif = clif_dump_init(&devinfo, stderr, true);
+
+		uint32_t offset = 0, hw_offset = 0;
+		uint8_t *p = cl;
+
+		while (offset < size) {
+				struct v3d_group *inst = v3d_spec_find_instruction(spec, p);
+				uint8_t header = *p;
+				uint32_t length;
+
+				if (inst == NULL) {
+						printf("0x%08x 0x%08x: Unknown packet 0x%02x (%d)!\n",
+								offset, hw_offset, header, header);
+						return;
+				}
+
+				length = v3d_group_get_length(inst);
+
+				printf("0x%08x 0x%08x: 0x%02x %s\n",
+						offset, hw_offset, header, v3d_group_get_name(inst));
+
+				v3d_print_group(clif, inst, offset, p);
+
+				switch (header) {
+				case VC4_PACKET_HALT:
+				case VC4_PACKET_STORE_MS_TILE_BUFFER_AND_EOF:
+						return;
+				default:
+						break;
+				}
+
+				offset += length;
+				if (header != VC4_PACKET_GEM_HANDLES)
+						hw_offset += length;
+				p += length;
+		}
+
+		clif_dump_destroy(clif);
+}

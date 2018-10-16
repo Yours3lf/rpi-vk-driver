@@ -275,3 +275,5 @@ uint32_t getTopology(VkPrimitiveTopology topology);
 uint32_t getPrimitiveMode(VkPrimitiveTopology topology);
 uint32_t getFormatByteSize(VkFormat format);
 uint32_t ulog2(uint32_t v);
+void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize);
+void clDump(void* cl, uint32_t size);
