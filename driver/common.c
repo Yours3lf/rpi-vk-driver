@@ -1,6 +1,8 @@
 #include "common.h"
 
 #include "kernel/vc4_packet.h"
+#include "brcm/cle/v3d_decoder.h"
+#include "brcm/clif/clif_dump.h"
 
 uint32_t getFormatBpp(VkFormat f)
 {

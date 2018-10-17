@@ -1,7 +1,5 @@
 #include "common.h"
 
-#include "command.h"
-
 #include "kernel/vc4_packet.h"
 #include "../brcm/cle/v3d_decoder.h"
 #include "../brcm/clif/clif_dump.h"
@@ -418,7 +416,29 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandPool(
 
 	_commandPool* cp = commandPool;
 
-	//TODO??
+	for(char* c = cp->pa.buf; c != cp->pa.buf + cp->pa.size; c += cp->pa.blockSize)
+	{
+		char* d = cp->pa.nextFreeBlock;
+		while(d)
+		{
+			if(c == d) break;
+		}
+
+		if(c == d) //block is free, as we found it in the free chain
+		{
+			continue;
+		}
+		else
+		{
+			//we found a valid block
+			_commandBuffer* cb = c;
+			assert(cb->state != CMDBUF_STATE_PENDING);
+			cb->state = CMDBUF_STATE_INITIAL;
+		}
+	}
+
+	//TODO secondary command buffer stuff
+	//TODO reset flag
 }
 
 /*
@@ -432,5 +452,16 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandBuffer(
 
 	_commandBuffer* cb = commandBuffer;
 
-	//TODO??
+	assert(cb->state != CMDBUF_STATE_PENDING);
+
+	if(cb->state == CMDBUF_STATE_RECORDING || cb->state == CMDBUF_STATE_EXECUTABLE)
+	{
+		cb->state = CMDBUF_STATE_INVALID;
+	}
+	else
+	{
+		cb->state = CMDBUF_STATE_INITIAL;
+	}
+
+	//TODO flag?
 }

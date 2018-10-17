@@ -1,7 +1,5 @@
 #include "common.h"
 
-#include "command.h"
-
 #include "kernel/vc4_packet.h"
 
 /*

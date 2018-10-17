@@ -50,7 +50,7 @@ void vc4_bo_unmap_unsynchronized(int fd, void* ptr, uint32_t size);
 //int vc4_bo_wait_ioctl(int fd, uint32_t handle, uint64_t timeout_ns);
 int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns);
 //int vc4_seqno_wait_ioctl(int fd, uint64_t seqno, uint64_t timeout_ns);
-int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t timeout_ns);
+int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t* timeout_ns);
 int vc4_bo_flink(int fd, uint32_t bo, uint32_t *name);
 uint32_t vc4_bo_alloc_shader(int fd, const void *data, uint32_t* size);
 uint32_t vc4_bo_open_name(int fd, uint32_t name);

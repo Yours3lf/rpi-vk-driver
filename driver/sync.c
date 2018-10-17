@@ -1,7 +1,5 @@
 #include "common.h"
 
-#include "command.h"
-
 #include "kernel/vc4_packet.h"
 
 /*
@@ -248,14 +246,29 @@ VKAPI_ATTR VkResult VKAPI_CALL vkDeviceWaitIdle(
 		for(int d = 0; d < device->numQueues[c]; ++d)
 		{
 			uint64_t lastFinishedSeqno;
-			vc4_seqno_wait(controlFd, &lastFinishedSeqno, device->queues[c][d].lastEmitSeqno, WAIT_TIMEOUT_INFINITE);
+			uint64_t timeout = WAIT_TIMEOUT_INFINITE;
+			vc4_seqno_wait(controlFd, &lastFinishedSeqno, device->queues[c][d].lastEmitSeqno, &timeout);
 		}
 	}
 
 	return VK_SUCCESS;
 }
 
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkQueueWaitIdle
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkQueueWaitIdle(
+	VkQueue                                     queue)
+{
+	assert(queue);
 
+	_queue* q = queue;
+	uint64_t lastFinishedSeqno;
+	uint64_t timeout = WAIT_TIMEOUT_INFINITE;
+	vc4_seqno_wait(controlFd, &lastFinishedSeqno, q->lastEmitSeqno, &timeout);
+
+	return VK_SUCCESS;
+}
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroySemaphore
@@ -272,4 +285,170 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
 	assert(pAllocator == 0);
 
 	sem_destroy((sem_t*)semaphore);
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateFence
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateFence(
+	VkDevice                                    device,
+	const VkFenceCreateInfo*                    pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkFence*                                    pFence)
+{
+	assert(device);
+	assert(pCreateInfo);
+	assert(pFence);
+
+	assert(pAllocator == 0);
+
+	_fence* f = malloc(sizeof(_fence));
+
+	f->seqno = 0;
+	f->signaled = pCreateInfo->flags & VK_FENCE_CREATE_SIGNALED_BIT;
+
+	*pFence = f;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyFence
+ */
+VKAPI_ATTR void VKAPI_CALL vkDestroyFence(
+	VkDevice                                    device,
+	VkFence                                     fence,
+	const VkAllocationCallbacks*                pAllocator)
+{
+	assert(device);
+	assert(fence);
+
+	assert(pAllocator == 0);
+
+	free(fence);
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetFenceStatus
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceStatus(
+	VkDevice                                    device,
+	VkFence                                     fence)
+{
+	assert(device);
+	assert(fence);
+
+	//TODO update fence status based on last completed seqno?
+
+	_fence* f = fence;
+	return f->signaled ? VK_SUCCESS : VK_NOT_READY;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkResetFences
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkResetFences(
+	VkDevice                                    device,
+	uint32_t                                    fenceCount,
+	const VkFence*                              pFences)
+{
+	assert(device);
+	assert(pFences);
+	assert(fenceCount > 0);
+
+	for(uint32_t c = 0; c < fenceCount; ++c)
+	{
+		_fence* f = pFences[c];
+		f->signaled = 0;
+		f->seqno = 0;
+	}
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkWaitForFences
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkWaitForFences(
+	VkDevice                                    device,
+	uint32_t                                    fenceCount,
+	const VkFence*                              pFences,
+	VkBool32                                    waitAll,
+	uint64_t                                    timeout)
+{
+	assert(device);
+	assert(pFences);
+	assert(fenceCount > 0);
+
+	if(waitAll)
+	{
+		if(!timeout)
+		{
+			for(uint32_t c = 0; c < fenceCount; ++c)
+			{
+				_fence* f = pFences[c];
+				if(!f->signaled) //if any unsignaled
+				{
+					return VK_TIMEOUT;
+				}
+
+				return VK_SUCCESS;
+			}
+		}
+
+		//wait for all to be signaled
+		for(uint32_t c = 0; c < fenceCount; ++c)
+		{
+			_fence* f = pFences[c];
+			uint64_t lastFinishedSeqno = 0;
+			if(!f->signaled)
+			{
+				int ret = vc4_seqno_wait(controlFd, &lastFinishedSeqno, f->seqno, &timeout);
+
+				if(ret < 0)
+				{
+					return VK_TIMEOUT;
+				}
+
+				f->signaled = 1;
+				f->seqno = 0;
+			}
+		}
+	}
+	else
+	{
+		if(!timeout)
+		{
+			for(uint32_t c = 0; c < fenceCount; ++c)
+			{
+				_fence* f = pFences[c];
+				if(f->signaled) //if any signaled
+				{
+					return VK_SUCCESS;
+				}
+
+				return VK_TIMEOUT;
+			}
+		}
+
+		//wait for any to be signaled
+		for(uint32_t c = 0; c < fenceCount; ++c)
+		{
+			_fence* f = pFences[c];
+			uint64_t lastFinishedSeqno = 0;
+			if(!f->signaled)
+			{
+				int ret = vc4_seqno_wait(controlFd, &lastFinishedSeqno, f->seqno, &timeout);
+
+				if(ret < 0)
+				{
+					continue;
+				}
+
+				f->signaled = 1;
+				f->seqno = 0;
+				return VK_SUCCESS;
+			}
+		}
+
+		return VK_TIMEOUT;
+	}
+
+	return VK_SUCCESS;
 }

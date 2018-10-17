@@ -263,6 +263,12 @@ typedef struct VkCommandBuffer_T
 	_buffer* vertexBuffers[8];
 } _commandBuffer;
 
+typedef struct VkFence_T
+{
+	uint64_t seqno;
+	uint32_t signaled;
+} _fence;
+
 uint32_t getFormatBpp(VkFormat f);
 uint32_t packVec4IntoABGR8(const float rgba[4]);
 void createImageBO(_image* i);

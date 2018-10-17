@@ -344,7 +344,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDeviceGroups(
 	for(; c < *pPhysicalDeviceGroupCount; ++c)
 	{
 		pPhysicalDeviceGroupProperties[c].physicalDeviceCount = 1;
-		pPhysicalDeviceGroupProperties[c].physicalDevices = &instance->dev;
+		pPhysicalDeviceGroupProperties[c].physicalDevices[0] = &instance->dev;
 		pPhysicalDeviceGroupProperties[c].subsetAllocation = 0;
 	}
 

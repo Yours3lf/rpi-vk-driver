@@ -235,18 +235,19 @@ int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns)
 	return 1;
 }
 
-int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t timeout_ns)
+int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t* timeout_ns)
 {
 	assert(fd);
 	assert(lastFinishedSeqno);
 	assert(seqno);
+	assert(timeout_ns);
 
 	if (*lastFinishedSeqno >= seqno)
 		return 1;
 
 	struct drm_vc4_wait_seqno wait = {
 		.seqno = seqno,
-				.timeout_ns = timeout_ns,
+				.timeout_ns = *timeout_ns,
 	};
 
 	printf("Wait for seqno: %llu\n", seqno);
@@ -257,10 +258,17 @@ int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t
 			printf("Seqno wait failed: %s\n",
 				   strerror(errno));
 		}
+		else
+		{
+			//Timeout happened
+			*timeout_ns = -1;
+			return -1;
+		}
 
 		return 0;
 	}
 
+	*timeout_ns = wait.timeout_ns;
 	*lastFinishedSeqno = seqno;
 	return 1;
 }
@@ -526,10 +534,11 @@ void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmitt
 	}
 
 	if (*lastEmittedSeqno - *lastFinishedSeqno > 5) {
+		uint64_t timeout = WAIT_TIMEOUT_INFINITE;
 		if (!vc4_seqno_wait(fd,
 							lastFinishedSeqno,
 							*lastFinishedSeqno > 0 ? *lastEmittedSeqno - 5 : *lastEmittedSeqno,
-							WAIT_TIMEOUT_INFINITE))
+							&timeout))
 		{
 			printf("Job throttling failed\n");
 		}
