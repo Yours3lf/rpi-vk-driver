@@ -209,3 +209,108 @@ void vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAlloc
 
 	free(rp);
 }
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateFramebuffer
+ */
+VkResult vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
+{
+	assert(device);
+	assert(pCreateInfo);
+	assert(pFramebuffer);
+
+	assert(pAllocator == 0); //TODO
+
+	_framebuffer* fb = malloc(sizeof(_framebuffer));
+
+	if(!fb)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	fb->renderpass = pCreateInfo->renderPass;
+
+	fb->numAttachmentViews = pCreateInfo->attachmentCount;
+	fb->attachmentViews = malloc(sizeof(_imageView) * fb->numAttachmentViews);
+
+	if(!fb->attachmentViews)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	for(int c = 0; c < fb->numAttachmentViews; ++c)
+	{
+		memcpy(&fb->attachmentViews[c], pCreateInfo->pAttachments[c], sizeof(_imageView));
+	}
+
+	fb->width = pCreateInfo->width;
+	fb->height = pCreateInfo->height;
+	fb->layers = pCreateInfo->layers;
+
+	//TODO errors/validation
+
+	*pFramebuffer = fb;
+
+	return VK_SUCCESS;
+}
+
+void vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator)
+{
+	assert(device);
+	assert(framebuffer);
+
+	assert(pAllocator == 0); //TODO
+
+	_framebuffer* fb = framebuffer;
+	free(fb->attachmentViews);
+	free(fb);
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdNextSubpass
+ */
+VKAPI_ATTR void VKAPI_CALL vkCmdNextSubpass(
+	VkCommandBuffer                             commandBuffer,
+	VkSubpassContents                           contents)
+{
+	assert(commandBuffer);
+
+	//TODO contents, everything else...
+
+	_commandBuffer* cb = commandBuffer;
+	cb->currentSubpass++; //TODO check max subpass?
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetRenderAreaGranularity
+ */
+VKAPI_ATTR void VKAPI_CALL vkGetRenderAreaGranularity(
+	VkDevice                                    device,
+	VkRenderPass                                renderPass,
+	VkExtent2D*                                 pGranularity)
+{
+	assert(device);
+	assert(renderPass);
+	assert(pGranularity);
+
+	_renderpass* rp = renderPass;
+
+	//TODO what if we have multiple attachments?
+
+	uint32_t tileSizeW = 64;
+	uint32_t tileSizeH = 64;
+
+	if(rp->attachments[0].samples > 1)
+	{
+		tileSizeW >>= 1;
+		tileSizeH >>= 1;
+	}
+
+	if(getFormatBpp(rp->attachments[0].format) == 64)
+	{
+		tileSizeH >>= 1;
+	}
+
+	pGranularity->width = tileSizeW;
+	pGranularity->height = tileSizeH;
+}

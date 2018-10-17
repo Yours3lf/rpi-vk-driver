@@ -149,3 +149,29 @@ void vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCall
 	vc4_bo_free(controlFd, mem->bo, mem->mappedPtr, mem->size);
 	free(mem);
 }
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkFlushMappedMemoryRanges
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkFlushMappedMemoryRanges(
+	VkDevice                                    device,
+	uint32_t                                    memoryRangeCount,
+	const VkMappedMemoryRange*                  pMemoryRanges)
+{
+	//TODO
+
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkInvalidateMappedMemoryRanges
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkInvalidateMappedMemoryRanges(
+	VkDevice                                    device,
+	uint32_t                                    memoryRangeCount,
+	const VkMappedMemoryRange*                  pMemoryRanges)
+{
+	//TODO
+
+	return VK_SUCCESS;
+}
