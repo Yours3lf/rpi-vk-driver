@@ -269,6 +269,14 @@ typedef struct VkFence_T
 	uint32_t signaled;
 } _fence;
 
+typedef struct VkBufferView_T
+{
+	_buffer*                   buffer;
+	VkFormat                   format;
+	VkDeviceSize               offset;
+	VkDeviceSize               range;
+} _bufferView;
+
 uint32_t getFormatBpp(VkFormat f);
 uint32_t packVec4IntoABGR8(const float rgba[4]);
 void createImageBO(_image* i);

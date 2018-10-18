@@ -124,3 +124,152 @@ void vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocati
 	_imageView* view = imageView;
 	free(view);
 }
+
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateBufferView
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateBufferView(
+	VkDevice                                    device,
+	const VkBufferViewCreateInfo*               pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkBufferView*                               pView)
+{
+	assert(device);
+	assert(pCreateInfo);
+	assert(pView);
+
+	assert(pAllocator == 0); //TODO
+
+	_bufferView* bv = malloc(sizeof(_bufferView));
+
+	bv->buffer = pCreateInfo->buffer;
+	bv->format = pCreateInfo->format;
+	bv->offset = pCreateInfo->offset;
+	bv->range = pCreateInfo->range;
+
+	*pView = bv;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyBufferView
+ */
+VKAPI_ATTR void VKAPI_CALL vkDestroyBufferView(
+	VkDevice                                    device,
+	VkBufferView                                bufferView,
+	const VkAllocationCallbacks*                pAllocator)
+{
+	assert(device);
+	assert(bufferView);
+
+	assert(pAllocator == 0); //TODO
+
+	_bufferView* bv = bufferView;
+	free(bv);
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateImage
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(
+	VkDevice                                    device,
+	const VkImageCreateInfo*                    pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkImage*                                    pImage)
+{
+	assert(device);
+	assert(pCreateInfo);
+	assert(pImage);
+
+	assert(pAllocator == 0);
+
+	_image* i = malloc(sizeof(_image));
+	if(!i)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	//TODO flags?
+	//TODO? pCreateInfo->imageType
+	i->format = pCreateInfo->format;
+	i->width = pCreateInfo->extent.width;
+	i->height = pCreateInfo->extent.height;
+	i->depth = pCreateInfo->extent.depth;
+	i->miplevels = pCreateInfo->mipLevels;
+	i->layers = pCreateInfo->arrayLayers;
+	i->samples = pCreateInfo->samples; //TODO?
+	i->tiling = pCreateInfo->tiling; //TODO?
+	i->usageBits = pCreateInfo->usage;
+	i->concurrentAccess = pCreateInfo->sharingMode; //TODO?
+	i->numQueueFamiliesWithAccess = pCreateInfo->queueFamilyIndexCount;
+	if(i->numQueueFamiliesWithAccess > 0)
+	{
+		i->queueFamiliesWithAccess = malloc(sizeof(uint32_t) * i->numQueueFamiliesWithAccess);
+		if(!i->queueFamiliesWithAccess)
+			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		memcpy(i->queueFamiliesWithAccess, pCreateInfo->pQueueFamilyIndices, sizeof(uint32_t) * i->numQueueFamiliesWithAccess);
+	}
+	i->layout = pCreateInfo->initialLayout;
+
+	//TODO what else memory allocation, buffer object creation etc?
+
+	*pImage = i;
+
+	return VK_SUCCESS;
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyImage
+ */
+VKAPI_ATTR void VKAPI_CALL vkDestroyImage(
+	VkDevice                                    device,
+	VkImage                                     image,
+	const VkAllocationCallbacks*                pAllocator)
+{
+	assert(device);
+	assert(image);
+
+	assert(pAllocator == 0); //TODO
+
+	_image* i = image;
+
+	if(i->numQueueFamiliesWithAccess > 0);
+		free(i->queueFamiliesWithAccess);
+
+	free(i);
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetImageMemoryRequirements
+ */
+VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements(
+	VkDevice                                    device,
+	VkImage                                     image,
+	VkMemoryRequirements*                       pMemoryRequirements)
+{
+	assert(device);
+	assert(image);
+	assert(pMemoryRequirements);
+
+	_image* i = image;
+
+	//TODO??
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkBindImageMemory
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory(
+	VkDevice                                    device,
+	VkImage                                     image,
+	VkDeviceMemory                              memory,
+	VkDeviceSize                                memoryOffset)
+{
+	assert(device);
+	assert(image);
+	assert(memory);
+
+	//TODO
+
+	return VK_SUCCESS;
+}
