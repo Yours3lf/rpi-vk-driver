@@ -47,42 +47,6 @@ uint32_t packVec4IntoABGR8(const float rgba[4])
 	return res;
 }
 
-void createImageBO(_image* i)
-{
-	assert(i);
-	assert(i->format);
-	assert(i->width);
-	assert(i->height);
-
-	uint32_t bpp = getFormatBpp(i->format);
-	uint32_t pixelSizeBytes = bpp / 8;
-	uint32_t nonPaddedSize = i->width * i->height * pixelSizeBytes;
-	i->paddedWidth = i->width;
-	i->paddedHeight = i->height;
-
-	//need to pad to T format, as HW automatically chooses that
-	if(nonPaddedSize > 4096)
-	{
-		getPaddedTextureDimensionsT(i->width, i->height, bpp, &i->paddedWidth, &i->paddedHeight);
-	}
-
-	i->size = getBOAlignedSize(i->paddedWidth * i->paddedHeight * pixelSizeBytes);
-	i->stride = i->paddedWidth * pixelSizeBytes;
-	i->handle = vc4_bo_alloc(controlFd, i->size, "swapchain image"); assert(i->handle);
-
-	//set tiling to T if size > 4KB
-	if(nonPaddedSize > 4096)
-	{
-		int ret = vc4_bo_set_tiling(controlFd, i->handle, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
-		i->tiling = VC4_TILING_FORMAT_T;
-	}
-	else
-	{
-		int ret = vc4_bo_set_tiling(controlFd, i->handle, DRM_FORMAT_MOD_LINEAR); assert(ret);
-		i->tiling = VC4_TILING_FORMAT_LT;
-	}
-}
-
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdClearColorImage
  * Color and depth/stencil images can be cleared outside a render pass instance using vkCmdClearColorImage or vkCmdClearDepthStencilImage, respectively.

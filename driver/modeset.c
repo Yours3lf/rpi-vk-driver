@@ -341,7 +341,7 @@ int modeset_create_fb(int fd, _image *buf)
 
 	// create framebuffer object for the dumb-buffer
 	ret = drmModeAddFB(fd, buf->width, buf->height, 24, 32, buf->stride,
-					   buf->handle, &buf->fb);
+					   buf->boundMem->bo, &buf->fb);
 	if (ret) {
 		printf("cannot create framebuffer (%d): %m\n",
 			   errno);

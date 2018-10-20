@@ -109,11 +109,6 @@ void vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbac
 	free(buf);
 }
 
-void vkDestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator)
-{
-	//TODO
-}
-
 void vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
@@ -190,16 +185,29 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(
 	}
 
 	//TODO flags?
-	//TODO? pCreateInfo->imageType
-	i->format = pCreateInfo->format;
+	i->type = pCreateInfo->imageType;
+	i->fb = 0; //needed for modeset
 	i->width = pCreateInfo->extent.width;
 	i->height = pCreateInfo->extent.height;
 	i->depth = pCreateInfo->extent.depth;
+	i->paddedWidth = 0; //when format is T
+	i->paddedHeight = 0;
 	i->miplevels = pCreateInfo->mipLevels;
+	i->samples = pCreateInfo->samples;
 	i->layers = pCreateInfo->arrayLayers;
-	i->samples = pCreateInfo->samples; //TODO?
-	i->tiling = pCreateInfo->tiling; //TODO?
+	i->size = 0;
+	i->stride = 0;
 	i->usageBits = pCreateInfo->usage;
+	i->format = pCreateInfo->format;
+	i->imageSpace = 0;
+	i->tiling = pCreateInfo->tiling == VK_IMAGE_TILING_LINEAR ? VC4_TILING_FORMAT_LT : VC4_TILING_FORMAT_T;
+	i->needToClear = 0;
+	i->clearColor[0] = i->clearColor[1] = 0;
+	i->layout = pCreateInfo->initialLayout;
+	i->boundMem = 0;
+	i->boundOffset = 0;
+	i->alignment = ARM_PAGE_SIZE;
+
 	i->concurrentAccess = pCreateInfo->sharingMode; //TODO?
 	i->numQueueFamiliesWithAccess = pCreateInfo->queueFamilyIndexCount;
 	if(i->numQueueFamiliesWithAccess > 0)
@@ -209,9 +217,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		memcpy(i->queueFamiliesWithAccess, pCreateInfo->pQueueFamilyIndices, sizeof(uint32_t) * i->numQueueFamiliesWithAccess);
 	}
-	i->layout = pCreateInfo->initialLayout;
 
-	//TODO what else memory allocation, buffer object creation etc?
+	i->preTransformMode = 0;
+	i->compositeAlpha = 0;
+	i->presentMode = 0;
+	i->clipped = 0;
 
 	*pImage = i;
 
@@ -253,7 +263,24 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements(
 
 	_image* i = image;
 
-	//TODO??
+	uint32_t bpp = getFormatBpp(i->format);
+	uint32_t pixelSizeBytes = bpp / 8;
+	uint32_t nonPaddedSize = i->width * i->height * pixelSizeBytes;
+	i->paddedWidth = i->width;
+	i->paddedHeight = i->height;
+
+	//need to pad to T format, as HW automatically chooses that
+	if(nonPaddedSize > 4096)
+	{
+		getPaddedTextureDimensionsT(i->width, i->height, bpp, &i->paddedWidth, &i->paddedHeight);
+	}
+
+	i->size = getBOAlignedSize(i->paddedWidth * i->paddedHeight * pixelSizeBytes);
+	i->stride = i->paddedWidth * pixelSizeBytes;
+
+	pMemoryRequirements->alignment = ARM_PAGE_SIZE;
+	pMemoryRequirements->memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; //TODO
+	pMemoryRequirements->size = i->size;
 }
 
 /*
@@ -269,7 +296,16 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory(
 	assert(image);
 	assert(memory);
 
-	//TODO
+	_image* i = image;
+	_deviceMemory* m = memory;
+
+	assert(!i->boundMem);
+	assert(memoryOffset < m->size);
+	assert(memoryOffset % i->alignment == 0);
+	assert(i->size <= m->size - memoryOffset);
+
+	i->boundMem = m;
+	i->boundOffset = memoryOffset;
 
 	return VK_SUCCESS;
 }

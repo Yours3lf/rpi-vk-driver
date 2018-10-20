@@ -130,21 +130,25 @@ typedef struct VkBuffer_T
 
 typedef struct VkImage_T
 {
-	uint32_t handle;
+	VkImageType type; //1d, 2d, 3d
 	uint32_t fb; //needed for swapchain
 	uint32_t width, height, depth;
 	uint32_t paddedWidth, paddedHeight;
 	uint32_t miplevels, samples;
 	uint32_t layers; //number of views for multiview/stereo
-	uint32_t size; //overall size including padding
+	uint32_t size; //overall size including padding and alignment
 	uint32_t stride; //the number of bytes from one row of pixels in memory to the next row of pixels in memory (aka pitch)
 	uint32_t usageBits;
 	uint32_t format;
 	uint32_t imageSpace;
-	uint32_t tiling;
+	uint32_t tiling; //T or LT
 	uint32_t needToClear;
 	uint32_t clearColor[2];
 	uint32_t layout;
+	_deviceMemory* boundMem;
+	uint32_t boundOffset;
+	uint32_t alignment;
+
 	uint32_t concurrentAccess; //TODO
 	uint32_t numQueueFamiliesWithAccess;
 	uint32_t* queueFamiliesWithAccess;

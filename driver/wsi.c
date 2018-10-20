@@ -1,6 +1,8 @@
 #include "common.h"
 #include "modeset.h"
 
+#include "kernel/vc4_packet.h"
+
 /*
  * Implementation of our RPI specific "extension"
  */
@@ -228,7 +230,37 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 		s->images[c].presentMode = pCreateInfo->presentMode;
 		s->images[c].clipped = pCreateInfo->clipped;
 
-		createImageBO(&s->images[c]);
+
+		VkMemoryRequirements mr;
+		vkGetImageMemoryRequirements(device, &s->images[c], &mr);
+
+		VkMemoryAllocateInfo ai;
+		ai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		ai.allocationSize = mr.size;
+		for(int d = 0; d < numMemoryTypes; ++d)
+		{
+			if(memoryTypes[d].propertyFlags == mr.memoryTypeBits)
+			{
+				ai.memoryTypeIndex = d;
+				break;
+			}
+		}
+
+		VkDeviceMemory mem;
+		vkAllocateMemory(device, &ai, 0, &mem);
+
+		vkBindImageMemory(device, &s->images[c], mem, 0);
+
+		//set tiling to T if size > 4KB
+		if(s->images[c].tiling == VC4_TILING_FORMAT_T)
+		{
+			int ret = vc4_bo_set_tiling(controlFd, s->images[c].boundMem->bo, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
+		}
+		else
+		{
+			int ret = vc4_bo_set_tiling(controlFd, s->images[c].boundMem->bo, DRM_FORMAT_MOD_LINEAR); assert(ret);
+		}
+
 		int res = modeset_create_fb(controlFd, &s->images[c]); assert(res == 0);
 	}
 
@@ -372,7 +404,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
 
 	for(int c = 0; c < s->numImages; ++c)
 	{
-		vc4_bo_free(controlFd, s->images[c].handle, 0, s->images->size);
+		vkFreeMemory(device, s->images[c].boundMem, 0);
 		modeset_destroy_fb(controlFd, &s->images[c]);
 	}
 

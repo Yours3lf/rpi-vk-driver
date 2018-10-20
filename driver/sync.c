@@ -185,7 +185,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
 										2); //tris
 
 			clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-			uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, i->handle);
+			uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, i->boundMem->bo);
 			commandBuffer->submitCl.color_write.hindex = idx;
 			commandBuffer->submitCl.color_write.offset = 0;
 			commandBuffer->submitCl.color_write.flags = 0;

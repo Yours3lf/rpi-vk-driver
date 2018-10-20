@@ -179,7 +179,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 	//Insert image handle index
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	uint32_t imageIdx = clGetHandleIndex(&commandBuffer->handlesCl, i->handle);
+	uint32_t imageIdx = clGetHandleIndex(&commandBuffer->handlesCl, i->boundMem->bo);
 
 	//fill out submit cl fields
 	commandBuffer->submitCl.color_write.hindex = imageIdx;
