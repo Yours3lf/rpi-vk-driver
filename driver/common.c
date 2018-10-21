@@ -47,50 +47,6 @@ uint32_t packVec4IntoABGR8(const float rgba[4])
 	return res;
 }
 
-/*
- * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdClearColorImage
- * Color and depth/stencil images can be cleared outside a render pass instance using vkCmdClearColorImage or vkCmdClearDepthStencilImage, respectively.
- * These commands are only allowed outside of a render pass instance.
- */
-VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
-		VkCommandBuffer                             commandBuffer,
-		VkImage                                     image,
-		VkImageLayout                               imageLayout,
-		const VkClearColorValue*                    pColor,
-		uint32_t                                    rangeCount,
-		const VkImageSubresourceRange*              pRanges)
-{
-	assert(commandBuffer);
-	assert(image);
-	assert(pColor);
-
-	//TODO this should only flag an image for clearing. This can only be called outside a renderpass
-	//actual clearing would only happen:
-	// -if image is rendered to (insert clear before first draw call)
-	// -if the image is bound for sampling (submit a CL with a clear)
-	// -if a command buffer is submitted without any rendering (insert clear)
-	// -etc.
-	//we shouldn't clear an image if noone uses it
-
-	//TODO ranges support
-
-	assert(imageLayout == VK_IMAGE_LAYOUT_GENERAL ||
-		   imageLayout == VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR ||
-		   imageLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-	assert(commandBuffer->state	 == CMDBUF_STATE_RECORDING);
-	assert(_queueFamilyProperties[commandBuffer->cp->queueFamilyIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT || _queueFamilyProperties[commandBuffer->cp->queueFamilyIndex].queueFlags & VK_QUEUE_COMPUTE_BIT);
-
-	_image* i = image;
-
-	assert(i->usageBits & VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-
-	//TODO externally sync cmdbuf, cmdpool
-
-	i->needToClear = 1;
-	i->clearColor[0] = i->clearColor[1] = packVec4IntoABGR8(pColor->float32);
-}
-
 int findInstanceExtension(char* name)
 {
 	for(int c = 0; c < numInstanceExtensions; ++c)

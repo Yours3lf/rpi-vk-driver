@@ -263,6 +263,38 @@ typedef struct VkCommandBuffer_T
 	_pipeline* graphicsPipeline;
 	_pipeline* computePipeline;
 
+	uint32_t firstDraw; //so we can set tile binning config etc.
+
+	uint32_t vertexBufferDirty;
+	uint32_t indexBufferDirty;
+	uint32_t viewportDirty;
+	uint32_t lineWidthDirty;
+	uint32_t depthBiasDirty;
+	uint32_t graphicsPipelineDirty;
+	uint32_t computePipelineDirty;
+	uint32_t subpassDirty;
+	uint32_t blendConstantsDirty;
+	uint32_t scissorDirty;
+	uint32_t depthBoundsDirty;
+	uint32_t stencilCompareMaskDirty;
+	uint32_t stencilWriteMaskDirty;
+	uint32_t stencilReferenceDirty;
+	uint32_t descriptorSetDirty;
+	uint32_t pushConstantDirty;
+
+	VkViewport viewport;
+	VkRect2D scissor;
+	float lineWidth;
+	float depthBiasConstantFactor;
+	float depthBiasClamp;
+	float depthBiasSlopeFactor;
+	float blendConstants[4];
+	float minDepthBounds;
+	float maxDepthBounds;
+	uint32_t stencilCompareMask[2];
+	uint32_t stencilWriteMask[2];
+	uint32_t stencilReference[2];
+
 	uint32_t vertexBufferOffsets[8];
 	_buffer* vertexBuffers[8];
 } _commandBuffer;

@@ -109,6 +109,29 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 			clInit(&pCommandBuffers[c]->shaderRecCl, consecutivePoolAllocate(&cp->cpa, 1));
 			clInit(&pCommandBuffers[c]->uniformsCl, consecutivePoolAllocate(&cp->cpa, 1));
 
+			pCommandBuffers[c]->renderPass = 0;
+			pCommandBuffers[c]->fbo = 0;
+			pCommandBuffers[c]->currentSubpass = 0;
+			pCommandBuffers[c]->graphicsPipeline = 0;
+			pCommandBuffers[c]->computePipeline = 0;
+			pCommandBuffers[c]->firstDraw = 1;
+			pCommandBuffers[c]->vertexBufferDirty = 1;
+			pCommandBuffers[c]->indexBufferDirty = 1;
+			pCommandBuffers[c]->viewportDirty = 1;
+			pCommandBuffers[c]->lineWidthDirty = 1;
+			pCommandBuffers[c]->depthBiasDirty = 1;
+			pCommandBuffers[c]->graphicsPipelineDirty = 1;
+			pCommandBuffers[c]->computePipelineDirty = 1;
+			pCommandBuffers[c]->subpassDirty = 1;
+			pCommandBuffers[c]->blendConstantsDirty = 1;
+			pCommandBuffers[c]->scissorDirty = 1;
+			pCommandBuffers[c]->depthBoundsDirty = 1;
+			pCommandBuffers[c]->stencilCompareMaskDirty = 1;
+			pCommandBuffers[c]->stencilWriteMaskDirty = 1;
+			pCommandBuffers[c]->stencilReferenceDirty = 1;
+			pCommandBuffers[c]->descriptorSetDirty = 1;
+			pCommandBuffers[c]->pushConstantDirty = 1;
+
 			if(!pCommandBuffers[c]->binCl.buffer)
 			{
 				res = VK_ERROR_OUT_OF_HOST_MEMORY;
