@@ -147,6 +147,16 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(
 	//TODO take instance into consideration
 	//eg only return extension functions that are enabled?
 
+	if(!instance && !(
+		   !strcmp(pName, "vkEnumerateInstanceVersion") ||
+		   !strcmp(pName, "vkEnumerateInstanceExtensionProperties") ||
+		   !strcmp(pName, "vkEnumerateInstanceLayerProperties") ||
+		   !strcmp(pName, "vkCreateInstance")
+		   ))
+	{
+		return 0;
+	}
+
 	RETFUNC(vkCreateInstance);
 	RETFUNC(vkDestroyInstance);
 	RETFUNC(vkEnumeratePhysicalDevices);
