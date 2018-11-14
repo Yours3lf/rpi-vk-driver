@@ -107,7 +107,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(
 	if(!pProperties)
 	{
 		*pPropertyCount = numDeviceExtensions;
-		return VK_INCOMPLETE;
+		return VK_SUCCESS;
 	}
 
 	int arraySize = *pPropertyCount;
@@ -209,6 +209,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 	}
 
 	(*pDevice)->dev = physicalDevice;
+
+	(*pDevice)->numEnabledExtensions = 0;
 
 	for(int c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
 	{

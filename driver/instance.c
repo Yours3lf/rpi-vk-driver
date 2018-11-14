@@ -23,7 +23,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(
 	if(!pProperties)
 	{
 		*pPropertyCount = numInstanceExtensions;
-		return VK_INCOMPLETE;
+		return VK_SUCCESS;
 	}
 
 	int arraySize = *pPropertyCount;
@@ -133,4 +133,157 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceVersion(
 	assert(pApiVersion);
 	*pApiVersion = VK_MAKE_VERSION(1, 1, 0);
 	return VK_SUCCESS;
+}
+
+#define RETFUNC(f) if(!strcmp(pName, #f)) return f
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetInstanceProcAddr
+ */
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(
+	VkInstance                                  instance,
+	const char*                                 pName)
+{
+	//TODO take instance into consideration
+	//eg only return extension functions that are enabled?
+
+	RETFUNC(vkCreateInstance);
+	RETFUNC(vkDestroyInstance);
+	RETFUNC(vkEnumeratePhysicalDevices);
+	RETFUNC(vkGetPhysicalDeviceFeatures);
+	RETFUNC(vkGetPhysicalDeviceFormatProperties);
+	RETFUNC(vkGetPhysicalDeviceImageFormatProperties);
+	RETFUNC(vkGetPhysicalDeviceProperties);
+	RETFUNC(vkGetPhysicalDeviceQueueFamilyProperties);
+	RETFUNC(vkGetPhysicalDeviceMemoryProperties);
+	RETFUNC(vkGetInstanceProcAddr);
+	RETFUNC(vkGetDeviceProcAddr);
+	RETFUNC(vkCreateDevice);
+	RETFUNC(vkDestroyDevice);
+	RETFUNC(vkEnumerateInstanceExtensionProperties);
+	RETFUNC(vkEnumerateDeviceExtensionProperties);
+	RETFUNC(vkEnumerateInstanceLayerProperties);
+	RETFUNC(vkEnumerateDeviceLayerProperties);
+	RETFUNC(vkGetDeviceQueue);
+	RETFUNC(vkQueueSubmit);
+	RETFUNC(vkQueueWaitIdle);
+	RETFUNC(vkDeviceWaitIdle);
+	RETFUNC(vkAllocateMemory);
+	RETFUNC(vkFreeMemory);
+	RETFUNC(vkMapMemory);
+	RETFUNC(vkUnmapMemory);
+	RETFUNC(vkFlushMappedMemoryRanges);
+	RETFUNC(vkInvalidateMappedMemoryRanges);
+	RETFUNC(vkGetDeviceMemoryCommitment);
+	RETFUNC(vkBindBufferMemory);
+	RETFUNC(vkBindImageMemory);
+	RETFUNC(vkGetBufferMemoryRequirements);
+	RETFUNC(vkGetImageMemoryRequirements);
+	RETFUNC(vkGetImageSparseMemoryRequirements);
+	RETFUNC(vkGetPhysicalDeviceSparseImageFormatProperties);
+	RETFUNC(vkQueueBindSparse);
+	RETFUNC(vkCreateFence);
+	RETFUNC(vkDestroyFence);
+	RETFUNC(vkResetFences);
+	RETFUNC(vkGetFenceStatus);
+	RETFUNC(vkWaitForFences);
+	RETFUNC(vkCreateSemaphore);
+	RETFUNC(vkDestroySemaphore);
+	RETFUNC(vkCreateEvent);
+	RETFUNC(vkDestroyEvent);
+	RETFUNC(vkGetEventStatus);
+	RETFUNC(vkSetEvent);
+	RETFUNC(vkResetEvent);
+	RETFUNC(vkCreateQueryPool);
+	RETFUNC(vkDestroyQueryPool);
+	RETFUNC(vkGetQueryPoolResults);
+	RETFUNC(vkCreateBuffer);
+	RETFUNC(vkDestroyBuffer);
+	RETFUNC(vkCreateBufferView);
+	RETFUNC(vkDestroyBufferView);
+	RETFUNC(vkCreateImage);
+	RETFUNC(vkDestroyImage);
+	RETFUNC(vkGetImageSubresourceLayout);
+	RETFUNC(vkCreateImageView);
+	RETFUNC(vkDestroyImageView);
+	RETFUNC(vkCreateShaderModule);
+	RETFUNC(vkDestroyShaderModule);
+	RETFUNC(vkCreatePipelineCache);
+	RETFUNC(vkDestroyPipelineCache);
+	RETFUNC(vkGetPipelineCacheData);
+	RETFUNC(vkMergePipelineCaches);
+	RETFUNC(vkCreateGraphicsPipelines);
+	RETFUNC(vkCreateComputePipelines);
+	RETFUNC(vkDestroyPipeline);
+	RETFUNC(vkCreatePipelineLayout);
+	RETFUNC(vkDestroyPipelineLayout);
+	RETFUNC(vkCreateSampler);
+	RETFUNC(vkDestroySampler);
+	RETFUNC(vkCreateDescriptorSetLayout);
+	RETFUNC(vkDestroyDescriptorSetLayout);
+	RETFUNC(vkCreateDescriptorPool);
+	RETFUNC(vkDestroyDescriptorPool);
+	RETFUNC(vkResetDescriptorPool);
+	RETFUNC(vkAllocateDescriptorSets);
+	RETFUNC(vkFreeDescriptorSets);
+	RETFUNC(vkUpdateDescriptorSets);
+	RETFUNC(vkCreateFramebuffer);
+	RETFUNC(vkDestroyFramebuffer);
+	RETFUNC(vkCreateRenderPass);
+	RETFUNC(vkDestroyRenderPass);
+	RETFUNC(vkGetRenderAreaGranularity);
+	RETFUNC(vkCreateCommandPool);
+	RETFUNC(vkDestroyCommandPool);
+	RETFUNC(vkResetCommandPool);
+	RETFUNC(vkAllocateCommandBuffers);
+	RETFUNC(vkFreeCommandBuffers);
+	RETFUNC(vkBeginCommandBuffer);
+	RETFUNC(vkEndCommandBuffer);
+	RETFUNC(vkResetCommandBuffer);
+	RETFUNC(vkCmdBindPipeline);
+	RETFUNC(vkCmdSetViewport);
+	RETFUNC(vkCmdSetScissor);
+	RETFUNC(vkCmdSetLineWidth);
+	RETFUNC(vkCmdSetDepthBias);
+	RETFUNC(vkCmdSetBlendConstants);
+	RETFUNC(vkCmdSetDepthBounds);
+	RETFUNC(vkCmdSetStencilCompareMask);
+	RETFUNC(vkCmdSetStencilWriteMask);
+	RETFUNC(vkCmdSetStencilReference);
+	RETFUNC(vkCmdBindDescriptorSets);
+	RETFUNC(vkCmdBindIndexBuffer);
+	RETFUNC(vkCmdBindVertexBuffers);
+	RETFUNC(vkCmdDraw);
+	RETFUNC(vkCmdDrawIndexed);
+	RETFUNC(vkCmdDrawIndirect);
+	RETFUNC(vkCmdDrawIndexedIndirect);
+	RETFUNC(vkCmdDispatch);
+	RETFUNC(vkCmdDispatchIndirect);
+	RETFUNC(vkCmdCopyBuffer);
+	RETFUNC(vkCmdCopyImage);
+	RETFUNC(vkCmdBlitImage);
+	RETFUNC(vkCmdCopyBufferToImage);
+	RETFUNC(vkCmdCopyImageToBuffer);
+	RETFUNC(vkCmdUpdateBuffer);
+	RETFUNC(vkCmdFillBuffer);
+	RETFUNC(vkCmdClearColorImage);
+	RETFUNC(vkCmdClearDepthStencilImage);
+	RETFUNC(vkCmdClearAttachments);
+	RETFUNC(vkCmdResolveImage);
+	RETFUNC(vkCmdSetEvent);
+	RETFUNC(vkCmdResetEvent);
+	RETFUNC(vkCmdWaitEvents);
+	RETFUNC(vkCmdPipelineBarrier);
+	RETFUNC(vkCmdBeginQuery);
+	RETFUNC(vkCmdEndQuery);
+	RETFUNC(vkCmdResetQueryPool);
+	RETFUNC(vkCmdWriteTimestamp);
+	RETFUNC(vkCmdCopyQueryPoolResults);
+	RETFUNC(vkCmdPushConstants);
+	RETFUNC(vkCmdBeginRenderPass);
+	RETFUNC(vkCmdNextSubpass);
+	RETFUNC(vkCmdEndRenderPass);
+	RETFUNC(vkCmdExecuteCommands);
+
+	return 0;
 }

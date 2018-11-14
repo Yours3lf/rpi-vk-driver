@@ -109,7 +109,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 			clInit(&pCommandBuffers[c]->shaderRecCl, consecutivePoolAllocate(&cp->cpa, 1));
 			clInit(&pCommandBuffers[c]->uniformsCl, consecutivePoolAllocate(&cp->cpa, 1));
 
-			pCommandBuffers[c]->renderPass = 0;
+			pCommandBuffers[c]->renderpass = 0;
 			pCommandBuffers[c]->fbo = 0;
 			pCommandBuffers[c]->currentSubpass = 0;
 			pCommandBuffers[c]->graphicsPipeline = 0;
