@@ -34,15 +34,12 @@
 
 #include "vkCaps.h"
 
-typedef struct VkPhysicalDevice_T
-{
-	//hardware id?
-	int dummy;
-} _physicalDevice;
+typedef struct VkDevice_T _device;
 
 typedef struct VkQueue_T
 {
 	uint64_t lastEmitSeqno;
+	_device* dev;
 } _queue;
 
 typedef struct VkCommandPool_T
@@ -62,18 +59,29 @@ typedef enum commandBufferState
 	CMDBUF_STATE_LAST
 } commandBufferState;
 
+typedef struct VkInstance_T _instance;
+
+typedef struct VkPhysicalDevice_T
+{
+	//hardware id?
+	char* path;
+	_instance* instance;
+} _physicalDevice;
+
 typedef struct VkInstance_T
 {
+	_physicalDevice dev;
 	//supposedly this should contain all the enabled layers?
 	int enabledExtensions[numInstanceExtensions];
 	int numEnabledExtensions;
-	_physicalDevice dev;
 	int chipVersion;
 	int hasTiling;
 	int hasControlFlow;
 	int hasEtc1;
 	int hasThreadedFs;
 	int hasMadvise;
+	int controlFd;
+	//int renderFd;
 } _instance;
 
 typedef struct VkDevice_T

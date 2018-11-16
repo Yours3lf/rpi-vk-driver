@@ -18,7 +18,7 @@ VkResult vkCreateRpiSurfaceKHR(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	*pSurface = (VkSurfaceKHR)modeset_create(controlFd);
+	*pSurface = (VkSurfaceKHR)modeset_create(instance->controlFd);
 
 	return VK_SUCCESS;
 }
@@ -40,7 +40,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
-	modeset_destroy(controlFd, (modeset_dev*)surface);
+	modeset_destroy(instance->controlFd, (modeset_dev*)surface);
 }
 
 /*
@@ -254,14 +254,14 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 		//set tiling to T if size > 4KB
 		if(s->images[c].tiling == VC4_TILING_FORMAT_T)
 		{
-			int ret = vc4_bo_set_tiling(controlFd, s->images[c].boundMem->bo, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
+			int ret = vc4_bo_set_tiling(device->dev->instance->controlFd, s->images[c].boundMem->bo, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
 		}
 		else
 		{
-			int ret = vc4_bo_set_tiling(controlFd, s->images[c].boundMem->bo, DRM_FORMAT_MOD_LINEAR); assert(ret);
+			int ret = vc4_bo_set_tiling(device->dev->instance->controlFd, s->images[c].boundMem->bo, DRM_FORMAT_MOD_LINEAR); assert(ret);
 		}
 
-		int res = modeset_create_fb(controlFd, &s->images[c]); assert(res == 0);
+		int res = modeset_create_fb(device->dev->instance->controlFd, &s->images[c]); assert(res == 0);
 	}
 
 	//defer to first swapbuffer (or at least later, getting swapchain != presenting immediately)
@@ -377,7 +377,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(
 	for(int c = 0; c < pPresentInfo->swapchainCount; ++c)
 	{
 		_swapchain* s = pPresentInfo->pSwapchains[c];
-		modeset_present_buffer(controlFd, (modeset_dev*)s->surface, &s->images[s->backbufferIdx]);
+		modeset_present_buffer(queue->dev->dev->instance->controlFd, (modeset_dev*)s->surface, &s->images[s->backbufferIdx]);
 		s->backbufferIdx = (s->backbufferIdx + 1) % s->numImages;
 	}
 
@@ -405,7 +405,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
 	for(int c = 0; c < s->numImages; ++c)
 	{
 		vkFreeMemory(device, s->images[c].boundMem, 0);
-		modeset_destroy_fb(controlFd, &s->images[c]);
+		modeset_destroy_fb(device->dev->instance->controlFd, &s->images[c]);
 	}
 
 	free(s->images);

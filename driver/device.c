@@ -15,10 +15,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDevices(
 {
 	assert(instance);
 
-	//TODO is there a way to check if there's a gpu (and it's the rPi)?
-	int gpuExists = access( "/dev/dri/card0", F_OK ) != -1;
-
-	int numGPUs = gpuExists;
+	int numGPUs = 1;
 
 	assert(pPhysicalDeviceCount);
 
@@ -202,6 +199,31 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 	//TODO: allocator is ignored for now
 	assert(pAllocator == 0);
 
+	//check for enabled extensions
+	for(int c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
+	{
+		int findres = findDeviceExtension(pCreateInfo->ppEnabledExtensionNames[c]);
+		if(findres == -1)
+		{
+			return VK_ERROR_EXTENSION_NOT_PRESENT;
+		}
+	}
+
+	//check for enabled features
+	VkBool32* requestedFeatures = pCreateInfo->pEnabledFeatures;
+	VkBool32* supportedFeatures = &_features;
+
+	if(requestedFeatures)
+	{
+		for(int c = 0; c < numFeatures; ++c)
+		{
+			if(requestedFeatures[c] && !supportedFeatures[c])
+			{
+				return VK_ERROR_FEATURE_NOT_PRESENT;
+			}
+		}
+	}
+
 	*pDevice = malloc(sizeof(_device));
 	if(!pDevice)
 	{
@@ -220,14 +242,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 			(*pDevice)->enabledExtensions[(*pDevice)->numEnabledExtensions] = findres;
 			(*pDevice)->numEnabledExtensions++;
 		}
-		else
-		{
-			return VK_ERROR_EXTENSION_NOT_PRESENT;
-		}
 	}
-
-	VkBool32* requestedFeatures = pCreateInfo->pEnabledFeatures;
-	VkBool32* supportedFeatures = &_features;
 
 	if(requestedFeatures)
 	{
@@ -295,6 +310,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue(
 	assert(queueIndex < device->numQueues[queueFamilyIndex]);
 
 	*pQueue = &device->queues[queueFamilyIndex][queueIndex];
+	(*pQueue)->dev = device;
 }
 
 /*

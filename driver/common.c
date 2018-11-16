@@ -909,9 +909,29 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineCache(
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(
 	VkDevice                                    device,
 	const char*                                 pName)
-{
+{	
+	if(
+	!strcmp("vkDestroyInstance", pName) ||
+	!strcmp("vkEnumeratePhysicalDevices", pName) ||
+	!strcmp("vkGetPhysicalDeviceFeatures", pName) ||
+	!strcmp("vkGetPhysicalDeviceFormatProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceImageFormatProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceQueueFamilyProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceMemoryProperties", pName) ||
+	!strcmp("vkCreateDevice", pName) ||
+	!strcmp("vkEnumerateDeviceExtensionProperties", pName) ||
+	!strcmp("vkEnumerateDeviceLayerProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceSparseImageFormatProperties", pName)
+	)
+	{
+		return 0;
+	}
+
+
 	//TODO
-	return vkGetInstanceProcAddr(0, pName);
+	_device* d = device;
+	return vkGetInstanceProcAddr(d->dev->instance, pName);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateQueryPool(

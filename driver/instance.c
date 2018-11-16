@@ -93,15 +93,22 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 	//TODO ignored for now
 	//pCreateInfo->pApplicationInfo
 
-	int ret = openIoctl(); assert(!ret);
+	//TODO is there a way to check if there's a gpu (and it's the rPi)?
+	int gpuExists = access( "/dev/dri/card0", F_OK ) != -1; assert(gpuExists);
 
-	(*pInstance)->chipVersion = vc4_get_chip_info(controlFd);
-	(*pInstance)->hasTiling = vc4_test_tiling(controlFd);
+	(*pInstance)->dev.path = "/dev/dri/card0";
+	(*pInstance)->dev.instance = *pInstance;
 
-	(*pInstance)->hasControlFlow = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_BRANCHES);
-	(*pInstance)->hasEtc1 = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_ETC1);
-	(*pInstance)->hasThreadedFs = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_THREADED_FS);
-	(*pInstance)->hasMadvise = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_MADVISE);
+	int ret = openIoctl(); assert(ret != -1);
+	(*pInstance)->controlFd = ret;
+
+	(*pInstance)->chipVersion = vc4_get_chip_info((*pInstance)->controlFd);
+	(*pInstance)->hasTiling = vc4_test_tiling((*pInstance)->controlFd);
+
+	(*pInstance)->hasControlFlow = vc4_has_feature((*pInstance)->controlFd, DRM_VC4_PARAM_SUPPORTS_BRANCHES);
+	(*pInstance)->hasEtc1 = vc4_has_feature((*pInstance)->controlFd, DRM_VC4_PARAM_SUPPORTS_ETC1);
+	(*pInstance)->hasThreadedFs = vc4_has_feature((*pInstance)->controlFd, DRM_VC4_PARAM_SUPPORTS_THREADED_FS);
+	(*pInstance)->hasMadvise = vc4_has_feature((*pInstance)->controlFd, DRM_VC4_PARAM_SUPPORTS_MADVISE);
 
 	return VK_SUCCESS;
 }

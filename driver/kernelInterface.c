@@ -1,30 +1,26 @@
 #define _GNU_SOURCE
 #include "kernelInterface.h"
 
-int controlFd = -1;
-int renderFd = -1;
-
 int openIoctl()
 {
-	controlFd = open(DRM_IOCTL_CTRL_DEV_FILE_NAME, O_RDWR | O_CLOEXEC);
+	int controlFd = open(DRM_IOCTL_CTRL_DEV_FILE_NAME, O_RDWR | O_CLOEXEC);
 	if (controlFd < 0) {
 		printf("Can't open device file: %s\n", DRM_IOCTL_CTRL_DEV_FILE_NAME);
 		return -1;
 	}
 
-	renderFd = open(DRM_IOCTL_RENDER_DEV_FILE_NAME, O_RDWR | O_CLOEXEC);
+	/*renderFd = open(DRM_IOCTL_RENDER_DEV_FILE_NAME, O_RDWR | O_CLOEXEC);
 	if (renderFd < 0) {
 		printf("Can't open device file: %s\n", DRM_IOCTL_RENDER_DEV_FILE_NAME);
 		return -1;
-	}
+	}*/
 
-	return 0;
+	return controlFd;
 }
 
-void closeIoctl()
+void closeIoctl(int fd)
 {
-	close(controlFd);
-	close(renderFd);
+	close(fd);
 }
 
 static uint32_t align(uint32_t num, uint32_t alignment)
@@ -239,8 +235,10 @@ int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t
 {
 	assert(fd);
 	assert(lastFinishedSeqno);
-	assert(seqno);
 	assert(timeout_ns);
+
+	if(!seqno)
+		return 1;
 
 	if (*lastFinishedSeqno >= seqno)
 		return 1;
