@@ -20,9 +20,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
 	assert(device);
 	assert(pCreateInfo);
 
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
-
 	//VK_COMMAND_POOL_CREATE_TRANSIENT_BIT
 	//specifies that command buffers allocated from the pool will be short-lived, meaning that they will be reset or freed in a relatively short timeframe.
 	//This flag may be used by the implementation to control memory allocation behavior within the pool.
@@ -34,7 +31,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
 
 	//TODO pool family ignored for now
 
-	_commandPool* cp = malloc(sizeof(_commandPool));
+	_commandPool* cp = ALLOCATE(sizeof(_commandPool), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 	if(!cp)
 	{
@@ -43,26 +40,39 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
 
 	cp->queueFamilyIndex = pCreateInfo->queueFamilyIndex;
 
+	//TODO CTS fails as we can't allocate enough memory for some reason
+	//tweak system allocation as root using:
+	//make sure kernel denies memory allocation that it won't be able to serve
+	//sysctl -w vm.overcommit_memory="2"
+	//specify after how much memory used the kernel will start denying requests
+	//sysctl -w vm.overcommit_ratio="80"
+	//
+
+
+
 	//initial number of command buffers to hold
-	int numCommandBufs = 100;
-	int controlListSize = ARM_PAGE_SIZE * 100;
+	int numCommandBufs = 128;
+	int consecutivePoolSize = ARM_PAGE_SIZE*128;
+	int consecutiveBlockSize = ARM_PAGE_SIZE>>2;
+
+	static int counter = 0;
 
 	//if(pCreateInfo->flags & VK_COMMAND_POOL_CREATE_TRANSIENT_BIT)
 	{
 		//use pool allocator
-		void* pamem = malloc(numCommandBufs * sizeof(_commandBuffer));
+		void* pamem = ALLOCATE(numCommandBufs * sizeof(_commandBuffer), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pamem)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 		cp->pa = createPoolAllocator(pamem, sizeof(_commandBuffer), numCommandBufs * sizeof(_commandBuffer));
 
-		void* cpamem = malloc(controlListSize);
+		void* cpamem = ALLOCATE(consecutivePoolSize, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!cpamem)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
-		cp->cpa = createConsecutivePoolAllocator(cpamem, ARM_PAGE_SIZE, controlListSize);
+		cp->cpa = createConsecutivePoolAllocator(cpamem, consecutiveBlockSize, consecutivePoolSize);
 	}
 
 	*pCommandPool = (VkCommandPool)cp;
@@ -394,20 +404,17 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
 	assert(device);
 	assert(commandPool);
 
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
-
 	_commandPool* cp = (_commandPool*)commandPool;
 
 	//if(cp->usePoolAllocator)
 	{
-		free(cp->pa.buf);
-		free(cp->cpa.buf);
+		FREE(cp->pa.buf);
+		FREE(cp->cpa.buf);
 		destroyPoolAllocator(&cp->pa);
 		destroyConsecutivePoolAllocator(&cp->cpa);
 	}
 
-	free(cp);
+	FREE(cp);
 }
 
 /*

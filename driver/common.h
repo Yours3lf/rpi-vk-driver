@@ -34,6 +34,18 @@
 
 #include "vkCaps.h"
 
+/**
+//scope
+VK_SYSTEM_ALLOCATION_SCOPE_COMMAND
+VK_SYSTEM_ALLOCATION_SCOPE_OBJECT
+VK_SYSTEM_ALLOCATION_SCOPE_CACHE
+VK_SYSTEM_ALLOCATION_SCOPE_DEVICE
+VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE
+ **/
+
+#define ALLOCATE(size, alignment, scope) (pAllocator == 0) ? malloc(size) : pAllocator->pfnAllocation(pAllocator->pUserData, size, alignment, scope);
+#define FREE(memory) (pAllocator == 0) ? free(memory) : pAllocator->pfnFree(pAllocator->pUserData, memory);
+
 typedef struct VkDevice_T _device;
 
 typedef struct VkQueue_T

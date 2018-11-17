@@ -10,9 +10,7 @@ VkResult vkCreateShaderModuleFromRpiAssemblyKHR(VkDevice device, VkRpiShaderModu
 	assert(pCreateInfo->byteStreamArray);
 	assert(pCreateInfo->numBytesArray);
 
-	assert(pAllocator == 0); //TODO
-
-	_shaderModule* shader = malloc(sizeof(_shaderModule));
+	_shaderModule* shader = ALLOCATE(sizeof(_shaderModule), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 	if(!shader)
 	{
@@ -52,8 +50,6 @@ void vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, const V
 	assert(device);
 	assert(shaderModule);
 
-	assert(pAllocator == 0);
-
 	_shaderModule* shader = shaderModule;
 
 	for(int c = 0; c < VK_RPI_ASSEMBLY_TYPE_MAX; ++c)
@@ -64,5 +60,5 @@ void vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, const V
 		}
 	}
 
-	free(shader);
+	FREE(shader);
 }

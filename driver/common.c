@@ -20,11 +20,13 @@ uint32_t getFormatBpp(VkFormat f)
 	case VK_FORMAT_R8G8_UNORM:
 	case VK_FORMAT_R16_SFLOAT:
 	case VK_FORMAT_R16_SINT:
+	case VK_FORMAT_D16_UNORM:
 		return 16;
 	case VK_FORMAT_R8_UNORM:
 	case VK_FORMAT_R8_SINT:
 		return 8;
-	default:
+	default://
+		printf("format %i\n", f);
 		assert(0);
 		return 0;
 	}

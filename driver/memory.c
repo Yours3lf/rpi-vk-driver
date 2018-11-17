@@ -65,15 +65,13 @@ VkResult vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocate
 	assert(pAllocateInfo);
 	assert(pMemory);
 
-	assert(pAllocator == 0); //TODO
-
 	uint32_t bo = vc4_bo_alloc(device->dev->instance->controlFd, pAllocateInfo->allocationSize, "vkAllocateMemory");
 	if(!bo)
 	{
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
 	}
 
-	_deviceMemory* mem = malloc(sizeof(_deviceMemory));
+	_deviceMemory* mem = ALLOCATE(sizeof(_deviceMemory), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!mem)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -143,11 +141,9 @@ void vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCall
 	assert(device);
 	assert(memory);
 
-	assert(pAllocator == 0); //TODO
-
 	_deviceMemory* mem = memory;
 	vc4_bo_free(device->dev->instance->controlFd, mem->bo, mem->mappedPtr, mem->size);
-	free(mem);
+	FREE(mem);
 }
 
 /*

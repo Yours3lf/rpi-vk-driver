@@ -15,8 +15,8 @@ VkResult vkCreateRpiSurfaceKHR(
 	assert(instance);
 	//assert(pCreateInfo); //ignored for now
 	assert(pSurface);
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
+
+	//TODO use allocator!
 
 	*pSurface = (VkSurfaceKHR)modeset_create(instance->controlFd);
 
@@ -37,8 +37,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(
 	assert(instance);
 	assert(surface);
 
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
+	//TODO use allocator
 
 	modeset_destroy(instance->controlFd, (modeset_dev*)surface);
 }
@@ -183,10 +182,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 	assert(pCreateInfo);
 	assert(pSwapchain);
 
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
-
-	*pSwapchain = malloc(sizeof(_swapchain));
+	*pSwapchain = ALLOCATE(sizeof(_swapchain), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!*pSwapchain)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -197,7 +193,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 	//TODO flags, layers, queue sharing, pretransform, composite alpha, present mode..., clipped, oldswapchain
 	//TODO external sync on surface, oldswapchain
 
-	s->images = malloc(sizeof(_image) * pCreateInfo->minImageCount);
+	s->images = ALLOCATE(sizeof(_image) * pCreateInfo->minImageCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!s->images)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -222,7 +218,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 		s->images[c].numQueueFamiliesWithAccess = pCreateInfo->queueFamilyIndexCount;
 		if(s->images[c].concurrentAccess)
 		{
-			s->images[c].queueFamiliesWithAccess = malloc(sizeof(uint32_t)*s->images[c].numQueueFamiliesWithAccess);
+			s->images[c].queueFamiliesWithAccess = ALLOCATE(sizeof(uint32_t)*s->images[c].numQueueFamiliesWithAccess, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			memcpy(s->images[c].queueFamiliesWithAccess, pCreateInfo->pQueueFamilyIndices, sizeof(uint32_t)*s->images[c].numQueueFamiliesWithAccess);
 		}
 		s->images[c].preTransformMode = pCreateInfo->preTransform;
@@ -395,9 +391,6 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
 	assert(device);
 	assert(swapchain);
 
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
-
 	//TODO flush all ops
 
 	_swapchain* s = swapchain;
@@ -408,7 +401,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
 		modeset_destroy_fb(device->dev->instance->controlFd, &s->images[c]);
 	}
 
-	free(s->images);
-	free(s);
+	FREE(s->images);
+	FREE(s);
 }
 

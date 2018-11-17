@@ -196,9 +196,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 	assert(pDevice);
 	assert(pCreateInfo);
 
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
-
 	//check for enabled extensions
 	for(int c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
 	{
@@ -224,8 +221,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 		}
 	}
 
-	*pDevice = malloc(sizeof(_device));
-	if(!pDevice)
+	*pDevice = ALLOCATE(sizeof(_device), 1, VK_SYSTEM_ALLOCATION_SCOPE_DEVICE);
+	if(!*pDevice)
 	{
 		return VK_ERROR_TOO_MANY_OBJECTS;
 	}
@@ -273,7 +270,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 	{
 		for(int c = 0; c < pCreateInfo->queueCreateInfoCount; ++c)
 		{
-			(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex] = malloc(sizeof(_queue)*pCreateInfo->pQueueCreateInfos[c].queueCount);
+			(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex] = ALLOCATE(sizeof(_queue)*pCreateInfo->pQueueCreateInfos[c].queueCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 			if(!(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex])
 			{
@@ -325,19 +322,16 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(
 {
 	assert(device);
 
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
-
 	_device* dev = device;
 	for(int c = 0; c < numQueueFamilies; ++c)
 	{
 		for(int d = 0; d < dev->numQueues[c]; ++d)
 		{
-			free(dev->queues[d]);
+			FREE(dev->queues[d]);
 		}
 	}
 
-	free(dev);
+	FREE(dev);
 }
 
 /*

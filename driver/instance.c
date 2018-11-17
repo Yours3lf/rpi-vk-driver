@@ -55,7 +55,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 	assert(pInstance);
 	assert(pCreateInfo);
 
-	*pInstance = malloc(sizeof(_instance));
+	*pInstance = ALLOCATE(sizeof(_instance), 1, VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE);
 
 	if(!*pInstance)
 	{
@@ -63,9 +63,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 	}
 
 	(*pInstance)->numEnabledExtensions = 0;
-
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
 
 	//TODO: possibly we need to load layers here
 	//and store them in pInstance
@@ -123,12 +120,9 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(
 {
 	assert(instance);
 
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
-
 	closeIoctl();
 
-	free(instance);
+	FREE(instance);
 }
 
 /*

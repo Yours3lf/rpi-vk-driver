@@ -31,11 +31,10 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 	assert(pPipelines);
 
 	assert(pipelineCache == 0); //TODO not supported right now
-	assert(pAllocator == 0); //TODO
 
 	for(int c = 0; c < createInfoCount; ++c)
 	{
-		_pipeline* pip = malloc(sizeof(_pipeline));
+		_pipeline* pip = ALLOCATE(sizeof(_pipeline), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -46,7 +45,7 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 			uint32_t idx = ulog2(pCreateInfos->pStages[d].stage);
 			pip->modules[idx] = pCreateInfos->pStages[d].module;
 
-			pip->names[idx] = malloc(strlen(pCreateInfos->pStages[d].pName)+1);
+			pip->names[idx] = ALLOCATE(strlen(pCreateInfos->pStages[d].pName)+1, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!pip->names[idx])
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -56,7 +55,7 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 		}
 
 		pip->vertexAttributeDescriptionCount = pCreateInfos->pVertexInputState->vertexAttributeDescriptionCount;
-		pip->vertexAttributeDescriptions = malloc(sizeof(VkVertexInputAttributeDescription) * pip->vertexAttributeDescriptionCount);
+		pip->vertexAttributeDescriptions = ALLOCATE(sizeof(VkVertexInputAttributeDescription) * pip->vertexAttributeDescriptionCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->vertexAttributeDescriptions)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -65,7 +64,7 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 		memcpy(pip->vertexAttributeDescriptions, pCreateInfos->pVertexInputState->pVertexAttributeDescriptions, sizeof(VkVertexInputAttributeDescription) * pip->vertexAttributeDescriptionCount);
 
 		pip->vertexBindingDescriptionCount = pCreateInfos->pVertexInputState->vertexBindingDescriptionCount;
-		pip->vertexBindingDescriptions = malloc(sizeof(VkVertexInputBindingDescription) * pip->vertexBindingDescriptionCount);
+		pip->vertexBindingDescriptions = ALLOCATE(sizeof(VkVertexInputBindingDescription) * pip->vertexBindingDescriptionCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->vertexBindingDescriptions)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -79,7 +78,7 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 		//TODO tessellation ignored
 
 		pip->viewportCount = pCreateInfos->pViewportState->viewportCount;
-		pip->viewports = malloc(sizeof(VkViewport) * pip->viewportCount);
+		pip->viewports = ALLOCATE(sizeof(VkViewport) * pip->viewportCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->viewports)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -89,7 +88,7 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 
 
 		pip->scissorCount = pCreateInfos->pViewportState->scissorCount;
-		pip->scissors = malloc(sizeof(VkRect2D) * pip->viewportCount);
+		pip->scissors = ALLOCATE(sizeof(VkRect2D) * pip->viewportCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->scissors)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -135,7 +134,7 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 		pip->logicOpEnable = pCreateInfos->pColorBlendState->logicOpEnable;
 		pip->logicOp = pCreateInfos->pColorBlendState->logicOp;
 		pip->attachmentCount = pCreateInfos->pColorBlendState->attachmentCount;
-		pip->attachmentBlendStates = malloc(sizeof(VkPipelineColorBlendAttachmentState) * pip->attachmentCount);
+		pip->attachmentBlendStates = ALLOCATE(sizeof(VkPipelineColorBlendAttachmentState) * pip->attachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->attachmentBlendStates)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -149,7 +148,7 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 		if(pCreateInfos->pDynamicState)
 		{
 			pip->dynamicStateCount = pCreateInfos->pDynamicState->dynamicStateCount;
-			pip->dynamicStates = malloc(sizeof(VkDynamicState)*pip->dynamicStateCount);
+			pip->dynamicStates = ALLOCATE(sizeof(VkDynamicState)*pip->dynamicStateCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!pip->dynamicStates)
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -180,21 +179,19 @@ void vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationC
 	assert(device);
 	assert(pipeline);
 
-	assert(pAllocator == 0); //TODO
-
 	_pipeline* pip = pipeline;
 
-	free(pip->dynamicStates);
-	free(pip->attachmentBlendStates);
-	free(pip->scissors);
-	free(pip->viewports);
-	free(pip->vertexBindingDescriptions);
-	free(pip->vertexAttributeDescriptions);
+	FREE(pip->dynamicStates);
+	FREE(pip->attachmentBlendStates);
+	FREE(pip->scissors);
+	FREE(pip->viewports);
+	FREE(pip->vertexBindingDescriptions);
+	FREE(pip->vertexAttributeDescriptions);
 
 	for(int c = 0; c < 6; ++c)
 	{
-		free(pip->names[c]);
+		FREE(pip->names[c]);
 	}
 
-	free(pip);
+	FREE(pip);
 }

@@ -58,19 +58,17 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
 	assert(pCreateInfo);
 	assert(pRenderPass);
 
-	assert(pAllocator == 0); //TODO allocators not supported yet
-
 	//just copy all data from create info
 	//we'll later need to bake the control list based on this
 
-	_renderpass* rp = malloc(sizeof(_renderpass));
+	_renderpass* rp = ALLOCATE(sizeof(_renderpass), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 	rp->numAttachments = pCreateInfo->attachmentCount;
-	rp->attachments = malloc(sizeof(VkAttachmentDescription)*rp->numAttachments);
+	rp->attachments = ALLOCATE(sizeof(VkAttachmentDescription)*rp->numAttachments, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp->attachments)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -79,7 +77,7 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
 	memcpy(rp->attachments, pCreateInfo->pAttachments, sizeof(VkAttachmentDescription)*rp->numAttachments);
 
 	rp->numSubpasses = pCreateInfo->subpassCount;
-	rp->subpasses = malloc(sizeof(VkSubpassDescription)*rp->numSubpasses);
+	rp->subpasses = ALLOCATE(sizeof(VkSubpassDescription)*rp->numSubpasses, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp->subpasses)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -95,7 +93,7 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
 
 		if(rp->subpasses[c].inputAttachmentCount)
 		{
-			rp->subpasses[c].pInputAttachments = malloc(sizeof(VkAttachmentReference)*rp->subpasses[c].inputAttachmentCount);
+			rp->subpasses[c].pInputAttachments = ALLOCATE(sizeof(VkAttachmentReference)*rp->subpasses[c].inputAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pInputAttachments)
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -110,7 +108,7 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
 
 		if(rp->subpasses[c].colorAttachmentCount)
 		{
-			rp->subpasses[c].pColorAttachments = malloc(sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount);
+			rp->subpasses[c].pColorAttachments = ALLOCATE(sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pColorAttachments)
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -125,7 +123,7 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
 
 		if(rp->subpasses[c].colorAttachmentCount && pCreateInfo->pSubpasses[c].pResolveAttachments)
 		{
-			rp->subpasses[c].pResolveAttachments = malloc(sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount);
+			rp->subpasses[c].pResolveAttachments = ALLOCATE(sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pResolveAttachments)
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -140,7 +138,7 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
 
 		if(pCreateInfo->pSubpasses[c].pDepthStencilAttachment)
 		{
-			rp->subpasses[c].pDepthStencilAttachment = malloc(sizeof(VkAttachmentReference));
+			rp->subpasses[c].pDepthStencilAttachment = ALLOCATE(sizeof(VkAttachmentReference), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pDepthStencilAttachment)
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -155,7 +153,7 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
 
 		if(rp->subpasses[c].preserveAttachmentCount)
 		{
-			rp->subpasses[c].pPreserveAttachments = malloc(sizeof(uint32_t)*rp->subpasses[c].preserveAttachmentCount);
+			rp->subpasses[c].pPreserveAttachments = ALLOCATE(sizeof(uint32_t)*rp->subpasses[c].preserveAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pPreserveAttachments)
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -170,7 +168,7 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
 	}
 
 	rp->numSubpassDependencies = pCreateInfo->dependencyCount;
-	rp->subpassDependencies = malloc(sizeof(VkSubpassDependency)*rp->numSubpassDependencies);
+	rp->subpassDependencies = ALLOCATE(sizeof(VkSubpassDependency)*rp->numSubpassDependencies, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp->subpassDependencies)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -188,26 +186,24 @@ void vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAlloc
 	assert(device);
 	assert(renderPass);
 
-	assert(pAllocator == 0); //TODO
-
 	_renderpass* rp = renderPass;
 
-	free(rp->subpassDependencies);
+	FREE(rp->subpassDependencies);
 
 	for(int c = 0; c < rp->numSubpasses; ++c)
 	{
-		free(rp->subpasses[c].pInputAttachments);
-		free(rp->subpasses[c].pColorAttachments);
-		free(rp->subpasses[c].pResolveAttachments);
-		free(rp->subpasses[c].pDepthStencilAttachment);
-		free(rp->subpasses[c].pPreserveAttachments);
+		FREE(rp->subpasses[c].pInputAttachments);
+		FREE(rp->subpasses[c].pColorAttachments);
+		FREE(rp->subpasses[c].pResolveAttachments);
+		FREE(rp->subpasses[c].pDepthStencilAttachment);
+		FREE(rp->subpasses[c].pPreserveAttachments);
 	}
 
-	free(rp->subpasses);
+	FREE(rp->subpasses);
 
-	free(rp->attachments);
+	FREE(rp->attachments);
 
-	free(rp);
+	FREE(rp);
 }
 
 /*
@@ -219,9 +215,7 @@ VkResult vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCr
 	assert(pCreateInfo);
 	assert(pFramebuffer);
 
-	assert(pAllocator == 0); //TODO
-
-	_framebuffer* fb = malloc(sizeof(_framebuffer));
+	_framebuffer* fb = ALLOCATE(sizeof(_framebuffer), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 	if(!fb)
 	{
@@ -231,7 +225,7 @@ VkResult vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCr
 	fb->renderpass = pCreateInfo->renderPass;
 
 	fb->numAttachmentViews = pCreateInfo->attachmentCount;
-	fb->attachmentViews = malloc(sizeof(_imageView) * fb->numAttachmentViews);
+	fb->attachmentViews = ALLOCATE(sizeof(_imageView) * fb->numAttachmentViews, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 	if(!fb->attachmentViews)
 	{
@@ -259,11 +253,9 @@ void vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAl
 	assert(device);
 	assert(framebuffer);
 
-	assert(pAllocator == 0); //TODO
-
 	_framebuffer* fb = framebuffer;
-	free(fb->attachmentViews);
-	free(fb);
+	FREE(fb->attachmentViews);
+	FREE(fb);
 }
 
 /*

@@ -24,11 +24,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSemaphore(
 	assert(device);
 	assert(pSemaphore);
 
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
-
 	//we'll probably just use an IOCTL to wait for a GPU sequence number to complete.
-	sem_t* s = malloc(sizeof(sem_t));
+	sem_t* s = ALLOCATE(sizeof(sem_t), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!s)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -281,10 +278,9 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
 	assert(device);
 	assert(semaphore);
 
-	//TODO: allocator is ignored for now
-	assert(pAllocator == 0);
-
 	sem_destroy((sem_t*)semaphore);
+
+	FREE(semaphore);
 }
 
 /*
@@ -300,9 +296,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateFence(
 	assert(pCreateInfo);
 	assert(pFence);
 
-	assert(pAllocator == 0);
-
-	_fence* f = malloc(sizeof(_fence));
+	_fence* f = ALLOCATE(sizeof(_fence), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 	f->seqno = 0;
 	f->signaled = pCreateInfo->flags & VK_FENCE_CREATE_SIGNALED_BIT;
@@ -321,9 +315,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyFence(
 	assert(device);
 	assert(fence);
 
-	assert(pAllocator == 0);
-
-	free(fence);
+	FREE(fence);
 }
 
 /*

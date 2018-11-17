@@ -11,9 +11,7 @@ VkResult vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCreate
 	assert(pCreateInfo);
 	assert(pView);
 
-	assert(pAllocator == 0); //TODO
-
-	_imageView* view = malloc(sizeof(_imageView));
+	_imageView* view = ALLOCATE(sizeof(_imageView), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 	if(!view)
 	{
@@ -42,9 +40,7 @@ VkResult vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, 
 	assert(pCreateInfo);
 	assert(pBuffer);
 
-	assert(pAllocator == 0); //TODO
-
-	_buffer* buf = malloc(sizeof(_buffer));
+	_buffer* buf = ALLOCATE(sizeof(_buffer), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!buf)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -103,10 +99,8 @@ void vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbac
 	assert(device);
 	assert(buffer);
 
-	assert(pAllocator == 0); //TODO
-
 	_buffer* buf = buffer;
-	free(buf);
+	FREE(buf);
 }
 
 void vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator)
@@ -114,10 +108,8 @@ void vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocati
 	assert(device);
 	assert(imageView);
 
-	assert(pAllocator == 0); //TODO
-
 	_imageView* view = imageView;
-	free(view);
+	FREE(view);
 }
 
 
@@ -134,9 +126,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateBufferView(
 	assert(pCreateInfo);
 	assert(pView);
 
-	assert(pAllocator == 0); //TODO
-
-	_bufferView* bv = malloc(sizeof(_bufferView));
+	_bufferView* bv = ALLOCATE(sizeof(_bufferView), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 	bv->buffer = pCreateInfo->buffer;
 	bv->format = pCreateInfo->format;
@@ -157,10 +147,8 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyBufferView(
 	assert(device);
 	assert(bufferView);
 
-	assert(pAllocator == 0); //TODO
-
 	_bufferView* bv = bufferView;
-	free(bv);
+	FREE(bv);
 }
 
 /*
@@ -176,9 +164,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(
 	assert(pCreateInfo);
 	assert(pImage);
 
-	assert(pAllocator == 0);
-
-	_image* i = malloc(sizeof(_image));
+	_image* i = ALLOCATE(sizeof(_image), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!i)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -212,7 +198,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(
 	i->numQueueFamiliesWithAccess = pCreateInfo->queueFamilyIndexCount;
 	if(i->numQueueFamiliesWithAccess > 0)
 	{
-		i->queueFamiliesWithAccess = malloc(sizeof(uint32_t) * i->numQueueFamiliesWithAccess);
+		i->queueFamiliesWithAccess = ALLOCATE(sizeof(uint32_t) * i->numQueueFamiliesWithAccess, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!i->queueFamiliesWithAccess)
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		memcpy(i->queueFamiliesWithAccess, pCreateInfo->pQueueFamilyIndices, sizeof(uint32_t) * i->numQueueFamiliesWithAccess);
@@ -239,14 +225,12 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyImage(
 	assert(device);
 	assert(image);
 
-	assert(pAllocator == 0); //TODO
-
 	_image* i = image;
 
 	if(i->numQueueFamiliesWithAccess > 0);
-		free(i->queueFamiliesWithAccess);
+		FREE(i->queueFamiliesWithAccess);
 
-	free(i);
+	FREE(i);
 }
 
 /*
