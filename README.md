@@ -22,7 +22,7 @@ As far as I know the PI is NOT fully VK capable on the hardware level. I can alr
 
 ### What performance should you expect?
 Performance wise, the Pi is quite capable. The specs and architecture is close to the GPU in the iPhone 4s. The only problem I see is bandwidth as you only have about 7GB/s compared to 12-25GB/s on typical mobile phones. So post processing is a huge no and you'd need to be very careful about the techniques that you use. Eg. you'd need to stay on chip at all times. 
-CPU performance (eg. number of draw calls) should be enough on the quad-core PIs as you can easily utilise all cores using Vulkan.
+CPU performance (eg. number of draw calls) should be enough on the quad-core PIs as you can easily utilise all cores using VK.
 
 ### What will be emulated?
 - I already plan to emulate a couple of the basics such as copy commands using compute
