@@ -367,3 +367,42 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDeviceGroups(
 
 	return VK_SUCCESS;
 }
+
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(
+	VkDevice                                    device,
+	const char*                                 pName)
+{
+	if(
+	!strcmp("vkDestroyInstance", pName) ||
+	!strcmp("vkEnumeratePhysicalDevices", pName) ||
+	!strcmp("vkGetPhysicalDeviceFeatures", pName) ||
+	!strcmp("vkGetPhysicalDeviceFormatProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceImageFormatProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceQueueFamilyProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceMemoryProperties", pName) ||
+	!strcmp("vkCreateDevice", pName) ||
+	!strcmp("vkEnumerateDeviceExtensionProperties", pName) ||
+	!strcmp("vkEnumerateDeviceLayerProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceSparseImageFormatProperties", pName) ||
+	!strcmp("vkEnumeratePhysicalDeviceGroups", pName) ||
+	!strcmp("vkGetPhysicalDeviceFeatures2", pName) ||
+	!strcmp("vkGetPhysicalDeviceProperties2", pName) ||
+	!strcmp("vkGetPhysicalDeviceFormatProperties2", pName) ||
+	!strcmp("vkGetPhysicalDeviceImageFormatProperties2", pName) ||
+	!strcmp("vkGetPhysicalDeviceQueueFamilyProperties2", pName) ||
+	!strcmp("vkGetPhysicalDeviceMemoryProperties2", pName) ||
+	!strcmp("vkGetPhysicalDeviceSparseImageFormatProperties2", pName) ||
+	!strcmp("vkGetPhysicalDeviceExternalBufferProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceExternalFenceProperties", pName) ||
+	!strcmp("vkGetPhysicalDeviceExternalSemaphoreProperties", pName)
+	)
+	{
+		return 0;
+	}
+
+
+	//TODO
+	_device* d = device;
+	return vkGetInstanceProcAddr(d->dev->instance, pName);
+}

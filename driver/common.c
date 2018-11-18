@@ -908,34 +908,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineCache(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(
-	VkDevice                                    device,
-	const char*                                 pName)
-{	
-	if(
-	!strcmp("vkDestroyInstance", pName) ||
-	!strcmp("vkEnumeratePhysicalDevices", pName) ||
-	!strcmp("vkGetPhysicalDeviceFeatures", pName) ||
-	!strcmp("vkGetPhysicalDeviceFormatProperties", pName) ||
-	!strcmp("vkGetPhysicalDeviceImageFormatProperties", pName) ||
-	!strcmp("vkGetPhysicalDeviceProperties", pName) ||
-	!strcmp("vkGetPhysicalDeviceQueueFamilyProperties", pName) ||
-	!strcmp("vkGetPhysicalDeviceMemoryProperties", pName) ||
-	!strcmp("vkCreateDevice", pName) ||
-	!strcmp("vkEnumerateDeviceExtensionProperties", pName) ||
-	!strcmp("vkEnumerateDeviceLayerProperties", pName) ||
-	!strcmp("vkGetPhysicalDeviceSparseImageFormatProperties", pName)
-	)
-	{
-		return 0;
-	}
-
-
-	//TODO
-	_device* d = device;
-	return vkGetInstanceProcAddr(d->dev->instance, pName);
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateQueryPool(
 	VkDevice                                    device,
 	const VkQueryPoolCreateInfo*                pCreateInfo,
@@ -1069,4 +1041,133 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceExternalSemaphoreProperties(
 	VkExternalSemaphoreProperties*              pExternalSemaphoreProperties)
 {
 
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory2(
+	VkDevice                                    device,
+	uint32_t                                    bindInfoCount,
+	const VkBindImageMemoryInfo*                pBindInfos)
+{
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetDeviceGroupPeerMemoryFeatures(
+	VkDevice                                    device,
+	uint32_t                                    heapIndex,
+	uint32_t                                    localDeviceIndex,
+	uint32_t                                    remoteDeviceIndex,
+	VkPeerMemoryFeatureFlags*                   pPeerMemoryFeatures)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkCmdSetDeviceMask(
+	VkCommandBuffer                             commandBuffer,
+	uint32_t                                    deviceMask)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkCmdDispatchBase(
+	VkCommandBuffer                             commandBuffer,
+	uint32_t                                    baseGroupX,
+	uint32_t                                    baseGroupY,
+	uint32_t                                    baseGroupZ,
+	uint32_t                                    groupCountX,
+	uint32_t                                    groupCountY,
+	uint32_t                                    groupCountZ)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements2(
+	VkDevice                                    device,
+	const VkImageMemoryRequirementsInfo2*       pInfo,
+	VkMemoryRequirements2*                      pMemoryRequirements)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetBufferMemoryRequirements2(
+	VkDevice                                    device,
+	const VkBufferMemoryRequirementsInfo2*      pInfo,
+	VkMemoryRequirements2*                      pMemoryRequirements)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetImageSparseMemoryRequirements2(
+	VkDevice                                    device,
+	const VkImageSparseMemoryRequirementsInfo2* pInfo,
+	uint32_t*                                   pSparseMemoryRequirementCount,
+	VkSparseImageMemoryRequirements2*           pSparseMemoryRequirements)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue2(
+	VkDevice                                    device,
+	const VkDeviceQueueInfo2*                   pQueueInfo,
+	VkQueue*                                    pQueue)
+{
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateSamplerYcbcrConversion(
+	VkDevice                                    device,
+	const VkSamplerYcbcrConversionCreateInfo*   pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkSamplerYcbcrConversion*                   pYcbcrConversion)
+{
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL vkDestroySamplerYcbcrConversion(
+	VkDevice                                    device,
+	VkSamplerYcbcrConversion                    ycbcrConversion,
+	const VkAllocationCallbacks*                pAllocator)
+{
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorUpdateTemplate(
+	VkDevice                                    device,
+	const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkDescriptorUpdateTemplate*                 pDescriptorUpdateTemplate)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorUpdateTemplate(
+	VkDevice                                    device,
+	VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
+	const VkAllocationCallbacks*                pAllocator)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSetWithTemplate(
+	VkDevice                                    device,
+	VkDescriptorSet                             descriptorSet,
+	VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
+	const void*                                 pData)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetLayoutSupport(
+	VkDevice                                    device,
+	const VkDescriptorSetLayoutCreateInfo*      pCreateInfo,
+	VkDescriptorSetLayoutSupport*               pSupport)
+{
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkBindBufferMemory2(
+	VkDevice                                    device,
+	uint32_t                                    bindInfoCount,
+	const VkBindBufferMemoryInfo*               pBindInfos)
+{
+	return VK_SUCCESS;
 }

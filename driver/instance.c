@@ -313,6 +313,23 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(
 	RETFUNC(vkGetPhysicalDeviceExternalBufferProperties);
 	RETFUNC(vkGetPhysicalDeviceExternalFenceProperties);
 	RETFUNC(vkGetPhysicalDeviceExternalSemaphoreProperties);
+	RETFUNC(vkBindImageMemory2);
+	RETFUNC(vkGetDeviceGroupPeerMemoryFeatures);
+	RETFUNC(vkCmdSetDeviceMask);
+	RETFUNC(vkCmdDispatchBase);
+	RETFUNC(vkGetImageMemoryRequirements2);
+	RETFUNC(vkGetBufferMemoryRequirements2);
+	RETFUNC(vkGetImageSparseMemoryRequirements2);
+	RETFUNC(vkTrimCommandPool);
+	RETFUNC(vkGetDeviceQueue2);
+	RETFUNC(vkCreateSamplerYcbcrConversion);
+	RETFUNC(vkDestroySamplerYcbcrConversion);
+	RETFUNC(vkCreateDescriptorUpdateTemplate);
+	RETFUNC(vkDestroyDescriptorUpdateTemplate);
+	RETFUNC(vkUpdateDescriptorSetWithTemplate);
+	RETFUNC(vkGetDescriptorSetLayoutSupport);
+	RETFUNC(vkBindBufferMemory2);
+
 
 	return 0;
 }
