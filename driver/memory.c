@@ -65,7 +65,7 @@ VkResult vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocate
 	assert(pAllocateInfo);
 	assert(pMemory);
 
-	uint32_t bo = vc4_bo_alloc(device->dev->instance->controlFd, pAllocateInfo->allocationSize, "vkAllocateMemory");
+	uint32_t bo = vc4_bo_alloc(controlFd, pAllocateInfo->allocationSize, "vkAllocateMemory");
 	if(!bo)
 	{
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
@@ -111,7 +111,7 @@ VkResult vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset
 	//TODO check ppdata alignment
 	//TODO multiple instances?
 
-	void* ptr = vc4_bo_map(device->dev->instance->controlFd, ((_deviceMemory*)memory)->bo, offset, size);
+	void* ptr = vc4_bo_map(controlFd, ((_deviceMemory*)memory)->bo, offset, size);
 	if(!ptr)
 	{
 		return VK_ERROR_MEMORY_MAP_FAILED;
@@ -133,7 +133,7 @@ void vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
 	assert(device);
 	assert(memory);
 
-	vc4_bo_unmap_unsynchronized(device->dev->instance->controlFd, ((_deviceMemory*)memory)->mappedPtr, ((_deviceMemory*)memory)->mappedSize);
+	vc4_bo_unmap_unsynchronized(controlFd, ((_deviceMemory*)memory)->mappedPtr, ((_deviceMemory*)memory)->mappedSize);
 }
 
 void vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
@@ -142,7 +142,7 @@ void vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCall
 	assert(memory);
 
 	_deviceMemory* mem = memory;
-	vc4_bo_free(device->dev->instance->controlFd, mem->bo, mem->mappedPtr, mem->size);
+	vc4_bo_free(controlFd, mem->bo, mem->mappedPtr, mem->size);
 	FREE(mem);
 }
 

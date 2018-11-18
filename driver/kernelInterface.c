@@ -1,26 +1,42 @@
 #define _GNU_SOURCE
 #include "kernelInterface.h"
+#include <stdatomic.h>
+
+atomic_int refCounter = 0;
+int controlFd = 0;
+//int renderFd = 0;
 
 int openIoctl()
 {
-	int controlFd = open(DRM_IOCTL_CTRL_DEV_FILE_NAME, O_RDWR | O_CLOEXEC);
-	if (controlFd < 0) {
-		printf("Can't open device file: %s\n", DRM_IOCTL_CTRL_DEV_FILE_NAME);
-		return -1;
+	if(!controlFd)
+	{
+		controlFd = open(DRM_IOCTL_CTRL_DEV_FILE_NAME, O_RDWR | O_CLOEXEC);
+		if (controlFd < 0) {
+			printf("Can't open device file: %s \nError: %s\n", DRM_IOCTL_CTRL_DEV_FILE_NAME, strerror(errno));
+			return -1;
+		}
 	}
 
-	/*renderFd = open(DRM_IOCTL_RENDER_DEV_FILE_NAME, O_RDWR | O_CLOEXEC);
-	if (renderFd < 0) {
-		printf("Can't open device file: %s\n", DRM_IOCTL_RENDER_DEV_FILE_NAME);
-		return -1;
+	/*if(!renderFd)
+	{
+		renderFd = open(DRM_IOCTL_RENDER_DEV_FILE_NAME, O_RDWR | O_CLOEXEC);
+		if (renderFd < 0) {
+			printf("Can't open device file: %s \nError: %s\n", DRM_IOCTL_RENDER_DEV_FILE_NAME, strerror(errno));
+			return -1;
+		}
 	}*/
 
-	return controlFd;
+	++refCounter;
+
+	return 0;
 }
 
 void closeIoctl(int fd)
 {
-	close(fd);
+	if (--refCounter == 0)
+	{
+		close(fd);
+	}
 }
 
 static uint32_t align(uint32_t num, uint32_t alignment)

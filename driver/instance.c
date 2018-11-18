@@ -36,7 +36,14 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(
 
 	*pPropertyCount = elementsWritten;
 
-	return VK_SUCCESS;
+	if(arraySize < numInstanceExtensions)
+	{
+		return VK_INCOMPLETE;
+	}
+	else
+	{
+		return VK_SUCCESS;
+	}
 }
 
 /*
@@ -97,15 +104,14 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 	(*pInstance)->dev.instance = *pInstance;
 
 	int ret = openIoctl(); assert(ret != -1);
-	(*pInstance)->controlFd = ret;
 
-	(*pInstance)->chipVersion = vc4_get_chip_info((*pInstance)->controlFd);
-	(*pInstance)->hasTiling = vc4_test_tiling((*pInstance)->controlFd);
+	(*pInstance)->chipVersion = vc4_get_chip_info(controlFd);
+	(*pInstance)->hasTiling = vc4_test_tiling(controlFd);
 
-	(*pInstance)->hasControlFlow = vc4_has_feature((*pInstance)->controlFd, DRM_VC4_PARAM_SUPPORTS_BRANCHES);
-	(*pInstance)->hasEtc1 = vc4_has_feature((*pInstance)->controlFd, DRM_VC4_PARAM_SUPPORTS_ETC1);
-	(*pInstance)->hasThreadedFs = vc4_has_feature((*pInstance)->controlFd, DRM_VC4_PARAM_SUPPORTS_THREADED_FS);
-	(*pInstance)->hasMadvise = vc4_has_feature((*pInstance)->controlFd, DRM_VC4_PARAM_SUPPORTS_MADVISE);
+	(*pInstance)->hasControlFlow = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_BRANCHES);
+	(*pInstance)->hasEtc1 = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_ETC1);
+	(*pInstance)->hasThreadedFs = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_THREADED_FS);
+	(*pInstance)->hasMadvise = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_MADVISE);
 
 	return VK_SUCCESS;
 }
@@ -132,7 +138,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceVersion(
 	uint32_t*                                   pApiVersion)
 {
 	assert(pApiVersion);
-	*pApiVersion = VK_MAKE_VERSION(1, 1, 0);
+	*pApiVersion = VK_DRIVER_VERSION; //
 	return VK_SUCCESS;
 }
 
@@ -159,6 +165,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(
 	}
 
 	RETFUNC(vkCreateInstance);
+	RETFUNC(vkEnumerateInstanceVersion);
 	RETFUNC(vkDestroyInstance);
 	RETFUNC(vkEnumeratePhysicalDevices);
 	RETFUNC(vkGetPhysicalDeviceFeatures);
@@ -295,6 +302,17 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(
 	RETFUNC(vkCmdNextSubpass);
 	RETFUNC(vkCmdEndRenderPass);
 	RETFUNC(vkCmdExecuteCommands);
+	RETFUNC(vkEnumeratePhysicalDeviceGroups);
+	RETFUNC(vkGetPhysicalDeviceFeatures2);
+	RETFUNC(vkGetPhysicalDeviceProperties2);
+	RETFUNC(vkGetPhysicalDeviceFormatProperties2);
+	RETFUNC(vkGetPhysicalDeviceImageFormatProperties2);
+	RETFUNC(vkGetPhysicalDeviceQueueFamilyProperties2);
+	RETFUNC(vkGetPhysicalDeviceMemoryProperties2);
+	RETFUNC(vkGetPhysicalDeviceSparseImageFormatProperties2);
+	RETFUNC(vkGetPhysicalDeviceExternalBufferProperties);
+	RETFUNC(vkGetPhysicalDeviceExternalFenceProperties);
+	RETFUNC(vkGetPhysicalDeviceExternalSemaphoreProperties);
 
 	return 0;
 }

@@ -34,6 +34,9 @@ extern "C" {
 #define WAIT_TIMEOUT_INFINITE 0xffffffffffffffffull
 #define ARM_PAGE_SIZE 4096
 
+extern int controlFd;
+//extern int renderFd;
+
 int openIoctl();
 void closeIoctl();
 

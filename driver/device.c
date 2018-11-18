@@ -35,7 +35,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDevices(
 
 	*pPhysicalDeviceCount = elementsWritten;
 
-	if(elementsWritten < arraySize)
+	if(arraySize < numGPUs)
 	{
 		return VK_INCOMPLETE;
 	}
@@ -64,7 +64,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties(
 		.residencyNonResidentStrict = 1
 	};
 
-	pProperties->apiVersion = VK_MAKE_VERSION(1,1,0);
+	pProperties->apiVersion = VK_DRIVER_VERSION;
 	pProperties->driverVersion = 1; //we'll simply call this v1
 	pProperties->vendorID = 0x14E4; //Broadcom
 	pProperties->deviceID = 0; //TODO dunno?

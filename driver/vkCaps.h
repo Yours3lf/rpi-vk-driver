@@ -35,8 +35,8 @@ static VkPhysicalDeviceLimits _limits =
 	.maxDescriptorSetSampledImages = 98304,
 	.maxDescriptorSetStorageImages = 98304,
 	.maxDescriptorSetInputAttachments = 8, //TODO
-	.maxVertexInputAttributes = 8,
-	.maxVertexInputBindings = 8,
+	.maxVertexInputAttributes = 8, //TODO will fail CTS, MIN is 16
+	.maxVertexInputBindings = 8, //TODO will fail CTS, MIN is 16
 	.maxVertexInputAttributeOffset = 2047,
 	.maxVertexInputBindingStride = 2048,
 	.maxVertexOutputComponents = 128,
@@ -57,10 +57,10 @@ static VkPhysicalDeviceLimits _limits =
 	.maxFragmentOutputAttachments = 8,
 	.maxFragmentDualSrcAttachments = 1,
 	.maxFragmentCombinedOutputResources = 16,
-	.maxComputeSharedMemorySize = 0, //TODO no compute for now
-	.maxComputeWorkGroupCount = {0,0,0},
-	.maxComputeWorkGroupInvocations = 0,
-	.maxComputeWorkGroupSize = {0,0,0},
+	.maxComputeSharedMemorySize = 0, //TODO no compute for now, fails CTS
+	.maxComputeWorkGroupCount = {0,0,0}, //TODO no compute for now, fails CTS
+	.maxComputeWorkGroupInvocations = 0, //TODO no compute for now, fails CTS
+	.maxComputeWorkGroupSize = {0,0,0}, //TODO no compute for now, fails CTS
 	.subPixelPrecisionBits = 8,
 	.subTexelPrecisionBits = 8,
 	.mipmapPrecisionBits = 8,
@@ -102,10 +102,10 @@ static VkPhysicalDeviceLimits _limits =
 	.maxClipDistances = 8,
 	.maxCullDistances = 8,
 	.maxCombinedClipAndCullDistances = 8,
-	.discreteQueuePriorities = 1,
-	.pointSizeRange = {1, 1},
+	.discreteQueuePriorities = 1, //TODO will fail CTS, MIN is 2
+	.pointSizeRange = {1, 64}, //TODO [1] has to be 64 - pointSizeGranularity
 	.lineWidthRange = {0.5, 10},
-	.pointSizeGranularity = 0.0,
+	.pointSizeGranularity = 0.0, //TODO
 	.lineWidthGranularity = 0.125,
 	.strictLines = 0, //TODO
 	.standardSampleLocations = 1,
@@ -135,7 +135,7 @@ static VkPhysicalDeviceFeatures _features =
 	.wideLines = 1,
 	.largePoints = 1,
 	.alphaToOne = 1,
-	.multiViewport = 1,
+	.multiViewport = 0,
 	.samplerAnisotropy = 1,
 	.textureCompressionETC2 = 0,
 	.textureCompressionASTC_LDR = 0,
@@ -221,10 +221,11 @@ static VkExtensionProperties instanceExtensions[] =
 		.extensionName = "VK_EXT_debug_utils",
 		.specVersion = 1
 	},
-	{
-		.extensionName = "VK_KHR_rpi_surface",
-		.specVersion = 1
-	}
+	//TODO not an official extension, so can't expose it
+	//{
+	//	.extensionName = "VK_KHR_rpi_surface",
+	//	.specVersion = 1
+	//}
 };
 #define numInstanceExtensions (sizeof(instanceExtensions) / sizeof(VkExtensionProperties))
 
@@ -282,3 +283,5 @@ static VkMemoryHeap memoryHeaps[] =
 	}
 };
 #define numMemoryHeaps (sizeof(memoryHeaps) / sizeof(VkMemoryHeap))
+
+#define VK_DRIVER_VERSION VK_MAKE_VERSION(1, 1, 0)

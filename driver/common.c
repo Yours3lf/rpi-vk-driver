@@ -990,3 +990,83 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueBindSparse(
 {
 	return VK_SUCCESS;
 }
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(
+	VkPhysicalDevice                            physicalDevice,
+	VkPhysicalDeviceFeatures2*                  pFeatures)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(
+	VkPhysicalDevice                            physicalDevice,
+	VkPhysicalDeviceProperties2*                pProperties)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2(
+	VkPhysicalDevice                            physicalDevice,
+	VkFormat                                    format,
+	VkFormatProperties2*                        pFormatProperties)
+{
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(
+	VkPhysicalDevice                            physicalDevice,
+	const VkPhysicalDeviceImageFormatInfo2*     pImageFormatInfo,
+	VkImageFormatProperties2*                   pImageFormatProperties)
+{
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties2(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t*                                   pQueueFamilyPropertyCount,
+	VkQueueFamilyProperties2*                   pQueueFamilyProperties)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceMemoryProperties2(
+	VkPhysicalDevice                            physicalDevice,
+	VkPhysicalDeviceMemoryProperties2*          pMemoryProperties)
+{
+
+}
+
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties2(
+	VkPhysicalDevice                            physicalDevice,
+	const VkPhysicalDeviceSparseImageFormatInfo2* pFormatInfo,
+	uint32_t*                                   pPropertyCount,
+	VkSparseImageFormatProperties2*             pProperties)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceExternalBufferProperties(
+	VkPhysicalDevice                            physicalDevice,
+	const VkPhysicalDeviceExternalBufferInfo*   pExternalBufferInfo,
+	VkExternalBufferProperties*                 pExternalBufferProperties)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceExternalFenceProperties(
+	VkPhysicalDevice                            physicalDevice,
+	const VkPhysicalDeviceExternalFenceInfo*    pExternalFenceInfo,
+	VkExternalFenceProperties*                  pExternalFenceProperties)
+{
+
+}
+
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceExternalSemaphoreProperties(
+	VkPhysicalDevice                            physicalDevice,
+	const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
+	VkExternalSemaphoreProperties*              pExternalSemaphoreProperties)
+{
+
+}

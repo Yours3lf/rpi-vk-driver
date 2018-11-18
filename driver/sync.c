@@ -244,7 +244,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkDeviceWaitIdle(
 		{
 			uint64_t lastFinishedSeqno;
 			uint64_t timeout = WAIT_TIMEOUT_INFINITE;
-			vc4_seqno_wait(device->dev->instance->controlFd, &lastFinishedSeqno, device->queues[c][d].lastEmitSeqno, &timeout);
+			vc4_seqno_wait(controlFd, &lastFinishedSeqno, device->queues[c][d].lastEmitSeqno, &timeout);
 		}
 	}
 
@@ -262,7 +262,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueWaitIdle(
 	_queue* q = queue;
 	uint64_t lastFinishedSeqno;
 	uint64_t timeout = WAIT_TIMEOUT_INFINITE;
-	vc4_seqno_wait(queue->dev->dev->instance->controlFd, &lastFinishedSeqno, q->lastEmitSeqno, &timeout);
+	vc4_seqno_wait(controlFd, &lastFinishedSeqno, q->lastEmitSeqno, &timeout);
 
 	return VK_SUCCESS;
 }
@@ -391,7 +391,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkWaitForFences(
 			uint64_t lastFinishedSeqno = 0;
 			if(!f->signaled)
 			{
-				int ret = vc4_seqno_wait(device->dev->instance->controlFd, &lastFinishedSeqno, f->seqno, &timeout);
+				int ret = vc4_seqno_wait(controlFd, &lastFinishedSeqno, f->seqno, &timeout);
 
 				if(ret < 0)
 				{
@@ -426,7 +426,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkWaitForFences(
 			uint64_t lastFinishedSeqno = 0;
 			if(!f->signaled)
 			{
-				int ret = vc4_seqno_wait(device->dev->instance->controlFd, &lastFinishedSeqno, f->seqno, &timeout);
+				int ret = vc4_seqno_wait(controlFd, &lastFinishedSeqno, f->seqno, &timeout);
 
 				if(ret < 0)
 				{

@@ -92,8 +92,6 @@ typedef struct VkInstance_T
 	int hasEtc1;
 	int hasThreadedFs;
 	int hasMadvise;
-	int controlFd;
-	//int renderFd;
 } _instance;
 
 typedef struct VkDevice_T

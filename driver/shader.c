@@ -22,7 +22,7 @@ VkResult vkCreateShaderModuleFromRpiAssemblyKHR(VkDevice device, VkRpiShaderModu
 		if(pCreateInfo->byteStreamArray[c])
 		{
 			uint32_t size = pCreateInfo->numBytesArray[c];
-			shader->bos[c] = vc4_bo_alloc_shader(device->dev->instance->controlFd, pCreateInfo->byteStreamArray[c], &size);
+			shader->bos[c] = vc4_bo_alloc_shader(controlFd, pCreateInfo->byteStreamArray[c], &size);
 			shader->sizes[c] = size;
 		}
 		else
@@ -56,7 +56,7 @@ void vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, const V
 	{
 		if(shader->bos[c])
 		{
-			vc4_bo_free(device->dev->instance->controlFd, shader->bos[c], 0, shader->sizes[c]);
+			vc4_bo_free(controlFd, shader->bos[c], 0, shader->sizes[c]);
 		}
 	}
 

@@ -335,7 +335,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 
 		//submit ioctl
 		static uint64_t lastFinishedSeqno = 0;
-		vc4_cl_submit(queue->dev->dev->instance->controlFd, &cmdbuf->submitCl, &queue->lastEmitSeqno, &lastFinishedSeqno);
+		vc4_cl_submit(controlFd, &cmdbuf->submitCl, &queue->lastEmitSeqno, &lastFinishedSeqno);
 	}
 
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
