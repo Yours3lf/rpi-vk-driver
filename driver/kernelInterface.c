@@ -163,7 +163,7 @@ int vc4_bo_set_tiling(int fd, uint32_t bo, uint64_t mod)
 {
 	assert(fd);
 	assert(bo);
-	assert(mod);
+	//assert(mod); //TODO mod can be linear==0
 
 	struct drm_vc4_set_tiling set_tiling = {
 		.handle = bo,

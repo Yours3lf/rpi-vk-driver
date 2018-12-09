@@ -230,6 +230,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 		VkMemoryRequirements mr;
 		vkGetImageMemoryRequirements(device, &s->images[c], &mr);
 
+		//TODO is this the right place to do this?
+		s->images[c].tiling = VC4_TILING_FORMAT_T;
+		s->images[c].alignment = mr.alignment;
+
 		VkMemoryAllocateInfo ai;
 		ai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		ai.allocationSize = mr.size;
