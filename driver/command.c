@@ -175,9 +175,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 			for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
 			{
 				consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->binCl, pCommandBuffers[c]->binCl.numBlocks);
-				consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->handlesCl, pCommandBuffers[c]->binCl.numBlocks);
-				consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->shaderRecCl, pCommandBuffers[c]->binCl.numBlocks);
-				consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->uniformsCl, pCommandBuffers[c]->binCl.numBlocks);
+				consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->handlesCl, pCommandBuffers[c]->handlesCl.numBlocks);
+				consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->shaderRecCl, pCommandBuffers[c]->shaderRecCl.numBlocks);
+				consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->uniformsCl, pCommandBuffers[c]->uniformsCl.numBlocks);
 				poolFree(&cp->pa, pCommandBuffers[c]);
 				pCommandBuffers[c] = 0;
 			}
@@ -382,9 +382,9 @@ VKAPI_ATTR void VKAPI_CALL vkFreeCommandBuffers(
 		//if(cp->usePoolAllocator)
 		{
 			consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->binCl, pCommandBuffers[c]->binCl.numBlocks);
-			consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->handlesCl, pCommandBuffers[c]->binCl.numBlocks);
-			consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->shaderRecCl, pCommandBuffers[c]->binCl.numBlocks);
-			consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->uniformsCl, pCommandBuffers[c]->binCl.numBlocks);
+			consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->handlesCl, pCommandBuffers[c]->handlesCl.numBlocks);
+			consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->shaderRecCl, pCommandBuffers[c]->shaderRecCl.numBlocks);
+			consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->uniformsCl, pCommandBuffers[c]->uniformsCl.numBlocks);
 			poolFree(&cp->pa, pCommandBuffers[c]);
 		}
 	}
