@@ -452,6 +452,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandPool(
 		while(d)
 		{
 			if(c == d) break;
+
+			d = *(uint32_t*)d;
 		}
 
 		if(c == d) //block is free, as we found it in the free chain
