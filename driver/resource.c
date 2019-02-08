@@ -128,12 +128,19 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateBufferView(
 
 	_bufferView* bv = ALLOCATE(sizeof(_bufferView), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
+	if(!bv)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
 	bv->buffer = pCreateInfo->buffer;
 	bv->format = pCreateInfo->format;
 	bv->offset = pCreateInfo->offset;
 	bv->range = pCreateInfo->range;
 
 	*pView = bv;
+
+	return VK_SUCCESS;
 }
 
 /*
@@ -200,7 +207,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(
 	{
 		i->queueFamiliesWithAccess = ALLOCATE(sizeof(uint32_t) * i->numQueueFamiliesWithAccess, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!i->queueFamiliesWithAccess)
+		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
 		memcpy(i->queueFamiliesWithAccess, pCreateInfo->pQueueFamilyIndices, sizeof(uint32_t) * i->numQueueFamiliesWithAccess);
 	}
 

@@ -298,10 +298,17 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateFence(
 
 	_fence* f = ALLOCATE(sizeof(_fence), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
+	if(!f)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
 	f->seqno = 0;
 	f->signaled = pCreateInfo->flags & VK_FENCE_CREATE_SIGNALED_BIT;
 
 	*pFence = f;
+
+	return VK_SUCCESS;
 }
 
 /*

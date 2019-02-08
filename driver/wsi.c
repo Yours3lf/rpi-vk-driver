@@ -219,6 +219,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 		if(s->images[c].concurrentAccess)
 		{
 			s->images[c].queueFamiliesWithAccess = ALLOCATE(sizeof(uint32_t)*s->images[c].numQueueFamiliesWithAccess, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+			if(!s->images[c].queueFamiliesWithAccess)
+			{
+				return VK_ERROR_OUT_OF_HOST_MEMORY;
+			}
 			memcpy(s->images[c].queueFamiliesWithAccess, pCreateInfo->pQueueFamilyIndices, sizeof(uint32_t)*s->images[c].numQueueFamiliesWithAccess);
 		}
 		s->images[c].preTransformMode = pCreateInfo->preTransform;
