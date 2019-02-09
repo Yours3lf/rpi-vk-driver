@@ -15,6 +15,16 @@
 - Not supported: 59206/67979 (87.1%)
 - Warnings:      1/67979 (0.0%)
 
+Conformance run is considered passing if all tests finish with allowed result
+codes. 
+Following status
+codes are allowed:
+
+- Pass
+- NotSupported
+- QualityWarning
+- CompatibilityWarning 
+
 ## FAQ
 ### Will this ever be a fully functional VK driver?
 As far as I know the PI is NOT fully VK capable on the hardware level. I can already see that some things will need to be emulated and others won't ever be emulated. The compiler is also a huge unknown at this point as I plan to write one from scratch.
