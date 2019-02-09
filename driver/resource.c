@@ -99,7 +99,10 @@ void vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbac
 	assert(device);
 
 	_buffer* buf = buffer;
-	FREE(buf);
+	if(buf)
+	{
+		FREE(buf);
+	}
 }
 
 void vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator)
@@ -107,7 +110,10 @@ void vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocati
 	assert(device);
 
 	_imageView* view = imageView;
-	FREE(view);
+	if(view)
+	{
+		FREE(view);
+	}
 }
 
 
@@ -152,7 +158,10 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyBufferView(
 	assert(device);
 
 	_bufferView* bv = bufferView;
-	FREE(bv);
+	if(bv)
+	{
+		FREE(bv);
+	}
 }
 
 /*
@@ -238,9 +247,8 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyImage(
 		{
 			FREE(i->queueFamiliesWithAccess);
 		}
+		FREE(i);
 	}
-
-	FREE(i);
 }
 
 /*

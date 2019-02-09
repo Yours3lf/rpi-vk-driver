@@ -224,7 +224,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 	*pDevice = ALLOCATE(sizeof(_device), 1, VK_SYSTEM_ALLOCATION_SCOPE_DEVICE);
 	if(!*pDevice)
 	{
-		return VK_ERROR_TOO_MANY_OBJECTS;
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 	(*pDevice)->dev = physicalDevice;
@@ -331,9 +331,8 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(
 				FREE(dev->queues[d]);
 			}
 		}
+		FREE(dev);
 	}
-
-	FREE(dev);
 }
 
 /*

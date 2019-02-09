@@ -1015,7 +1015,83 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties(
 	VkFormat                                    format,
 	VkFormatProperties*                         pFormatProperties)
 {
+	assert(physicalDevice);
+	assert(pFormatProperties);
 
+	if(isDepthStencilFormat(format) && format != VK_FORMAT_S8_UINT)
+	{
+		pFormatProperties->linearTilingFeatures = 0
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_DST_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+		pFormatProperties->optimalTilingFeatures = 0
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_DST_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+		pFormatProperties->bufferFeatures = 0
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+	}
+	else
+	{
+		pFormatProperties->linearTilingFeatures = 0
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
+												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_DST_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+		pFormatProperties->optimalTilingFeatures = 0
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
+												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_DST_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+		pFormatProperties->bufferFeatures = 0
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+	}
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceLayerProperties(
@@ -1023,7 +1099,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceLayerProperties(
 	uint32_t*                                   pPropertyCount,
 	VkLayerProperties*                          pProperties)
 {
-
+	//deprecated, just return instance layers
+	return vkEnumerateInstanceLayerProperties(pPropertyCount, pProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorSetLayout(
@@ -1147,14 +1224,18 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(
 	VkPhysicalDevice                            physicalDevice,
 	VkPhysicalDeviceFeatures2*                  pFeatures)
 {
-
+	assert(physicalDevice);
+	assert(pFeatures);
+	vkGetPhysicalDeviceFeatures(physicalDevice, &pFeatures->features);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(
 	VkPhysicalDevice                            physicalDevice,
 	VkPhysicalDeviceProperties2*                pProperties)
 {
-
+	assert(physicalDevice);
+	assert(pProperties);
+	vkGetPhysicalDeviceProperties(physicalDevice, &pProperties->properties);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2(
@@ -1162,7 +1243,9 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2(
 	VkFormat                                    format,
 	VkFormatProperties2*                        pFormatProperties)
 {
-
+	assert(physicalDevice);
+	assert(pFormatProperties);
+	vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &pFormatProperties->formatProperties);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(
@@ -1306,7 +1389,11 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue2(
 	const VkDeviceQueueInfo2*                   pQueueInfo,
 	VkQueue*                                    pQueue)
 {
+	assert(device);
+	assert(pQueueInfo);
+	assert(pQueue);
 
+	vkGetDeviceQueue(device, pQueueInfo->queueFamilyIndex, pQueueInfo->queueIndex, pQueue);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateSamplerYcbcrConversion(

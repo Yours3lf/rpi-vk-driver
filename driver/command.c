@@ -411,9 +411,8 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
 		FREE(cp->cpa.buf);
 		destroyPoolAllocator(&cp->pa);
 		destroyConsecutivePoolAllocator(&cp->cpa);
+		FREE(cp);
 	}
-
-	FREE(cp);
 }
 
 /*

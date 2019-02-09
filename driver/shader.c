@@ -60,7 +60,6 @@ void vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, const V
 				vc4_bo_free(controlFd, shader->bos[c], 0, shader->sizes[c]);
 			}
 		}
+		FREE(shader);
 	}
-
-	FREE(shader);
 }

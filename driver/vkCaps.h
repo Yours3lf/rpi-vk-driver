@@ -254,10 +254,6 @@ static VkExtensionProperties deviceExtensions[] =
 	{
 		.extensionName = "VK_EXT_debug_marker",
 		.specVersion = 4
-	},
-	{
-		.extensionName = "VK_EXT_display_control",
-		.specVersion = 1
 	}
 };
 #define numDeviceExtensions (sizeof(deviceExtensions) / sizeof(VkExtensionProperties))

@@ -90,6 +90,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 		}
 		else
 		{
+			FREE(*pInstance);
+			*pInstance = 0;
 			return VK_ERROR_EXTENSION_NOT_PRESENT;
 		}
 	}
@@ -124,9 +126,12 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(
 		VkInstance                                  instance,
 		const VkAllocationCallbacks*                pAllocator)
 {
-	closeIoctl();
+	if(instance)
+	{
+		closeIoctl();
 
-	FREE(instance);
+		FREE(instance);
+	}
 }
 
 /*

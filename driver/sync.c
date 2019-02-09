@@ -280,9 +280,8 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
 	if(semaphore)
 	{
 		sem_destroy((sem_t*)semaphore);
+		FREE(semaphore);
 	}
-
-	FREE(semaphore);
 }
 
 /*
@@ -323,7 +322,10 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyFence(
 {
 	assert(device);
 
-	FREE(fence);
+	if(fence)
+	{
+		FREE(fence);
+	}
 }
 
 /*

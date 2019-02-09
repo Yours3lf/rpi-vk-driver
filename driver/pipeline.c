@@ -193,7 +193,6 @@ void vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationC
 		{
 			FREE(pip->names[c]);
 		}
+		FREE(pip);
 	}
-
-	FREE(pip);
 }

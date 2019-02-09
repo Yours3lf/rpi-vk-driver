@@ -147,8 +147,8 @@ void vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCall
 	if(mem)
 	{
 		vc4_bo_free(controlFd, mem->bo, mem->mappedPtr, mem->size);
+		FREE(mem);
 	}
-	FREE(mem);
 }
 
 /*

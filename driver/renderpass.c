@@ -203,9 +203,9 @@ void vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAlloc
 		FREE(rp->subpasses);
 
 		FREE(rp->attachments);
-	}
 
-	FREE(rp);
+		FREE(rp);
+	}
 }
 
 /*
@@ -258,9 +258,8 @@ void vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAl
 	if(fb)
 	{
 		FREE(fb->attachmentViews);
+		FREE(fb);
 	}
-
-	FREE(fb);
 }
 
 /*
