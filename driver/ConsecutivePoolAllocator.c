@@ -119,9 +119,20 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 		return;
 	}
 
+	int counter = 0;
+
 	//somewhere the linked list may point after the free block (or null), we need to correct this
 	for(uint32_t* nextFreeBlockCandidate = pa->nextFreeBlock; nextFreeBlockCandidate; nextFreeBlockCandidate = (uint32_t*)*nextFreeBlockCandidate)
 	{
+		//TODO infinite loop
+		counter++;
+
+		if(counter > 100)
+		{
+			printf("--------------detected infinite loop nextFreeCandidate: %p, *nextfreecandidate: %p, p: %p\n", nextFreeBlockCandidate, *nextFreeBlockCandidate, p);
+			break;
+		}
+
 		if((void*)*nextFreeBlockCandidate > p || !*nextFreeBlockCandidate)
 		{
 			for(uint32_t c = 0; c < numBlocks - 1; ++c)

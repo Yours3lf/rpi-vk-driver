@@ -124,8 +124,6 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(
 		VkInstance                                  instance,
 		const VkAllocationCallbacks*                pAllocator)
 {
-	assert(instance);
-
 	closeIoctl();
 
 	FREE(instance);

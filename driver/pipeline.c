@@ -177,20 +177,22 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 void vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
-	assert(pipeline);
 
 	_pipeline* pip = pipeline;
 
-	FREE(pip->dynamicStates);
-	FREE(pip->attachmentBlendStates);
-	FREE(pip->scissors);
-	FREE(pip->viewports);
-	FREE(pip->vertexBindingDescriptions);
-	FREE(pip->vertexAttributeDescriptions);
-
-	for(int c = 0; c < 6; ++c)
+	if(pip)
 	{
-		FREE(pip->names[c]);
+		FREE(pip->dynamicStates);
+		FREE(pip->attachmentBlendStates);
+		FREE(pip->scissors);
+		FREE(pip->viewports);
+		FREE(pip->vertexBindingDescriptions);
+		FREE(pip->vertexAttributeDescriptions);
+
+		for(int c = 0; c < 6; ++c)
+		{
+			FREE(pip->names[c]);
+		}
 	}
 
 	FREE(pip);

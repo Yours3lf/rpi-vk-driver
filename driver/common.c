@@ -8,11 +8,112 @@ uint32_t getFormatBpp(VkFormat f)
 {
 	switch(f)
 	{
+	case VK_FORMAT_R64G64B64_UINT: //padded to 256
+	case VK_FORMAT_R64G64B64_SINT:
+	case VK_FORMAT_R64G64B64_SFLOAT:
+	case VK_FORMAT_R64G64B64A64_UINT:
+	case VK_FORMAT_R64G64B64A64_SINT:
+	case VK_FORMAT_R64G64B64A64_SFLOAT:
+		return 256;
+	case VK_FORMAT_R32G32B32_UINT: //padded to 128
+	case VK_FORMAT_R32G32B32_SINT:
+	case VK_FORMAT_R32G32B32_SFLOAT:
+	case VK_FORMAT_R32G32B32A32_UINT:
+	case VK_FORMAT_R32G32B32A32_SINT:
+	case VK_FORMAT_R32G32B32A32_SFLOAT:
+	case VK_FORMAT_R64G64_UINT:
+	case VK_FORMAT_R64G64_SINT:
+	case VK_FORMAT_R64G64_SFLOAT:
+		return 128;
 	case VK_FORMAT_R16G16B16A16_SFLOAT:
+	case VK_FORMAT_R16G16B16_UNORM: //padded to 64
+	case VK_FORMAT_R16G16B16_SNORM: //padded to 64
+	case VK_FORMAT_R16G16B16_USCALED: //padded to 64
+	case VK_FORMAT_R16G16B16_SSCALED: //padded to 64
+	case VK_FORMAT_R16G16B16_UINT: //padded to 64
+	case VK_FORMAT_R16G16B16_SINT: //padded to 64
+	case VK_FORMAT_R16G16B16_SFLOAT: //padded to 64
+	case VK_FORMAT_R16G16B16A16_UNORM:
+	case VK_FORMAT_R16G16B16A16_SNORM:
+	case VK_FORMAT_R16G16B16A16_USCALED:
+	case VK_FORMAT_R16G16B16A16_SSCALED:
+	case VK_FORMAT_R16G16B16A16_UINT:
+	case VK_FORMAT_R16G16B16A16_SINT:
+	case VK_FORMAT_R32G32_UINT:
+	case VK_FORMAT_R32G32_SINT:
+	case VK_FORMAT_R32G32_SFLOAT:
+	case VK_FORMAT_R64_UINT:
+	case VK_FORMAT_R64_SINT:
+	case VK_FORMAT_R64_SFLOAT:
+	case VK_FORMAT_D32_SFLOAT_S8_UINT: //padded to 64
+	case VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+	case VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
 		return 64;
 	case VK_FORMAT_R8G8B8_UNORM: //padded to 32
 	case VK_FORMAT_R8G8B8A8_UNORM:
-		return 32;
+	case VK_FORMAT_R32_UINT:
+	case VK_FORMAT_R8G8B8A8_UINT:
+	case VK_FORMAT_D32_SFLOAT:
+	case VK_FORMAT_R8G8B8_SNORM: //padded to 32
+	case VK_FORMAT_R8G8B8_USCALED: //padded to 32
+	case VK_FORMAT_R8G8B8_SSCALED: //padded to 32
+	case VK_FORMAT_R8G8B8_UINT: //padded to 32
+	case VK_FORMAT_R8G8B8_SINT: //padded to 32
+	case VK_FORMAT_R8G8B8_SRGB: //padded to 32
+	case VK_FORMAT_B8G8R8_UNORM: //padded to 32
+	case VK_FORMAT_B8G8R8_SNORM: //padded to 32
+	case VK_FORMAT_B8G8R8_USCALED: //padded to 32
+	case VK_FORMAT_B8G8R8_SSCALED: //padded to 32
+	case VK_FORMAT_B8G8R8_UINT: //padded to 32
+	case VK_FORMAT_B8G8R8_SINT: //padded to 32
+	case VK_FORMAT_B8G8R8_SRGB: //padded to 32
+	case VK_FORMAT_R8G8B8A8_SNORM:
+	case VK_FORMAT_R8G8B8A8_USCALED:
+	case VK_FORMAT_R8G8B8A8_SSCALED:
+	case VK_FORMAT_R8G8B8A8_SINT:
+	case VK_FORMAT_R8G8B8A8_SRGB:
+	case VK_FORMAT_B8G8R8A8_UNORM:
+	case VK_FORMAT_B8G8R8A8_SNORM:
+	case VK_FORMAT_B8G8R8A8_USCALED:
+	case VK_FORMAT_B8G8R8A8_SSCALED:
+	case VK_FORMAT_B8G8R8A8_UINT:
+	case VK_FORMAT_B8G8R8A8_SINT:
+	case VK_FORMAT_B8G8R8A8_SRGB:
+	case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
+	case VK_FORMAT_A8B8G8R8_SNORM_PACK32:
+	case VK_FORMAT_A8B8G8R8_USCALED_PACK32:
+	case VK_FORMAT_A8B8G8R8_SSCALED_PACK32:
+	case VK_FORMAT_A8B8G8R8_UINT_PACK32:
+	case VK_FORMAT_A8B8G8R8_SINT_PACK32:
+	case VK_FORMAT_A8B8G8R8_SRGB_PACK32:
+	case VK_FORMAT_A2R10G10B10_UNORM_PACK32:
+	case VK_FORMAT_A2R10G10B10_SNORM_PACK32:
+	case VK_FORMAT_A2R10G10B10_USCALED_PACK32:
+	case VK_FORMAT_A2R10G10B10_SSCALED_PACK32:
+	case VK_FORMAT_A2R10G10B10_UINT_PACK32:
+	case VK_FORMAT_A2R10G10B10_SINT_PACK32:
+	case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+	case VK_FORMAT_A2B10G10R10_SNORM_PACK32:
+	case VK_FORMAT_A2B10G10R10_USCALED_PACK32:
+	case VK_FORMAT_A2B10G10R10_SSCALED_PACK32:
+	case VK_FORMAT_A2B10G10R10_UINT_PACK32:
+	case VK_FORMAT_A2B10G10R10_SINT_PACK32:
+	case VK_FORMAT_R16G16_UNORM:
+	case VK_FORMAT_R16G16_SNORM:
+	case VK_FORMAT_R16G16_USCALED:
+	case VK_FORMAT_R16G16_SSCALED:
+	case VK_FORMAT_R16G16_UINT:
+	case VK_FORMAT_R16G16_SINT:
+	case VK_FORMAT_R16G16_SFLOAT:
+	case VK_FORMAT_R32_SINT:
+	case VK_FORMAT_R32_SFLOAT:
+	case VK_FORMAT_B10G11R11_UFLOAT_PACK32:
+	case VK_FORMAT_E5B9G9R9_UFLOAT_PACK32:
+	case VK_FORMAT_X8_D24_UNORM_PACK32:
+	case VK_FORMAT_D16_UNORM_S8_UINT: //padded to 32
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+	case VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
+	case VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
 		return 32;
 	case VK_FORMAT_R5G5B5A1_UNORM_PACK16:
 	case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
@@ -21,9 +122,34 @@ uint32_t getFormatBpp(VkFormat f)
 	case VK_FORMAT_R16_SFLOAT:
 	case VK_FORMAT_R16_SINT:
 	case VK_FORMAT_D16_UNORM:
+	case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+	case VK_FORMAT_B5G6R5_UNORM_PACK16:
+	case VK_FORMAT_B5G5R5A1_UNORM_PACK16:
+	case VK_FORMAT_A1R5G5B5_UNORM_PACK16:
+	case VK_FORMAT_R8G8_SNORM:
+	case VK_FORMAT_R8G8_USCALED:
+	case VK_FORMAT_R8G8_SSCALED:
+	case VK_FORMAT_R8G8_UINT:
+	case VK_FORMAT_R8G8_SINT:
+	case VK_FORMAT_R8G8_SRGB:
+	case VK_FORMAT_R16_UNORM:
+	case VK_FORMAT_R16_SNORM:
+	case VK_FORMAT_R16_USCALED:
+	case VK_FORMAT_R16_SSCALED:
+	case VK_FORMAT_R16_UINT:
+	case VK_FORMAT_R10X6_UNORM_PACK16:
+	case VK_FORMAT_R12X4_UNORM_PACK16:
 		return 16;
 	case VK_FORMAT_R8_UNORM:
 	case VK_FORMAT_R8_SINT:
+	case VK_FORMAT_S8_UINT:
+	case VK_FORMAT_R4G4_UNORM_PACK8:
+	case VK_FORMAT_R8_SNORM:
+	case VK_FORMAT_R8_USCALED:
+	case VK_FORMAT_R8_SSCALED:
+	case VK_FORMAT_R8_UINT:
+	case VK_FORMAT_R8_SRGB:
+	case VK_FORMAT_UNDEFINED: //TODO
 		return 8;
 	default://
 		printf("format %i\n", f);
@@ -108,6 +234,18 @@ void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, 
 
 	switch(bpp)
 	{
+	case 256:
+	{
+		tileW = 8;
+		tileH = 16;
+		break;
+	}
+	case 128:
+	{
+		tileW = 16;
+		tileH = 16;
+		break;
+	}
 	case 64:
 	{
 		tileW = 16;
@@ -576,6 +714,48 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties(
 	VkImageCreateFlags                          flags,
 	VkImageFormatProperties*                    pImageFormatProperties)
 {
+	assert(physicalDevice);
+	assert(pImageFormatProperties);
+
+	for(uint32_t c = 0; c < numUnsupportedFormats; ++c)
+	{
+		if(format == unsupportedFormats[c])
+		{
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+		}
+	}
+
+	pImageFormatProperties->maxArrayLayers = _limits.maxImageArrayLayers;
+
+	pImageFormatProperties->maxExtent.width = 1;
+	pImageFormatProperties->maxExtent.height = 1;
+	pImageFormatProperties->maxExtent.depth = 1;
+
+	if(type == VK_IMAGE_TYPE_1D)
+	{
+		pImageFormatProperties->maxExtent.width = _limits.maxImageDimension1D;
+		pImageFormatProperties->maxMipLevels = ulog2(_limits.maxImageDimension1D);
+	}
+	else if(type == VK_IMAGE_TYPE_2D)
+	{
+		pImageFormatProperties->maxExtent.width = _limits.maxImageDimension2D;
+		pImageFormatProperties->maxExtent.height = _limits.maxImageDimension2D;
+		pImageFormatProperties->maxMipLevels = ulog2(_limits.maxImageDimension2D);
+	}
+	else
+	{
+		pImageFormatProperties->maxExtent.width = _limits.maxImageDimension3D;
+		pImageFormatProperties->maxExtent.height = _limits.maxImageDimension3D;
+		pImageFormatProperties->maxExtent.depth = _limits.maxImageDimension3D;
+		pImageFormatProperties->maxMipLevels = ulog2(_limits.maxImageDimension3D);
+	}
+
+	//TODO real max size?
+	//2^31
+	pImageFormatProperties->maxResourceSize = 0x7fffffff;
+
+	pImageFormatProperties->sampleCounts = _limits.framebufferColorSampleCounts;
+
 	return VK_SUCCESS;
 }
 
@@ -990,7 +1170,19 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(
 	const VkPhysicalDeviceImageFormatInfo2*     pImageFormatInfo,
 	VkImageFormatProperties2*                   pImageFormatProperties)
 {
-	return VK_SUCCESS;
+	assert(physicalDevice);
+	assert(pImageFormatProperties);
+	assert(pImageFormatInfo);
+
+	//TODO
+
+	return vkGetPhysicalDeviceImageFormatProperties(physicalDevice,
+													pImageFormatInfo->format,
+													pImageFormatInfo->type,
+													pImageFormatInfo->tiling,
+													pImageFormatInfo->usage,
+													pImageFormatInfo->flags,
+													&pImageFormatProperties->imageFormatProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties2(
@@ -1093,7 +1285,11 @@ VKAPI_ATTR void VKAPI_CALL vkGetBufferMemoryRequirements2(
 	const VkBufferMemoryRequirementsInfo2*      pInfo,
 	VkMemoryRequirements2*                      pMemoryRequirements)
 {
+	assert(device);
+	assert(pInfo);
+	assert(pMemoryRequirements);
 
+	vkGetBufferMemoryRequirements(device, pInfo->buffer, &pMemoryRequirements->memoryRequirements);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetImageSparseMemoryRequirements2(

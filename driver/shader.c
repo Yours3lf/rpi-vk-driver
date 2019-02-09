@@ -48,15 +48,17 @@ VkResult vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInfo* p
 void vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
-	assert(shaderModule);
 
 	_shaderModule* shader = shaderModule;
 
-	for(int c = 0; c < VK_RPI_ASSEMBLY_TYPE_MAX; ++c)
+	if(shader)
 	{
-		if(shader->bos[c])
+		for(int c = 0; c < VK_RPI_ASSEMBLY_TYPE_MAX; ++c)
 		{
-			vc4_bo_free(controlFd, shader->bos[c], 0, shader->sizes[c]);
+			if(shader->bos[c])
+			{
+				vc4_bo_free(controlFd, shader->bos[c], 0, shader->sizes[c]);
+			}
 		}
 	}
 

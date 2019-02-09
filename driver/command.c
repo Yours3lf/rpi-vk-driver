@@ -379,7 +379,7 @@ VKAPI_ATTR void VKAPI_CALL vkFreeCommandBuffers(
 
 	for(int c = 0; c < commandBufferCount; ++c)
 	{
-		//if(cp->usePoolAllocator)
+		if(pCommandBuffers[c])
 		{
 			consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->binCl, pCommandBuffers[c]->binCl.numBlocks);
 			consecutivePoolFree(&cp->cpa, &pCommandBuffers[c]->handlesCl, pCommandBuffers[c]->handlesCl.numBlocks);
@@ -402,11 +402,10 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
 		const VkAllocationCallbacks*                pAllocator)
 {
 	assert(device);
-	assert(commandPool);
 
 	_commandPool* cp = (_commandPool*)commandPool;
 
-	//if(cp->usePoolAllocator)
+	if(cp)
 	{
 		FREE(cp->pa.buf);
 		FREE(cp->cpa.buf);

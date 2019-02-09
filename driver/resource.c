@@ -67,7 +67,7 @@ void vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryReq
 	assert(pMemoryRequirements);
 
 	pMemoryRequirements->alignment = ((_buffer*)buffer)->alignment;
-	pMemoryRequirements->size = ((_buffer*)buffer)->alignedSize;
+	pMemoryRequirements->size = getBOAlignedSize(((_buffer*)buffer)->size);
 	pMemoryRequirements->memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; //TODO
 }
 
@@ -97,7 +97,6 @@ VkResult vkBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory mem
 void vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
-	assert(buffer);
 
 	_buffer* buf = buffer;
 	FREE(buf);
@@ -106,7 +105,6 @@ void vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbac
 void vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
-	assert(imageView);
 
 	_imageView* view = imageView;
 	FREE(view);
@@ -152,7 +150,6 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyBufferView(
 	const VkAllocationCallbacks*                pAllocator)
 {
 	assert(device);
-	assert(bufferView);
 
 	_bufferView* bv = bufferView;
 	FREE(bv);
@@ -232,12 +229,16 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyImage(
 	const VkAllocationCallbacks*                pAllocator)
 {
 	assert(device);
-	assert(image);
 
 	_image* i = image;
 
-	if(i->numQueueFamiliesWithAccess > 0);
-		FREE(i->queueFamiliesWithAccess);
+	if(i)
+	{
+		if(i->numQueueFamiliesWithAccess > 0)
+		{
+			FREE(i->queueFamiliesWithAccess);
+		}
+	}
 
 	FREE(i);
 }

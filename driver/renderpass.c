@@ -184,24 +184,26 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
 void vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
-	assert(renderPass);
 
 	_renderpass* rp = renderPass;
 
-	FREE(rp->subpassDependencies);
-
-	for(int c = 0; c < rp->numSubpasses; ++c)
+	if(rp)
 	{
-		FREE(rp->subpasses[c].pInputAttachments);
-		FREE(rp->subpasses[c].pColorAttachments);
-		FREE(rp->subpasses[c].pResolveAttachments);
-		FREE(rp->subpasses[c].pDepthStencilAttachment);
-		FREE(rp->subpasses[c].pPreserveAttachments);
+		FREE(rp->subpassDependencies);
+
+		for(int c = 0; c < rp->numSubpasses; ++c)
+		{
+			FREE(rp->subpasses[c].pInputAttachments);
+			FREE(rp->subpasses[c].pColorAttachments);
+			FREE(rp->subpasses[c].pResolveAttachments);
+			FREE(rp->subpasses[c].pDepthStencilAttachment);
+			FREE(rp->subpasses[c].pPreserveAttachments);
+		}
+
+		FREE(rp->subpasses);
+
+		FREE(rp->attachments);
 	}
-
-	FREE(rp->subpasses);
-
-	FREE(rp->attachments);
 
 	FREE(rp);
 }
@@ -251,10 +253,13 @@ VkResult vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCr
 void vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
-	assert(framebuffer);
 
 	_framebuffer* fb = framebuffer;
-	FREE(fb->attachmentViews);
+	if(fb)
+	{
+		FREE(fb->attachmentViews);
+	}
+
 	FREE(fb);
 }
 

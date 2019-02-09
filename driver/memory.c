@@ -39,7 +39,7 @@ void vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhys
 		//all heaps share the same memory
 		for(int c = 0; c < numMemoryHeaps; ++c)
 		{
-			memoryHeaps[c].size = amount;
+			memoryHeaps[c].size = amount * 1000; //kB to B
 		}
 	}
 
@@ -134,15 +134,20 @@ void vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
 	assert(memory);
 
 	vc4_bo_unmap_unsynchronized(controlFd, ((_deviceMemory*)memory)->mappedPtr, ((_deviceMemory*)memory)->mappedSize);
+	((_deviceMemory*)memory)->mappedPtr = 0;
+	((_deviceMemory*)memory)->mappedSize = 0;
+	((_deviceMemory*)memory)->mappedOffset = 0;
 }
 
 void vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
-	assert(memory);
 
 	_deviceMemory* mem = memory;
-	vc4_bo_free(controlFd, mem->bo, mem->mappedPtr, mem->size);
+	if(mem)
+	{
+		vc4_bo_free(controlFd, mem->bo, mem->mappedPtr, mem->size);
+	}
 	FREE(mem);
 }
 

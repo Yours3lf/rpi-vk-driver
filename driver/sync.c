@@ -276,9 +276,11 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
 		const VkAllocationCallbacks*                pAllocator)
 {
 	assert(device);
-	assert(semaphore);
 
-	sem_destroy((sem_t*)semaphore);
+	if(semaphore)
+	{
+		sem_destroy((sem_t*)semaphore);
+	}
 
 	FREE(semaphore);
 }
@@ -320,7 +322,6 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyFence(
 	const VkAllocationCallbacks*                pAllocator)
 {
 	assert(device);
-	assert(fence);
 
 	FREE(fence);
 }

@@ -35,11 +35,13 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(
 		const VkAllocationCallbacks*                pAllocator)
 {
 	assert(instance);
-	assert(surface);
 
 	//TODO use allocator
 
-	modeset_destroy(controlFd, (modeset_dev*)surface);
+	if(surface)
+	{
+		modeset_destroy(controlFd, (modeset_dev*)surface);
+	}
 }
 
 /*
@@ -397,19 +399,22 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
 		const VkAllocationCallbacks*                pAllocator)
 {
 	assert(device);
-	assert(swapchain);
 
 	//TODO flush all ops
 
 	_swapchain* s = swapchain;
 
-	for(int c = 0; c < s->numImages; ++c)
+	if(s)
 	{
-		vkFreeMemory(device, s->images[c].boundMem, 0);
-		modeset_destroy_fb(controlFd, &s->images[c]);
+		for(int c = 0; c < s->numImages; ++c)
+		{
+			vkFreeMemory(device, s->images[c].boundMem, 0);
+			modeset_destroy_fb(controlFd, &s->images[c]);
+		}
+
+		FREE(s->images);
 	}
 
-	FREE(s->images);
 	FREE(s);
 }
 

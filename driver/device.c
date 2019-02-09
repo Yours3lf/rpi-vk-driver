@@ -320,14 +320,16 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(
 		VkDevice                                    device,
 		const VkAllocationCallbacks*                pAllocator)
 {
-	assert(device);
-
 	_device* dev = device;
-	for(int c = 0; c < numQueueFamilies; ++c)
+
+	if(dev)
 	{
-		for(int d = 0; d < dev->numQueues[c]; ++d)
+		for(int c = 0; c < numQueueFamilies; ++c)
 		{
-			FREE(dev->queues[d]);
+			for(int d = 0; d < dev->numQueues[c]; ++d)
+			{
+				FREE(dev->queues[d]);
+			}
 		}
 	}
 
