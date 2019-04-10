@@ -117,6 +117,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(
 
 	*pPropertyCount = elementsWritten;
 
+	if(arraySize < numDeviceExtensions)
+	{
+		return VK_INCOMPLETE;
+	}
+
 	return VK_SUCCESS;
 }
 

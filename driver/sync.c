@@ -148,7 +148,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
 	{
 		_image* i = pImageMemoryBarriers[c].image;
 
-		assert(i->layout == pImageMemoryBarriers[c].oldLayout || i->layout == VK_IMAGE_LAYOUT_UNDEFINED);
+		//assert(i->layout == pImageMemoryBarriers[c].oldLayout || i->layout == VK_IMAGE_LAYOUT_UNDEFINED);
 
 		if(srcStageMask & VK_PIPELINE_STAGE_TRANSFER_BIT &&
 		   pImageMemoryBarriers[c].srcAccessMask & VK_ACCESS_TRANSFER_WRITE_BIT &&

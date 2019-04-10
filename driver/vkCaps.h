@@ -254,6 +254,10 @@ static VkExtensionProperties deviceExtensions[] =
 	{
 		.extensionName = "VK_EXT_debug_marker",
 		.specVersion = 4
+	},
+	{
+		.extensionName = "VK_KHR_driver_properties",
+		.specVersion = 1
 	}
 };
 #define numDeviceExtensions (sizeof(deviceExtensions) / sizeof(VkExtensionProperties))
@@ -364,6 +368,12 @@ static VkFormat unsupportedFormats[] =
 	VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
 	VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
 	VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM,
+	VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
+	VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16,
+	VK_FORMAT_R10X6G10X6_UNORM_2PACK16,
+	VK_FORMAT_R12X4G12X4_UNORM_2PACK16,
+	VK_FORMAT_R10X6_UNORM_PACK16,
+	VK_FORMAT_R12X4_UNORM_PACK16,
 	VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG, //pvrtc formats
 	VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG,
 	VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG,
