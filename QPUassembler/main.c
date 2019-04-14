@@ -301,7 +301,7 @@ uint64_t encode_load_imm(uint8_t pack_unpack_select,
 
 //write per element MS bit and LS bit across simd array
 uint64_t encode_load_imm_per_elem(
-						 uint8_t signed_or_unsigned, //0 for signed, 1 for unsigned
+						 uint8_t signed_or_unsigned, //1 for signed, 0 for unsigned
 						 uint8_t pack_unpack_select,
 						 uint8_t pack_mode,
 						 qpu_cond cond_add,
@@ -318,7 +318,7 @@ uint64_t encode_load_imm_per_elem(
 	uint64_t tmp = 0;
 
 	tmp = 0x71;
-	tmp |= signed_or_unsigned << 1;
+	tmp |= !signed_or_unsigned << 1;
 	res |= tmp << 57;
 
 	tmp = pack_unpack_select & 1;
@@ -352,23 +352,6 @@ uint64_t encode_load_imm_per_elem(
 
 	return res;
 }
-
-/*
-Format:
-#comment
-sig_bit_optional	; dstAdd.pack_mode_optional	= add_opcode.sf_optional.condition.unpack_mode_optional(srcA, srcB, imm_optional, raddr_a_optional, raddr_b_optional)	; dstMul.pack_mode_optional = mul_opcode.condition(srcA, srcB)	;
-sig_bit_branch		; dstAdd					= branch.rel_optional.reg_optional.condition(address, srcA_optional)													; dstMul					= branch()							;
-sig_bit_none		; dstAdd.pack_mode_optional	= sem_inc.sf_optional.condition(sem_number, 27bit_imm_value_optional)													; dstMul.pack_mode_optional = sem_inc.condition()				;
-sig_load_imm		; dstAdd.pack_mode_optional	= load32.sf_optional.condition(immediate_value)																			; dstMul.pack_mode_optional = load32.condition()				;
-sig_load_imm		; dstAdd.pack_mode_optional	= load16.signed_optional.sf_optional.condition(int16_imm, in16_imm)														; dstMul.pack_mode_optional = load16.condition()				;
-
-Examples:
-sig_none			; ra0.nop					= add.sf.always(r0, r1, 0)																								; rb0.nop					= fmul.sf.always(r2, r3)			;
-sig_branch			; ra0						= branch.rel.reg.always(0xdeadbeef, ra1)																				; rb0						= branch()							;
-sig_none			; ra0.nop					= sem_inc.sf.always(1, 0x7ffffff)																						; rb0.nop					= sem_inc.always()					;
-sig_load_imm		; ra0.nop					= load32.sf.always(0xdeadbeef)																							; rb0.nop					= load32.always()					;
-sig_load_imm		; ra0.nop					= load16.sf.signed.always(1, 2)																							; rb0.nop					= load16.always()					;
- */
 
 qpu_sig_bits parse_sig_bit(char* str)
 {
@@ -459,16 +442,23 @@ void parse_dst(char** str, qpu_waddr* waddr, uint8_t* pack_mode, uint8_t* ws, un
 	*pack_mode = pack_mode_res;
 }
 
-void parse_op_modifiers(char** str, uint8_t* sf, qpu_cond* condition, qpu_unpack* unpack_mode, uint8_t* rel, uint8_t* reg)
+void parse_op_modifiers(char** str, uint8_t* signed_or_unsigned, uint8_t* pm, uint8_t* sf, qpu_cond* condition, qpu_unpack* unpack_mode, uint8_t* rel, uint8_t* reg)
 {
 	char* modifier = strtok(*str, ".");
 
-	//at most 3 modifiers supported
-	for(int c = 0; c < 3; ++c)
+	//at most 4 modifiers supported
+	for(int c = 0; c < 4; ++c)
 	{
 		if(modifier)
 		{
 			*str = modifier;
+
+			if(strcmp(modifier, "pm") == 0)
+			{
+				*pm = 1;
+				modifier = strtok(0, ".");
+				continue;
+			}
 
 			if(strcmp(modifier, "rel") == 0)
 			{
@@ -487,6 +477,13 @@ void parse_op_modifiers(char** str, uint8_t* sf, qpu_cond* condition, qpu_unpack
 			if(strcmp(modifier, "sf") == 0)
 			{
 				*sf = 1;
+				modifier = strtok(0, ".");
+				continue;
+			}
+
+			if(strcmp(modifier, "signed") == 0)
+			{
+				*signed_or_unsigned = 1;
 				modifier = strtok(0, ".");
 				continue;
 			}
@@ -730,7 +727,7 @@ void parse_args_sem(char** str, uint8_t* sem, uint32_t* imm32)
 	*str += 1;
 }
 
-void parse_args_branch(char** str, uint32_t* imm32, uint8_t* raddr_a)
+void parse_args_branch(char** str, uint32_t* imm32, qpu_branch_cond* branch_cond, uint8_t* raddr_a)
 {
 	char* arg = strtok(*str, " \n\v\f\r\t,");
 
@@ -738,6 +735,23 @@ void parse_args_branch(char** str, uint32_t* imm32, uint8_t* raddr_a)
 	{
 		*imm32 = strtol(arg, 0, 0);
 		*str = arg;
+	}
+
+	arg = strtok(0, " \n\v\f\r\t,");
+
+	if(arg)
+	{
+		unsigned num_branch_conds = sizeof(qpu_branch_cond_str) / sizeof(const char *);
+
+		for(unsigned c = 0; c < num_branch_conds && arg; ++c)
+		{
+			if(qpu_branch_cond_str[c] && strcmp(arg, qpu_branch_cond_str[c]) == 0)
+			{
+				*branch_cond = c;
+				*str = arg;
+				break;
+			}
+		}
 	}
 
 	arg = strtok(0, " \n\v\f\r\t,");
@@ -815,34 +829,26 @@ void parse_args_load(char** str, qpu_load_type load_type, uint32_t* imm32, uint1
 }
 
 
-uint64_t* assemble_qpu_asm(char* str)
+void assemble_qpu_asm(char* str, uint64_t* instructions)
 {
-	unsigned num_instructions = 0;
-	char* ptr = str;
-	while(ptr && *ptr != '\0')
-	{
-		ptr = strstr(ptr, ";");
-		ptr = strstr(ptr+(ptr!=0), ";");
-		ptr = strstr(ptr+(ptr!=0), ";");
-		if(ptr)
-		{
-			ptr += 1;
-			num_instructions += 1;
-		}
-	}
-
-	printf("Num instructions: %i\n", num_instructions);
-
-	if(!num_instructions)
-	{
-		return 0;
-	}
-
-	uint64_t* instructions = malloc(sizeof(uint64_t)*num_instructions);
 	unsigned instruction_counter = 0;
 
+	//delete lines that have comments in them
+	char* comment_token = strstr(str, "#");
+
+	while(comment_token)
+	{
+		while(*comment_token != '\n')
+		{
+			*comment_token = ' ';
+			comment_token++;
+		}
+		*comment_token = ' ';
+		comment_token = strstr(comment_token, "#");
+	}
 
 
+	//parse string token by token
 	char* token = strtok(str, " \n\v\f\r\t;");
 
 	while(token)
@@ -874,7 +880,7 @@ uint64_t* assemble_qpu_asm(char* str)
 		uint16_t ls_imm16 = 0;
 		uint8_t semaphore = 0;
 		qpu_load_type load_type = QPU_LOAD32;
-		uint8_t signed_or_unsigned = 0;
+		uint8_t is_signed = 0;
 		qpu_branch_cond branch_cond = QPU_COND_BRANCH_ALWAYS;
 
 		sig_bit = parse_sig_bit(token);
@@ -893,7 +899,7 @@ uint64_t* assemble_qpu_asm(char* str)
 
 		//get modifiers
 		token = strtok(token, " \n\v\f\r\t(");
-		parse_op_modifiers(&token, &sf, &cond_add, &unpack_mode, &rel, &reg);
+		parse_op_modifiers(&token, &is_signed, &pack_unpack_select, &sf, &cond_add, &unpack_mode, &rel, &reg);
 
 		if(type == QPU_ALU)
 		{
@@ -911,7 +917,7 @@ uint64_t* assemble_qpu_asm(char* str)
 		{
 			//get arguments for branch
 			token = strtok(token, ")");
-			parse_args_branch(&token, &imm32, &raddr_a);
+			parse_args_branch(&token, &imm32, &branch_cond, &raddr_a);
 		}
 		else if(type == QPU_LOAD_IMM)
 		{
@@ -930,7 +936,7 @@ uint64_t* assemble_qpu_asm(char* str)
 
 		//get modifiers
 		token = strtok(token, " \n\v\f\r\t(");
-		parse_op_modifiers(&token, &sf, &cond_mul, &unpack_mode, &rel, &reg);
+		parse_op_modifiers(&token, &is_signed, &pack_unpack_select, &sf, &cond_mul, &unpack_mode, &rel, &reg);
 
 		token = strtok(token, ")");
 
@@ -968,26 +974,99 @@ uint64_t* assemble_qpu_asm(char* str)
 			}
 			else
 			{
-				instructions[instruction_counter] = encode_load_imm_per_elem(signed_or_unsigned, pack_unpack_select, pack_mode, cond_add, cond_mul, sf, ws, waddr_add, waddr_mul, ms_imm16, ls_imm16);
+				instructions[instruction_counter] = encode_load_imm_per_elem(is_signed, pack_unpack_select, pack_mode, cond_add, cond_mul, sf, ws, waddr_add, waddr_mul, ms_imm16, ls_imm16);
 			}
 		}
 
 		instruction_counter++;
 		token = strtok(token, " \n\v\f\r\t;");
 	}
-
-	return instructions;
 }
+
+void disassemble_qpu_asm(uint64_t instruction)
+{
+
+}
+
+/*
+Format:
+#comment
+sig_bit_optional	; dstAdd.pack_mode_optional	= add_opcode.pm_optional.sf_optional.condition.unpack_mode_optional(srcA, srcB, imm_optional, raddr_a_optional, raddr_b_optional)	; dstMul.pack_mode_optional = mul_opcode.condition(srcA, srcB)	;
+sig_bit_branch		; dstAdd					= branch.pm_optional.rel_optional.reg_optional(address, condition, srcA_optional)													; dstMul					= branch()							;
+sig_bit_none		; dstAdd.pack_mode_optional	= sem_inc.pm_optional.sf_optional.condition(sem_number, 27bit_imm_value_optional)													; dstMul.pack_mode_optional = sem_inc.condition()				;
+sig_load_imm		; dstAdd.pack_mode_optional	= load32.pm_optional.sf_optional.condition(immediate_value)																			; dstMul.pack_mode_optional = load32.condition()				;
+sig_load_imm		; dstAdd.pack_mode_optional	= load16.pm_optional.signed_optional.sf_optional.condition(int16_imm, in16_imm)														; dstMul.pack_mode_optional = load16.condition()				;
+
+Examples:
+sig_none			; ra0.nop					= add.pm.sf.always(r0, r1, 0)																										; rb0.nop					= fmul.sf.always(r2, r3)			;
+sig_branch			; ra0						= branch.pm.rel.reg.always(0xdeadbeef, ra1)																							; rb0						= branch()							;
+sig_none			; ra0.nop					= sem_inc.pm.sf.always(1, 0x7ffffff)																								; rb0.nop					= sem_inc.always()					;
+sig_load_imm		; ra0.nop					= load32.pm.sf.always(0xdeadbeef)																									; rb0.nop					= load32.always()					;
+sig_load_imm		; ra0.nop					= load16.pm.sf.signed.always(1, 2)																									; rb0.nop					= load16.always()					;
+#mov
+sig_none			; ra0.nop					= or(r0, r0)																														; rb0						= v8min(r1, r1)						;
+ */
 
 int main()
 {
 	char asm_code[] =
 			"sig_none		; ra0.nop	= add.sf.always.nop(r0, r1, 0)				; rb0.nop	= fmul.sf.always(r2, r3)	;"
-			"sig_branch		; ra0		= branch.rel.reg.always(0xdeadbeef, ra1)	; rb0		= branch()					;"
+			"sig_branch		; ra0		= branch.rel.reg(0xdeadbeef, always, ra1)	; rb0		= branch()					;"
+			"#hello\n"
 			"sig_none		; ra0.nop	= sem_inc.sf.always(1, 0x7ffffff)			; rb0.nop	= sem_inc.always()			;"
-			"sig_load_imm	; ra0.nop	= load32.sf.always(0xdeadbeef)				; rb0.nop	= load32.always()			;";
+			"#hello2\n"
+			"sig_load_imm	; ra0.nop	= load32.sf.always(0xdeadbeef)				; rb0.nop	= load32.always()			;"
+			"sig_load_imm	; ra0.nop	= load16.sf.signed.always(0xdead, 0xbeef)	; rb0.nop	= load16.always()			;";
 
-	uint64_t* assembly = assemble_qpu_asm(asm_code);
+	unsigned num_instructions = 0;
+	char* ptr = asm_code;
+	while(ptr && *ptr != '\0')
+	{
+		ptr = strstr(ptr, ";");
+		ptr = strstr(ptr+(ptr!=0), ";");
+		ptr = strstr(ptr+(ptr!=0), ";");
+		if(ptr)
+		{
+			ptr += 1;
+			num_instructions += 1;
+		}
+	}
+
+	printf("Num instructions: %i\n", num_instructions);
+
+	if(!num_instructions)
+	{
+		return 0;
+	}
+
+	uint64_t* instruction_size = sizeof(uint64_t)*num_instructions;
+	uint64_t* instructions = malloc(instruction_size);
+
+	assemble_qpu_asm(asm_code, instructions);
+
+	for(int c = 0; c < instruction_size; ++c)
+	{
+		unsigned char d = ((char*)instructions)[c];
+		printf("%#x,\t", d);
+		if((c+1)%8==0)
+		{
+			printf("\n");
+		}
+	}
+
+	const char asm_instructions[] =
+	{
+		0x53,	0x70,	0x9e,	0x2c,	0,	0x60,	0x2,	0x10,
+		0xef,	0xbe,	0xad,	0xde,	0,	0x20,	0xfc,	0xf0,
+		0xf1,	0xff,	0xff,	0xff,	0,	0x60,	0x2,	0xe8,
+		0xef,	0xbe,	0xad,	0xde,	0,	0x60,	0x2,	0xe0,
+		0xef,	0xbe,	0xad,	0xde,	0,	0x60,	0x2,	0xe2
+	};
+
+	for(int c = 0; c < num_instructions; ++c)
+	{
+		disassemble_qpu_asm(asm_instructions);
+	}
 
 	return 0;
 }
