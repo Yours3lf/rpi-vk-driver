@@ -8,6 +8,11 @@
   - [ ] uniforms for matrix multiplication and animation
   - [ ] texture coordinates and texture sampling
   - [ ] shader compiled from spirv
+- [] Shader compiler chain
+  - [] QPU assembler / disassembler
+  - [] LLVM frontend (maybe grab from somewhere?)
+  - [] LLVM backend
+  - [] LLVM custom optimisation layers
 
 ## VK CTS progress
 - Passed:        7894/67979 (11.6%) 
