@@ -10,8 +10,8 @@
   - [ ] shader compiled from spirv
 - [ ] Shader compiler chain
   - [ ] QPU assembler / disassembler
-  - [ ] LLVM frontend (maybe grab from somewhere?)
-  - [ ] LLVM backend
+  - [ ] LLVM frontend SPIRV -> LLVMIR (maybe grab from somewhere?)
+  - [ ] LLVM backend LLVMIR -> QPU ASM
   - [ ] LLVM custom optimisation layers
 
 ## VK CTS progress
