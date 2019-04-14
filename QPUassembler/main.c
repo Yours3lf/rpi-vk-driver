@@ -356,18 +356,18 @@ uint64_t encode_load_imm_per_elem(
 /*
 Format:
 #comment
-sig_bit_optional	; dstAdd.pack_mode_optional	= add_opcode.sf_optional.condition.unpack_mode_optional(srcA, srcB, imm_optional)	; dstMul.pack_mode_optional = mul_opcode.condition(srcA, srcB)	;
-sig_bit_branch		; dstAdd					= branch.rel_optional.reg_optional.condition(address, srcA_optional)				; dstMul					= branch()							;
-sig_bit_none		; dstAdd.pack_mode_optional	= sem_inc.sf_optional.condition(sem_number, 27bit_imm_value_optional)				; dstMul.pack_mode_optional = sem_inc.condition()				;
-sig_load_imm		; dstAdd.pack_mode_optional	= load32.sf_optional.condition(immediate_value)										; dstMul.pack_mode_optional = load32.condition()				;
-sig_load_imm		; dstAdd.pack_mode_optional	= load16.signed_optional.sf_optional.condition(int16_imm, in16_imm)					; dstMul.pack_mode_optional = load16.condition()				;
+sig_bit_optional	; dstAdd.pack_mode_optional	= add_opcode.sf_optional.condition.unpack_mode_optional(srcA, srcB, imm_optional, raddr_a_optional, raddr_b_optional)	; dstMul.pack_mode_optional = mul_opcode.condition(srcA, srcB)	;
+sig_bit_branch		; dstAdd					= branch.rel_optional.reg_optional.condition(address, srcA_optional)													; dstMul					= branch()							;
+sig_bit_none		; dstAdd.pack_mode_optional	= sem_inc.sf_optional.condition(sem_number, 27bit_imm_value_optional)													; dstMul.pack_mode_optional = sem_inc.condition()				;
+sig_load_imm		; dstAdd.pack_mode_optional	= load32.sf_optional.condition(immediate_value)																			; dstMul.pack_mode_optional = load32.condition()				;
+sig_load_imm		; dstAdd.pack_mode_optional	= load16.signed_optional.sf_optional.condition(int16_imm, in16_imm)														; dstMul.pack_mode_optional = load16.condition()				;
 
 Examples:
-sig_none			; ra0.nop					= add.sf.always(r0, r1, 0)															; rb0.nop					= fmul.sf.always(r2, r3)			;
-sig_branch			; ra0						= branch.rel.reg.always(0xdeadbeef, ra1)											; rb0						= branch()							;
-sig_none			; ra0.nop					= sem_inc.sf.always(1, 0x7ffffff)													; rb0.nop					= sem_inc.always()					;
-sig_load_imm		; ra0.nop					= load32.sf.always(0xdeadbeef)														; rb0.nop					= load32.always()					;
-sig_load_imm		; ra0.nop					= load16.sf.signed.always(1, 2)														; rb0.nop					= load16.always()					;
+sig_none			; ra0.nop					= add.sf.always(r0, r1, 0)																								; rb0.nop					= fmul.sf.always(r2, r3)			;
+sig_branch			; ra0						= branch.rel.reg.always(0xdeadbeef, ra1)																				; rb0						= branch()							;
+sig_none			; ra0.nop					= sem_inc.sf.always(1, 0x7ffffff)																						; rb0.nop					= sem_inc.always()					;
+sig_load_imm		; ra0.nop					= load32.sf.always(0xdeadbeef)																							; rb0.nop					= load32.always()					;
+sig_load_imm		; ra0.nop					= load16.sf.signed.always(1, 2)																							; rb0.nop					= load16.always()					;
  */
 
 qpu_sig_bits parse_sig_bit(char* str)
@@ -432,7 +432,7 @@ void parse_dst(char** str, qpu_waddr* waddr, uint8_t* pack_mode, uint8_t* ws, un
 		//add normally writes to regfile A
 		*ws = !is_add && is_a;
 
-		waddr_res = atoi(dst+2);
+		waddr_res = strtol(dst+2, 0, 0);
 	}
 
 	unsigned num_pack_a_str = sizeof(qpu_pack_a_str) / sizeof(const char *);
@@ -534,7 +534,7 @@ void parse_op_modifiers(char** str, uint8_t* sf, qpu_cond* condition, qpu_unpack
 	*str += 1;
 }
 
-void parse_op(char** str, qpu_alu_type* type, qpu_op_add* op_add, qpu_op_mul* op_mul, uint8_t* is_sem_inc)
+void parse_op(char** str, qpu_alu_type* type, qpu_op_add* op_add, qpu_op_mul* op_mul, uint8_t* is_sem_inc, qpu_load_type* load_type)
 {
 	char* op = strtok(*str, ".");
 
@@ -547,6 +547,20 @@ void parse_op(char** str, qpu_alu_type* type, qpu_op_add* op_add, qpu_op_mul* op
 	{
 		*type = QPU_SEM;
 		*is_sem_inc = 0;
+	}
+	else if(op && strcmp(op, "branch") == 0)
+	{
+		*type = QPU_BRANCH;
+	}
+	else if(op && strcmp(op, "load32") == 0)
+	{
+		*type = QPU_LOAD_IMM;
+		*load_type = QPU_LOAD32;
+	}
+	else if(op && strcmp(op, "load16") == 0)
+	{
+		*type =	QPU_LOAD_IMM;
+		*load_type = QPU_LOAD16;
 	}
 	else
 	{
@@ -588,7 +602,7 @@ void parse_op(char** str, qpu_alu_type* type, qpu_op_add* op_add, qpu_op_mul* op
 	*str += 1;
 }
 
-void parse_args_alu(char** str, qpu_mux* in_a, qpu_mux* in_b, uint8_t* small_imm)
+void parse_args_alu(char** str, qpu_mux* in_a, qpu_mux* in_b, uint8_t* small_imm, uint8_t* raddr_a, uint8_t* raddr_b)
 {
 	char* arg = strtok(*str, " \n\v\f\r\t,");
 
@@ -621,8 +635,62 @@ void parse_args_alu(char** str, qpu_mux* in_a, qpu_mux* in_b, uint8_t* small_imm
 
 	if(arg)
 	{
-		uint32_t si = atoi(arg);
+		uint32_t si = strtol(arg, 0, 0);
 		*small_imm = qpu_encode_small_immediate(si);
+		*str = arg;
+	}
+
+	arg = strtok(0, " \n\v\f\r\t,");
+
+	if(arg)
+	{
+		uint8_t raddr_a_res = 0;
+
+		for(unsigned c = 0; c < 2 && arg && !raddr_a_res; ++c)
+		{
+			for(unsigned d = 0; d < 52; ++d)
+			{
+				if(qpu_raddr_str[c][d] && strcmp(arg, qpu_raddr_str[c][d]) == 0)
+				{
+					raddr_a_res = d;
+					break;
+				}
+			}
+		}
+
+		if(!raddr_a_res && arg && arg[0] == 'r' && arg[1] == 'a')
+		{
+			raddr_a_res = strtol(arg+2, 0, 0);
+		}
+
+		*raddr_a = raddr_a_res;
+		*str = arg;
+	}
+
+	arg = strtok(0, " \n\v\f\r\t,");
+
+	if(arg)
+	{
+		uint8_t raddr_b_res = 0;
+
+		for(unsigned c = 0; c < 2 && arg && !raddr_b_res; ++c)
+		{
+			for(unsigned d = 0; d < 52; ++d)
+			{
+				if(qpu_raddr_str[c][d] && strcmp(arg, qpu_raddr_str[c][d]) == 0)
+				{
+					raddr_b_res = d;
+					break;
+				}
+			}
+		}
+
+		if(!raddr_b_res && arg && arg[0] == 'r' && arg[1] == 'b')
+		{
+			raddr_b_res = strtol(arg+2, 0, 0);
+		}
+
+		*raddr_b = raddr_b_res;
 		*str = arg;
 	}
 
@@ -634,6 +702,118 @@ void parse_args_alu(char** str, qpu_mux* in_a, qpu_mux* in_b, uint8_t* small_imm
 
 	*str += 1;
 }
+
+void parse_args_sem(char** str, uint8_t* sem, uint32_t* imm32)
+{
+	char* arg = strtok(*str, " \n\v\f\r\t,");
+
+	if(arg)
+	{
+		*sem = strtol(arg, 0, 0);
+		*str = arg;
+	}
+
+	arg = strtok(0, " \n\v\f\r\t,");
+
+	if(arg)
+	{
+		*imm32 = strtol(arg, 0, 0);
+		*str = arg;
+	}
+
+	//advance token past arg strings so we can tokenize further
+	while(**str)
+	{
+		(*str)++;
+	}
+
+	*str += 1;
+}
+
+void parse_args_branch(char** str, uint32_t* imm32, uint8_t* raddr_a)
+{
+	char* arg = strtok(*str, " \n\v\f\r\t,");
+
+	if(arg)
+	{
+		*imm32 = strtol(arg, 0, 0);
+		*str = arg;
+	}
+
+	arg = strtok(0, " \n\v\f\r\t,");
+
+	if(arg)
+	{
+		uint8_t raddr_a_res = 0;
+
+		for(unsigned c = 0; c < 2 && arg && !raddr_a_res; ++c)
+		{
+			for(unsigned d = 0; d < 52; ++d)
+			{
+				if(qpu_raddr_str[c][d] && strcmp(arg, qpu_raddr_str[c][d]) == 0)
+				{
+					raddr_a_res = d;
+					break;
+				}
+			}
+		}
+
+		if(!raddr_a_res && arg && arg[0] == 'r' && arg[1] == 'a')
+		{
+			raddr_a_res = strtol(arg+2, 0, 0);
+		}
+
+		*raddr_a = raddr_a_res;
+		*str = arg;
+	}
+
+	//advance token past arg strings so we can tokenize further
+	while(**str)
+	{
+		(*str)++;
+	}
+
+	*str += 1;
+}
+
+void parse_args_load(char** str, qpu_load_type load_type, uint32_t* imm32, uint16_t* ms_imm16, uint16_t* ls_imm16)
+{
+	char* arg = strtok(*str, " \n\v\f\r\t,");
+
+	if(load_type == QPU_LOAD32)
+	{
+		if(arg)
+		{
+			*imm32 = strtol(arg, 0, 0);
+			*str = arg;
+		}
+	}
+	else
+	{
+		if(arg)
+		{
+			*ms_imm16 = strtol(arg, 0, 0);
+			*str = arg;
+		}
+
+		arg = strtok(0, " \n\v\f\r\t,");
+
+		if(arg)
+		{
+			*ls_imm16 = strtol(arg, 0, 0);
+			*str = arg;
+		}
+	}
+
+	//advance token past arg strings so we can tokenize further
+	while(**str)
+	{
+		(*str)++;
+	}
+
+	*str += 1;
+}
+
 
 uint64_t* assemble_qpu_asm(char* str)
 {
@@ -679,8 +859,8 @@ uint64_t* assemble_qpu_asm(char* str)
 		qpu_cond cond_add = QPU_COND_ALWAYS;
 		qpu_waddr waddr_add = QPU_W_NOP;
 		qpu_waddr waddr_mul = QPU_W_NOP;
-		qpu_waddr raddr_add = QPU_R_NOP;
-		qpu_waddr raddr_mul = QPU_R_NOP;
+		qpu_waddr raddr_a = QPU_R_NOP;
+		qpu_waddr raddr_b = QPU_R_NOP;
 		uint8_t pack_unpack_select = 0;
 		uint8_t pack_mode = QPU_PACK_A_NOP;
 		qpu_unpack unpack_mode = QPU_UNPACK_NOP;
@@ -708,8 +888,8 @@ uint64_t* assemble_qpu_asm(char* str)
 		parse_dst(&token, &waddr_add, &pack_mode, &ws, 1);
 
 		//check op
-		token = strtok(token, " \n\v\f\r\t.=");
-		parse_op(&token, &type, &op_add, &op_mul, &is_sem_inc);
+		token = strtok(token, " \n\v\f\r\t.=(");
+		parse_op(&token, &type, &op_add, &op_mul, &is_sem_inc, &load_type);
 
 		//get modifiers
 		token = strtok(token, " \n\v\f\r\t(");
@@ -719,16 +899,25 @@ uint64_t* assemble_qpu_asm(char* str)
 		{
 			//get arguments for add
 			token = strtok(token, ")");
-			parse_args_alu(&token, &add_a, &add_b, &imm32);
+			parse_args_alu(&token, &add_a, &add_b, &imm32, &raddr_a, &raddr_b);
 		}
 		else if(type == QPU_SEM)
 		{
+			//get arguments for sem
+			token = strtok(token, ")");
+			parse_args_sem(&token, &semaphore, &imm32);
 		}
 		else if(type == QPU_BRANCH)
 		{
+			//get arguments for branch
+			token = strtok(token, ")");
+			parse_args_branch(&token, &imm32, &raddr_a);
 		}
 		else if(type == QPU_LOAD_IMM)
 		{
+			//get arguments for load imm
+			token = strtok(token, ")");
+			parse_args_load(&token, load_type, &imm32, &ms_imm16, &ls_imm16);
 		}
 
 		//get dst for mul
@@ -736,30 +925,31 @@ uint64_t* assemble_qpu_asm(char* str)
 		parse_dst(&token, &waddr_mul, &pack_mode, &ws, 0);
 
 		//check op
-		token = strtok(token, " \n\v\f\r\t.=");
-		parse_op(&token, &type, &op_add, &op_mul, &is_sem_inc);
-
-		if(type == QPU_ALU)
-		{
-			//get arguments for add
-			token = strtok(token, ")");
-			parse_args_alu(&token, &mul_a, &mul_b, &imm32);
-		}
+		token = strtok(token, " \n\v\f\r\t.=(");
+		parse_op(&token, &type, &op_add, &op_mul, &is_sem_inc, &load_type);
 
 		//get modifiers
 		token = strtok(token, " \n\v\f\r\t(");
 		parse_op_modifiers(&token, &sf, &cond_mul, &unpack_mode, &rel, &reg);
+
+		token = strtok(token, ")");
+
+		if(type == QPU_ALU)
+		{
+			//get arguments for mul
+			parse_args_alu(&token, &mul_a, &mul_b, &imm32, &raddr_a, &raddr_b);
+		}
 
 		//EMIT INSTRUCTION HERE
 		if(type == QPU_ALU)
 		{
 			if(sig_bit == QPU_SIG_SMALL_IMM)
 			{
-				instructions[instruction_counter] = encode_alu_small_imm(unpack_mode, pack_unpack_select, pack_mode, cond_add, cond_mul, sf, ws, waddr_add, waddr_mul, op_mul, op_add, raddr_add, imm32, add_a, add_b, mul_a, mul_b);
+				instructions[instruction_counter] = encode_alu_small_imm(unpack_mode, pack_unpack_select, pack_mode, cond_add, cond_mul, sf, ws, waddr_add, waddr_mul, op_mul, op_add, raddr_a, imm32, add_a, add_b, mul_a, mul_b);
 			}
 			else
 			{
-				instructions[instruction_counter] = encode_alu(sig_bit, unpack_mode, pack_unpack_select, pack_mode, cond_add, cond_mul, sf, ws, waddr_add, waddr_mul, op_mul, op_add, raddr_add, raddr_mul, add_a, add_b, mul_a, mul_b);
+				instructions[instruction_counter] = encode_alu(sig_bit, unpack_mode, pack_unpack_select, pack_mode, cond_add, cond_mul, sf, ws, waddr_add, waddr_mul, op_mul, op_add, raddr_a, raddr_b, add_a, add_b, mul_a, mul_b);
 			}
 		}
 		else if(type == QPU_SEM)
@@ -768,7 +958,7 @@ uint64_t* assemble_qpu_asm(char* str)
 		}
 		else if(type ==	QPU_BRANCH)
 		{
-			instructions[instruction_counter] = encode_branch(branch_cond, rel, reg, raddr_add, ws, waddr_add, waddr_mul, imm32);
+			instructions[instruction_counter] = encode_branch(branch_cond, rel, reg, raddr_a, ws, waddr_add, waddr_mul, imm32);
 		}
 		else if(type == QPU_LOAD_IMM)
 		{
@@ -783,7 +973,7 @@ uint64_t* assemble_qpu_asm(char* str)
 		}
 
 		instruction_counter++;
-		token = strtok(0, " \n\v\f\r\t;");
+		token = strtok(token, " \n\v\f\r\t;");
 	}
 
 	return instructions;
@@ -797,7 +987,7 @@ int main()
 			"sig_none		; ra0.nop	= sem_inc.sf.always(1, 0x7ffffff)			; rb0.nop	= sem_inc.always()			;"
 			"sig_load_imm	; ra0.nop	= load32.sf.always(0xdeadbeef)				; rb0.nop	= load32.always()			;";
 
-	uint64_t assembly = assemble_qpu_asm(asm_code);
+	uint64_t* assembly = assemble_qpu_asm(asm_code);
 
 	return 0;
 }
