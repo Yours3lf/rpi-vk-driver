@@ -985,14 +985,348 @@ void assemble_qpu_asm(char* str, uint64_t* instructions)
 
 void disassemble_qpu_asm(uint64_t instruction)
 {
+#define GET_BITFIELD(num_bits, place) (((instruction) & ((uint64_t)num_bits << place)) >> place)
 
+	qpu_sig_bits sig_bits = GET_BITFIELD(0xf, 60);
+	printf("%s ; ", qpu_sig_bits_str[sig_bits]);
+
+	unsigned is_sem = GET_BITFIELD(0x7f, 57) == 0x74;
+
+	qpu_waddr waddr_add = GET_BITFIELD(0x3f, QPU_WADDR_ADD_SHIFT);
+	qpu_waddr waddr_mul = GET_BITFIELD(0x3f, QPU_WADDR_MUL_SHIFT);
+	uint8_t ws = GET_BITFIELD(1, 44);
+	uint8_t pm = GET_BITFIELD(1, 56);
+
+	if(waddr_add <= 31)
+	{
+		printf("r%s%d", ws ? "b" : "a", waddr_add);
+	}
+	else
+	{
+		printf("%s", qpu_waddr_str[ws][waddr_add]);
+	}
+
+	if(is_sem)
+	{
+		uint8_t pack_mode = GET_BITFIELD(0xf, QPU_PACK_SHIFT);
+
+		if(!ws && !pm)
+		{
+			printf(".%s", qpu_pack_a_str[pack_mode]);
+		}
+
+		uint8_t is_sem_inc = GET_BITFIELD(1, 4);
+
+		printf(" = %s", is_sem_inc ? "sem_inc" : "sem_dec");
+
+		qpu_cond cond_add = GET_BITFIELD(0x7, QPU_COND_ADD_SHIFT);
+
+		printf(".%s", qpu_cond_str[cond_add]);
+
+		uint8_t sf = GET_BITFIELD(1, 45);
+
+		if(sf)
+		{
+			printf(".sf");
+		}
+
+		uint8_t sem = GET_BITFIELD(0xf, 0);
+
+		uint32_t imm_val = GET_BITFIELD(0x7ffffff, 5);
+
+		printf("(%d, %#x) ; ", sem, imm_val);
+
+		if(waddr_mul <= 31)
+		{
+			printf("r%s%d", ws ? "a" : "b", waddr_mul);
+		}
+		else
+		{
+			printf("%s", qpu_waddr_str[!ws][waddr_mul]);
+		}
+
+		if(pm)
+		{
+			printf(".%s", qpu_pack_mul_str[pack_mode]);
+		}
+
+		printf(" = %s", is_sem_inc ? "sem_inc" : "sem_dec");
+
+		qpu_cond cond_mul = GET_BITFIELD(0x7, QPU_COND_MUL_SHIFT);
+
+		printf(".%s() ;", qpu_cond_str[cond_mul]);
+	}
+	else if(!is_sem && sig_bits == QPU_SIG_LOAD_IMM)
+	{
+		qpu_load_type load_type = GET_BITFIELD(0x7f, 57) != 0x70;
+
+		uint8_t is_signed = !GET_BITFIELD(1, 58);
+
+		uint8_t pack_mode = GET_BITFIELD(0xf, QPU_PACK_SHIFT);
+
+		if(!ws && !pm)
+		{
+			printf(".%s", qpu_pack_a_str[pack_mode]);
+		}
+
+		if(load_type == QPU_LOAD32)
+		{
+			printf(" = load32");
+		}
+		else
+		{
+			printf(" = load16");
+		}
+
+		qpu_cond cond_add = GET_BITFIELD(0x7, QPU_COND_ADD_SHIFT);
+
+		printf(".%s", qpu_cond_str[cond_add]);
+
+		uint8_t sf = GET_BITFIELD(1, 45);
+
+		if(sf)
+		{
+			printf(".sf");
+		}
+
+		if(load_type == QPU_LOAD32)
+		{
+			uint32_t imm = GET_BITFIELD(0xffffffff, 0);
+
+			printf("(%#x) ; ", imm);
+		}
+		else
+		{
+			if(is_signed)
+			{
+				printf(".signed");
+			}
+
+			uint16_t ms_imm = GET_BITFIELD(0xffff, 16);
+			uint16_t ls_imm = GET_BITFIELD(0xffff, 0);
+			printf(is_signed ? "(%#x, %#x) ; " : "(%#x, %#x) ; ", ms_imm, ls_imm);
+		}
+
+		if(waddr_mul <= 31)
+		{
+			printf("r%s%d", ws ? "a" : "b", waddr_mul);
+		}
+		else
+		{
+			printf("%s", qpu_waddr_str[!ws][waddr_mul]);
+		}
+
+		if(load_type == QPU_LOAD32)
+		{
+			printf(" = load32");
+		}
+		else
+		{
+			printf(" = load16");
+		}
+
+		if(pm)
+		{
+			printf(".%s", qpu_pack_mul_str[pack_mode]);
+		}
+
+		qpu_cond cond_mul = GET_BITFIELD(0x7, QPU_COND_MUL_SHIFT);
+
+		printf(".%s() ;", qpu_cond_str[cond_mul]);
+	}
+	else if(!is_sem && sig_bits == QPU_SIG_BRANCH)
+	{
+		printf(" = branch");
+
+		uint8_t is_relative = GET_BITFIELD(1, 51);
+
+		if(is_relative)
+		{
+			printf(".rel");
+		}
+
+		uint8_t use_addr_a = GET_BITFIELD(1, 50);
+
+		if(use_addr_a)
+		{
+			printf(".reg");
+		}
+
+		uint32_t imm = GET_BITFIELD(0xffffffff, 0);
+		qpu_branch_cond branch_cond = GET_BITFIELD(0xf, QPU_BRANCH_COND_SHIFT);
+		qpu_raddr raddr_a = GET_BITFIELD(0x1f, QPU_BRANCH_RADDR_A_SHIFT);
+
+		printf("(%#x, %s, ", imm, qpu_branch_cond_str[branch_cond]);
+
+		if(raddr_a <= 31)
+		{
+			printf("ra%d", raddr_a);
+		}
+		else
+		{
+			printf("%s", qpu_raddr_str[0][raddr_a]);
+		}
+
+		printf(") ; ");
+
+		if(waddr_mul <= 31)
+		{
+			printf("r%s%d", ws ? "a" : "b", waddr_mul);
+		}
+		else
+		{
+			printf("%s", qpu_waddr_str[!ws][waddr_mul]);
+		}
+
+		printf(" = branch() ;");
+	}
+	else
+	{
+		//ALU
+		uint8_t pack_mode = GET_BITFIELD(0xf, QPU_PACK_SHIFT);
+
+		if(!ws && !pm)
+		{
+			printf(".%s", qpu_pack_a_str[pack_mode]);
+		}
+
+		qpu_op_add op_add = GET_BITFIELD(0x1f, QPU_OP_ADD_SHIFT);
+
+		printf(" = %s", qpu_op_add_str[op_add]);
+
+		qpu_cond cond_add = GET_BITFIELD(0x7, QPU_COND_ADD_SHIFT);
+
+		printf(".%s", qpu_cond_str[cond_add]);
+
+		uint8_t sf = GET_BITFIELD(1, 45);
+
+		if(sf)
+		{
+			printf(".sf");
+		}
+
+		qpu_unpack unpack_mode = GET_BITFIELD(0X7, QPU_UNPACK_SHIFT);
+
+		if(!pm)
+		{
+			printf(".%s", qpu_unpack_str[unpack_mode]);
+		}
+
+		qpu_raddr raddr_a = GET_BITFIELD(0x3f, QPU_RADDR_A_SHIFT);
+		qpu_raddr raddr_b = GET_BITFIELD(0x3f, QPU_RADDR_B_SHIFT);
+
+		qpu_mux add_a = GET_BITFIELD(0x7, QPU_ADD_A_SHIFT);
+		qpu_mux add_b = GET_BITFIELD(0x7, QPU_ADD_B_SHIFT);
+
+		printf("(");
+
+		if(add_a ==	QPU_MUX_A)
+		{
+			printf("ra%i", raddr_a);
+		}
+		else if(add_a == QPU_MUX_B)
+		{
+			printf("rb%i", raddr_b);
+		}
+		else
+		{
+			printf("%s", qpu_mux_str[add_a]);
+		}
+
+		printf(", ");
+
+		if(add_b ==	QPU_MUX_A)
+		{
+			printf("ra%i", raddr_a);
+		}
+		else if(add_b == QPU_MUX_B)
+		{
+			printf("rb%i", raddr_b);
+		}
+		else
+		{
+			printf("%s", qpu_mux_str[add_b]);
+		}
+
+		if(sig_bits == QPU_SIG_SMALL_IMM)
+		{
+			printf(", ");
+			printf("%#x", raddr_b);
+		}
+
+		printf(") ; ");
+
+		if(waddr_mul <= 31)
+		{
+			printf("r%s%d", ws ? "a" : "b", waddr_mul);
+		}
+		else
+		{
+			printf("%s", qpu_waddr_str[!ws][waddr_mul]);
+		}
+
+		if(pm)
+		{
+			printf(".%s", qpu_pack_mul_str[pack_mode]);
+		}
+
+		qpu_op_mul op_mul = GET_BITFIELD(0x7, QPU_OP_MUL_SHIFT);
+
+		printf(" = %s", qpu_op_mul_str[op_mul]);
+
+		qpu_cond cond_mul = GET_BITFIELD(0x7, QPU_COND_MUL_SHIFT);
+
+		printf(".%s", qpu_cond_str[cond_mul]);
+
+		if(pm)
+		{
+			printf(".%s", qpu_unpack_str[unpack_mode]);
+		}
+
+		qpu_mux mul_a = GET_BITFIELD(0x7, QPU_MUL_A_SHIFT);
+		qpu_mux mul_b = GET_BITFIELD(0x7, QPU_MUL_B_SHIFT);
+
+		printf("(");
+
+		if(mul_a ==	QPU_MUX_A)
+		{
+			printf("ra%i", raddr_a);
+		}
+		else if(mul_a == QPU_MUX_B)
+		{
+			printf("rb%i", raddr_b);
+		}
+		else
+		{
+			printf("%s", qpu_mux_str[mul_a]);
+		}
+
+		printf(", ");
+
+		if(mul_b ==	QPU_MUX_A)
+		{
+			printf("ra%i", raddr_a);
+		}
+		else if(mul_b == QPU_MUX_B)
+		{
+			printf("rb%i", raddr_b);
+		}
+		else
+		{
+			printf("%s", qpu_mux_str[mul_b]);
+		}
+
+		printf(") ; ");
+	}
+
+	printf("\n");
 }
 
 /*
 Format:
 #comment
 sig_bit_optional	; dstAdd.pack_mode_optional	= add_opcode.pm_optional.sf_optional.condition.unpack_mode_optional(srcA, srcB, imm_optional, raddr_a_optional, raddr_b_optional)	; dstMul.pack_mode_optional = mul_opcode.condition(srcA, srcB)	;
-sig_bit_branch		; dstAdd					= branch.pm_optional.rel_optional.reg_optional(address, condition, srcA_optional)													; dstMul					= branch()							;
+sig_bit_branch		; dstAdd					= branch.rel_optional.reg_optional(address, condition, srcA_optional)													; dstMul					= branch()							;
 sig_bit_none		; dstAdd.pack_mode_optional	= sem_inc.pm_optional.sf_optional.condition(sem_number, 27bit_imm_value_optional)													; dstMul.pack_mode_optional = sem_inc.condition()				;
 sig_load_imm		; dstAdd.pack_mode_optional	= load32.pm_optional.sf_optional.condition(immediate_value)																			; dstMul.pack_mode_optional = load32.condition()				;
 sig_load_imm		; dstAdd.pack_mode_optional	= load16.pm_optional.signed_optional.sf_optional.condition(int16_imm, in16_imm)														; dstMul.pack_mode_optional = load16.condition()				;
@@ -1009,21 +1343,27 @@ sig_none			; ra0.nop					= or(r0, r0)																														; rb0						= 
 
 int main()
 {
+	//TODO pm bit not being set properly
+
 	char asm_code[] =
-			"sig_none		; ra0.nop	= add.sf.always.nop(r0, r1, 0)				; rb0.nop	= fmul.sf.always(r2, r3)	;"
-			"sig_branch		; ra0		= branch.rel.reg(0xdeadbeef, always, ra1)	; rb0		= branch()					;"
+			"sig_none		; ra0.nop	= add.sf.always.nop(r0, r1, 0)				; rb0.nop	= fmul.sf.always(r2, r3)	;\n"
+			"sig_branch		; ra0		= branch.rel.reg(0xdeadbeef, always, ra1)	; rb0		= branch()					;\n"
 			"#hello\n"
-			"sig_none		; ra0.nop	= sem_inc.sf.always(1, 0x7ffffff)			; rb0.nop	= sem_inc.always()			;"
+			"sig_none		; ra0.nop	= sem_inc.sf.always(1, 0x7ffffff)			; rb0.nop	= sem_inc.always()			;\n"
 			"#hello2\n"
-			"sig_load_imm	; ra0.nop	= load32.sf.always(0xdeadbeef)				; rb0.nop	= load32.always()			;"
-			"sig_load_imm	; ra0.nop	= load16.sf.signed.always(0xdead, 0xbeef)	; rb0.nop	= load16.always()			;";
+			"sig_load_imm	; ra0.nop	= load32.sf.always(0xdeadbeef)				; rb0.nop	= load32.always()			;\n"
+			"sig_load_imm	; rb0	= load16.sf.signed.always(0xdead, 0xbeef)	; ra0.8888	= load16.always()			;\n\0";
+
+	printf("%s", asm_code);
 
 	unsigned num_instructions = 0;
 	char* ptr = asm_code;
 	while(ptr && *ptr != '\0')
 	{
 		ptr = strstr(ptr, ";");
+		if(!ptr) break;
 		ptr = strstr(ptr+(ptr!=0), ";");
+		if(!ptr) break;
 		ptr = strstr(ptr+(ptr!=0), ";");
 		if(ptr)
 		{
@@ -1047,25 +1387,28 @@ int main()
 	for(int c = 0; c < instruction_size; ++c)
 	{
 		unsigned char d = ((char*)instructions)[c];
-		printf("%#x,\t", d);
+		//printf("%#x,\t", d);
 		if((c+1)%8==0)
 		{
-			printf("\n");
+			//printf("\n");
 		}
 	}
 
-	const char asm_instructions[] =
+	/*const char asm_instructions[] =
 	{
 		0x53,	0x70,	0x9e,	0x2c,	0,	0x60,	0x2,	0x10,
 		0xef,	0xbe,	0xad,	0xde,	0,	0x20,	0xfc,	0xf0,
 		0xf1,	0xff,	0xff,	0xff,	0,	0x60,	0x2,	0xe8,
 		0xef,	0xbe,	0xad,	0xde,	0,	0x60,	0x2,	0xe0,
 		0xef,	0xbe,	0xad,	0xde,	0,	0x60,	0x2,	0xe2
-	};
+	};*/
+
+	printf("\n\n");
 
 	for(int c = 0; c < num_instructions; ++c)
 	{
-		disassemble_qpu_asm(asm_instructions);
+		//disassemble_qpu_asm(asm_instructions);
+		disassemble_qpu_asm(instructions[c]);
 	}
 
 	return 0;
