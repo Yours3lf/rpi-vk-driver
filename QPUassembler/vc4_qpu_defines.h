@@ -478,6 +478,7 @@ typedef enum {
 
 static const char *qpu_waddr_str[][64] = {
 	{ //A
+		//ra0-31
 		[QPU_W_ACC0] = "r0",
 		[QPU_W_ACC1] = "r1",
 		[QPU_W_ACC2] = "r2",
@@ -511,6 +512,7 @@ static const char *qpu_waddr_str[][64] = {
 		[QPU_W_TMU1_B] = "tmu1_b",
 	},
 	{ //B
+	  //rb0-31
 	  [QPU_W_ACC0] = "r0",
 	  [QPU_W_ACC1] = "r1",
 	  [QPU_W_ACC2] = "r2",
