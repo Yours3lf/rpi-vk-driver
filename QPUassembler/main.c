@@ -34,6 +34,109 @@
 		write, SFU write, Mutex read or Semaphore access.
  *********************************************************************************************************************/
 
+/*
+Format:
+#comment
+sig_bit_opt		; dstAdd.pack_opt	= add_op.pm_opt.sf_opt.cond.unpack_opt.ws_opt(srcA, srcB, raddr_a_opt, raddr_b_opt)	; dstMul.pack_opt	= mul_op.cond(srcA, srcB)	;
+sig_small_imm	; dstAdd.pack_opt	= add_op.pm_opt.sf_opt.cond.unpack_opt.ws_opt(srcA, srcB, raddr_a_opt, small_imm)	; dstMul.pack_opt	= mul_op.cond(srcA, srcB)	;
+sig_branch		; dstAdd			= branch.rel_opt.reg_opt.ws_opt(address, condition, raddr_a_opt)					; dstMul			= branch()					;
+sig_load_imm	; dstAdd.pack_opt	= sem_inc.pm_opt.sf_opt.cond.ws_opt(sem_number, 27bit_imm_opt)						; dstMul.pack_opt	= sem_inc.cond()			;
+sig_load_imm	; dstAdd.pack_opt	= load32.pm_opt.sf_opt.cond.ws_opt(immediate32bit_value)							; dstMul.pack_opt	= load32.cond()				;
+sig_load_imm	; dstAdd.pack_opt	= load16.pm_opt.signed_opt.sf_opt.cond.ws_opt(int16_imm, int16_imm)					; dstMul.pack_opt	= load16.cond()				;
+
+==================================================================
+================How to formulate instructions:====================
+==================================================================
+1)
+You must specify the signal bits at the beginning of each instruction:
+sig_brk, sig_none, sig_switch, sig_end, sig_wait_score, sig_unlock_score, sig_thread_switch, sig_coverage_load,
+sig_color_load, sig_color_load_end, sig_load_tmu0, sig_load_tmu1, sig_alpha_mask_load, sig_small_imm, sig_load_imm, sig_branch
+
+2)
+Then you must specify the output register for the ADD pipeline.
+rx0-31, r0-3, r5, tmu_noswap, host_int, nop, uniforms_addr, quad_x, quad_y, ms_flags, rev_flags, tlb_stencil_setup
+tlb_z, tlb_color_ms, tlb_color_all, vpm, vr_setup, vr_addr, mutex_release, sfu_recip, sfu_recipsqrt, sfu_exp,
+sfu_log, tmu0_s, tmu0_t, tmu0_r, tmu0_b, tmu1_s, tmu1_t, tmu1_r, tmu1_b
+
+3)
+If the ADD instruction writes to regfile A (ie. you don't specify the WS flag later) and PM flag won't be specified,
+then you can specify the pack mode for regfile A here (omitting means nop)
+nop, 16a, 16b, 8888, 8a, 8b, 8c, 8d, sta, 16a.sat, 16b.sat, 8888.sat, 8a.sat, 8b.sat, 8c.sat, 8d.sat
+
+4)
+Then you must specify your operation for the ADD pipeline. If you are writing a non-ALU instruction, you can specify either
+branch, sem_inc, sem_dec, load32 or load16 here instead.
+Operations available:
+nop, fadd, fsub, fmin, fmax, fminabs, fmaxabs, ftoi, itof, add, sub, shr, asr, ror, shl, min, max, and, or, xor, not, clz, v8adds, v8subs
+
+5)
+Then you can specify a range of modifiers (order is not important):
+PM bit: pm
+SF bit: sf
+WS bit: ws
+REL bit: rel
+REG bit: reg
+SIGNED bit: signed
+Conditional execution for the ADD pipeline: never, always, zs, zc, ns, nc, cs, cc
+Unpack modes (from regfile A, or if PM is set from R4): nop, 16a, 16b, 8d_rep, 8a, 8b, 8c, 8d
+
+6)
+Then you must specify the arguments for the ALU operation.
+srcA, srcB can be: r0-r5 or a, b for regfiles A and B, or imm for the small immediate value.
+raddr_a and raddr_b can be specified afterwards as optional extra arguments (omitting means nop).
+raddr_a: ra0-31, pay_zw, uni, vary, elem, nop, x_pix, ms_flags, vpm_read, vpm_ld_busy, vpm_ld_wait, mutex_acq
+raddr_b: rb0-31, pay_zw, uni, vary, elem, nop, y_pix, rev_flag, vpm_read, vpm_st_busy, vpm_st_wait, mutex_acq
+
+For branch operation, you must specify:
+the jump address as a 32bit value (can be relative if REL is set)
+the branch condition: all_zs, all_zc, any_zs, any_zc, all_ns, all_nc, any_ns, any_nc, all_cs, all_cc, any_cs, any_cc, always
+and an optional raddr_a (if REG flag is set), see above
+
+For a semaphore instruction, you need to specify which semaphore (0-15) you want to modify, then an optional 27bit immediate value (ms 16bits might be usable...).
+
+7)
+Then you must specify the output register for the MUL pipeline.
+See above for options.
+
+8)
+If the MUL instruction writes to regfile A (ie. you specify the WS flag) then you can set the pack operation for regfile A here:
+nop, 16a, 16b, 8888, 8a, 8b, 8c, 8d, sta, 16a.sat, 16b.sat, 8888.sat, 8a.sat, 8b.sat, 8c.sat, 8d.sat
+OR
+You if specify the PM flag, then you can set the pack operation for the MUL output here:
+nop, 8888, 8a, 8b, 8c, 8d
+
+9)
+Then you must specify your operation for the MUL pipeline. If you are writing a non-ALU instruction, you can specify either
+branch, sem_inc, sem_dec, load32 or load16 here instead.
+Operations available:
+nop, fmul, mul24, v8muld, v8min, v8max, v8adds, v8subs
+
+10)
+Then you can specify a range of modifiers (order is not important):
+Conditional execution for the MUL pipeline: never, always, zs, zc, ns, nc, cs, cc
+
+11)
+Then you must specify the arguments for the ALU operation.
+srcA, srcB can be: r0-r5 or a, b for regfiles A and B, or imm for the small immediate value.
+
+==================================================================
+==================================================================
+
+
+dstAdd: rx0-31, r0-5, special regs
+raddr_a_opt: ra0-31, r0-5, special regs
+raddr_b_opt: rb0-31, r0-5, special regs
+
+Examples:
+sig_none		; rx0.nop			= add.pm.sf.always(r0, r1, 0)														; rx0.nop					= fmul.always(r2, r3)	;
+sig_branch		; rx0				= branch.pm.rel.reg.always(0xdeadbeef, ra1)											; rx0						= branch()				;
+sig_none		; rx0.nop			= sem_inc.pm.sf.always(1, 0x7ffffff)												; rx0.nop					= sem_inc.always()		;
+sig_load_imm	; rx0.nop			= load32.pm.sf.always(0xdeadbeef)													; rx0.nop					= load32.always()		;
+sig_load_imm	; rx0.nop			= load16.pm.sf.signed.always(1, 2)													; rx0.nop					= load16.always()		;
+#mov
+sig_none		; rx0.nop			= or(r0, r0)																		; rx0						= v8min(r1, r1)			;
+ */
+
 uint64_t encode_alu(qpu_sig_bits sig_bits,
 					qpu_unpack unpack_mode,
 					//If the pm bit is set, the unpack field programs the r4 unpack unit,
@@ -1337,33 +1440,6 @@ void disassemble_qpu_asm(uint64_t instruction)
 
 	printf("\n");
 }
-
-/*
-Format:
-#comment
-sig_bit_opt			; dstAdd.pack_opt	= add_op.pm_opt.sf_opt.cond.unpack_opt.ws_opt(srcA, srcB, raddr_a_opt, raddr_b_opt)	; dstMul.pack_opt	= mul_op.cond(srcA, srcB)	;
-sig_small_imm	; dstAdd.pack_opt	= add_op.pm_opt.sf_opt.cond.unpack_opt.ws_opt(srcA, srcB, raddr_a_opt, small_imm)	; dstMul.pack_opt	= mul_op.cond(srcA, srcB)	;
-sig_branch		; dstAdd			= branch.rel_opt.reg_opt.ws_opt(address, condition, srcA_opt)						; dstMul			= branch()					;
-sig_load_imm		; dstAdd.pack_opt	= sem_inc.pm_opt.sf_opt.cond.ws_opt(sem_number, 27bit_imm_opt)						; dstMul.pack_opt	= sem_inc.cond()			;
-sig_load_imm		; dstAdd.pack_opt	= load32.pm_opt.sf_opt.cond.ws_opt(immediate_value)									; dstMul.pack_opt	= load32.cond()				;
-sig_load_imm		; dstAdd.pack_opt	= load16.pm_opt.signed_opt.sf_opt.cond.ws_opt(int16_imm, in16_imm)					; dstMul.pack_opt	= load16.cond()				;
-
-You can specify the signal bits at the beginning of each instruction.
-
-
-dstAdd: rx0-31, r0-5, special regs
-raddr_a_opt: ra0-31, r0-5, special regs
-raddr_b_opt: rb0-31, r0-5, special regs
-
-Examples:
-sig_none			; rx0.nop			= add.pm.sf.always(r0, r1, 0)														; rx0.nop					= fmul.always(r2, r3)	;
-sig_branch			; rx0				= branch.pm.rel.reg.always(0xdeadbeef, ra1)											; rx0						= branch()				;
-sig_none			; rx0.nop			= sem_inc.pm.sf.always(1, 0x7ffffff)												; rx0.nop					= sem_inc.always()		;
-sig_load_imm		; rx0.nop			= load32.pm.sf.always(0xdeadbeef)													; rx0.nop					= load32.always()		;
-sig_load_imm		; rx0.nop			= load16.pm.sf.signed.always(1, 2)													; rx0.nop					= load16.always()		;
-#mov
-sig_none			; rx0.nop			= or(r0, r0)																		; rx0						= v8min(r1, r1)			;
- */
 
 int main()
 {

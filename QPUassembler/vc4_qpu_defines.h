@@ -411,6 +411,7 @@ typedef enum {
 
 static const char *qpu_raddr_str[][52] = {
 	{ //A
+		//ra0-31
 		[QPU_R_FRAG_PAYLOAD_ZW] = "pay_zw",
 		[QPU_R_UNIF] = "uni",
 		[QPU_R_VARY] = "vary",
@@ -424,6 +425,7 @@ static const char *qpu_raddr_str[][52] = {
 		[QPU_R_MUTEX_ACQUIRE] = "mutex_acq"
 	},
 	{ //B
+	  //rb0-31
 	  [QPU_R_FRAG_PAYLOAD_ZW] = "pay_zw",
 	  [QPU_R_UNIF] = "uni",
 	  [QPU_R_VARY] = "vary",
