@@ -8,6 +8,8 @@
 
 #include "driver/vkExt.h"
 
+#include "QPUassembler/qpu_assembler.h"
+
 //#define GLFW_INCLUDE_VULKAN
 //#define VK_USE_PLATFORM_WIN32_KHR
 //#include <GLFW/glfw3.h>
@@ -846,17 +848,47 @@ VkShaderModule VulkanCreateShaderModule(VkDevice& device, char* byteStream, uint
 
 void CreateShaders()
 {
-	//char* vptr = (char*)malloc(strlen(vertShader) + 1);
-	//memcpy(vptr, vertShader, strlen(vertShader) + 1);
+	char asm_code[] =
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_load_imm ; r0 = load32.always(0xffffffff) ; nop = load32() ;"
+			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+				"\0";
 
-	//char* fptr = (char*)malloc(strlen(fragShader) + 1);
-	//memcpy(fptr, fragShader, strlen(fragShader) + 1);
+	unsigned num_instructions = 0;
+	char* ptr = asm_code;
+	while(ptr && *ptr != '\0')
+	{
+		ptr = strstr(ptr, ";");
+		if(!ptr) break;
+		ptr = strstr(ptr+(ptr!=0), ";");
+		if(!ptr) break;
+		ptr = strstr(ptr+(ptr!=0), ";");
+		if(ptr)
+		{
+			ptr += 1;
+			num_instructions += 1;
+		}
+	}
+
+	uint64_t instruction_size = sizeof(uint64_t)*num_instructions;
+	uint64_t* instructions = (uint64_t*)malloc(instruction_size);
+
+	assemble_qpu_asm(asm_code, instructions);
+
+	for(uint64_t c = 0; c < num_instructions; ++c)
+	{
+		disassemble_qpu_asm(instructions[c]);
+	}
 
 	char* vptr = (char*)malloc(sizeof(vertBytes));
 	memcpy(vptr, vertBytes, sizeof(vertBytes));
 
-	char* fptr = (char*)malloc(sizeof(fragBytes));
-	memcpy(fptr, fragBytes, sizeof(fragBytes));
+	//char* fptr = (char*)malloc(sizeof(fragBytes));
+	//memcpy(fptr, fragBytes, sizeof(fragBytes));
 
 	char* cptr = (char*)malloc(sizeof(coordinateBytes));
 	memcpy(cptr, coordinateBytes, sizeof(coordinateBytes));
@@ -868,7 +900,8 @@ void CreateShaders()
 
 	char* fragStreams[] =
 	{
-		0, 0, fptr, 0
+		//0, 0, fptr, 0
+		0, 0, (char*)instructions, 0
 	};
 
 	uint32_t vertNumbytes[] =
@@ -878,7 +911,8 @@ void CreateShaders()
 
 	uint32_t fragNumbytes[] =
 	{
-		0, 0, sizeof(fragBytes), 0
+		//0, 0, sizeof(fragBytes), 0
+		0, 0, instruction_size, 0
 	};
 
 	VkRpiShaderModuleAssemblyCreateInfoKHR vertexShaderModuleCreateInfo;
@@ -896,7 +930,7 @@ void CreateShaders()
 	assert(fsModule);
 
 	free(vptr);
-	free(fptr);
+	//free(fptr);
 	free(cptr);
 }
 

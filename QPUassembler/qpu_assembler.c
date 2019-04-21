@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "qpu_assembler.h"
 #include "vc4_qpu_defines.h"
 
 /*********************************************************************************************************************
@@ -77,7 +78,7 @@ WS bit: ws
 REL bit: rel
 REG bit: reg
 SIGNED bit: signed
-Conditional execution for the ADD pipeline: never, always, zs, zc, ns, nc, cs, cc
+Conditional execution for the ADD pipeline (default is never): never, always, zs, zc, ns, nc, cs, cc
 Unpack modes (from regfile A, or if PM is set from R4): nop, 16a, 16b, 8d_rep, 8a, 8b, 8c, 8d
 
 6)
@@ -122,11 +123,6 @@ srcA, srcB can be: r0-r5 or a, b for regfiles A and B, or imm for the small imme
 ==================================================================
 ==================================================================
 
-
-dstAdd: rx0-31, r0-5, special regs
-raddr_a_opt: ra0-31, r0-5, special regs
-raddr_b_opt: rb0-31, r0-5, special regs
-
 Examples:
 sig_none		; rx0.nop			= add.pm.sf.always(r0, r1, 0)														; rx0.nop					= fmul.always(r2, r3)	;
 sig_branch		; rx0				= branch.pm.rel.reg.always(0xdeadbeef, ra1)											; rx0						= branch()				;
@@ -135,6 +131,8 @@ sig_load_imm	; rx0.nop			= load32.pm.sf.always(0xdeadbeef)													; rx0.nop
 sig_load_imm	; rx0.nop			= load16.pm.sf.signed.always(1, 2)													; rx0.nop					= load16.always()		;
 #mov
 sig_none		; rx0.nop			= or(r0, r0)																		; rx0						= v8min(r1, r1)			;
+#nop
+sig_none		; nop				= nop(nop, nop)																		; nop						= nop(nop, nop)			;
  */
 
 uint64_t encode_alu(qpu_sig_bits sig_bits,
@@ -513,7 +511,7 @@ void parse_dst(char** str, qpu_waddr* waddr, uint8_t* pack_mode, unsigned is_add
 
 	if(dst && dst[0] == 'r' && dst[1] == 'x')
 	{
-		waddr_res = strtol(dst+2, 0, 0);
+		waddr_res = strtoul(dst+2, 0, 0);
 	}
 
 	unsigned num_pack_a_str = sizeof(qpu_pack_a_str) / sizeof(const char *);
@@ -642,7 +640,7 @@ void parse_op_modifiers(char** str, uint8_t* signed_or_unsigned, uint8_t* ws, ui
 	*str += 1;
 }
 
-void parse_op(char** str, qpu_alu_type* type, qpu_op_add* op_add, qpu_op_mul* op_mul, uint8_t* is_sem_inc, qpu_load_type* load_type)
+void parse_op(char** str, qpu_alu_type* type, qpu_op_add* op_add, qpu_op_mul* op_mul, uint8_t* is_sem_inc, qpu_load_type* load_type, unsigned is_add)
 {
 	char* op = strtok(*str, ".");
 
@@ -677,21 +675,26 @@ void parse_op(char** str, qpu_alu_type* type, qpu_op_add* op_add, qpu_op_mul* op
 		unsigned num_add_ops = sizeof(qpu_op_add_str) / sizeof(const char *);
 		unsigned num_mul_ops = sizeof(qpu_op_mul_str) / sizeof(const char *);
 
-		for(unsigned c = 0; c < num_add_ops && op; ++c)
+		if(is_add)
 		{
-			if(qpu_op_add_str[c] && strcmp(op, qpu_op_add_str[c]) == 0)
+			for(unsigned c = 0; c < num_add_ops && op; ++c)
 			{
-				*op_add = c;
-				break;
+				if(qpu_op_add_str[c] && strcmp(op, qpu_op_add_str[c]) == 0)
+				{
+					*op_add = c;
+					break;
+				}
 			}
 		}
-
-		for(unsigned c = 0; c < num_mul_ops && op; ++c)
+		else
 		{
-			if(qpu_op_mul_str[c] && strcmp(op, qpu_op_mul_str[c]) == 0)
+			for(unsigned c = 0; c < num_mul_ops && op; ++c)
 			{
-				*op_mul = c;
-				break;
+				if(qpu_op_mul_str[c] && strcmp(op, qpu_op_mul_str[c]) == 0)
+				{
+					*op_mul = c;
+					break;
+				}
 			}
 		}
 	}
@@ -757,7 +760,7 @@ void parse_args_alu(char** str, qpu_mux* in_a, qpu_mux* in_b, uint8_t* raddr_a, 
 
 		if(!raddr_a_res && arg && arg[0] == 'r' && arg[1] == 'a')
 		{
-			raddr_a_res = strtol(arg+2, 0, 0);
+			raddr_a_res = strtoul(arg+2, 0, 0);
 		}
 
 
@@ -785,12 +788,12 @@ void parse_args_alu(char** str, qpu_mux* in_a, qpu_mux* in_b, uint8_t* raddr_a, 
 
 		if(!raddr_b_res && arg && arg[0] == 'r' && arg[1] == 'b')
 		{
-			raddr_b_res = strtol(arg+2, 0, 0);
+			raddr_b_res = strtoul(arg+2, 0, 0);
 		}
 
 		if(is_si)
 		{
-			uint32_t si = strtol(arg, 0, 0);
+			uint32_t si = strtoul(arg, 0, 0);
 			raddr_b_res = qpu_encode_small_immediate(si);
 		}
 
@@ -813,7 +816,7 @@ void parse_args_sem(char** str, uint8_t* sem, uint32_t* imm32)
 
 	if(arg)
 	{
-		*sem = strtol(arg, 0, 0);
+		*sem = strtoul(arg, 0, 0);
 		*str = arg;
 	}
 
@@ -821,7 +824,7 @@ void parse_args_sem(char** str, uint8_t* sem, uint32_t* imm32)
 
 	if(arg)
 	{
-		*imm32 = strtol(arg, 0, 0);
+		*imm32 = strtoul(arg, 0, 0);
 		*str = arg;
 	}
 
@@ -840,7 +843,7 @@ void parse_args_branch(char** str, uint32_t* imm32, qpu_branch_cond* branch_cond
 
 	if(arg)
 	{
-		*imm32 = strtol(arg, 0, 0);
+		*imm32 = strtoul(arg, 0, 0);
 		*str = arg;
 	}
 
@@ -881,7 +884,7 @@ void parse_args_branch(char** str, uint32_t* imm32, qpu_branch_cond* branch_cond
 
 		if(!raddr_a_res && arg && arg[0] == 'r' && arg[1] == 'a')
 		{
-			raddr_a_res = strtol(arg+2, 0, 0);
+			raddr_a_res = strtoul(arg+2, 0, 0);
 		}
 
 		*raddr_a = raddr_a_res;
@@ -905,7 +908,7 @@ void parse_args_load(char** str, qpu_load_type load_type, uint32_t* imm32, uint1
 	{
 		if(arg)
 		{
-			*imm32 = strtol(arg, 0, 0);
+			*imm32 = strtoul(arg, 0, 0);
 			*str = arg;
 		}
 	}
@@ -913,7 +916,7 @@ void parse_args_load(char** str, qpu_load_type load_type, uint32_t* imm32, uint1
 	{
 		if(arg)
 		{
-			*ms_imm16 = strtol(arg, 0, 0);
+			*ms_imm16 = strtoul(arg, 0, 0);
 			*str = arg;
 		}
 
@@ -921,7 +924,7 @@ void parse_args_load(char** str, qpu_load_type load_type, uint32_t* imm32, uint1
 
 		if(arg)
 		{
-			*ls_imm16 = strtol(arg, 0, 0);
+			*ls_imm16 = strtoul(arg, 0, 0);
 			*str = arg;
 		}
 	}
@@ -968,8 +971,8 @@ void assemble_qpu_asm(char* str, uint64_t* instructions)
 		qpu_mux mul_b = 0;
 		qpu_mux add_a = 0;
 		qpu_mux add_b = 0;
-		qpu_cond cond_mul = QPU_COND_ALWAYS;
-		qpu_cond cond_add = QPU_COND_ALWAYS;
+		qpu_cond cond_mul = QPU_COND_NEVER;
+		qpu_cond cond_add = QPU_COND_NEVER;
 		qpu_waddr waddr_add = QPU_W_NOP;
 		qpu_waddr waddr_mul = QPU_W_NOP;
 		qpu_waddr raddr_a = QPU_R_NOP;
@@ -1003,7 +1006,7 @@ void assemble_qpu_asm(char* str, uint64_t* instructions)
 		//check op
 		token = strtok(token, " \n\v\f\r\t=(");
 		unsigned has_modifiers = strstr(token, ".") != 0;
-		parse_op(&token, &type, &op_add, &op_mul, &is_sem_inc, &load_type);
+		parse_op(&token, &type, &op_add, &op_mul, &is_sem_inc, &load_type, 1);
 
 		//get modifiers
 		if(has_modifiers)
@@ -1044,7 +1047,7 @@ void assemble_qpu_asm(char* str, uint64_t* instructions)
 		//check op
 		token = strtok(token, " \n\v\f\r\t=(");
 		has_modifiers = strstr(token, ".") != 0;
-		parse_op(&token, &type, &op_add, &op_mul, &is_sem_inc, &load_type);
+		parse_op(&token, &type, &op_add, &op_mul, &is_sem_inc, &load_type, 0);
 
 		//get modifiers
 		if(has_modifiers)
