@@ -312,6 +312,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 		cmdbuf->submitCl.uniforms = cmdbuf->uniformsCl.buffer;
 		cmdbuf->submitCl.uniforms_size = clSize(&cmdbuf->uniformsCl);
 
+		/**/
 		printf("BCL:\n");
 		clDump(cmdbuf->submitCl.bin_cl, cmdbuf->submitCl.bin_cl_size);
 		printf("BO handles: ");
@@ -331,6 +332,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 		printf("clear z %u\n", cmdbuf->submitCl.clear_z);
 		printf("clear s %u\n", cmdbuf->submitCl.clear_s);
 		printf("flags %u\n", cmdbuf->submitCl.flags);
+		/**/
 
 
 		//submit ioctl

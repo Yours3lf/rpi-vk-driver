@@ -79,12 +79,6 @@ typedef enum {
 		QPU_MUX_R5, //special purpose
 		QPU_MUX_A,
 		QPU_MUX_B,
-
-		/**
-		 * Non-hardware mux value, stores a small immediate field to be
-		 * programmed into raddr_b in the qpu_reg.index.
-		 */
-		QPU_MUX_SMALL_IMM,
 } qpu_mux;
 
 static const char *qpu_mux_str[] = {
@@ -96,7 +90,6 @@ static const char *qpu_mux_str[] = {
 		[QPU_MUX_R5] = "r5",
 		[QPU_MUX_A] = "a",
 		[QPU_MUX_B] = "b",
-		[QPU_MUX_SMALL_IMM] = "imm",
 };
 
 
@@ -154,37 +147,37 @@ uint8_t qpu_encode_small_immediate(uint32_t i)
 				return i + 32;
 
 		switch (i) {
-		case 0x3f800000:
+		case 0x3f800000: //1.0
 				return 32;
-		case 0x40000000:
+		case 0x40000000: //2.0
 				return 33;
-		case 0x40800000:
+		case 0x40800000: //4.0
 				return 34;
-		case 0x41000000:
+		case 0x41000000: //8.0
 				return 35;
-		case 0x41800000:
+		case 0x41800000: //16.0
 				return 36;
-		case 0x42000000:
+		case 0x42000000: //32.0
 				return 37;
-		case 0x42800000:
+		case 0x42800000: //64.0
 				return 38;
-		case 0x43000000:
+		case 0x43000000: //128.0
 				return 39;
-		case 0x3b800000:
+		case 0x3b800000: //1.0/256.0
 				return 40;
-		case 0x3c000000:
+		case 0x3c000000: //1.0/128.0
 				return 41;
-		case 0x3c800000:
+		case 0x3c800000: //1.0/64.0
 				return 42;
-		case 0x3d000000:
+		case 0x3d000000: //1.0/32.0
 				return 43;
-		case 0x3d800000:
+		case 0x3d800000: //1.0/16.0
 				return 44;
-		case 0x3e000000:
+		case 0x3e000000: //1.0/8.0
 				return 45;
-		case 0x3e800000:
+		case 0x3e800000: //1.0/4.0
 				return 46;
-		case 0x3f000000:
+		case 0x3f000000: //1.0/2.0
 				return 47;
 		}
 

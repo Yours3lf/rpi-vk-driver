@@ -718,7 +718,6 @@ void parse_args_alu(char** str, qpu_mux* in_a, qpu_mux* in_b, uint8_t* raddr_a, 
 	char* arg = strtok(*str, " \n\v\f\r\t,");
 
 	unsigned num_muxes = sizeof(qpu_mux_str) / sizeof(const char *);
-	unsigned found = 0;
 
 	for(unsigned c = 0; c < num_muxes && arg; ++c)
 	{
@@ -726,7 +725,6 @@ void parse_args_alu(char** str, qpu_mux* in_a, qpu_mux* in_b, uint8_t* raddr_a, 
 		{
 			*str = arg;
 			*in_a = c;
-			found = 1;
 			break;
 		}
 	}

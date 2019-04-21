@@ -227,7 +227,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	//FS
 	uniform count : 1
 	tex sample count : 0
-	uniform constant : 4291579008
+	uniform constant : 4291579008 (color: #CC4C80, alpha FF)
 
 	//VS
 	uniform count : 4
@@ -245,9 +245,12 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	uniform viewport xscale : 15360.000000
 	uniform viewport zoffset : 0.500000
 	/**/
-	clFit(commandBuffer, &commandBuffer->uniformsCl, 4*(1+4+4));
+
+	//TODO: if fragment shader doesn't use any uniforms, then VS will expect to read the first uniform in the stream
+	//clFit(commandBuffer, &commandBuffer->uniformsCl, 4*(1+4+4));
+	clFit(commandBuffer, &commandBuffer->uniformsCl, 4*(4+4));
 	//FS
-	clInsertUniformConstant(&commandBuffer->uniformsCl, 4291579008);
+	//clInsertUniformConstant(&commandBuffer->uniformsCl, 4291579008);
 	//VS
 	clInsertUniformConstant(&commandBuffer->uniformsCl, 1065353216);
 	clInsertUniformXYScale(&commandBuffer->uniformsCl, (float)(i->width) * 0.5f * 16.0f);

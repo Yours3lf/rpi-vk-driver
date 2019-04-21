@@ -1,4 +1,4 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -7,8 +7,13 @@
 int main()
 {
 	char asm_code[] =
-			"sig_none ; rx0 = add(r2, r3) ; rx1 = fmul(r2, r3) ;\n"
-			"\0";
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_small_imm ; tlb_color_all = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
+			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+				"\0";
 
 	printf("%s", asm_code);
 
@@ -35,7 +40,7 @@ int main()
 		return 0;
 	}
 
-	uint64_t* instruction_size = sizeof(uint64_t)*num_instructions;
+	uint64_t instruction_size = sizeof(uint64_t)*num_instructions;
 	uint64_t* instructions = malloc(instruction_size);
 
 	assemble_qpu_asm(asm_code, instructions);
