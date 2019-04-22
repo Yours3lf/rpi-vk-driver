@@ -870,30 +870,19 @@ void CreateShaders()
 	//clever: use small immedate -1 interpreted as 0xffffffff (white) to set color to white
 	//"sig_small_imm ; tlb_color_all = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
 
-	/**
-	//checkerboard
-	char asm_code[] =
-			"sig_none ; r1 = itof.always(a, a, x_pix, y_pix) ; nop = nop(r0, r0) ;"
-			"sig_none ; r1 = itof.pm.always(b, b, x_pix, y_pix) ; r0.8a = fmul.always(r1, r2) ;"
-			"sig_none ; nop = nop.pm(r0, r0) ; r0.8b = fmul.always(r1, r2) ;"
-			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0) ; r0.8c = v8min.always(b, b) ;"
-			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 1) ; r0.8d = v8min.always(b, b) ;"
-			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-				"\0";
-	/**/
+	//8bit access
+	//abcd
+	//BGRA
 
 	/**/
 	//rainbow colors
 	char asm_code[] =
 			"sig_none ; r1 = itof.always(a, a, x_pix, y_pix) ; nop = nop(r0, r0) ;" //can't use mul pipeline for conversion :(
 			"sig_load_imm ; r2 = load32.always(0x3a088888) ; nop = load32() ;" //1/1920
-			"sig_none ; r1 = itof.pm.always(b, b, x_pix, y_pix) ; r0.8a = fmul.always(r1, r2) ;"
+			"sig_none ; r1 = itof.pm.always(b, b, x_pix, y_pix) ; r0.8c = fmul.always(r1, r2) ;"
 			"sig_load_imm ; r2 = load32.always(0x3a72b9d6) ; nop = load32() ;" //1/1080
 			"sig_none ; nop = nop.pm(r0, r0) ; r0.8b = fmul.always(r1, r2) ;"
-			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0) ; r0.8c = v8min.always(b, b) ;"
+			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0) ; r0.8a = v8min.always(b, b) ;"
 			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 1) ; r0.8d = v8min.always(b, b) ;"
 			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
