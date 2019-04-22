@@ -71,6 +71,18 @@ void vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryReq
 	pMemoryRequirements->memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; //TODO
 }
 
+VKAPI_ATTR void VKAPI_CALL vkGetBufferMemoryRequirements2(
+	VkDevice                                    device,
+	const VkBufferMemoryRequirementsInfo2*      pInfo,
+	VkMemoryRequirements2*                      pMemoryRequirements)
+{
+	assert(device);
+	assert(pInfo);
+	assert(pMemoryRequirements);
+
+	vkGetBufferMemoryRequirements(device, pInfo->buffer, &pMemoryRequirements->memoryRequirements);
+}
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkBindBufferMemory
  */
@@ -310,4 +322,48 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory(
 	i->boundOffset = memoryOffset;
 
 	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkBindBufferMemory2(
+	VkDevice                                    device,
+	uint32_t                                    bindInfoCount,
+	const VkBindBufferMemoryInfo*               pBindInfos)
+{
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements2(
+	VkDevice                                    device,
+	const VkImageMemoryRequirementsInfo2*       pInfo,
+	VkMemoryRequirements2*                      pMemoryRequirements)
+{
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory2(
+	VkDevice                                    device,
+	uint32_t                                    bindInfoCount,
+	const VkBindImageMemoryInfo*                pBindInfos)
+{
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL vkCmdPushConstants(
+	VkCommandBuffer                             commandBuffer,
+	VkPipelineLayout                            layout,
+	VkShaderStageFlags                          stageFlags,
+	uint32_t                                    offset,
+	uint32_t                                    size,
+	const void*                                 pValues)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetImageSubresourceLayout(
+	VkDevice                                    device,
+	VkImage                                     image,
+	const VkImageSubresource*                   pSubresource,
+	VkSubresourceLayout*                        pLayout)
+{
+
 }

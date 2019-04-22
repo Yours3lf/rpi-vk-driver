@@ -497,3 +497,18 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandBuffer(
 
 	//TODO flag?
 }
+
+VKAPI_ATTR void VKAPI_CALL vkCmdExecuteCommands(
+	VkCommandBuffer                             commandBuffer,
+	uint32_t                                    commandBufferCount,
+	const VkCommandBuffer*                      pCommandBuffers)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkCmdSetDeviceMask(
+	VkCommandBuffer                             commandBuffer,
+	uint32_t                                    deviceMask)
+{
+
+}

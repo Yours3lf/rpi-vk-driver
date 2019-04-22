@@ -176,3 +176,18 @@ VKAPI_ATTR VkResult VKAPI_CALL vkInvalidateMappedMemoryRanges(
 
 	return VK_SUCCESS;
 }
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceMemoryProperties2(
+	VkPhysicalDevice                            physicalDevice,
+	VkPhysicalDeviceMemoryProperties2*          pMemoryProperties)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetDeviceMemoryCommitment(
+	VkDevice                                    device,
+	VkDeviceMemory                              memory,
+	VkDeviceSize*                               pCommittedMemoryInBytes)
+{
+
+}

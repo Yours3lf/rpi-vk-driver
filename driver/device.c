@@ -158,29 +158,6 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties(
 }
 
 /*
- * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceSurfaceSupportKHR
- * does this queue family support presentation to this surface?
- */
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceSupportKHR(
-		VkPhysicalDevice                            physicalDevice,
-		uint32_t                                    queueFamilyIndex,
-		VkSurfaceKHR                                surface,
-		VkBool32*                                   pSupported)
-{
-	assert(pSupported);
-	assert(surface);
-	assert(physicalDevice);
-
-	assert(queueFamilyIndex < numQueueFamilies);
-
-	//TODO if we plan to support headless rendering, there should be 2 families
-	//one using /dev/dri/card0 which has modesetting
-	//other using /dev/dri/renderD128 which does not support modesetting, this would say false here
-	*pSupported = VK_TRUE;
-	return VK_SUCCESS;
-}
-
-/*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateDevice
  * vkCreateDevice verifies that extensions and features requested in the ppEnabledExtensionNames and pEnabledFeatures
  * members of pCreateInfo, respectively, are supported by the implementation. If any requested extension is not supported,
@@ -315,6 +292,18 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue(
 	(*pQueue)->dev = device;
 }
 
+VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue2(
+	VkDevice                                    device,
+	const VkDeviceQueueInfo2*                   pQueueInfo,
+	VkQueue*                                    pQueue)
+{
+	assert(device);
+	assert(pQueueInfo);
+	assert(pQueue);
+
+	vkGetDeviceQueue(device, pQueueInfo->queueFamilyIndex, pQueueInfo->queueIndex, pQueue);
+}
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyDevice
  * To ensure that no work is active on the device, vkDeviceWaitIdle can be used to gate the destruction of the device.
@@ -411,4 +400,283 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(
 	//TODO
 	_device* d = device;
 	return vkGetInstanceProcAddr(d->dev->instance, pName);
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(
+	VkPhysicalDevice                            physicalDevice,
+	VkPhysicalDeviceProperties2*                pProperties)
+{
+	assert(physicalDevice);
+	assert(pProperties);
+	vkGetPhysicalDeviceProperties(physicalDevice, &pProperties->properties);
+
+	if(pProperties->pNext)
+	{
+		VkPhysicalDeviceDriverPropertiesKHR* ptr = pProperties->pNext;
+		if(ptr->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR)
+		{
+			//TODO apparently can't expose my own ID :(
+			//has to be "known"
+			ptr->driverID = VK_DRIVER_ID_MESA_RADV_KHR;
+			const char* driverName = "RPi VK";
+			const char* driverInfo = ""; //TODO maybe version number, git info?
+			strcpy(ptr->driverName, driverName);
+			strcpy(ptr->driverInfo, driverInfo);
+			//TODO this is what we are aspiring to pass...
+			ptr->conformanceVersion.major = 1;
+			ptr->conformanceVersion.minor = 1;
+			ptr->conformanceVersion.subminor = 2;
+			ptr->conformanceVersion.patch = 1;
+		}
+	}
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties(
+	VkPhysicalDevice                            physicalDevice,
+	VkFormat                                    format,
+	VkFormatProperties*                         pFormatProperties)
+{
+	assert(physicalDevice);
+	assert(pFormatProperties);
+
+	if(isDepthStencilFormat(format) && format != VK_FORMAT_S8_UINT)
+	{
+		pFormatProperties->linearTilingFeatures = 0
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_DST_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+		pFormatProperties->optimalTilingFeatures = 0
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_DST_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+		pFormatProperties->bufferFeatures = 0
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+	}
+	else
+	{
+		pFormatProperties->linearTilingFeatures = 0
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
+												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_DST_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+		pFormatProperties->optimalTilingFeatures = 0
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
+												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_DST_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+		pFormatProperties->bufferFeatures = 0
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+	}
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2(
+	VkPhysicalDevice                            physicalDevice,
+	VkFormat                                    format,
+	VkFormatProperties2*                        pFormatProperties)
+{
+	assert(physicalDevice);
+	assert(pFormatProperties);
+	vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &pFormatProperties->formatProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties(
+	VkPhysicalDevice                            physicalDevice,
+	VkFormat                                    format,
+	VkImageType                                 type,
+	VkImageTiling                               tiling,
+	VkImageUsageFlags                           usage,
+	VkImageCreateFlags                          flags,
+	VkImageFormatProperties*                    pImageFormatProperties)
+{
+	assert(physicalDevice);
+	assert(pImageFormatProperties);
+
+	VkFormat ycbcrConversionRequiredFormats[] =
+	{
+	VK_FORMAT_G8B8G8R8_422_UNORM
+	,VK_FORMAT_B8G8R8G8_422_UNORM
+	,VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM
+	,VK_FORMAT_G8_B8R8_2PLANE_420_UNORM
+	,VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM
+	,VK_FORMAT_G8_B8R8_2PLANE_422_UNORM
+	,VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM
+	,VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16
+	,VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16
+	,VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16
+	,VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16
+	,VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16
+	,VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16
+	,VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16
+	,VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16
+	,VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16
+	,VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16
+	,VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16
+	,VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16
+	,VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16
+	,VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16
+	,VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16
+	,VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16
+	,VK_FORMAT_G16B16G16R16_422_UNORM
+	,VK_FORMAT_B16G16R16G16_422_UNORM
+	,VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM
+	,VK_FORMAT_G16_B16R16_2PLANE_420_UNORM
+	,VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM
+	,VK_FORMAT_G16_B16R16_2PLANE_422_UNORM
+	,VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM
+	};
+	#define numYcbcrConversionRequiredFormats (sizeof(ycbcrConversionRequiredFormats)/sizeof(VkFormat))
+
+	for(uint32_t c = 0; c < numUnsupportedFormats; ++c)
+	{
+		if(format == unsupportedFormats[c])
+		{
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+		}
+	}
+
+	pImageFormatProperties->maxArrayLayers = _limits.maxImageArrayLayers;
+
+	pImageFormatProperties->maxExtent.width = 1;
+	pImageFormatProperties->maxExtent.height = 1;
+	pImageFormatProperties->maxExtent.depth = 1;
+
+	pImageFormatProperties->sampleCounts = _limits.framebufferColorSampleCounts;
+
+	if(type == VK_IMAGE_TYPE_1D)
+	{
+		pImageFormatProperties->maxExtent.width = _limits.maxImageDimension1D;
+		pImageFormatProperties->maxMipLevels = ulog2(_limits.maxImageDimension1D) + 1;
+	}
+	else if(type == VK_IMAGE_TYPE_2D)
+	{
+		pImageFormatProperties->maxExtent.width = _limits.maxImageDimension2D;
+		pImageFormatProperties->maxExtent.height = _limits.maxImageDimension2D;
+		pImageFormatProperties->maxMipLevels = ulog2(_limits.maxImageDimension2D) + 1;
+	}
+	else
+	{
+		pImageFormatProperties->maxExtent.width = _limits.maxImageDimension3D;
+		pImageFormatProperties->maxExtent.height = _limits.maxImageDimension3D;
+		pImageFormatProperties->maxExtent.depth = _limits.maxImageDimension3D;
+		pImageFormatProperties->maxMipLevels = ulog2(_limits.maxImageDimension3D) + 1;
+	}
+
+	int ycbcrConversionRequired = 0;
+
+	for(uint32_t c = 0; c < numYcbcrConversionRequiredFormats; ++c)
+	{
+		if(format == ycbcrConversionRequiredFormats[c])
+		{
+			ycbcrConversionRequired = 1;
+			break;
+		}
+	}
+
+	if(ycbcrConversionRequired ||
+	   tiling == VK_IMAGE_TILING_LINEAR ||
+	   type != VK_IMAGE_TYPE_2D ||
+	   flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT ||
+	   flags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT
+	   )
+	{
+		pImageFormatProperties->sampleCounts = VK_SAMPLE_COUNT_1_BIT;
+	}
+
+	//TODO real max size?
+	//2^31
+	pImageFormatProperties->maxResourceSize = 1<<31;
+
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(
+	VkPhysicalDevice                            physicalDevice,
+	const VkPhysicalDeviceImageFormatInfo2*     pImageFormatInfo,
+	VkImageFormatProperties2*                   pImageFormatProperties)
+{
+	assert(physicalDevice);
+	assert(pImageFormatProperties);
+	assert(pImageFormatInfo);
+
+	//TODO
+
+	return vkGetPhysicalDeviceImageFormatProperties(physicalDevice,
+													pImageFormatInfo->format,
+													pImageFormatInfo->type,
+													pImageFormatInfo->tiling,
+													pImageFormatInfo->usage,
+													pImageFormatInfo->flags,
+													&pImageFormatProperties->imageFormatProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceLayerProperties(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t*                                   pPropertyCount,
+	VkLayerProperties*                          pProperties)
+{
+	//deprecated, just return instance layers
+	return vkEnumerateInstanceLayerProperties(pPropertyCount, pProperties);
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(
+	VkPhysicalDevice                            physicalDevice,
+	VkPhysicalDeviceFeatures2*                  pFeatures)
+{
+	assert(physicalDevice);
+	assert(pFeatures);
+	vkGetPhysicalDeviceFeatures(physicalDevice, &pFeatures->features);
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties2(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t*                                   pQueueFamilyPropertyCount,
+	VkQueueFamilyProperties2*                   pQueueFamilyProperties)
+{
+
 }

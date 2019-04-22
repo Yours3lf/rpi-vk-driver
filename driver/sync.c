@@ -454,3 +454,73 @@ VKAPI_ATTR VkResult VKAPI_CALL vkWaitForFences(
 
 	return VK_SUCCESS;
 }
+
+VKAPI_ATTR void VKAPI_CALL vkCmdWaitEvents(
+	VkCommandBuffer                             commandBuffer,
+	uint32_t                                    eventCount,
+	const VkEvent*                              pEvents,
+	VkPipelineStageFlags                        srcStageMask,
+	VkPipelineStageFlags                        dstStageMask,
+	uint32_t                                    memoryBarrierCount,
+	const VkMemoryBarrier*                      pMemoryBarriers,
+	uint32_t                                    bufferMemoryBarrierCount,
+	const VkBufferMemoryBarrier*                pBufferMemoryBarriers,
+	uint32_t                                    imageMemoryBarrierCount,
+	const VkImageMemoryBarrier*                 pImageMemoryBarriers)
+{
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkGetEventStatus(
+	VkDevice                                    device,
+	VkEvent                                     event)
+{
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL vkDestroyEvent(
+	VkDevice                                    device,
+	VkEvent                                     event,
+	const VkAllocationCallbacks*                pAllocator)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkCmdResetEvent(
+	VkCommandBuffer                             commandBuffer,
+	VkEvent                                     event,
+	VkPipelineStageFlags                        stageMask)
+{
+
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateEvent(
+	VkDevice                                    device,
+	const VkEventCreateInfo*                    pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkEvent*                                    pEvent)
+{
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkResetEvent(
+	VkDevice                                    device,
+	VkEvent                                     event)
+{
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkSetEvent(
+	VkDevice                                    device,
+	VkEvent                                     event)
+{
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL vkCmdSetEvent(
+	VkCommandBuffer                             commandBuffer,
+	VkEvent                                     event,
+	VkPipelineStageFlags                        stageMask)
+{
+
+}

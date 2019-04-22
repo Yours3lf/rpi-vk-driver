@@ -418,3 +418,25 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
 	FREE(s);
 }
 
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceSurfaceSupportKHR
+ * does this queue family support presentation to this surface?
+ */
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceSupportKHR(
+		VkPhysicalDevice                            physicalDevice,
+		uint32_t                                    queueFamilyIndex,
+		VkSurfaceKHR                                surface,
+		VkBool32*                                   pSupported)
+{
+	assert(pSupported);
+	assert(surface);
+	assert(physicalDevice);
+
+	assert(queueFamilyIndex < numQueueFamilies);
+
+	//TODO if we plan to support headless rendering, there should be 2 families
+	//one using /dev/dri/card0 which has modesetting
+	//other using /dev/dri/renderD128 which does not support modesetting, this would say false here
+	*pSupported = VK_TRUE;
+	return VK_SUCCESS;
+}

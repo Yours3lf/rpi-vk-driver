@@ -262,3 +262,34 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clInsertUniformXYScale(&commandBuffer->uniformsCl, (float)(i->width) * 0.5f * 16.0f);
 	clInsertUniformZOffset(&commandBuffer->uniformsCl, 0.5f);
 }
+
+VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirect(
+	VkCommandBuffer                             commandBuffer,
+	VkBuffer                                    buffer,
+	VkDeviceSize                                offset,
+	uint32_t                                    drawCount,
+	uint32_t                                    stride)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndirect(
+	VkCommandBuffer                             commandBuffer,
+	VkBuffer                                    buffer,
+	VkDeviceSize                                offset,
+	uint32_t                                    drawCount,
+	uint32_t                                    stride)
+{
+
+}
+
+VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexed(
+	VkCommandBuffer                             commandBuffer,
+	uint32_t                                    indexCount,
+	uint32_t                                    instanceCount,
+	uint32_t                                    firstIndex,
+	int32_t                                     vertexOffset,
+	uint32_t                                    firstInstance)
+{
+
+}

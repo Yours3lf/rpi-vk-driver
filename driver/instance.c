@@ -336,3 +336,10 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(
 
 	return 0;
 }
+
+VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceLayerProperties(
+	uint32_t*                                   pPropertyCount,
+	VkLayerProperties*                          pProperties)
+{
+	return VK_SUCCESS;
+}
