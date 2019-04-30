@@ -1441,3 +1441,22 @@ void disassemble_qpu_asm(uint64_t instruction)
 
 	printf("\n");
 }
+
+unsigned get_num_instructions(char* ptr)
+{
+	unsigned num_instructions = 0;
+	while(ptr && *ptr != '\0')
+	{
+		ptr = strstr(ptr, ";");
+		if(!ptr) break;
+		ptr = strstr(ptr+(ptr!=0), ";");
+		if(!ptr) break;
+		ptr = strstr(ptr+(ptr!=0), ";");
+		if(ptr)
+		{
+			ptr += 1;
+			num_instructions += 1;
+		}
+	}
+	return num_instructions;
+}

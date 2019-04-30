@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <drm/drm.h>
 #include <drm/drm_fourcc.h>
@@ -43,8 +43,8 @@ VK_SYSTEM_ALLOCATION_SCOPE_DEVICE
 VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE
  **/
 
-#define ALLOCATE(size, alignment, scope) (pAllocator == 0) ? malloc(size) : pAllocator->pfnAllocation(pAllocator->pUserData, size, alignment, scope);
-#define FREE(memory) (pAllocator == 0) ? free(memory) : pAllocator->pfnFree(pAllocator->pUserData, memory);
+#define ALLOCATE(size, alignment, scope) (pAllocator == 0) ? malloc(size) : pAllocator->pfnAllocation(pAllocator->pUserData, size, alignment, scope)
+#define FREE(memory) (pAllocator == 0) ? free(memory) : pAllocator->pfnFree(pAllocator->pUserData, memory)
 
 typedef struct VkDevice_T _device;
 
@@ -330,6 +330,81 @@ typedef struct VkBufferView_T
 	VkDeviceSize               offset;
 	VkDeviceSize               range;
 } _bufferView;
+
+typedef struct VkSampler_T
+{
+	int dummy;
+} _sampler;
+
+typedef struct VkDescriptorSetLayout_T
+{
+	//an array of zero or more descriptor bindings
+	VkDescriptorSetLayoutBinding* bindings;
+	uint32_t bindingsCount;
+	VkDescriptorSetLayoutCreateFlags flags;
+} _descriptorSetLayout;
+
+typedef struct VkDescriptorImage_T
+{
+	uint32_t binding;
+	uint32_t count;
+	VkDescriptorType type;
+	VkShaderStageFlags stageFlags;
+	_sampler* sampler;
+	_imageView* imageView;
+	VkImageLayout imageLayout;
+} _descriptorImage;
+
+typedef struct VkDescriptorBuffer_T
+{
+	uint32_t binding;
+	uint32_t count;
+	VkDescriptorType type;
+	VkShaderStageFlags stageFlags;
+	_buffer* buffer;
+	VkDeviceSize offset;
+	VkDeviceSize range;
+} _descriptorBuffer;
+
+typedef struct VkDescriptorTexelBuffer_T
+{
+	uint32_t binding;
+	uint32_t count;
+	VkDescriptorType type;
+	VkShaderStageFlags stageFlags;
+	_bufferView* bufferView;
+} _descriptorTexelBuffer;
+
+typedef struct VkDescriptorSet_T
+{
+	//VkDescriptorSetLayoutCreateFlags flags;
+
+	//pointers into PAs
+
+	//VK_DESCRIPTOR_TYPE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+	//VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
+	//VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT
+	_descriptorImage* imageDescriptors;
+
+	//VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER
+	//VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, or VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC
+	_descriptorBuffer* bufferDescriptors;
+
+	//VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER or VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER
+	_descriptorTexelBuffer* texelBufferDescriptors;
+
+	uint32_t imageDescriptorsCount;
+	uint32_t bufferDescriptorsCount;
+	uint32_t texelBufferDescriptorsCount;
+} _descriptorSet;
+
+typedef struct VkDescriptorPool_T
+{
+	PoolAllocator descriptorSetPA;
+	ConsecutivePoolAllocator* imageDescriptorCPA;
+	ConsecutivePoolAllocator* bufferDescriptorCPA;
+	ConsecutivePoolAllocator* texelBufferDescriptorCPA;
+} _descriptorPool;
 
 uint32_t getFormatBpp(VkFormat f);
 uint32_t packVec4IntoABGR8(const float rgba[4]);
