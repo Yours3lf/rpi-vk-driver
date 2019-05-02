@@ -11,6 +11,7 @@
 #include "PoolAllocator.h"
 #include "ConsecutivePoolAllocator.h"
 #include "LinearAllocator.h"
+#include "map.h"
 
 #include <stdio.h>
 #include "CustomAssert.h"
@@ -346,7 +347,6 @@ typedef struct VkDescriptorSetLayout_T
 
 typedef struct VkDescriptorImage_T
 {
-	uint32_t binding;
 	uint32_t count;
 	VkDescriptorType type;
 	VkShaderStageFlags stageFlags;
@@ -357,7 +357,6 @@ typedef struct VkDescriptorImage_T
 
 typedef struct VkDescriptorBuffer_T
 {
-	uint32_t binding;
 	uint32_t count;
 	VkDescriptorType type;
 	VkShaderStageFlags stageFlags;
@@ -368,7 +367,6 @@ typedef struct VkDescriptorBuffer_T
 
 typedef struct VkDescriptorTexelBuffer_T
 {
-	uint32_t binding;
 	uint32_t count;
 	VkDescriptorType type;
 	VkShaderStageFlags stageFlags;
@@ -379,7 +377,11 @@ typedef struct VkDescriptorSet_T
 {
 	//VkDescriptorSetLayoutCreateFlags flags;
 
-	//pointers into PAs
+	map imageBindingMap;
+	map bufferBindingMap;
+	map texelBufferBindingMap;
+
+	//pointers into CPAs
 
 	//VK_DESCRIPTOR_TYPE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
 	//VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
@@ -401,6 +403,7 @@ typedef struct VkDescriptorSet_T
 typedef struct VkDescriptorPool_T
 {
 	PoolAllocator descriptorSetPA;
+	ConsecutivePoolAllocator mapElementCPA;
 	ConsecutivePoolAllocator* imageDescriptorCPA;
 	ConsecutivePoolAllocator* bufferDescriptorCPA;
 	ConsecutivePoolAllocator* texelBufferDescriptorCPA;

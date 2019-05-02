@@ -57,6 +57,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(
 	dp->bufferDescriptorCPA = 0;
 	dp->texelBufferDescriptorCPA = 0;
 
+	void* memem = ALLOCATE(sizeof(mapElem), imageDescriptorCount + bufferDescriptorCount + texelBufferDescriptorCount, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+	if(!memem)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+	dp->mapElementCPA = createConsecutivePoolAllocator(memem, sizeof(mapElem), sizeof(mapElem) * (imageDescriptorCount + bufferDescriptorCount + texelBufferDescriptorCount));
+
 	if(imageDescriptorCount > 0)
 	{
 		dp->imageDescriptorCPA = ALLOCATE(sizeof(ConsecutivePoolAllocator), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
@@ -162,16 +169,19 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateDescriptorSets(
 		if(imageDescriptorCount > 0)
 		{
 			ds->imageDescriptors = consecutivePoolAllocate(dp->imageDescriptorCPA, imageDescriptorCount);
+			ds->imageBindingMap = createMap(consecutivePoolAllocate(&dp->mapElementCPA, imageDescriptorCount), imageDescriptorCount);
 		}
 
-		if(bufferDescriptorCount)
+		if(bufferDescriptorCount > 0)
 		{
 			ds->bufferDescriptors = consecutivePoolAllocate(dp->bufferDescriptorCPA, bufferDescriptorCount);
+			ds->bufferBindingMap = createMap(consecutivePoolAllocate(&dp->mapElementCPA, bufferDescriptorCount), bufferDescriptorCount);
 		}
 
-		if(texelBufferDescriptorCount)
+		if(texelBufferDescriptorCount > 0)
 		{
 			ds->texelBufferDescriptors = consecutivePoolAllocate(dp->texelBufferDescriptorCPA, texelBufferDescriptorCount);
+			ds->texelBufferBindingMap = createMap(consecutivePoolAllocate(&dp->mapElementCPA, texelBufferDescriptorCount), texelBufferDescriptorCount);
 		}
 
 		//TODO immutable samplers
@@ -188,7 +198,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateDescriptorSets(
 			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 			case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 			case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-				ds->imageDescriptors[imageDescriptorCounter].binding = dsl->bindings[d].binding;
+				setMapElement(&ds->imageBindingMap, dsl->bindings[d].binding, &ds->imageDescriptors[imageDescriptorCounter]);
 				ds->imageDescriptors[imageDescriptorCounter].count = dsl->bindings[d].descriptorCount;
 				ds->imageDescriptors[imageDescriptorCounter].type = dsl->bindings[d].descriptorType;
 				ds->imageDescriptors[imageDescriptorCounter].stageFlags = dsl->bindings[d].stageFlags;
@@ -198,7 +208,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateDescriptorSets(
 			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
 			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-				ds->imageDescriptors[bufferDescriptorCounter].binding = dsl->bindings[d].binding;
+				setMapElement(&ds->bufferBindingMap, dsl->bindings[d].binding, &ds->bufferDescriptors[bufferDescriptorCounter]);
 				ds->imageDescriptors[bufferDescriptorCounter].count = dsl->bindings[d].descriptorCount;
 				ds->imageDescriptors[bufferDescriptorCounter].type = dsl->bindings[d].descriptorType;
 				ds->imageDescriptors[bufferDescriptorCounter].stageFlags = dsl->bindings[d].stageFlags;
@@ -206,7 +216,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateDescriptorSets(
 				break;
 			case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 			case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-				ds->imageDescriptors[texelBufferDescriptorCounter].binding = dsl->bindings[d].binding;
+				setMapElement(&ds->texelBufferBindingMap, dsl->bindings[d].binding, &ds->texelBufferDescriptors[texelBufferDescriptorCounter]);
 				ds->imageDescriptors[texelBufferDescriptorCounter].count = dsl->bindings[d].descriptorCount;
 				ds->imageDescriptors[texelBufferDescriptorCounter].type = dsl->bindings[d].descriptorType;
 				ds->imageDescriptors[texelBufferDescriptorCounter].stageFlags = dsl->bindings[d].stageFlags;
@@ -272,17 +282,7 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSets(
 		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
 		{
-			_descriptorImage* di = ds->imageDescriptors;
-			for(uint32_t d = 0; d < ds->imageDescriptorsCount; ++d)
-			{
-				if(ds->imageDescriptors[d].binding == pDescriptorWrites[c].dstBinding)
-				{
-					//found it
-					di = ds->imageDescriptors + d;
-					break;
-				}
-			}
-
+			_descriptorImage* di = getMapElement(ds->imageBindingMap, pDescriptorWrites[c].dstBinding);
 			di += pDescriptorWrites[c].dstArrayElement;
 			for(uint32_t d = 0; d < pDescriptorWrites[c].descriptorCount; ++d, di++)
 			{
@@ -297,17 +297,7 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSets(
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
 		{
-			_descriptorBuffer* di = ds->bufferDescriptors;
-			for(uint32_t d = 0; d < ds->bufferDescriptorsCount; ++d)
-			{
-				if(ds->bufferDescriptors[d].binding == pDescriptorWrites[c].dstBinding)
-				{
-					//found it
-					di = ds->bufferDescriptors + d;
-					break;
-				}
-			}
-
+			_descriptorBuffer* di = getMapElement(ds->bufferBindingMap, pDescriptorWrites[c].dstBinding);
 			di += pDescriptorWrites[c].dstArrayElement;
 			for(uint32_t d = 0; d < pDescriptorWrites[c].descriptorCount; ++d, di++)
 			{
@@ -320,17 +310,7 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSets(
 		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 		{
-			_descriptorTexelBuffer* di = ds->texelBufferDescriptors;
-			for(uint32_t d = 0; d < ds->texelBufferDescriptorsCount; ++d)
-			{
-				if(ds->texelBufferDescriptors[d].binding == pDescriptorWrites[c].dstBinding)
-				{
-					//found it
-					di = ds->texelBufferDescriptors + d;
-					break;
-				}
-			}
-
+			_descriptorTexelBuffer* di = getMapElement(ds->texelBufferBindingMap, pDescriptorWrites[c].dstBinding);
 			di += pDescriptorWrites[c].dstArrayElement;
 			for(uint32_t d = 0; d < pDescriptorWrites[c].descriptorCount; ++d, di++)
 			{
@@ -346,64 +326,31 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSets(
 		_descriptorSet* sds = pDescriptorCopies[c].srcSet;
 		_descriptorSet* dds = pDescriptorCopies[c].dstSet;
 
-		for(uint32_t d = 0; d < sds->imageDescriptorsCount; ++d)
+		_descriptorImage* sdi = getMapElement(sds->imageBindingMap, pDescriptorCopies[c].srcBinding);
+		if(sdi)
 		{
-			if(sds->imageDescriptors[d].binding == pDescriptorCopies[c].srcBinding)
-			{
-				_descriptorImage* sdi = sds->imageDescriptors + d + pDescriptorCopies[c].srcArrayElement;
-
-				for(uint32_t e = 0; e < dds->imageDescriptorsCount; ++e)
-				{
-					if(dds->imageDescriptors[e].binding == pDescriptorCopies[c].dstBinding)
-					{
-						_descriptorImage* ddi = dds->imageDescriptors + e + pDescriptorCopies[c].dstArrayElement;
-						memcpy(ddi, sdi, sizeof(_descriptorImage) * pDescriptorCopies[c].descriptorCount);
-						break;
-					}
-				}
-
-				break;
-			}
+			_descriptorImage* ddi = getMapElement(dds->imageBindingMap, pDescriptorCopies[c].dstBinding);
+			sdi += pDescriptorCopies[c].srcArrayElement;
+			ddi += pDescriptorCopies[c].dstArrayElement;
+			memcpy(ddi, sdi, sizeof(_descriptorImage) * pDescriptorCopies[c].descriptorCount);
 		}
 
-		for(uint32_t d = 0; d < sds->bufferDescriptorsCount; ++d)
+		_descriptorBuffer* sdb = getMapElement(sds->bufferBindingMap, pDescriptorCopies[c].srcBinding);
+		if(sdb)
 		{
-			if(sds->bufferDescriptors[d].binding == pDescriptorCopies[c].srcBinding)
-			{
-				_descriptorBuffer* sdi = sds->bufferDescriptors + d + pDescriptorCopies[c].srcArrayElement;
-
-				for(uint32_t e = 0; e < dds->bufferDescriptorsCount; ++e)
-				{
-					if(dds->bufferDescriptors[e].binding == pDescriptorCopies[c].dstBinding)
-					{
-						_descriptorBuffer* ddi = dds->bufferDescriptors + e + pDescriptorCopies[c].dstArrayElement;
-						memcpy(ddi, sdi, sizeof(_descriptorBuffer) * pDescriptorCopies[c].descriptorCount);
-						break;
-					}
-				}
-
-				break;
-			}
+			_descriptorBuffer* ddb = getMapElement(dds->bufferBindingMap, pDescriptorCopies[c].dstBinding);
+			sdb += pDescriptorCopies[c].srcArrayElement;
+			ddb += pDescriptorCopies[c].dstArrayElement;
+			memcpy(ddb, sdb, sizeof(_descriptorBuffer) * pDescriptorCopies[c].descriptorCount);
 		}
 
-		for(uint32_t d = 0; d < sds->texelBufferDescriptorsCount; ++d)
+		_descriptorTexelBuffer* sdtb = getMapElement(sds->texelBufferBindingMap, pDescriptorCopies[c].srcBinding);
+		if(sdtb)
 		{
-			if(sds->texelBufferDescriptors[d].binding == pDescriptorCopies[c].srcBinding)
-			{
-				_descriptorTexelBuffer* sdi = sds->texelBufferDescriptors + d + pDescriptorCopies[c].srcArrayElement;
-
-				for(uint32_t e = 0; e < dds->imageDescriptorsCount; ++e)
-				{
-					if(dds->texelBufferDescriptors[e].binding == pDescriptorCopies[c].dstBinding)
-					{
-						_descriptorTexelBuffer* ddi = dds->texelBufferDescriptors + e + pDescriptorCopies[c].dstArrayElement;
-						memcpy(ddi, sdi, sizeof(_descriptorTexelBuffer) * pDescriptorCopies[c].descriptorCount);
-						break;
-					}
-				}
-
-				break;
-			}
+			_descriptorTexelBuffer* ddtb = getMapElement(dds->texelBufferBindingMap, pDescriptorCopies[c].dstBinding);
+			sdtb += pDescriptorCopies[c].srcArrayElement;
+			ddtb += pDescriptorCopies[c].dstArrayElement;
+			memcpy(ddtb, sdtb, sizeof(_descriptorTexelBuffer) * pDescriptorCopies[c].descriptorCount);
 		}
 	}
 }
