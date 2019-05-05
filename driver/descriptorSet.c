@@ -46,7 +46,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(
 	//TODO
 	//pCreateInfo->flags
 
-	void* dsmem = ALLOCATE(sizeof(_descriptorSet), pCreateInfo->maxSets, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+	void* dsmem = ALLOCATE(sizeof(_descriptorSet)*pCreateInfo->maxSets, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!dsmem)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -57,7 +57,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(
 	dp->bufferDescriptorCPA = 0;
 	dp->texelBufferDescriptorCPA = 0;
 
-	void* memem = ALLOCATE(sizeof(mapElem), imageDescriptorCount + bufferDescriptorCount + texelBufferDescriptorCount, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+	void* memem = ALLOCATE(sizeof(mapElem)*imageDescriptorCount + bufferDescriptorCount + texelBufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!memem)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -72,7 +72,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		void* mem = ALLOCATE(sizeof(_descriptorImage), imageDescriptorCount, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		void* mem = ALLOCATE(sizeof(_descriptorImage)*imageDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -88,7 +88,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		void* mem = ALLOCATE(sizeof(_descriptorBuffer), bufferDescriptorCount, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		void* mem = ALLOCATE(sizeof(_descriptorBuffer)*bufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -104,7 +104,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		void* mem = ALLOCATE(sizeof(_descriptorTexelBuffer), texelBufferDescriptorCount, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		void* mem = ALLOCATE(sizeof(_descriptorTexelBuffer)*texelBufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -245,7 +245,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorSetLayout(
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
-	dsl->bindings = ALLOCATE(sizeof(VkDescriptorSetLayoutBinding), pCreateInfo->bindingCount, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+	dsl->bindings = ALLOCATE(sizeof(VkDescriptorSetLayoutBinding)*pCreateInfo->bindingCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 	if(!dsl->bindings)
 	{
