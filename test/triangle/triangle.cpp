@@ -22,67 +22,6 @@
 //#define WINDOW_WIDTH 640
 //#define WINDOW_HEIGHT 480
 
-const char* fragShader =
-		"#version 100\n"
-		"precision mediump float;\n"
-		"void main() { gl_FragColor = vec4(0.8, 0.3, 0.5, 1.0); }\n";
-
-const char* vertShader =
-		"#version 100\n"
-		"precision highp float;\n"
-		"attribute vec2 vertex;\n"
-		"void main(){ gl_Position = vec4(vertex, 0, 1); }\n";
-
-const char fragBytes[] =
-{
-	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10,
-	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10,
-	0x80, 0x7d, 0x82, 0x15, 0xa7, 0xb, 0x2, 0x10,
-	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x30,
-	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10,
-	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x50
-};
-
-const char vertBytes[] =
-{
-	0x80, 0x1f, 0x82, 0x2, 0x27, 0x10, 0x2, 0xd0,
-	00, 0x1a, 0x20, 00, 0x67, 0x4c, 0x2, 0xe0,
-	0x37, 00, 0xc2, 0x20, 0xe0, 0x49, 00, 0x10,
-	0x7, 00, 0x9c, 0x20, 0xe1, 0x49, 00, 0x10,
-	0x77, 0x2, 0xc2, 0x27, 0x22, 0x40, 0x12, 0x10,
-	0x17, 00, 0x9c, 0x20, 0xe3, 0x49, 00, 0x10,
-	0xc0, 0x76, 0x9e, 0x7, 0x27, 00, 0x22, 0x10,
-	00, 0x1a, 00, 00, 0x67, 0x5c, 0x2, 0xe0,
-	0x80, 0x7d, 0x2, 0x15, 0x27, 0xc, 0x2, 0x10,
-	0x80, 0x7d, 0x82, 0x15, 0x27, 0xc, 0x2, 0x10,
-	0xc0, 0xf, 0x9c, 0x15, 0x27, 0xc, 0x2, 0x10,
-	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x30,
-	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10,
-	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10,
-};
-
-const char coordinateBytes[] =
-{
-	00, 0x1a, 0x20, 00, 0x67, 0x4c, 0x2, 0xe0,
-	0x80, 0x7d, 0xc2, 0x15, 0xa7, 0x8, 0x2, 0x10,
-	00, 0x1a, 00, 00, 0x67, 0x5c, 0x2, 0xe0,
-	0x92, 0x7d, 0xc2, 0x95, 0xf0, 0x48, 0x2, 0x10,
-	0xde, 0x76, 0x82, 0x35, 0x21, 0x4c, 0x2, 0x10,
-	0x80, 0x1f, 0x82, 0x2, 0xe7, 0x8, 0x2, 0xd0,
-	0x16, 0x70, 0x82, 0x20, 0xe2, 0x49, 00, 0x10,
-	0x13, 0x70, 0x9e, 0x20, 0xe0, 0x49, 00, 0x10,
-	0xb, 0x70, 0x9e, 0x27, 0x21, 0x40, 0x12, 0x10,
-	0x40, 0x72, 0x9e, 0x7, 0x27, 00, 0x22, 0x10,
-	0xc0, 0xf, 0x9c, 0x15, 0x27, 0xc, 0x2, 0xd0,
-	0xc0, 0xf, 0x9e, 0x15, 0x27, 0xc, 0x2, 0xd0,
-	0x80, 0x7d, 0x2, 0x15, 0x27, 0xc, 0x2, 0x10,
-	0x80, 0x7d, 0x82, 0x15, 0x27, 0xc, 0x2, 0x10,
-	0xc0, 0x76, 0x9e, 0x15, 0x27, 0xc, 0x2, 0x10,
-	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x30,
-	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10,
-	00, 0x70, 0x9e, 00, 0xe7, 0x9, 00, 0x10,
-};
-
 // Note: support swap chain recreation (not only required for resized windows!)
 // Note: window resize may not result in Vulkan telling that the swap chain should be recreated, should be handled explicitly!
 void run();
@@ -103,6 +42,8 @@ void CreateRenderPass();
 void CreateFramebuffer();
 void CreateShaders();
 void CreatePipeline();
+void CreateUniformBuffer();
+void CreateDescriptorSet();
 void CreateVertexBuffer();
 void recordCommandBuffers();
 VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -125,12 +66,18 @@ VkShaderModule shaderModule; //
 VkPipeline pipeline; //
 VkQueue graphicsQueue;
 VkQueue presentQueue;
+VkBuffer uniformBuffer;
 VkBuffer vertexBuffer;
+VkDeviceMemory uniformBufferMemory;
 VkDeviceMemory vertexBufferMemory;
 VkPhysicalDeviceMemoryProperties pdmp;
 std::vector<VkImageView> views; //?
 VkSurfaceFormatKHR swapchainFormat;
 VkExtent2D swapChainExtent;
+VkDescriptorPool descriptorPool;
+VkDescriptorSet descriptorSet;
+VkDescriptorSetLayout dsl;
+VkPipelineLayout pipelineLayout;
 
 uint32_t graphicsQueueFamily;
 uint32_t presentQueueFamily;
@@ -199,6 +146,8 @@ void setupVulkan() {
 	CreateRenderPass();
 	CreateFramebuffer();
 	CreateVertexBuffer();
+	CreateUniformBuffer();
+	CreateDescriptorSet();
 	CreateShaders();
 	CreatePipeline();
 	recordCommandBuffers();
@@ -206,7 +155,7 @@ void setupVulkan() {
 
 void mainLoop() {
 	//while (!glfwWindowShouldClose(window)) {
-	for(int c = 0; c < 1; ++c){
+	for(int c = 0; c < 300; ++c){
 		draw();
 
 		//glfwPollEvents();
@@ -705,6 +654,8 @@ void recordCommandBuffers()
 		VkDeviceSize offsets = 0;
 		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer, &offsets );
 
+		vkCmdBindDescriptorSets(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
+
 		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
 
 		vkCmdEndRenderPass(presentCommandBuffers[i]);
@@ -1024,6 +975,13 @@ void CreateShaders()
 
 void CreatePipeline()
 {
+	VkPipelineLayoutCreateInfo pipelineLayoutCI = {};
+	pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutCI.setLayoutCount = 1;
+	pipelineLayoutCI.pSetLayouts = &dsl;
+	vkCreatePipelineLayout(device, &pipelineLayoutCI, 0, &pipelineLayout);
+
+
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfo[2] = {};
 
 	shaderStageCreateInfo[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1110,6 +1068,7 @@ void CreatePipeline()
 	pipelineInfo.renderPass = renderPass;
 	pipelineInfo.basePipelineIndex = -1;
 	pipelineInfo.pDepthStencilState = &depthStencilState;
+	pipelineInfo.layout = pipelineLayout;
 
 	VkResult res = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &pipeline);
 
@@ -1132,6 +1091,99 @@ uint32_t getMemoryTypeIndex(VkPhysicalDeviceMemoryProperties deviceMemoryPropert
 	}
 
 	assert(0);
+}
+
+void CreateUniformBuffer()
+{
+	unsigned uboSize = sizeof(float) * 4; //4 x float
+
+	VkMemoryRequirements mr;
+
+	{ //create staging buffer
+		VkBufferCreateInfo ci = {};
+		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		ci.size = uboSize;
+		ci.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+
+		VkResult res = vkCreateBuffer(device, &ci, 0, &uniformBuffer);
+
+		vkGetBufferMemoryRequirements(device, uniformBuffer, &mr);
+
+		VkMemoryAllocateInfo mai = {};
+		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		mai.allocationSize = mr.size;
+		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		res = vkAllocateMemory(device, &mai, 0, &uniformBufferMemory);
+
+		float uniforms[] =
+		{
+			1.0f,
+			(float)(swapChainExtent.width) * 0.5f * 16.0f,
+			-1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f,
+			0.5f
+		};
+
+		void* data;
+		res = vkMapMemory(device, uniformBufferMemory, 0, mr.size, 0, &data);
+		memcpy(data, uniforms, uboSize);
+		vkUnmapMemory(device, uniformBufferMemory);
+
+		res = vkBindBufferMemory(device, uniformBuffer, uniformBufferMemory, 0);
+	}
+
+	printf("Uniform buffer created\n");
+}
+
+void CreateDescriptorSet()
+{
+	VkDescriptorSetLayoutBinding setLayoutBinding = {};
+	setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	setLayoutBinding.binding = 0;
+	setLayoutBinding.descriptorCount = 4;
+	setLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {};
+	descriptorLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	descriptorLayoutCI.bindingCount = 1;
+	descriptorLayoutCI.pBindings = &setLayoutBinding;
+
+	vkCreateDescriptorSetLayout(device, &descriptorLayoutCI, 0, &dsl);
+
+	VkDescriptorPoolSize descriptorPoolSize = {};
+	descriptorPoolSize.descriptorCount = 1;
+	descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+	VkDescriptorPoolCreateInfo descriptorPoolCI = {};
+	descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	descriptorPoolCI.poolSizeCount = 1;
+	descriptorPoolCI.pPoolSizes = &descriptorPoolSize;
+	descriptorPoolCI.maxSets = 1;
+
+	vkCreateDescriptorPool(device, &descriptorPoolCI, 0, &descriptorPool);
+
+	VkDescriptorSetAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &dsl;
+
+	vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet);
+
+	VkDescriptorBufferInfo bufferInfo;
+	bufferInfo.buffer = uniformBuffer;
+	bufferInfo.offset = 0;
+	bufferInfo.range = VK_WHOLE_SIZE;
+
+	VkWriteDescriptorSet writeDescriptorSet = {};
+	writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeDescriptorSet.dstSet = descriptorSet;
+	writeDescriptorSet.dstBinding = 0;
+	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	writeDescriptorSet.pBufferInfo = &bufferInfo;
+	writeDescriptorSet.descriptorCount = 4;
+
+	vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);
 }
 
 void CreateVertexBuffer()
