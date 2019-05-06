@@ -6,9 +6,9 @@
 /*
  * Implementation of our RPI specific "extension"
  */
-VkResult vkCreateRpiSurfaceKHR(
+VkResult vkCreateRpiSurfaceEXT(
 		VkInstance                                  instance,
-		const VkRpiSurfaceCreateInfoKHR*            pCreateInfo,
+		const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
 		VkSurfaceKHR*                               pSurface)
 {

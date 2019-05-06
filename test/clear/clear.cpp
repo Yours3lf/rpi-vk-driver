@@ -167,7 +167,7 @@ void createInstance() {
 }
 
 void createWindowSurface() {
-	if (vkCreateRpiSurfaceKHR(instance, 0, 0, &windowSurface) != VK_SUCCESS) {
+	if (vkCreateRpiSurfaceEXT(instance, 0, 0, &windowSurface) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;
 		assert(0);
 	}

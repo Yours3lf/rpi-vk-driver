@@ -121,8 +121,7 @@ std::vector<VkCommandBuffer> presentCommandBuffers; //
 std::vector<VkImage> swapChainImages; //
 VkRenderPass renderPass; //
 std::vector<VkFramebuffer> fbs; //
-VkShaderModule vsModule; //
-VkShaderModule fsModule; //
+VkShaderModule shaderModule; //
 VkPipeline pipeline; //
 VkQueue graphicsQueue;
 VkQueue presentQueue;
@@ -154,8 +153,7 @@ void cleanup() {
 
 	vkDestroyRenderPass(device, renderPass, 0);
 
-	vkDestroyShaderModule(device, vsModule, 0);
-	vkDestroyShaderModule(device, fsModule, 0);
+	vkDestroyShaderModule(device, shaderModule, 0);
 
 	vkDestroyPipeline(device, pipeline, 0);
 
@@ -268,7 +266,7 @@ void createInstance() {
 }
 
 void createWindowSurface() {
-	if (vkCreateRpiSurfaceKHR(instance, 0, 0, &windowSurface) != VK_SUCCESS) {
+	if (vkCreateRpiSurfaceEXT(instance, 0, 0, &windowSurface) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;
 		assert(0);
 	}
@@ -867,6 +865,84 @@ VkShaderModule VulkanCreateShaderModule(VkDevice& device, char* byteStream, uint
 
 void CreateShaders()
 {
+	/**
+	//write texture addresses (x, y)
+	//writing tmu0_s signals that all coordinates are written
+	0xd0021e67159c0fc0 sig_small_imm mov tmu0_t, 0 ; nop nop, r0, r0
+	0xd0021e27159c0fc0 sig_small_imm mov tmu0_s, 0 ; nop nop, r0, r0
+	//suspend thread (after 2 nops) to wait for TMU request to finish
+	0x600009e7009e7000 sig_thread_switch nop nop, r0, r0 ; nop nop, r0, r0
+	0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
+	0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
+	//read TMU0 request result to R4
+	0xa00009e7009e7000 load_tmu0 nop nop, r0, r0 ; nop nop, r0, r0
+	//when thread has been awakened, MOV from R4 to R0
+	0x19020827049e7900 fmax r0, r4.8a, r4.8a ; nop nop, r0, r0
+	0x1b424860849e7900 fmax r1, r4.8b, r4.8b ; mov r0.8a, r0
+	0x1d5248a0849e7909 fmax r2, r4.8c, r4.8c ; mov r0.8b, r1
+	0x1f6248e0849e7912 fmax r3, r4.8d, r4.8d ; mov r0.8c, r2
+	0x117049e0809e701b nop nop, r0, r0 ; mov r0.8d, r3
+	//write color to Tile Buffer
+	0x10020ba7159e7000 mov tlb_color_all, r0 ; nop nop, r0, r0
+	//program end
+	0x300009e7009e7000 sig_end nop nop, r0, r0 ; nop nop, r0, r0
+	0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
+	0x500009e7009e7000 sig_unlock_score nop nop, r0, r0 ; nop nop, r0, r0
+	/**/
+
+	//TODO doesn't work for some reason...
+	char vs_asm_code[] =
+			"sig_small_imm ; rx0 = fsub.ws.always(b, a, uni, 0x40000000) ; nop = nop(r0, r0) ;\n"
+			//set up VPM read for subsequent reads
+			//0x00201a00: 0000 0000 0010 0000 0001 1010 0000 0000
+			//addr: 0
+			//size: 32bit
+			//packed
+			//horizontal
+			//stride=1
+			//vectors to read = 2 (how many components)
+			"sig_load_imm ; vr_setup = load32.always(0x00201a00) ; nop = load32.always() ;\n"
+			"sig_none ; nop = nop(r0, r0, vpm_read, uni) ; r0 = fmul.always(a, b) ;\n"
+			"sig_none ; nop = nop(r0, r0, nop, rb0) ; r1 = fmul.always(r0, b) ;\n"
+			"sig_none ; rx0.16a = ftoi.always(r1, r1, vpm_read, uni) ; r2 = fmul.always(a, b) ;\n"
+			"sig_none ; nop = nop(r0, r0, nop, rb0) ; r3 = fmul.always(r2, b) ;\n"
+			"sig_none ; rx0.16b = ftoi.always(r3, r3) ; nop = nop(r0, r0) ;\n"
+			//set up VPM write for subsequent writes
+			//0x00001a00: 0000 0000 0000 0000 0001 1010 0000 0000
+			//addr: 0
+			//size: 32bit
+			//horizontal
+			//stride = 1
+			"sig_load_imm ; vw_setup = load32.always.ws(0x00001a00) ; nop = load32.always() ;\n"
+			"sig_none ; vpm = or.always(a, a, ra0, nop) ; nop = nop(r0, r0);\n"
+			"sig_none ; vpm = or.always(a, a, uni, nop) ; nop = nop(r0, r0);\n"
+			"sig_none ; vpm = or.always(b, b, nop, rb0) ; nop = nop(r0, r0);\n"
+			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
+				"\0";
+
+	char cs_asm_code[] =
+			"sig_load_imm ; vr_setup = load32.always(0x00201a00) ; nop = load32.always() ;\n"
+			"sig_none ; r2 = or.always(a, a, vpm_read, nop) ; nop = nop(r0, r0);\n"
+			"sig_load_imm ; vw_setup = load32.always.ws(0x00001a00) ; nop = load32.always() ;\n"
+			"sig_none ; r3 = or.always(a, a, vpm_read, nop) ; vpm = v8min.always(r2, r2);\n"
+			"sig_none ; vpm = or.always(r3, r3, uni, nop) ; r1 = fmul.always(r3, a);\n"
+			"sig_small_imm ; r3 = fsub.always(b, a, uni, 0x40000000) ; nop = nop(r0, r0);\n"
+			"sig_none ; nop = nop(r0, r0, uni, nop) ; r2 = fmul.always(r2, a);\n"
+			"sig_none ; nop = nop(r0, r0) ; r0 = fmul.always(r2, r3);\n"
+			"sig_none ; rx0.16a = ftoi.always(r0, r0) ; r1 = fmul.always(r1, r3) ;\n"
+			"sig_none ; rx0.16b = ftoi.always(r1, r1) ; nop = nop(r0, r0) ;\n"
+			"sig_small_imm ; vpm = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;\n"
+			"sig_small_imm ; vpm = or.always(b, b, nop, 0x3f800000) ; nop = nop(r0, r0) ;\n"
+			"sig_none ; vpm = or.always(a, a, ra0, nop) ; nop = nop(r0, r0) ;\n"
+			"sig_none ; vpm = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;\n"
+			"sig_none ; vpm = or.always(r3, r3) ; nop = nop(r0, r0) ;\n"
+			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
+				"\0";
+
 	//clever: use small immedate -1 interpreted as 0xffffffff (white) to set color to white
 	//"sig_small_imm ; tlb_color_all = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
 
@@ -876,7 +952,7 @@ void CreateShaders()
 
 	/**/
 	//rainbow colors
-	char asm_code[] =
+	char fs_asm_code[] =
 			"sig_none ; r1 = itof.always(a, a, x_pix, y_pix) ; nop = nop(r0, r0) ;" //can't use mul pipeline for conversion :(
 			"sig_load_imm ; r2 = load32.always(0x3a088888) ; nop = load32() ;" //1/1920
 			"sig_none ; r1 = itof.pm.always(b, b, x_pix, y_pix) ; r0.8c = fmul.always(r1, r2) ;"
@@ -893,7 +969,7 @@ void CreateShaders()
 
 	/**
 	//display a color
-	char asm_code[] =
+	char fs_asm_code[] =
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_load_imm ; r0 = load32.always(0xffa14ccc) ; nop = load32() ;"
 			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
@@ -903,81 +979,44 @@ void CreateShaders()
 				"\0";
 	/**/
 
-	unsigned num_instructions = 0;
-	char* ptr = asm_code;
-	while(ptr && *ptr != '\0')
+	char* asm_strings[] =
 	{
-		ptr = strstr(ptr, ";");
-		if(!ptr) break;
-		ptr = strstr(ptr+(ptr!=0), ";");
-		if(!ptr) break;
-		ptr = strstr(ptr+(ptr!=0), ";");
-		if(ptr)
-		{
-			ptr += 1;
-			num_instructions += 1;
-		}
-	}
-
-	uint64_t instruction_size = sizeof(uint64_t)*num_instructions;
-	uint64_t* instructions = (uint64_t*)malloc(instruction_size);
-
-	assemble_qpu_asm(asm_code, instructions);
-
-	for(uint64_t c = 0; c < num_instructions; ++c)
-	{
-		printf("%#llx ", instructions[c]);
-		disassemble_qpu_asm(instructions[c]);
-	}
-
-	char* vptr = (char*)malloc(sizeof(vertBytes));
-	memcpy(vptr, vertBytes, sizeof(vertBytes));
-
-	char* fptr = (char*)malloc(sizeof(fragBytes));
-	memcpy(fptr, fragBytes, sizeof(fragBytes));
-
-	char* cptr = (char*)malloc(sizeof(coordinateBytes));
-	memcpy(cptr, coordinateBytes, sizeof(coordinateBytes));
-
-	char* vertStreams[] =
-	{
-		cptr, vptr, 0, 0
+		(char*)cs_asm_code, (char*)vs_asm_code, (char*)fs_asm_code, 0
 	};
 
-	char* fragStreams[] =
-	{
-		//0, 0, fptr, 0
-		0, 0, (char*)instructions, 0
+	uint32_t numDescriptorBindings[VK_RPI_ASSEMBLY_TYPE_MAX] = {4, 4, 0, 0};
+	uint32_t descriptorBindings[VK_RPI_ASSEMBLY_TYPE_MAX][4] = {
+		{0, 0, 0, 0},
+		{0, 0, 0, 0}
+	};
+	uint32_t descriptorSets[VK_RPI_ASSEMBLY_TYPE_MAX][4] = {
+		{0, 0, 0, 0},
+		{0, 0, 0, 0}
+	};
+	VkDescriptorType descriptorTypes[VK_RPI_ASSEMBLY_TYPE_MAX][4] = {
+		{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER},
+		{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER}
+	};
+	uint32_t descriptorCounts[VK_RPI_ASSEMBLY_TYPE_MAX][4] = {
+		{4, 4, 4, 4},
+		{4, 4, 4, 4}
+	};
+	uint32_t descriptorArrayElems[VK_RPI_ASSEMBLY_TYPE_MAX][4] = {
+		{2, 0, 1, 3}, //coord
+		{0, 1, 2, 3}, //vert
 	};
 
-	uint32_t vertNumbytes[] =
-	{
-		sizeof(coordinateBytes), sizeof(vertBytes), 0, 0
-	};
+	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo;
+	shaderModuleCreateInfo.asmStrings = asm_strings;
+	shaderModuleCreateInfo.numDescriptorBindings = numDescriptorBindings;
+	shaderModuleCreateInfo.descriptorBindings = (uint32_t*)descriptorBindings;
+	shaderModuleCreateInfo.descriptorSets = (uint32_t*)descriptorSets;
+	shaderModuleCreateInfo.descriptorTypes = (VkDescriptorType*)descriptorTypes;
+	shaderModuleCreateInfo.descriptorCounts = (uint32_t*)descriptorCounts;
+	shaderModuleCreateInfo.descriptorArrayElems = (uint32_t*)descriptorArrayElems;
 
-	uint32_t fragNumbytes[] =
-	{
-		//0, 0, sizeof(fragBytes), 0
-		0, 0, instruction_size, 0
-	};
-
-	VkRpiShaderModuleAssemblyCreateInfoKHR vertexShaderModuleCreateInfo;
-	vertexShaderModuleCreateInfo.byteStreamArray = vertStreams;
-	vertexShaderModuleCreateInfo.numBytesArray = vertNumbytes;
-
-	VkRpiShaderModuleAssemblyCreateInfoKHR fragShaderModuleCreateInfo;
-	fragShaderModuleCreateInfo.byteStreamArray = fragStreams;
-	fragShaderModuleCreateInfo.numBytesArray = fragNumbytes;
-
-	VkResult res = vkCreateShaderModuleFromRpiAssemblyKHR(device, &vertexShaderModuleCreateInfo, 0, &vsModule);
-	assert(vsModule);
-
-	res = vkCreateShaderModuleFromRpiAssemblyKHR(device, &fragShaderModuleCreateInfo, 0, &fsModule);
-	assert(fsModule);
-
-	free(vptr);
-	free(fptr);
-	free(cptr);
+	VkResult res = vkCreateShaderModuleFromRpiAssemblyEXT(device, &shaderModuleCreateInfo, 0, &shaderModule);
+	assert(shaderModule);
 }
 
 
@@ -989,11 +1028,11 @@ void CreatePipeline()
 
 	shaderStageCreateInfo[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderStageCreateInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-	shaderStageCreateInfo[0].module = vsModule;
+	shaderStageCreateInfo[0].module = shaderModule;
 	shaderStageCreateInfo[0].pName = "main";
 	shaderStageCreateInfo[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderStageCreateInfo[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	shaderStageCreateInfo[1].module = fsModule;
+	shaderStageCreateInfo[1].module = shaderModule;
 	shaderStageCreateInfo[1].pName = "main";
 
 	VkVertexInputBindingDescription vertexInputBindingDescription =

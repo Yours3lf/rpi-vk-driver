@@ -23,5 +23,6 @@ include_directories(${EXTERNAL_PATH}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(brcm)
+add_subdirectory(QPUassembler)
 add_subdirectory(driver)
 add_subdirectory(test)

@@ -8,12 +8,12 @@ extern "C" {
 //so I created this little "extension"
 //full spec in this file ;)
 
-typedef enum VkRpiSurfaceCreateFlagsKHR {
+typedef enum VkRpiSurfaceCreateFlagsEXT {
 	//reserved
 	VK_RPI_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-} VkRpiSurfaceCreateFlagsKHR;
+} VkRpiSurfaceCreateFlagsEXT;
 
-typedef enum VkRpiAssemblyTypeKHR {
+typedef enum VkRpiAssemblyTypeEXT {
 	VK_RPI_ASSEMBLY_TYPE_COORDINATE = 0,
 	VK_RPI_ASSEMBLY_TYPE_VERTEX = 1,
 	VK_RPI_ASSEMBLY_TYPE_FRAGMENT = 2,
@@ -21,32 +21,37 @@ typedef enum VkRpiAssemblyTypeKHR {
 	VK_RPI_ASSEMBLY_TYPE_MAX,
 } VkRpiAssemblyTypeKHR;
 
-typedef struct VkRpiSurfaceCreateInfoKHR {
+typedef struct VkRpiSurfaceCreateInfoEXT {
 	VkStructureType               sType;
 	const void*                   pNext;
-	VkRpiSurfaceCreateFlagsKHR    flags; //reserved
+	VkRpiSurfaceCreateFlagsEXT    flags; //reserved
 	//maybe include some other stuff dunno
-} VkRpiSurfaceCreateInfoKHR;
+} VkRpiSurfaceCreateInfoEXT;
 
-typedef struct VkRpiShaderModuleAssemblyCreateInfoKHR {
+typedef struct VkRpiShaderModuleAssemblyCreateInfoEXT {
 	VkStructureType               sType;
 	const void*                   pNext;
-	char**						  byteStreamArray;
-	uint32_t*					  numBytesArray;
-} VkRpiShaderModuleAssemblyCreateInfoKHR;
+	char**						  asmStrings;
+	uint32_t*					  descriptorBindings;
+	uint32_t*					  descriptorSets;
+	VkDescriptorType*			  descriptorTypes;
+	uint32_t*					  descriptorCounts;
+	uint32_t*					  descriptorArrayElems;
+	uint32_t*					  numDescriptorBindings;
+} VkRpiShaderModuleAssemblyCreateInfoEXT;
 
 //extension name something like: VK_KHR_rpi_surface
 //extension that allows developers to create a surface to render to on Raspbian Stretch Lite
-VkResult vkCreateRpiSurfaceKHR(
+VkResult vkCreateRpiSurfaceEXT(
 		VkInstance                                  instance,
-		const VkRpiSurfaceCreateInfoKHR*            pCreateInfo,
+		const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
 		VkSurfaceKHR*                               pSurface);
 
 //extension that allows developers to submit QPU assembly directly and thus hand optimise code
-VkResult vkCreateShaderModuleFromRpiAssemblyKHR(
+VkResult vkCreateShaderModuleFromRpiAssemblyEXT(
 		VkDevice									device,
-		VkRpiShaderModuleAssemblyCreateInfoKHR*		pCreateInfo,
+		VkRpiShaderModuleAssemblyCreateInfoEXT*		pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
 		VkShaderModule*								pShaderModule
 		);
