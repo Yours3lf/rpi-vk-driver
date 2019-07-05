@@ -9,7 +9,7 @@
   - [ ] texture coordinates and texture sampling
   - [ ] shader compiled from spirv
 - [ ] Shader compiler chain
-  - [ ] QPU assembler / disassembler
+  - [x] QPU assembler / disassembler
   - [ ] LLVM frontend SPIRV -> LLVMIR (maybe grab from somewhere?)
   - [ ] LLVM backend LLVMIR -> QPU ASM
   - [ ] LLVM custom optimisation layers
