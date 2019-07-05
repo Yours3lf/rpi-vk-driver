@@ -7,12 +7,23 @@
   - [x] shader from assembly, vertices from vertex buffer object, no uniforms, color hardcoded
   - [ ] uniforms for matrix multiplication and animation
   - [ ] texture coordinates and texture sampling
-  - [ ] shader compiled from spirv
-- [ ] Shader compiler chain
+- [x] Shader compiler chain
   - [x] QPU assembler / disassembler
-  - [ ] LLVM frontend SPIRV -> LLVMIR (maybe grab from somewhere?)
-  - [ ] LLVM backend LLVMIR -> QPU ASM
-  - [ ] LLVM custom optimisation layers
+- [ ] Resources
+  - [ ] Descriptor support
+  - [ ] VkSampler support
+  - [ ] Push constant support
+- [ ] Multipass rendering
+  - [ ] VkRenderPass support
+  - [ ] Subpass support
+- [ ] Synchronization
+  - [ ] vkCmdPipelineBarrier support
+  - [ ] VkEvent support
+- [ ] Indexed draw call support
+- [ ] Clear command support
+- [ ] Layer support
+- [ ] Pipeline cache support
+
 
 ## VK CTS progress
 - Passed:        7894/67979 (11.6%) 
