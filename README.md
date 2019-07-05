@@ -23,6 +23,7 @@
 - [ ] Clear command support
 - [ ] Layer support
 - [ ] Pipeline cache support
+- [ ] Try to pass as much of the VK CTS as possible with existing feature set
 
 
 ## VK CTS progress
