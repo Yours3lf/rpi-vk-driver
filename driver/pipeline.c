@@ -229,6 +229,46 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineLayout(
 	const VkAllocationCallbacks*                pAllocator,
 	VkPipelineLayout*                           pPipelineLayout)
 {
+	assert(device);
+	assert(pCreateInfo);
+	assert(pPipelineLayout);
+
+	_pipelineLayout* pl = ALLOCATE(sizeof(_pipelineLayout), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+
+	if(!pl)
+	{
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
+	pl->setLayoutCount = pCreateInfo->setLayoutCount;
+	pl->pushConstantRangeCount = pCreateInfo->pushConstantRangeCount;
+
+	if(pCreateInfo->setLayoutCount > 0 && pCreateInfo->pSetLayouts)
+	{
+		pl->setLayouts = ALLOCATE(sizeof(VkDescriptorSetLayout)*pCreateInfo->setLayoutCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		if(!pl->setLayouts)
+		{
+			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
+
+		memcpy(pl->setLayouts, pCreateInfo->pSetLayouts, sizeof(VkDescriptorSetLayout)*pCreateInfo->setLayoutCount);
+	}
+
+	if(pCreateInfo->pushConstantRangeCount > 0 && pCreateInfo->pPushConstantRanges)
+	{
+		pl->pushConstantRanges = ALLOCATE(sizeof(VkPushConstantRange)*pCreateInfo->pushConstantRangeCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		if(!pl->pushConstantRanges)
+		{
+			return VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
+
+		memcpy(pl->pushConstantRanges, pCreateInfo->pPushConstantRanges, sizeof(VkPushConstantRange)*pCreateInfo->pushConstantRangeCount);
+	}
+
+	pl->descriptorSetBindingMap = createMap(ALLOCATE(sizeof(_descriptorSet*)*pCreateInfo->setLayoutCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT), pCreateInfo->setLayoutCount);
+
+	*pPipelineLayout = pl;
+
 	return VK_SUCCESS;
 }
 

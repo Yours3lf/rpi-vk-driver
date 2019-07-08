@@ -214,9 +214,18 @@ typedef struct VkShaderModule_T
 	uint32_t numDescriptorBindings[VK_RPI_ASSEMBLY_TYPE_MAX];
 } _shaderModule;
 
+typedef struct VkPipelineLayout_T
+{
+	map descriptorSetBindingMap;
+	uint32_t                        setLayoutCount;
+	const _descriptorSetLayout*		setLayouts;
+	uint32_t                        pushConstantRangeCount;
+	const VkPushConstantRange*      pushConstantRanges;
+} _pipelineLayout;
+
 typedef struct VkPipeline_T
 {
-	VkShaderModule modules[6];
+	_shaderModule* modules[6];
 	char* names[6];
 	uint32_t vertexBindingDescriptionCount;
 	VkVertexInputBindingDescription* vertexBindingDescriptions;
@@ -260,7 +269,7 @@ typedef struct VkPipeline_T
 	float blendConstants[4];
 	uint32_t dynamicStateCount;
 	VkDynamicState* dynamicStates;
-	VkPipelineLayout layout;
+	_pipelineLayout* layout;
 	_renderpass* renderPass;
 	uint32_t subpass;
 } _pipeline;

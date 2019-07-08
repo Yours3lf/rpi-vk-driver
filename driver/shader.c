@@ -51,40 +51,46 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
 
 			if(pCreateInfo->numDescriptorBindings[c] > 0)
 			{
+				uint32_t offset = 0;
+				for(uint32_t d = 0; d < c; ++d)
+				{
+					offset += pCreateInfo->numDescriptorBindings[d];
+				}
+
 				shader->descriptorBindings[c] = ALLOCATE(sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c], 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 				if(!shader->descriptorBindings[c])
 				{
 					return VK_ERROR_OUT_OF_HOST_MEMORY;
 				}
-				memcpy(shader->descriptorBindings[c], pCreateInfo->descriptorBindings + (c*pCreateInfo->numDescriptorBindings[c]), sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c]);
+				memcpy(shader->descriptorBindings[c], pCreateInfo->descriptorBindings + offset, sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c]);
 
 				shader->descriptorSets[c] = ALLOCATE(sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c], 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 				if(!shader->descriptorSets[c])
 				{
 					return VK_ERROR_OUT_OF_HOST_MEMORY;
 				}
-				memcpy(shader->descriptorSets[c], pCreateInfo->descriptorSets + (c*pCreateInfo->numDescriptorBindings[c]), sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c]);
+				memcpy(shader->descriptorSets[c], pCreateInfo->descriptorSets + offset, sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c]);
 
 				shader->descriptorTypes[c] = ALLOCATE(sizeof(VkDescriptorType)*pCreateInfo->numDescriptorBindings[c], 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 				if(!shader->descriptorTypes[c])
 				{
 					return VK_ERROR_OUT_OF_HOST_MEMORY;
 				}
-				memcpy(shader->descriptorTypes[c], pCreateInfo->descriptorTypes + (c*pCreateInfo->numDescriptorBindings[c]), sizeof(VkDescriptorType)*pCreateInfo->numDescriptorBindings[c]);
+				memcpy(shader->descriptorTypes[c], pCreateInfo->descriptorTypes + offset, sizeof(VkDescriptorType)*pCreateInfo->numDescriptorBindings[c]);
 
 				shader->descriptorCounts[c] = ALLOCATE(sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c], 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 				if(!shader->descriptorCounts[c])
 				{
 					return VK_ERROR_OUT_OF_HOST_MEMORY;
 				}
-				memcpy(shader->descriptorCounts[c], pCreateInfo->descriptorCounts + (c*pCreateInfo->numDescriptorBindings[c]), sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c]);
+				memcpy(shader->descriptorCounts[c], pCreateInfo->descriptorCounts + offset, sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c]);
 
 				shader->descriptorArrayElems[c] = ALLOCATE(sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c], 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 				if(!shader->descriptorArrayElems[c])
 				{
 					return VK_ERROR_OUT_OF_HOST_MEMORY;
 				}
-				memcpy(shader->descriptorArrayElems[c], pCreateInfo->descriptorArrayElems + (c*pCreateInfo->numDescriptorBindings[c]), sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c]);
+				memcpy(shader->descriptorArrayElems[c], pCreateInfo->descriptorArrayElems + offset, sizeof(uint32_t)*pCreateInfo->numDescriptorBindings[c]);
 			}
 		}
 		else

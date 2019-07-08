@@ -246,6 +246,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	uniform viewport zoffset : 0.500000
 	/**/
 
+	/**
 	//TODO: if fragment shader doesn't use any uniforms, then VS will expect to read the first uniform in the stream
 	//clFit(commandBuffer, &commandBuffer->uniformsCl, 4*(1+4+4));
 	clFit(commandBuffer, &commandBuffer->uniformsCl, 4*(4+4));
@@ -261,6 +262,58 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clInsertUniformConstant(&commandBuffer->uniformsCl, 1065353216);
 	clInsertUniformXYScale(&commandBuffer->uniformsCl, (float)(i->width) * 0.5f * 16.0f);
 	clInsertUniformZOffset(&commandBuffer->uniformsCl, 0.5f);
+	/**/
+
+	_shaderModule* csModule = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)];
+	_pipelineLayout* pl = cb->graphicsPipeline->layout;
+	for(uint32_t c = 0; c < csModule->numDescriptorBindings[VK_RPI_ASSEMBLY_TYPE_COORDINATE]; ++c)
+	{
+		uint32_t offset = 0;
+		for(uint32_t d = 0; d < c; ++d)
+		{
+			offset += csModule->numDescriptorBindings[d];
+		}
+
+		_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, csModule->descriptorSets[offset + c]);
+
+		clFit(commandBuffer, &commandBuffer->uniformsCl, 4*csModule->descriptorCounts[offset + c]);
+
+		switch(csModule->descriptorTypes[offset + c])
+		{
+		case VK_DESCRIPTOR_TYPE_SAMPLER:
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+			_descriptorImage* dib = getMapElement(ds->imageBindingMap, csModule->descriptorBindings[offset + c]);
+			for(uint32_t d = 0; d < csModule->descriptorCounts[offset + c]; ++d)
+			{
+				//TODO
+				//clInsertUniformConstant(&commandBuffer->uniformsCl, );
+			}
+			break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+			_descriptorBuffer* dbb = getMapElement(ds->bufferBindingMap, csModule->descriptorBindings[offset + c]);
+			for(uint32_t d = 0; d < csModule->descriptorCounts[offset + c]; ++d)
+			{
+				//TODO
+				//csModule->descriptorArrayElems[offset + c]
+				//clInsertUniformConstant(&commandBuffer->uniformsCl, );
+			}
+			break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+			_descriptorTexelBuffer* dtb = getMapElement(ds->texelBufferBindingMap, csModule->descriptorBindings[offset + c]);
+			for(uint32_t d = 0; d < csModule->descriptorCounts[offset + c]; ++d)
+			{
+				//TODO
+				//clInsertUniformConstant(&commandBuffer->uniformsCl, );
+			}
+		}
+	}
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirect(
