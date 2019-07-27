@@ -12,7 +12,7 @@
 - [ ] Resources
   - [ ] Descriptor support
   - [ ] VkSampler support
-  - [ ] Push constant support
+  - [x] Push constant support
 - [ ] Multipass rendering
   - [ ] VkRenderPass support
   - [ ] Subpass support
