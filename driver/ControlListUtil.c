@@ -43,6 +43,13 @@ void clInit(ControlList* cl, void* buffer)
 	cl->nextFreeByte = &cl->buffer[0];
 }
 
+void clInsertData(ControlList* cl, uint32_t size, uint8_t* data)
+{
+	assert(cl);
+	memcpy(cl->nextFreeByte, data, size);
+	cl->nextFreeByte += size;
+}
+
 void clInsertUniformConstant(ControlList* cl, uint32_t data)
 {
 	assert(cl);

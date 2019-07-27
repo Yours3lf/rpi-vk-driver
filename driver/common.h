@@ -214,6 +214,14 @@ typedef struct VkShaderModule_T
 	uint32_t numDescriptorBindings[VK_RPI_ASSEMBLY_TYPE_MAX];
 } _shaderModule;
 
+typedef struct VkDescriptorSetLayout_T
+{
+	//an array of zero or more descriptor bindings
+	VkDescriptorSetLayoutBinding* bindings;
+	uint32_t bindingsCount;
+	VkDescriptorSetLayoutCreateFlags flags;
+} _descriptorSetLayout;
+
 typedef struct VkPipelineLayout_T
 {
 	map descriptorSetBindingMap;
@@ -280,6 +288,12 @@ typedef struct VkCommandBuffer_T
 	//commands to dispatch (for compute), commands to execute secondary command buffers (for primary command buffers only), commands to copy buffers and images, and other commands
 
 	struct drm_vc4_submit_cl submitCl;
+
+	//Rpi only supports vertex and pixel shaders
+	//(coordinate shaders will just use the vertex shader push constants)
+	//anything else will be ignored I guess
+	char pushConstantBufferVertex[256];
+	char pushConstantBufferPixel[256];
 
 	ControlList binCl;
 	ControlList shaderRecCl;
@@ -351,14 +365,6 @@ typedef struct VkSampler_T
 {
 	int dummy;
 } _sampler;
-
-typedef struct VkDescriptorSetLayout_T
-{
-	//an array of zero or more descriptor bindings
-	VkDescriptorSetLayoutBinding* bindings;
-	uint32_t bindingsCount;
-	VkDescriptorSetLayoutCreateFlags flags;
-} _descriptorSetLayout;
 
 typedef struct VkDescriptorImage_T
 {

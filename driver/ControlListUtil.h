@@ -38,6 +38,7 @@ uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset);
 uint32_t clSize(ControlList* cl);
 uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size);
 void clInit(ControlList* cl, void* buffer);
+void clInsertData(ControlList* cl, uint32_t size, uint8_t* data);
 void clInsertUniformConstant(ControlList* cl, uint32_t data);
 void clInsertUniformXYScale(ControlList* cl, float data);
 void clInsertUniformZOffset(ControlList* cl, float data);

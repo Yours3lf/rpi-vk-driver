@@ -654,7 +654,25 @@ void recordCommandBuffers()
 		VkDeviceSize offsets = 0;
 		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer, &offsets );
 
-		vkCmdBindDescriptorSets(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
+		//vkCmdBindDescriptorSets(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
+
+		float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
+		float viewportScaleX = (float)(swapChainExtent.width) * 0.5f * 16.0f;
+		float viewportScaleY = -1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
+		float Zs = 0.5f;
+
+		uint32_t pushConstants[4];
+		pushConstants[0] = *(uint32_t*)&Wcoeff;
+		pushConstants[1] = *(uint32_t*)&viewportScaleX;
+		pushConstants[2] = *(uint32_t*)&viewportScaleY;
+		pushConstants[3] = *(uint32_t*)&Zs;
+
+		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
+
+		float modifier = i % 2 ? 1.0f : 0.5f;
+		uint32_t fragConstant = *(uint32_t*)&modifier;
+
+		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4, &fragConstant);
 
 		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
 
@@ -843,52 +861,97 @@ void CreateShaders()
 
 	//TODO doesn't work for some reason...
 	char vs_asm_code[] =
+			///0x40000000 = 2.0
+			///uni = 1.0
+			///rb0 = 2 - 1 = 1
 			"sig_small_imm ; rx0 = fsub.ws.always(b, a, uni, 0x40000000) ; nop = nop(r0, r0) ;\n"
-			//set up VPM read for subsequent reads
-			//0x00201a00: 0000 0000 0010 0000 0001 1010 0000 0000
-			//addr: 0
-			//size: 32bit
-			//packed
-			//horizontal
-			//stride=1
-			//vectors to read = 2 (how many components)
+			///set up VPM read for subsequent reads
+			///0x00201a00: 0000 0000 0010 0000 0001 1010 0000 0000
+			///addr: 0
+			///size: 32bit
+			///packed
+			///horizontal
+			///stride=1
+			///vectors to read = 2 (how many components)
 			"sig_load_imm ; vr_setup = load32.always(0x00201a00) ; nop = load32.always() ;\n"
+			///uni = viewportXScale
+			///r0 = vpm * uni
 			"sig_none ; nop = nop(r0, r0, vpm_read, uni) ; r0 = fmul.always(a, b) ;\n"
+			///r1 = r0 * rb0 (1)
 			"sig_none ; nop = nop(r0, r0, nop, rb0) ; r1 = fmul.always(r0, b) ;\n"
+			///uni = viewportYScale
+			///ra0.16a = int(r1), r2 = vpm * uni
 			"sig_none ; rx0.16a = ftoi.always(r1, r1, vpm_read, uni) ; r2 = fmul.always(a, b) ;\n"
+			///r3 = r2 * rb0
 			"sig_none ; nop = nop(r0, r0, nop, rb0) ; r3 = fmul.always(r2, b) ;\n"
+			///ra0.16b = int(r3)
 			"sig_none ; rx0.16b = ftoi.always(r3, r3) ; nop = nop(r0, r0) ;\n"
-			//set up VPM write for subsequent writes
-			//0x00001a00: 0000 0000 0000 0000 0001 1010 0000 0000
-			//addr: 0
-			//size: 32bit
-			//horizontal
-			//stride = 1
+			///set up VPM write for subsequent writes
+			///0x00001a00: 0000 0000 0000 0000 0001 1010 0000 0000
+			///addr: 0
+			///size: 32bit
+			///horizontal
+			///stride = 1
 			"sig_load_imm ; vw_setup = load32.always.ws(0x00001a00) ; nop = load32.always() ;\n"
+			///shaded vertex format for PSE
+			/// Ys and Xs
+			///vpm = ra0
 			"sig_none ; vpm = or.always(a, a, ra0, nop) ; nop = nop(r0, r0);\n"
+			/// Zc
+			///uni = 0.5
+			///vpm = uni
 			"sig_none ; vpm = or.always(a, a, uni, nop) ; nop = nop(r0, r0);\n"
+			/// 1.0 / Wc
+			///vpm = rb0 (1)
 			"sig_none ; vpm = or.always(b, b, nop, rb0) ; nop = nop(r0, r0);\n"
+			///END
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
 				"\0";
 
 	char cs_asm_code[] =
+			///uni = 1.0
+			///r3 = 2.0 - uni
+			"sig_small_imm ; r3 = fsub.always(b, a, uni, 0x40000000) ; nop = nop(r0, r0);\n"
 			"sig_load_imm ; vr_setup = load32.always(0x00201a00) ; nop = load32.always() ;\n"
+			///r2 = vpm
 			"sig_none ; r2 = or.always(a, a, vpm_read, nop) ; nop = nop(r0, r0);\n"
 			"sig_load_imm ; vw_setup = load32.always.ws(0x00001a00) ; nop = load32.always() ;\n"
-			"sig_none ; r3 = or.always(a, a, vpm_read, nop) ; vpm = v8min.always(r2, r2);\n"
-			"sig_none ; vpm = or.always(r3, r3, uni, nop) ; r1 = fmul.always(r3, a);\n"
-			"sig_small_imm ; r3 = fsub.always(b, a, uni, 0x40000000) ; nop = nop(r0, r0);\n"
-			"sig_none ; nop = nop(r0, r0, uni, nop) ; r2 = fmul.always(r2, a);\n"
+			///shaded coordinates format for PTB
+			/// write Xc
+			///r1 = vpm, vpm = r2
+			"sig_none ; r1 = or.always(a, a, vpm_read, nop) ; vpm = v8min.always(r2, r2);\n"
+			/// write Yc
+			///uni = viewportXscale
+			///vpm = r1, r2 = r2 * uni
+			"sig_none ; vpm = or.always(r1, r1, uni, nop) ; r2 = fmul.always(r2, a);\n"
+			///uni = viewportYscale
+			///r1 = r1 * uni
+			"sig_none ; nop = nop(r0, r0, uni, nop) ; r1 = fmul.always(r1, a);\n"
+			///r0 = r2 * r3
 			"sig_none ; nop = nop(r0, r0) ; r0 = fmul.always(r2, r3);\n"
+			///ra0.16a = r0, r1 = r1 * r3
 			"sig_none ; rx0.16a = ftoi.always(r0, r0) ; r1 = fmul.always(r1, r3) ;\n"
+			///ra0.16b = r1
 			"sig_none ; rx0.16b = ftoi.always(r1, r1) ; nop = nop(r0, r0) ;\n"
+			///write Zc
+			///vpm = 0
 			"sig_small_imm ; vpm = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;\n"
+			///write Wc
+			///vpm = 1.0
 			"sig_small_imm ; vpm = or.always(b, b, nop, 0x3f800000) ; nop = nop(r0, r0) ;\n"
+			///write Ys and Xs
+			///vpm = ra0
 			"sig_none ; vpm = or.always(a, a, ra0, nop) ; nop = nop(r0, r0) ;\n"
+			///write Zs
+			///uni = 0.5
+			///vpm = uni
 			"sig_none ; vpm = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;\n"
+			///write 1/Wc
+			///vpm = r3
 			"sig_none ; vpm = or.always(r3, r3) ; nop = nop(r0, r0) ;\n"
+			///END
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
@@ -904,10 +967,12 @@ void CreateShaders()
 	/**/
 	//rainbow colors
 	char fs_asm_code[] =
-			"sig_none ; r1 = itof.always(a, a, x_pix, y_pix) ; nop = nop(r0, r0) ;" //can't use mul pipeline for conversion :(
+			"sig_none ; r1 = itof.always(a, a, x_pix, uni) ; r3 = v8min.always(b, b) ;" //can't use mul pipeline for conversion :(
 			"sig_load_imm ; r2 = load32.always(0x3a088888) ; nop = load32() ;" //1/1920
+			"sig_none ; nop = nop(r0, r0) ; r2 = fmul.always(r2, r3);\n"
 			"sig_none ; r1 = itof.pm.always(b, b, x_pix, y_pix) ; r0.8c = fmul.always(r1, r2) ;"
 			"sig_load_imm ; r2 = load32.always(0x3a72b9d6) ; nop = load32() ;" //1/1080
+			"sig_none ; nop = nop(r0, r0) ; r2 = fmul.always(r2, r3);\n"
 			"sig_none ; nop = nop.pm(r0, r0) ; r0.8b = fmul.always(r1, r2) ;"
 			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0) ; r0.8a = v8min.always(b, b) ;"
 			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 1) ; r0.8d = v8min.always(b, b) ;"
@@ -975,10 +1040,21 @@ void CreateShaders()
 
 void CreatePipeline()
 {
+	VkPushConstantRange pushConstantRanges[2];
+	pushConstantRanges[0].offset = 0;
+	pushConstantRanges[0].size = 4 * 4; //4 * 32bits
+	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	pushConstantRanges[1].offset = 0;
+	pushConstantRanges[1].size = 4; //1 * 32bits
+	pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
 	VkPipelineLayoutCreateInfo pipelineLayoutCI = {};
 	pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutCI.setLayoutCount = 1;
-	pipelineLayoutCI.pSetLayouts = &dsl;
+	//pipelineLayoutCI.setLayoutCount = 1;
+	//pipelineLayoutCI.pSetLayouts = &dsl;
+	pipelineLayoutCI.pushConstantRangeCount = 2;
+	pipelineLayoutCI.pPushConstantRanges = &pushConstantRanges[0];
 	vkCreatePipelineLayout(device, &pipelineLayoutCI, 0, &pipelineLayout);
 
 
@@ -1093,9 +1169,10 @@ uint32_t getMemoryTypeIndex(VkPhysicalDeviceMemoryProperties deviceMemoryPropert
 	assert(0);
 }
 
+//TODO use push constants instead, they map better to the hardware
 void CreateUniformBuffer()
 {
-	unsigned uboSize = sizeof(float) * 4; //4 x float
+	/*unsigned uboSize = sizeof(float) * 4; //4 x float
 
 	VkMemoryRequirements mr;
 
@@ -1132,12 +1209,12 @@ void CreateUniformBuffer()
 		res = vkBindBufferMemory(device, uniformBuffer, uniformBufferMemory, 0);
 	}
 
-	printf("Uniform buffer created\n");
+	printf("Uniform buffer created\n");*/
 }
 
 void CreateDescriptorSet()
 {
-	VkDescriptorSetLayoutBinding setLayoutBinding = {};
+	/*VkDescriptorSetLayoutBinding setLayoutBinding = {};
 	setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	setLayoutBinding.binding = 0;
 	setLayoutBinding.descriptorCount = 4;
@@ -1145,7 +1222,7 @@ void CreateDescriptorSet()
 
 	VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {};
 	descriptorLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	descriptorLayoutCI.bindingCount = 1;
+	descriptorLayoutCI.bindingCount = 0;//1;
 	descriptorLayoutCI.pBindings = &setLayoutBinding;
 
 	vkCreateDescriptorSetLayout(device, &descriptorLayoutCI, 0, &dsl);
@@ -1183,7 +1260,7 @@ void CreateDescriptorSet()
 	writeDescriptorSet.pBufferInfo = &bufferInfo;
 	writeDescriptorSet.descriptorCount = 4;
 
-	vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);
+	vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);*/
 }
 
 void CreateVertexBuffer()

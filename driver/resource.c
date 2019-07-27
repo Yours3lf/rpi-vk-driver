@@ -356,7 +356,21 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPushConstants(
 	uint32_t                                    size,
 	const void*                                 pValues)
 {
+	assert(commandBuffer);
+	assert(layout);
 
+	_pipelineLayout* pl = layout;
+	_commandBuffer* cb = commandBuffer;
+
+	if(stageFlags & VK_SHADER_STAGE_VERTEX_BIT)
+	{
+		memcpy(cb->pushConstantBufferVertex + offset, pValues, size);
+	}
+
+	if(stageFlags & VK_SHADER_STAGE_FRAGMENT_BIT)
+	{
+		memcpy(cb->pushConstantBufferPixel + offset, pValues, size);
+	}
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetImageSubresourceLayout(
