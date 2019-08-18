@@ -557,7 +557,180 @@ void clDump(void* cl, uint32_t size)
 		clif_dump_destroy(clif);
 }
 
+void encodeTextureUniform(uint32_t* params, //array of 4 uint32_t
+						  //num mip levels - 1
+						  uint8_t numMipLevels,
+						  ///0:  rgba8
+						  ///1:  rgbx8 (a=1)
+						  ///2:  rgba4
+						  ///3:  rgb5a1
+						  ///4:  r5g6b5 (a=1)
+						  ///5:  luminance (8 bit, a=1)
+						  //6:  alpha (8 bit, rga=0)
+						  ///7:  lumalpha
+						  ///8:  etc1
+						  ///9:  s16f (blending supported)
+						  ///10: s8 (blending supported)
+						  ///11: s16 (point sampling only)
+						  //12: bw1 (1 bit black and white)
+						  //13: a4
+						  //14: a1
+						  ///15: rgba16f
+						  //16: rgba8r (raster format = not in T format)
+						  ///17: yuyv422r (raster format = not in T format, yuyv)
+						  uint8_t textureDataType,
+						  uint8_t isCubeMap,
+						  uint32_t cubemapStride, //in multiples of 4k bytes
+						  uint32_t textureBasePtr, //in multiples of 4k bytes
+						  //0 = 2048
+						  uint16_t height,
+						  uint16_t width,
+						  //0: linear
+						  //1: nearest
+						  //2: near_mip_near
+						  //3: near_mip_lin
+						  //4: lin_mip_near
+						  //5: lin_mip_lin
+						  uint8_t minFilter,
+						  //0: linear
+						  //1: nearest
+						  uint8_t magFilter,
+						  //0: repeat
+						  //1: clamp
+						  //2: mirror
+						  //3: border
+						  uint8_t wrapT,
+						  uint8_t wrapS,
+						  uint8_t noAutoLod //disable automatic LOD, use bias only
+						  )
+{
+	assert(params);
 
+	params[0] = 0
+			| numMipLevels & 0xf
+			| (uint32_t)(textureDataType & 0xf) << 4
+			| (uint32_t)(isCubeMap ? 1 : 0) << 9
+			| (uint32_t)(textureBasePtr & 0xfffff) << 12;
+
+	params[1] = 0
+			| wrapS & 0x3
+			| (uint32_t)(wrapT & 0x3) << 2
+			| (uint32_t)(minFilter & 0x7) << 4
+			| (uint32_t)(magFilter & 0x1) << 7
+			| (uint32_t)(width & 0x7ff) << 8
+			| (uint32_t)(height & 0x7ff) < 20
+			| (uint32_t)((textureDataType & 0x10) >> 4) << 31;
+
+	params[2] = 0
+			| noAutoLod & 0x1
+			| (uint32_t)(cubemapStride & 0x3ffff) << 12
+			| (uint32_t)(isCubeMap ? 1 : 0) << 30;
+
+	//TODO
+	//child images
+	params[3] = 0;
+}
+
+uint8_t getTextureDataType(VkFormat format)
+{
+	switch(format)
+	{
+	case VK_FORMAT_R16G16B16A16_SFLOAT:
+		return 15; //rgba16f
+	case VK_FORMAT_R8G8B8_UNORM:
+		return 1; //rgbx8 (a=1)
+	case VK_FORMAT_R8G8B8A8_UNORM:
+		return 0; //rgba8
+	case VK_FORMAT_R5G5B5A1_UNORM_PACK16:
+		return 3; //rgb5a1
+	case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
+		return 2; //rgba4
+	case VK_FORMAT_R5G6B5_UNORM_PACK16:
+		return 4; //r5g6b5 (a=1)
+	case VK_FORMAT_R8G8_UNORM:
+		return 7; //lumalpha
+	case VK_FORMAT_R16_SFLOAT:
+		return 9; //s16f (blending supported)
+	case VK_FORMAT_R16_SINT:
+		return 11; //s16 (point sampling only)
+	case VK_FORMAT_R8_UNORM:
+		return 5; //luminance (8 bit, a=1)
+	case VK_FORMAT_R8_SINT:
+		return 10; //s8 (blending supported)
+	case VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK:
+		return 8; //etc1
+	case VK_FORMAT_G8B8G8R8_422_UNORM:
+		return 17; //yuyv422r (raster format = not in T format, yuyv)
+	case VK_FORMAT_UNDEFINED: //TODO
+		return -1;
+	default://
+		printf("unsupported format %i\n", format);
+		assert(0);
+		return -1;
+	}
+}
+
+uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter, float maxLod)
+{
+	if(minFilter == VK_FILTER_NEAREST)
+	{
+		if(maxLod < 0.0001f)
+		{
+			return 1; //no mip filtering
+		}
+
+		if(mipFilter == VK_SAMPLER_MIPMAP_MODE_NEAREST)
+		{
+			return 2;
+		}
+		else if(mipFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
+		{
+			return 3;
+		}
+	}
+	else if(minFilter == VK_FILTER_LINEAR)
+	{
+		if(maxLod < 0.0001f)
+		{
+			return 0; //no mip filtering
+		}
+
+		if(mipFilter == VK_SAMPLER_MIPMAP_MODE_NEAREST)
+		{
+			return 4;
+		}
+		else if(mipFilter == VK_SAMPLER_MIPMAP_MODE_LINEAR)
+		{
+			return 5;
+		}
+	}
+}
+
+uint8_t getWrapMode(VkSamplerAddressMode mode)
+{
+	if(mode == VK_SAMPLER_ADDRESS_MODE_REPEAT)
+	{
+		return 0;
+	}
+	else if(mode == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+	{
+		return 1;
+	}
+	else if(mode == VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT)
+	{
+		return 2;
+	}
+	else if(mode == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER)
+	{
+		return 3;
+	}
+	else
+	{
+		printf("unsupported wrap mode: %i\n", mode);
+		assert(0);
+		return -1;
+	}
+}
 
 ////////////////////////////////////////////////////
 ////////////////////////////////////////////////////

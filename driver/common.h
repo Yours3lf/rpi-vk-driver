@@ -202,16 +202,20 @@ typedef struct VkFramebuffer_T
 	uint32_t width, height, layers;
 } _framebuffer;
 
+typedef enum RpiAssemblyType {
+	RPI_ASSEMBLY_TYPE_COORDINATE = 0,
+	RPI_ASSEMBLY_TYPE_VERTEX = 1,
+	RPI_ASSEMBLY_TYPE_FRAGMENT = 2,
+	RPI_ASSEMBLY_TYPE_COMPUTE = 3,
+	RPI_ASSEMBLY_TYPE_MAX,
+} RpiAssemblyType;
+
 typedef struct VkShaderModule_T
 {
-	uint32_t bos[VK_RPI_ASSEMBLY_TYPE_MAX];
-	uint32_t sizes[VK_RPI_ASSEMBLY_TYPE_MAX];
-	uint32_t* descriptorBindings[VK_RPI_ASSEMBLY_TYPE_MAX];
-	uint32_t* descriptorSets[VK_RPI_ASSEMBLY_TYPE_MAX];
-	VkDescriptorType* descriptorTypes[VK_RPI_ASSEMBLY_TYPE_MAX];
-	uint32_t* descriptorCounts[VK_RPI_ASSEMBLY_TYPE_MAX];
-	uint32_t* descriptorArrayElems[VK_RPI_ASSEMBLY_TYPE_MAX];
-	uint32_t numDescriptorBindings[VK_RPI_ASSEMBLY_TYPE_MAX];
+	uint32_t bos[RPI_ASSEMBLY_TYPE_MAX];
+	uint32_t sizes[RPI_ASSEMBLY_TYPE_MAX];
+	VkRpiAssemblyMappingEXT* mappings;
+	uint32_t numMappings;
 } _shaderModule;
 
 typedef struct VkDescriptorSetLayout_T
@@ -363,7 +367,17 @@ typedef struct VkBufferView_T
 
 typedef struct VkSampler_T
 {
-	int dummy;
+	VkFilter minFilter, magFilter;
+	VkSamplerMipmapMode mipmapMode;
+	VkSamplerAddressMode addressModeU, addressModeV, assressModeW;
+	float mipLodBias;
+	VkBool32 anisotropyEnable;
+	float maxAnisotropy;
+	VkBool32 compareEnable;
+	VkCompareOp compareOp;
+	float minLod, maxLod;
+	VkBorderColor borderColor;
+	VkBool32 unnormalizedCoordinates;
 } _sampler;
 
 typedef struct VkDescriptorImage_T
@@ -442,5 +456,21 @@ uint32_t getTopology(VkPrimitiveTopology topology);
 uint32_t getPrimitiveMode(VkPrimitiveTopology topology);
 uint32_t getFormatByteSize(VkFormat format);
 uint32_t ulog2(uint32_t v);
+void encodeTextureUniform(uint32_t* params,
+						  uint8_t numMipLevels,
+						  uint8_t textureDataType,
+						  uint8_t isCubeMap,
+						  uint32_t cubemapStride,
+						  uint32_t textureBasePtr,
+						  uint16_t height,
+						  uint16_t width,
+						  uint8_t minFilter,
+						  uint8_t magFilter,
+						  uint8_t wrapT,
+						  uint8_t wrapS,
+						  uint8_t noAutoLod);
+uint8_t getTextureDataType(VkFormat format);
+uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter, float maxLod);
+uint8_t getWrapMode(VkSamplerAddressMode mode);
 void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize);
 void clDump(void* cl, uint32_t size);

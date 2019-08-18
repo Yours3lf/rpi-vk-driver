@@ -102,17 +102,17 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 	//emit shader record
 	ControlListAddress fragCode = {
-		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]))->bos[VK_RPI_ASSEMBLY_TYPE_FRAGMENT],
+		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]))->bos[RPI_ASSEMBLY_TYPE_FRAGMENT],
 		.offset = 0,
 	};
 
 	ControlListAddress vertCode = {
-		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]))->bos[VK_RPI_ASSEMBLY_TYPE_VERTEX],
+		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]))->bos[RPI_ASSEMBLY_TYPE_VERTEX],
 		.offset = 0,
 	};
 
 	ControlListAddress coordCode = {
-		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]))->bos[VK_RPI_ASSEMBLY_TYPE_COORDINATE],
+		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]))->bos[RPI_ASSEMBLY_TYPE_COORDINATE],
 		.offset = 0,
 	};
 
@@ -266,7 +266,110 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 	_pipelineLayout* pl = cb->graphicsPipeline->layout;
 
-	for(uint32_t c = 0; c < pl->pushConstantRangeCount; ++c)
+	for(uint32_t c = 0; c < cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->numMappings; ++c)
+	{
+		VkRpiAssemblyMappingEXT mapping = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->mappings[c];
+
+		if(mapping.shaderStage & VK_SHADER_STAGE_FRAGMENT_BIT)
+		{
+			if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT)
+			{
+				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+				clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferPixel + mapping.resourceOffset);
+			}
+			else if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
+			{
+				if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+				   mapping.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+				   mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+				{
+					_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
+					_descriptorImage* di = getMapElement(ds->imageBindingMap, mapping.descriptorBinding);
+					di += mapping.descriptorArrayElement;
+
+					//TODO handle miplevels according to subresource rage?
+					uint32_t params[4];
+					encodeTextureUniform(params,
+										 di->imageView->image->miplevels - 1,
+										 getTextureDataType(di->imageView->interpretedFormat),
+										 di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE,
+										 0, //TODO cubemap stride
+										 0, //TODO texture base ptr
+										 di->imageView->image->height % 2048,
+										 di->imageView->image->width % 2048,
+										 getMinFilterType(di->sampler->minFilter, di->sampler->mipmapMode, di->sampler->maxLod),
+										 di->sampler->magFilter == VK_FILTER_NEAREST,
+										 getWrapMode(di->sampler->addressModeU),
+										 getWrapMode(di->sampler->addressModeV),
+										 0 //TODO no auto LOD
+										 );
+
+					uint32_t size = 0;
+					if(di->imageView->viewType == VK_IMAGE_VIEW_TYPE_1D)
+					{
+						size = 4;
+					}
+					else if(di->imageView->viewType == VK_IMAGE_VIEW_TYPE_2D)
+					{
+						size = 8;
+					}
+					else if(di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE)
+					{
+						size = 12;
+					}
+					else
+					{
+						assert(0); //unsupported
+					}
+
+					//emit reloc for texture BO
+					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+					//TODO anything to do with the index returned?
+					clGetHandleIndex(&commandBuffer->handlesCl, di->imageView->image->boundMem->bo);
+
+					//emit tex parameters
+					clFit(commandBuffer, &commandBuffer->uniformsCl, size);
+					clInsertData(&commandBuffer->uniformsCl, size, params);
+				}
+				else
+				{ //all buffers types handled here
+					//TODO
+				}
+			}
+			else
+			{
+				assert(0); //shouldn't happen
+			}
+		}
+	}
+
+	//do it twice for vertex and then coordinate
+	for(uint32_t d = 0; d < 2; ++d)
+	{
+		for(uint32_t c = 0; c < cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]->numMappings; ++c)
+		{
+			VkRpiAssemblyMappingEXT mapping = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]->mappings[c];
+
+			if(mapping.shaderStage & VK_SHADER_STAGE_VERTEX_BIT)
+			{
+				if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT)
+				{
+					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+					clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferVertex + mapping.resourceOffset);
+				}
+				else if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
+				{
+
+				}
+				else
+				{
+					assert(0); //shouldn't happen
+				}
+			}
+		}
+	}
+
+	/*for(uint32_t c = 0; c < pl->pushConstantRangeCount; ++c)
 	{
 		//TODO
 		//we should use the shader module's declaration of what order it wants this to be passed in
@@ -297,7 +400,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 			clFit(commandBuffer, &commandBuffer->uniformsCl, pl->pushConstantRanges[c].size);
 			clInsertData(&commandBuffer->uniformsCl, pl->pushConstantRanges[c].size, cb->pushConstantBufferVertex + pl->pushConstantRanges[c].offset);
 		}
-	}
+	}*/
 
 	/*_shaderModule* csModule = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)];
 	_pipelineLayout* pl = cb->graphicsPipeline->layout;

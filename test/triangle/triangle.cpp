@@ -78,6 +78,10 @@ VkDescriptorPool descriptorPool;
 VkDescriptorSet descriptorSet;
 VkDescriptorSetLayout dsl;
 VkPipelineLayout pipelineLayout;
+VkImage textureImage;
+VkDeviceMemory textureMemory;
+VkSampler textureSampler;
+VkImageView textureView;
 
 uint32_t graphicsQueueFamily;
 uint32_t presentQueueFamily;
@@ -814,24 +818,6 @@ void CreateFramebuffer()
 	printf("Frame buffers created\n");
 }
 
-VkShaderModule VulkanCreateShaderModule(VkDevice& device, char* byteStream, uint32_t byteStreamSize)
-{
-	VkShaderModule shaderModule;
-
-	VkShaderModuleCreateInfo shaderCreateInfo = {};
-	shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	shaderCreateInfo.codeSize = byteStreamSize;
-	shaderCreateInfo.pCode = (const uint32_t*)byteStream;
-
-	VkResult res = vkCreateShaderModule(device, &shaderCreateInfo, NULL, &shaderModule);
-
-	//VkResult res = vkCreateShaderModuleFromRpiAssemblyKHR(device, byteStreamSize, byteStream, NULL, &shaderModule);
-
-	printf("Created shader\n");
-
-	return shaderModule;
-}
-
 void CreateShaders()
 {
 	/**
@@ -1000,36 +986,60 @@ void CreateShaders()
 		(char*)cs_asm_code, (char*)vs_asm_code, (char*)fs_asm_code, 0
 	};
 
-	uint32_t numDescriptorBindings[VK_RPI_ASSEMBLY_TYPE_MAX] = {4, 4, 0, 0};
-	uint32_t descriptorBindings[VK_RPI_ASSEMBLY_TYPE_MAX][4] = {
-		{0, 0, 0, 0},
-		{0, 0, 0, 0}
-	};
-	uint32_t descriptorSets[VK_RPI_ASSEMBLY_TYPE_MAX][4] = {
-		{0, 0, 0, 0},
-		{0, 0, 0, 0}
-	};
-	VkDescriptorType descriptorTypes[VK_RPI_ASSEMBLY_TYPE_MAX][4] = {
-		{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER},
-		{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER}
-	};
-	uint32_t descriptorCounts[VK_RPI_ASSEMBLY_TYPE_MAX][4] = {
-		{4, 4, 4, 4},
-		{4, 4, 4, 4}
-	};
-	uint32_t descriptorArrayElems[VK_RPI_ASSEMBLY_TYPE_MAX][4] = {
-		{2, 0, 1, 3}, //coord
-		{0, 1, 2, 3}, //vert
+	VkRpiAssemblyMappingEXT mappings[] = {
+		//vertex shader uniforms
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			0, //resource offset
+			VK_SHADER_STAGE_VERTEX_BIT
+		},
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			4, //resource offset
+			VK_SHADER_STAGE_VERTEX_BIT
+		},
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			8, //resource offset
+			VK_SHADER_STAGE_VERTEX_BIT
+		},
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			12, //resource offset
+			VK_SHADER_STAGE_VERTEX_BIT
+		},
+		//fragment shader uniforms
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			0, //resource offset
+			VK_SHADER_STAGE_FRAGMENT_BIT
+		}
 	};
 
 	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo;
 	shaderModuleCreateInfo.asmStrings = asm_strings;
-	shaderModuleCreateInfo.numDescriptorBindings = numDescriptorBindings;
-	shaderModuleCreateInfo.descriptorBindings = (uint32_t*)descriptorBindings;
-	shaderModuleCreateInfo.descriptorSets = (uint32_t*)descriptorSets;
-	shaderModuleCreateInfo.descriptorTypes = (VkDescriptorType*)descriptorTypes;
-	shaderModuleCreateInfo.descriptorCounts = (uint32_t*)descriptorCounts;
-	shaderModuleCreateInfo.descriptorArrayElems = (uint32_t*)descriptorArrayElems;
+	shaderModuleCreateInfo.mappings = mappings;
+	shaderModuleCreateInfo.numMappings = sizeof(mappings) / sizeof(VkRpiAssemblyMappingEXT);
 
 	VkResult res = vkCreateShaderModuleFromRpiAssemblyEXT(device, &shaderModuleCreateInfo, 0, &shaderModule);
 	assert(shaderModule);
@@ -1210,6 +1220,86 @@ void CreateUniformBuffer()
 	}
 
 	printf("Uniform buffer created\n");*/
+}
+
+void CreateTexture()
+{
+	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+
+	char texData[4 * 2 * 2] =
+	{
+		//r, g, b, a
+		255, 0, 0, 255,		0, 0, 255, 255,
+		0, 0, 255, 255,		255, 0, 0, 255
+
+	};
+
+	uint32_t width = 2, height = 2;
+	uint32_t mipLevels = 1;
+
+	VkImageCreateInfo imageCreateInfo = {};
+	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageCreateInfo.pNext = 0;
+	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageCreateInfo.format = format;
+	imageCreateInfo.mipLevels = mipLevels;
+	imageCreateInfo.arrayLayers = 1;
+	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+	imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+	imageCreateInfo.extent = { width, height, 1 };
+	vkCreateImage(device, &imageCreateInfo, 0, &textureImage);
+
+	VkMemoryRequirements mr;
+	vkGetImageMemoryRequirements(device, textureImage, &mr);
+
+	VkMemoryAllocateInfo mai = {};
+	mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	mai.allocationSize = mr.size;
+	mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	vkAllocateMemory(device, &mai, 0, &textureMemory);
+
+	void* data;
+	vkMapMemory(device, textureMemory, 0, mr.size, 0, &data);
+	memcpy(data, texData, sizeof(texData));
+	vkUnmapMemory(device, textureMemory);
+
+	vkBindImageMemory(device, textureImage, textureMemory, 0);
+
+	//TODO do barrier here to transition layout...
+
+	VkSamplerCreateInfo sampler = {};
+	sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	sampler.pNext = 0;
+	sampler.magFilter = VK_FILTER_LINEAR;
+	sampler.minFilter = VK_FILTER_LINEAR;
+	sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler.mipLodBias = 0.0f;
+	sampler.compareOp = VK_COMPARE_OP_NEVER;
+	sampler.minLod = 0.0f;
+	sampler.maxLod = 0.0f;
+	sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+	vkCreateSampler(device, &sampler, 0, &textureSampler);
+
+	VkImageViewCreateInfo view = {};
+	view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	view.pNext = 0;
+	view.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	view.format = format;
+	view.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	view.subresourceRange.baseMipLevel = 0;
+	view.subresourceRange.baseArrayLayer = 0;
+	view.subresourceRange.layerCount = 1;
+	view.subresourceRange.levelCount = 1;
+	view.image = textureImage;
+	vkCreateImageView(device, &view, nullptr, &textureView);
 }
 
 void CreateDescriptorSet()
