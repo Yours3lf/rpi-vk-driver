@@ -288,6 +288,8 @@ typedef struct VkPipeline_T
 
 typedef struct VkCommandBuffer_T
 {
+	_device* dev; //device from which it was created
+
 	//Recorded commands include commands to bind pipelines and descriptor sets to the command buffer, commands to modify dynamic state, commands to draw (for graphics rendering),
 	//commands to dispatch (for compute), commands to execute secondary command buffers (for primary command buffers only), commands to copy buffers and images, and other commands
 
@@ -369,7 +371,7 @@ typedef struct VkSampler_T
 {
 	VkFilter minFilter, magFilter;
 	VkSamplerMipmapMode mipmapMode;
-	VkSamplerAddressMode addressModeU, addressModeV, assressModeW;
+	VkSamplerAddressMode addressModeU, addressModeV, addressModeW;
 	float mipLodBias;
 	VkBool32 anisotropyEnable;
 	float maxAnisotropy;

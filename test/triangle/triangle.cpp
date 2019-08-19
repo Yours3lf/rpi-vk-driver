@@ -45,6 +45,7 @@ void CreatePipeline();
 void CreateUniformBuffer();
 void CreateDescriptorSet();
 void CreateVertexBuffer();
+void CreateTexture();
 void recordCommandBuffers();
 VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
@@ -150,9 +151,10 @@ void setupVulkan() {
 	CreateRenderPass();
 	CreateFramebuffer();
 	CreateVertexBuffer();
-	CreateUniformBuffer();
+	//CreateUniformBuffer();
 	CreateDescriptorSet();
 	CreateShaders();
+	CreateTexture();
 	CreatePipeline();
 	recordCommandBuffers();
 }
@@ -658,7 +660,7 @@ void recordCommandBuffers()
 		VkDeviceSize offsets = 0;
 		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer, &offsets );
 
-		//vkCmdBindDescriptorSets(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
+		vkCmdBindDescriptorSets(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
 
 		float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
 		float viewportScaleX = (float)(swapChainExtent.width) * 0.5f * 16.0f;
@@ -1061,8 +1063,8 @@ void CreatePipeline()
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCI = {};
 	pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	//pipelineLayoutCI.setLayoutCount = 1;
-	//pipelineLayoutCI.pSetLayouts = &dsl;
+	pipelineLayoutCI.setLayoutCount = 1;
+	pipelineLayoutCI.pSetLayouts = &dsl;
 	pipelineLayoutCI.pushConstantRangeCount = 2;
 	pipelineLayoutCI.pPushConstantRanges = &pushConstantRanges[0];
 	vkCreatePipelineLayout(device, &pipelineLayoutCI, 0, &pipelineLayout);
@@ -1269,7 +1271,68 @@ void CreateTexture()
 
 	vkBindImageMemory(device, textureImage, textureMemory, 0);
 
-	//TODO do barrier here to transition layout...
+	//TODO copy texture over to optimal layout
+	//vkCmdCopyBufferToImage();
+
+	{ //transition image
+		VkCommandBufferAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = 1;
+
+		VkCommandBuffer copyCommandBuffer;
+
+		vkAllocateCommandBuffers(device, &allocInfo, &copyCommandBuffer);
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.layerCount = 1;
+
+		VkImageMemoryBarrier imageMemoryBarrier = {};
+		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+		imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageMemoryBarrier.image = textureImage;
+		imageMemoryBarrier.subresourceRange = subresourceRange;
+
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+		vkBeginCommandBuffer(copyCommandBuffer, &beginInfo);
+
+		vkCmdPipelineBarrier(copyCommandBuffer,
+							 VK_PIPELINE_STAGE_HOST_BIT,
+							 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+							 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+		vkEndCommandBuffer(copyCommandBuffer);
+
+		VkFenceCreateInfo fenceInfo = {};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = 0;
+
+		VkFence fence;
+		vkCreateFence(device, &fenceInfo, 0, &fence);
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &copyCommandBuffer;
+
+		vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
+
+		vkWaitForFences(device, 1, &fence, VK_TRUE, -1);
+
+		vkDestroyFence(device, fence, 0);
+		vkFreeCommandBuffers(device, commandPool, 1, &copyCommandBuffer);
+	}
+
 
 	VkSamplerCreateInfo sampler = {};
 	sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -1304,22 +1367,22 @@ void CreateTexture()
 
 void CreateDescriptorSet()
 {
-	/*VkDescriptorSetLayoutBinding setLayoutBinding = {};
-	setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	VkDescriptorSetLayoutBinding setLayoutBinding = {};
+	setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	setLayoutBinding.binding = 0;
-	setLayoutBinding.descriptorCount = 4;
-	setLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	setLayoutBinding.descriptorCount = 1;
+	setLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {};
 	descriptorLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	descriptorLayoutCI.bindingCount = 0;//1;
+	descriptorLayoutCI.bindingCount = 1;
 	descriptorLayoutCI.pBindings = &setLayoutBinding;
 
 	vkCreateDescriptorSetLayout(device, &descriptorLayoutCI, 0, &dsl);
 
 	VkDescriptorPoolSize descriptorPoolSize = {};
 	descriptorPoolSize.descriptorCount = 1;
-	descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
 	VkDescriptorPoolCreateInfo descriptorPoolCI = {};
 	descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1337,20 +1400,20 @@ void CreateDescriptorSet()
 
 	vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet);
 
-	VkDescriptorBufferInfo bufferInfo;
-	bufferInfo.buffer = uniformBuffer;
-	bufferInfo.offset = 0;
-	bufferInfo.range = VK_WHOLE_SIZE;
+	VkDescriptorImageInfo imageInfo;
+	imageInfo.imageView = textureView;
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.sampler = textureSampler;
 
 	VkWriteDescriptorSet writeDescriptorSet = {};
 	writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	writeDescriptorSet.dstSet = descriptorSet;
 	writeDescriptorSet.dstBinding = 0;
-	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	writeDescriptorSet.pBufferInfo = &bufferInfo;
-	writeDescriptorSet.descriptorCount = 4;
+	writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	writeDescriptorSet.pImageInfo = &imageInfo;
+	writeDescriptorSet.descriptorCount = 1;
 
-	vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);*/
+	vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);
 }
 
 void CreateVertexBuffer()

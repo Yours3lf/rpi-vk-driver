@@ -9,7 +9,7 @@ ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, un
 	assert(b); //only allocated memory
 	assert(bs >= sizeof(void*)); //we need to be able to store
 	assert(s%bs==0); //we want a size that is the exact multiple of block size
-	assert(s > bs); //at least 1 element
+	assert(s >= bs); //at least 1 element
 
 	ConsecutivePoolAllocator pa =
 	{

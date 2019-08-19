@@ -112,6 +112,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(
 		*dp->texelBufferDescriptorCPA = createConsecutivePoolAllocator(mem, sizeof(_descriptorTexelBuffer), sizeof(_descriptorTexelBuffer) * texelBufferDescriptorCount);
 	}
 
+	*pDescriptorPool = dp;
+
 	return VK_SUCCESS;
 }
 
@@ -252,9 +254,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorSetLayout(
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
-	memcpy(dsl->bindings, pCreateInfo->bindingCount, sizeof(VkDescriptorSetLayoutBinding)*pCreateInfo->bindingCount);
+	memcpy(dsl->bindings, pCreateInfo->pBindings, sizeof(VkDescriptorSetLayoutBinding)*pCreateInfo->bindingCount);
 
 	dsl->flags = pCreateInfo->flags;
+	dsl->bindingsCount = pCreateInfo->bindingCount;
 
 	*pSetLayout = dsl;
 

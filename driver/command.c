@@ -288,8 +288,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 
 	//TODO: deal with pSubmits->pWaitDstStageMask
 
-	//TODO wait for fence??
-
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
 	{
 		if(pSubmits->pCommandBuffers[c]->state == CMDBUF_STATE_EXECUTABLE)
@@ -358,6 +356,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 	for(int c = 0; c < pSubmits->signalSemaphoreCount; ++c)
 	{
 		sem_post((sem_t*)pSubmits->pSignalSemaphores[c]);
+	}
+
+	//TODO is this correct?
+	_fence* f = fence;
+	if(f)
+	{
+		f->seqno = queue->lastEmitSeqno;
 	}
 
 	return VK_SUCCESS;
