@@ -152,9 +152,9 @@ void setupVulkan() {
 	CreateFramebuffer();
 	CreateVertexBuffer();
 	//CreateUniformBuffer();
-	CreateDescriptorSet();
 	CreateShaders();
 	CreateTexture();
+	CreateDescriptorSet();
 	CreatePipeline();
 	recordCommandBuffers();
 }
@@ -952,7 +952,7 @@ void CreateShaders()
 	//abcd
 	//BGRA
 
-	/**/
+	/**
 	//rainbow colors
 	char fs_asm_code[] =
 			"sig_none ; r1 = itof.always(a, a, x_pix, uni) ; r3 = v8min.always(b, b) ;" //can't use mul pipeline for conversion :(
@@ -982,6 +982,34 @@ void CreateShaders()
 			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 				"\0";
 	/**/
+
+	//sample texture
+	char fs_asm_code[] =
+			"sig_none ; r0 = itof.always(b, b, x_pix, y_pix) ; nop = nop(r0, r0) ;"
+			"sig_load_imm ; r2 = load32.always(0x3a72b9d6) ; nop = load32() ;" //1/1080
+			"sig_none ; r0 = itof.always(a, a, x_pix, y_pix) ; r1 = fmul.always(r2, r0); ;" //r1 contains tex coord y
+			"sig_load_imm ; r2 = load32.always(0x3a088888) ; nop = load32() ;" //1/1920
+			///write texture addresses (x, y)
+			///writing tmu0_s signals that all coordinates are written
+			"sig_none ; tmu0_t = or.always(r1, r1) ; r0 = fmul.always(r2, r0) ;" //r0 contains tex coord x
+			"sig_none ; tmu0_s = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			///suspend thread (after 2 nops) to wait for TMU request to finish
+			"sig_thread_switch ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			///read TMU0 request result to R4
+			"sig_load_tmu0 ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			///when thread has been awakened, MOV from R4 to R0
+			"sig_none ; r0 = fmax.pm.always.8a(r4, r4) ; nop = nop(r0, r0) ;"
+			"sig_none ; r1 = fmax.pm.always.8b(r4, r4) ; r0.8a = v8min.always(r0, r0) ;"
+			"sig_none ; r2 = fmax.pm.always.8c(r4, r4) ; r0.8b = v8min.always(r1, r1) ;"
+			"sig_none ; r3 = fmax.pm.always.8d(r4, r4) ; r0.8c = v8min.always(r2, r2) ;"
+			"sig_none ; nop = nop.pm(r0, r0) ; r0.8d = v8min.always(r3, r3) ;"
+			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+				"\0";
 
 	char* asm_strings[] =
 	{
@@ -1028,8 +1056,8 @@ void CreateShaders()
 		},
 		//fragment shader uniforms
 		{
-			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
-			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, //descriptor type
 			0, //descriptor set #
 			0, //descriptor binding #
 			0, //descriptor array element #
