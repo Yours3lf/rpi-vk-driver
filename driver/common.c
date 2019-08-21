@@ -618,7 +618,7 @@ void encodeTextureUniform(uint32_t* params, //array of 4 uint32_t
 			| (uint32_t)(minFilter & 0x7) << 4
 			| (uint32_t)(magFilter & 0x1) << 7
 			| (uint32_t)(width & 0x7ff) << 8
-			| (uint32_t)(height & 0x7ff) < 20
+			| (uint32_t)(height & 0x7ff) << 20
 			| (uint32_t)((textureDataType & 0x10) >> 4) << 31;
 
 	params[2] = 0

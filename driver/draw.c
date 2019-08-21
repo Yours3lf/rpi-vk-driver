@@ -130,7 +130,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clInsertShaderRecord(&commandBuffer->shaderRecCl,
 						 &relocCl,
 						 &commandBuffer->handlesCl,
-						 1, //TODO single threaded?
+						 0, //TODO single threaded?
 						 0, //point size included in shaded vertex data?
 						 1, //enable clipping?
 						 0, //fragment number of unused uniforms?
@@ -325,7 +325,11 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 					//emit reloc for texture BO
 					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
 					//TODO anything to do with the index returned?
-					clGetHandleIndex(&commandBuffer->handlesCl, di->imageView->image->boundMem->bo);
+					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, di->imageView->image->boundMem->bo);
+
+					//emit tex bo reloc index
+					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+					clInsertData(&commandBuffer->uniformsCl, 4, &idx);
 
 					//emit tex parameters
 					clFit(commandBuffer, &commandBuffer->uniformsCl, size);
