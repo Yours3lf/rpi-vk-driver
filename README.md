@@ -9,9 +9,9 @@
   - [ ] texture coordinates and texture sampling
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
-- [ ] Resources
-  - [ ] Descriptor support
-  - [ ] VkSampler support
+- [x] Resources
+  - [x] Descriptor support
+  - [x] VkSampler support
   - [x] Push constant support
 - [ ] Multipass rendering
   - [ ] VkRenderPass support
