@@ -5,8 +5,9 @@
 - [x] clear screen example working
 - [x] triangle example working
   - [x] shader from assembly, vertices from vertex buffer object, no uniforms, color hardcoded
-  - [ ] uniforms for matrix multiplication and animation
-  - [ ] texture coordinates and texture sampling
+  - [x] uniforms for matrix multiplication and animation
+  - [x] texture coordinates and texture sampling
+  - [ ] varyings
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
 - [x] Resources
