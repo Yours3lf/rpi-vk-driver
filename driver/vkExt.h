@@ -88,6 +88,8 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(
 		VkShaderModule*								pShaderModule
 		);
 
+//TODO performance counters / perfmon
+
 
 #ifdef __cplusplus
 }

@@ -4,6 +4,11 @@
 
 #include "QPUassembler/qpu_assembler.h"
 
+//TODO collect shader performance data
+//eg number of texture samples etc.
+//TODO check if shader has flow control and make sure instance also has flow control
+//TODO make sure instance has threaded fs if shader contains thread switch
+
 VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModuleAssemblyCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
 {
 	assert(device);
@@ -17,6 +22,8 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
+
+	shader->hasThreadSwitch = 0;
 
 	for(int c = 0; c < RPI_ASSEMBLY_TYPE_MAX; ++c)
 	{
@@ -39,6 +46,15 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
 			{
 				printf("%#llx ", instructions[c]);
 				disassemble_qpu_asm(instructions[c]);
+			}
+
+			for(uint64_t c = 0; c < numInstructions; ++c)
+			{
+				if((instructions[c] & (0xf << 60)) == (2 << 60))
+				{
+					shader->hasThreadSwitch = 1;
+					break;
+				}
 			}
 
 			printf("\n");

@@ -13,6 +13,10 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	_renderpass* rp = cb->renderpass;
 	_framebuffer* fb = cb->fbo;
 
+	//TODO handle cases when submitting >65k vertices in a VBO
+	//TODO HW-2116 workaround
+	//TODO GFXH-515 / SW-5891 workaround
+
 	//TODO handle multiple attachments etc.
 	_image* i = fb->attachmentViews[rp->subpasses[cb->currentSubpass].pColorAttachments[0].attachment].image;
 
@@ -75,6 +79,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clInsertClipperXYScaling(&commandBuffer->binCl, (float)(i->width) * 0.5f * 16.0f, -1.0f * (float)(i->height) * 0.5f * 16.0f);
 
 	//TODO how is this calculated?
+	//it's Zc to Zs scale and bias
 	//seems to go from -1.0 .. 1.0 to 0.0 .. 1.0
 	//eg. x * 0.5 + 0.5
 	//cb->graphicsPipeline->minDepthBounds;
@@ -130,8 +135,8 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clInsertShaderRecord(&commandBuffer->shaderRecCl,
 						 &relocCl,
 						 &commandBuffer->handlesCl,
-						 0, //TODO single threaded?
-						 0, //point size included in shaded vertex data?
+						 !cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->hasThreadSwitch,
+						 0, //TODO point size included in shaded vertex data?
 						 1, //enable clipping?
 						 0, //fragment number of unused uniforms?
 						 0, //fragment number of varyings?
@@ -492,5 +497,5 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexed(
 	int32_t                                     vertexOffset,
 	uint32_t                                    firstInstance)
 {
-
+	//TODO
 }
