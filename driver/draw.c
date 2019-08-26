@@ -227,50 +227,74 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	commandBuffer->submitCl.clear_s = 0;
 
 	//write uniforms
-	//TODO
-	/**
-	//FS
-	uniform count : 1
-	tex sample count : 0
-	uniform constant : 4291579008 (color: #CC4C80, alpha FF)
-
-	//VS
-	uniform count : 4
-	tex sample count : 0
-	uniform constant : 1065353216 //1.0
-	uniform viewport xscale : 15360.000000
-	uniform viewport yscale : -8640.000000
-	uniform viewport zoffset : 0.500000
-
-	//CS (same as VS)
-	uniform count : 4
-	tex sample count : 0
-	uniform viewport yscale : -8640.000000
-	uniform constant : 1065353216 //1.0
-	uniform viewport xscale : 15360.000000
-	uniform viewport zoffset : 0.500000
-	/**/
-
-	/**
-	//TODO: if fragment shader doesn't use any uniforms, then VS will expect to read the first uniform in the stream
-	//clFit(commandBuffer, &commandBuffer->uniformsCl, 4*(1+4+4));
-	clFit(commandBuffer, &commandBuffer->uniformsCl, 4*(4+4));
-	//FS
-	//clInsertUniformConstant(&commandBuffer->uniformsCl, 4291579008);
-	//VS
-	clInsertUniformConstant(&commandBuffer->uniformsCl, 1065353216);
-	clInsertUniformXYScale(&commandBuffer->uniformsCl, (float)(i->width) * 0.5f * 16.0f);
-	clInsertUniformXYScale(&commandBuffer->uniformsCl, -1.0f * (float)(i->height) * 0.5f * 16.0f);
-	clInsertUniformZOffset(&commandBuffer->uniformsCl, 0.5f);
-	//CS
-	clInsertUniformConstant(&commandBuffer->uniformsCl, 1065353216);
-	clInsertUniformXYScale(&commandBuffer->uniformsCl, (float)(i->width) * 0.5f * 16.0f);
-	clInsertUniformXYScale(&commandBuffer->uniformsCl, -1.0f * (float)(i->height) * 0.5f * 16.0f);
-	clInsertUniformZOffset(&commandBuffer->uniformsCl, 0.5f);
-	/**/
-
 	_pipelineLayout* pl = cb->graphicsPipeline->layout;
 
+	//kernel side expects relocations first!
+	for(uint32_t c = 0; c < cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->numMappings; ++c)
+	{
+		VkRpiAssemblyMappingEXT mapping = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->mappings[c];
+
+		if(mapping.shaderStage & VK_SHADER_STAGE_FRAGMENT_BIT)
+		{
+			if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
+			{
+				if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+				   mapping.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+				   mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+				{
+					_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
+					_descriptorImage* di = getMapElement(ds->imageBindingMap, mapping.descriptorBinding);
+					di += mapping.descriptorArrayElement;
+
+					//emit reloc for texture BO
+					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, di->imageView->image->boundMem->bo);
+
+					//emit tex bo reloc index
+					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+					clInsertData(&commandBuffer->uniformsCl, 4, &idx);
+				}
+				else if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+						mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+						mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
+						mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+				{
+					_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
+					_descriptorBuffer* db = getMapElement(ds->bufferBindingMap, mapping.descriptorBinding);
+					db += mapping.descriptorArrayElement;
+
+					//emit reloc for BO
+					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, db->buffer->boundMem->bo);
+
+					//emit bo reloc index
+					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+					clInsertData(&commandBuffer->uniformsCl, 4, &idx);
+				}
+				else if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ||
+						mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
+				{
+					_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
+					_descriptorTexelBuffer* dtb = getMapElement(ds->texelBufferBindingMap, mapping.descriptorBinding);
+					dtb += mapping.descriptorArrayElement;
+
+					//emit reloc for BO
+					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, dtb->bufferView->buffer->boundMem->bo);
+
+					//emit bo reloc index
+					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+					clInsertData(&commandBuffer->uniformsCl, 4, &idx);
+				}
+				else
+				{
+					assert(0); //shouldn't happen
+				}
+			}
+		}
+	}
+
+	//after relocs we can proceed with the usual uniforms
 	for(uint32_t c = 0; c < cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->numMappings; ++c)
 	{
 		VkRpiAssemblyMappingEXT mapping = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->mappings[c];
@@ -300,8 +324,8 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 										 di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE,
 										 0, //TODO cubemap stride
 										 0, //TODO texture base ptr
-										 di->imageView->image->height % 2048,
-										 di->imageView->image->width % 2048,
+										 di->imageView->image->height & 2047,
+										 di->imageView->image->width & 2047,
 										 getMinFilterType(di->sampler->minFilter, di->sampler->mipmapMode, di->sampler->maxLod),
 										 di->sampler->magFilter == VK_FILTER_NEAREST,
 										 getWrapMode(di->sampler->addressModeU),
@@ -327,27 +351,10 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 						assert(0); //unsupported
 					}
 
-					//emit reloc for texture BO
-					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-					//TODO anything to do with the index returned?
-					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, di->imageView->image->boundMem->bo);
-
-					//emit tex bo reloc index
-					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
-					clInsertData(&commandBuffer->uniformsCl, 4, &idx);
-
 					//emit tex parameters
 					clFit(commandBuffer, &commandBuffer->uniformsCl, size);
 					clInsertData(&commandBuffer->uniformsCl, size, params);
 				}
-				else
-				{ //all buffers types handled here
-					//TODO
-				}
-			}
-			else
-			{
-				assert(0); //shouldn't happen
 			}
 		}
 	}
@@ -377,96 +384,6 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 			}
 		}
 	}
-
-	/*for(uint32_t c = 0; c < pl->pushConstantRangeCount; ++c)
-	{
-		//TODO
-		//we should use the shader module's declaration of what order it wants this to be passed in
-		//for now we just assume everything matches
-		if(pl->pushConstantRanges[c].stageFlags & VK_SHADER_STAGE_FRAGMENT_BIT)
-		{
-			clFit(commandBuffer, &commandBuffer->uniformsCl, pl->pushConstantRanges[c].size);
-			clInsertData(&commandBuffer->uniformsCl, pl->pushConstantRanges[c].size, cb->pushConstantBufferPixel + pl->pushConstantRanges[c].offset);
-		}
-	}
-
-	for(uint32_t c = 0; c < pl->pushConstantRangeCount; ++c)
-	{
-		//TODO
-		if(pl->pushConstantRanges[c].stageFlags & VK_SHADER_STAGE_VERTEX_BIT)
-		{
-			clFit(commandBuffer, &commandBuffer->uniformsCl, pl->pushConstantRanges[c].size);
-			clInsertData(&commandBuffer->uniformsCl, pl->pushConstantRanges[c].size, cb->pushConstantBufferVertex + pl->pushConstantRanges[c].offset);
-		}
-	}
-
-	//Do it again for Coordinate stage
-	for(uint32_t c = 0; c < pl->pushConstantRangeCount; ++c)
-	{
-		//TODO
-		if(pl->pushConstantRanges[c].stageFlags & VK_SHADER_STAGE_VERTEX_BIT)
-		{
-			clFit(commandBuffer, &commandBuffer->uniformsCl, pl->pushConstantRanges[c].size);
-			clInsertData(&commandBuffer->uniformsCl, pl->pushConstantRanges[c].size, cb->pushConstantBufferVertex + pl->pushConstantRanges[c].offset);
-		}
-	}*/
-
-	/*_shaderModule* csModule = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)];
-	_pipelineLayout* pl = cb->graphicsPipeline->layout;
-	for(uint32_t c = 0; c < csModule->numDescriptorBindings[VK_RPI_ASSEMBLY_TYPE_COORDINATE]; ++c)
-	{
-		uint32_t offset = 0;
-		for(uint32_t d = 0; d < c; ++d)
-		{
-			offset += csModule->numDescriptorBindings[d];
-		}
-
-		_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, csModule->descriptorSets[offset + c]);
-
-		clFit(commandBuffer, &commandBuffer->uniformsCl, 4*csModule->descriptorCounts[offset + c]);
-
-		switch(csModule->descriptorTypes[offset + c])
-		{
-		case VK_DESCRIPTOR_TYPE_SAMPLER:
-		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-		{
-			_descriptorImage* dib = getMapElement(ds->imageBindingMap, csModule->descriptorBindings[offset + c]);
-			for(uint32_t d = 0; d < csModule->descriptorCounts[offset + c]; ++d)
-			{
-				//TODO
-				//clInsertUniformConstant(&commandBuffer->uniformsCl, );
-			}
-			break;
-		}
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-		{
-			_descriptorBuffer* dbb = getMapElement(ds->bufferBindingMap, csModule->descriptorBindings[offset + c]);
-			for(uint32_t d = 0; d < csModule->descriptorCounts[offset + c]; ++d)
-			{
-				//TODO
-				//csModule->descriptorArrayElems[offset + c]
-				//clInsertUniformConstant(&commandBuffer->uniformsCl, );
-			}
-			break;
-		}
-		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-		{
-			_descriptorTexelBuffer* dtb = getMapElement(ds->texelBufferBindingMap, csModule->descriptorBindings[offset + c]);
-			for(uint32_t d = 0; d < csModule->descriptorCounts[offset + c]; ++d)
-			{
-				//TODO
-				//clInsertUniformConstant(&commandBuffer->uniformsCl, );
-			}
-		}
-		}
-	}*/
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirect(

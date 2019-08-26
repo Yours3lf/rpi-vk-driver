@@ -318,6 +318,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 		{
 			printf("%u ", *((uint32_t*)(cmdbuf->submitCl.bo_handles)+d));
 		}
+		printf("\nUniforms: ");
+		for(int d = 0; d < cmdbuf->submitCl.uniforms_size / 4; ++d)
+		{
+			printf("%u ", *((uint32_t*)(cmdbuf->submitCl.uniforms)+d));
+		}
 		printf("\nwidth height: %u, %u\n", cmdbuf->submitCl.width, cmdbuf->submitCl.height);
 		printf("tile min/max: %u,%u %u,%u\n", cmdbuf->submitCl.min_x_tile, cmdbuf->submitCl.min_y_tile, cmdbuf->submitCl.max_x_tile, cmdbuf->submitCl.max_y_tile);
 		printf("color read surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.color_read.hindex, cmdbuf->submitCl.color_read.offset, cmdbuf->submitCl.color_read.bits, cmdbuf->submitCl.color_read.flags);

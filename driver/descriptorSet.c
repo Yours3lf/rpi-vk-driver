@@ -211,17 +211,17 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateDescriptorSets(
 			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
 				setMapElement(&ds->bufferBindingMap, dsl->bindings[d].binding, &ds->bufferDescriptors[bufferDescriptorCounter]);
-				ds->imageDescriptors[bufferDescriptorCounter].count = dsl->bindings[d].descriptorCount;
-				ds->imageDescriptors[bufferDescriptorCounter].type = dsl->bindings[d].descriptorType;
-				ds->imageDescriptors[bufferDescriptorCounter].stageFlags = dsl->bindings[d].stageFlags;
+				ds->bufferDescriptors[bufferDescriptorCounter].count = dsl->bindings[d].descriptorCount;
+				ds->bufferDescriptors[bufferDescriptorCounter].type = dsl->bindings[d].descriptorType;
+				ds->bufferDescriptors[bufferDescriptorCounter].stageFlags = dsl->bindings[d].stageFlags;
 				bufferDescriptorCounter += dsl->bindings[d].descriptorCount;
 				break;
 			case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 			case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 				setMapElement(&ds->texelBufferBindingMap, dsl->bindings[d].binding, &ds->texelBufferDescriptors[texelBufferDescriptorCounter]);
-				ds->imageDescriptors[texelBufferDescriptorCounter].count = dsl->bindings[d].descriptorCount;
-				ds->imageDescriptors[texelBufferDescriptorCounter].type = dsl->bindings[d].descriptorType;
-				ds->imageDescriptors[texelBufferDescriptorCounter].stageFlags = dsl->bindings[d].stageFlags;
+				ds->texelBufferDescriptors[texelBufferDescriptorCounter].count = dsl->bindings[d].descriptorCount;
+				ds->texelBufferDescriptors[texelBufferDescriptorCounter].type = dsl->bindings[d].descriptorType;
+				ds->texelBufferDescriptors[texelBufferDescriptorCounter].stageFlags = dsl->bindings[d].stageFlags;
 				texelBufferDescriptorCounter += dsl->bindings[d].descriptorCount;
 				break;
 			}
