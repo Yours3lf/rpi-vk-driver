@@ -87,6 +87,64 @@ VkBufferView texelBufferView;
 uint32_t graphicsQueueFamily;
 uint32_t presentQueueFamily;
 
+char* readPPM(const char* fileName)
+{
+	uint16_t ppm_magic;
+	((uint8_t*)&ppm_magic)[0] = 'P';
+	((uint8_t*)&ppm_magic)[1] = '6';
+
+	FILE* fd = fopen(fileName, "rb");
+	fseek (fd , 0 , SEEK_END);
+	uint32_t fsize = ftell(fd);
+	rewind(fd);
+	char* buf = (char*)malloc(fsize);
+
+	if(!buf)
+	{
+		return 0;
+	}
+
+	fread(buf, 1, fsize, fd);
+	fclose(fd);
+
+	uint16_t magic_number = ((uint16_t*)buf)[0];
+	if(magic_number != ppm_magic)
+	{
+		printf("PPM magic number not found: %u\n", magic_number);
+		return 0;
+	}
+
+	char* widthStr = strtok(buf+3, " ");
+	char* heightStr = strtok(0, "\n");
+	char* maxValStr = strtok(0, "\n");
+	int width = atoi(widthStr);
+	int height = atoi(heightStr);
+	int maxVal = atoi(maxValStr);
+
+	printf("Image size: %i x %i\n", width, height);
+	printf("Max value: %i\n", maxVal);
+
+	char* imageBuf = maxValStr + strlen(maxValStr) + 1;
+
+	//convert to BGRA (A=1)
+	char* retBuf = (char*)malloc(width * height * 4);
+
+	for(int y = 0; y < height; ++y)
+		{
+			for(int x = 0; x < width; ++x)
+			{
+				retBuf[(y*width+x)*4+0] = imageBuf[(y*width+x)*3+2];
+				retBuf[(y*width+x)*4+1] = imageBuf[(y*width+x)*3+1];
+				retBuf[(y*width+x)*4+2] = imageBuf[(y*width+x)*3+0];
+				retBuf[(y*width+x)*4+3] = 0xff;
+			}
+		}
+
+	free(buf);
+
+	return retBuf;
+}
+
 void cleanup() {
 	vkDeviceWaitIdle(device);
 
@@ -679,7 +737,7 @@ void recordCommandBuffers()
 		fragConstants[0] = size;
 		fragConstants[1] = 0;
 
-		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(vertConstants), &fragConstants);
+		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragConstants), &fragConstants);
 
 		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
 
@@ -948,7 +1006,7 @@ void CreateShaders()
 			///second argument must be a uniform (containing base address, which is 0)
 			///writing tmu0_s signals that all coordinates are written
 			"sig_small_imm ; r0 = max.always(r0, b, nop, 0) ; nop = nop(r0, r0) ;" //clamp general access
-			"sig_none ; r0 = min.always(r0, b, nop, uni) ; nop = nop(r0, r0) ;" //uni = 1920 * 1080 * 4
+			"sig_none ; r0 = min.always(r0, b, nop, uni) ; nop = nop(r0, r0) ;" //uni = 1920 * 1080 * 4 - 4
 			"sig_none ; tmu0_s = add.always(r0, b, nop, uni) ; nop = nop(r0, r0) ;"
 			///suspend thread (after 2 nops) to wait for TMU request to finish
 			"sig_thread_switch ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -1193,14 +1251,7 @@ void CreateTexture()
 	uint32_t width = swapChainExtent.width, height = swapChainExtent.height;
 	uint32_t mipLevels = 1;
 
-	char* texData = (char*)malloc(width * height * 4);
-	for(int y = 0; y < height; ++y)
-	{
-		for(int x = 0; x < width; ++x)
-		{
-			*(uint32_t*)(texData + (y * width + x) * 4) = 0xffffffff;
-		}
-	}
+	char* texData = readPPM("image.ppm");
 
 	{ //create storage texel buffer for generic mem address TMU ops test
 		VkBufferCreateInfo bufferCreateInfo = {};
@@ -1223,7 +1274,7 @@ void CreateTexture()
 
 		void* data;
 		vkMapMemory(device, texelBufferMemory, 0, mr.size, 0, &data);
-		memcpy(data, texData, sizeof(texData));
+		memcpy(data, texData, width * height * 4);
 		vkUnmapMemory(device, texelBufferMemory);
 
 		free(texData);
