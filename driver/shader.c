@@ -38,7 +38,16 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
-			assemble_qpu_asm(pCreateInfo->asmStrings[c], instructions);
+
+			//need to create a temporary copy as the assembly algorithm is destructive
+			uint32_t stringLength = strlen(pCreateInfo->asmStrings[c]);
+			char* tmpShaderStr = ALLOCATE(stringLength+1, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+			memcpy(tmpShaderStr, pCreateInfo->asmStrings[c], stringLength+1);
+
+			assemble_qpu_asm(tmpShaderStr, instructions);
+
+			FREE(tmpShaderStr);
+
 			shader->bos[c] = vc4_bo_alloc_shader(controlFd, instructions, &size);
 
 			//TODO if debug...
