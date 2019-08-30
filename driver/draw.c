@@ -20,15 +20,24 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	//TODO handle multiple attachments etc.
 	_image* i = fb->attachmentViews[rp->subpasses[cb->currentSubpass].pColorAttachments[0].attachment].image;
 
+	//TODO when doing multiple draw calls (well multipass now)
+	//kernel side expects one Tile Binning Mode Config field per submit
+	//sounds like for each renderpass we'll have to submit one submit, one of these config fields
 
 	//stuff needed to submit a draw call:
 	//Tile Binning Mode Configuration
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
 	clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
-										 0, 0, 0, 0,
+										 0, //double buffer in non ms mode
+										 0, //tile allocation block size
+										 0, //tile allocation initial block size
+										 0, //auto initialize tile state data array
 										 getFormatBpp(i->format) == 64, //64 bit color mode
 										 i->samples > 1, //msaa
-										 i->width, i->height, 0, 0, 0);
+										 i->width, i->height,
+										 0, //tile state data array address
+										 0, //tile allocation memory size
+										 0); //tile allocation memory address
 
 	//Start Tile Binning
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
@@ -42,20 +51,24 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 	//Clip Window
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
-	clInsertClipWindow(&commandBuffer->binCl, i->width, i->height, 0, 0);
+	clInsertClipWindow(&commandBuffer->binCl,
+					   i->width,
+					   i->height,
+					   0, //bottom pixel coord
+					   0); //left pixel coord
 
 	//Configuration Bits
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
 	clInsertConfigurationBits(&commandBuffer->binCl,
-							  1, //TODO earlyz updates
+							  1, //TODO earlyz updates enable
 							  0, //TODO earlyz enable
-							  0, //TODO z updates
+							  0, //TODO z updates enable
 							  cb->graphicsPipeline->depthTestEnable ? getDepthCompareOp(cb->graphicsPipeline->depthCompareOp) : V3D_COMPARE_FUNC_ALWAYS, //depth compare func
-							  0,
-							  0,
-							  0,
-							  0,
-							  0,
+							  0, //coverage read mode
+							  0, //coverage pipe select
+							  0, //coverage update mode
+							  0, //coverage read type
+							  0, //rasterizer oversample mode
 							  cb->graphicsPipeline->depthBiasEnable, //depth offset enable
 							  cb->graphicsPipeline->frontFace == VK_FRONT_FACE_CLOCKWISE, //clockwise
 							  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_BACK_BIT), //enable back facing primitives
@@ -99,7 +112,10 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	//TODO how to get address?
 	//GL Shader State
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
-	clInsertShaderState(&commandBuffer->binCl, 0, 0, cb->graphicsPipeline->vertexAttributeDescriptionCount);
+	clInsertShaderState(&commandBuffer->binCl,
+						0, //shader state record address
+						0, //extended shader state record
+						cb->graphicsPipeline->vertexAttributeDescriptionCount);
 
 	//Vertex Array Primitives (draw call)
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
@@ -137,17 +153,17 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 						 &commandBuffer->handlesCl,
 						 !cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->hasThreadSwitch,
 						 0, //TODO point size included in shaded vertex data?
-						 1, //enable clipping?
-						 0, //fragment number of unused uniforms?
-						 0, //fragment number of varyings?
+						 1, //TODO enable clipping?
+						 0, //TODO fragment number of unused uniforms?
+						 0, //TODO fragment number of varyings?
 						 0, //fragment uniform address?
 						 fragCode, //fragment code address
-						 0, //vertex number of unused uniforms?
+						 0, //TODO vertex number of unused uniforms?
 						 1, //TODO vertex attribute array select bits
 						 8, //TODO vertex total attribute size
 						 0, //vertex uniform address
 						 vertCode, //vertex shader code address
-						 0, //coordinate number of unused uniforms?
+						 0, //TODO coordinate number of unused uniforms?
 						 1, //TODO coordinate attribute array select bits
 						 8, //TODO coordinate total attribute size
 						 0, //coordinate uniform address
@@ -163,24 +179,12 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clInsertAttributeRecord(&commandBuffer->shaderRecCl,
 							&relocCl,
 							&commandBuffer->handlesCl,
-							vertexBuffer, //address
+							vertexBuffer, //reloc address
 							getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[0].format),
 							cb->graphicsPipeline->vertexBindingDescriptions[0].stride, //stride
 							0, //TODO vertex vpm offset
 							0  //TODO coordinte vpm offset
 							);
-
-	//insert vertex buffer handle
-	//clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	//uint32_t vboIdx = clGetHandleIndex(&commandBuffer->handlesCl, vertexBuffer.handle);
-
-	//insert shader code handles
-	//clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	//uint32_t vertIdx = clGetHandleIndex(&commandBuffer->handlesCl, vertCode.handle);
-	//clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	//uint32_t coordIdx = clGetHandleIndex(&commandBuffer->handlesCl, coordCode.handle);
-	//clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	//uint32_t fragIdx = clGetHandleIndex(&commandBuffer->handlesCl, fragCode.handle);
 
 	//Insert image handle index
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
@@ -386,6 +390,17 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	}
 }
 
+VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexed(
+	VkCommandBuffer                             commandBuffer,
+	uint32_t                                    indexCount,
+	uint32_t                                    instanceCount,
+	uint32_t                                    firstIndex,
+	int32_t                                     vertexOffset,
+	uint32_t                                    firstInstance)
+{
+	//TODO
+}
+
 VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirect(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    buffer,
@@ -404,15 +419,4 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndirect(
 	uint32_t                                    stride)
 {
 
-}
-
-VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexed(
-	VkCommandBuffer                             commandBuffer,
-	uint32_t                                    indexCount,
-	uint32_t                                    instanceCount,
-	uint32_t                                    firstIndex,
-	int32_t                                     vertexOffset,
-	uint32_t                                    firstInstance)
-{
-	//TODO
 }
