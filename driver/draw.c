@@ -388,6 +388,8 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 			}
 		}
 	}
+
+	cb->numDrawCallsSubmitted++;
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexed(

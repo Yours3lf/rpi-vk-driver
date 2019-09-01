@@ -13,17 +13,12 @@ uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset)
 	return (d << offset) & (~(~0 << bits) << offset);
 }
 
-uint32_t clSize(ControlList* cl)
+uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size)
 {
 	assert(cl);
 	assert(cl->buffer);
 	assert(cl->nextFreeByte);
-	return cl->nextFreeByte - cl->buffer;
-}
-
-uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size)
-{
-	uint32_t currSize = clSize(cl);
+	uint32_t currSize = cl->nextFreeByte - cl->buffer;;
 	if(currSize + size < CONTROL_LIST_SIZE)
 	{
 		return 1; //fits!
@@ -41,6 +36,33 @@ void clInit(ControlList* cl, void* buffer)
 	cl->buffer = buffer;
 	cl->numBlocks = 1;
 	cl->nextFreeByte = &cl->buffer[0];
+	cl->currMarker = 0;
+}
+
+void clInsertNewCLMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, ControlList* uniformsCL, void* imagePtr)
+{
+	//to be inserted when you'd insert tile binning mode config
+	assert(cl);
+	assert(handlesCL);
+	assert(shaderRecCL);
+	assert(uniformsCL);
+	assert(imagePtr);
+
+	CLMarker marker;
+	marker.nextMarker = 0;
+	marker.size = 0;
+	marker.image = imagePtr;
+	marker.handles = cl->currMarker ? cl->currMarker->handles + cl->currMarker->handlesSize : handlesCL;
+	marker.handlesSize = 0;
+	marker.shaderRec = cl->currMarker ? cl->currMarker->shaderRec + cl->currMarker->shaderRecSize : shaderRecCL;
+	marker.shaderRecSize = 0;
+	marker.shaderRecCount = 0;
+	marker.uniforms = cl->currMarker ? cl->currMarker->uniforms + cl->currMarker->uniformsSize : uniformsCL;
+	marker.uniformsSize = 0;
+	marker.flags = 0;
+
+	*(CLMarker*)cl->nextFreeByte = marker;
+	cl->nextFreeByte += sizeof(CLMarker);
 }
 
 void clInsertData(ControlList* cl, uint32_t size, uint8_t* data)

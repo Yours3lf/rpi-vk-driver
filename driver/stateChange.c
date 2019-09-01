@@ -96,8 +96,45 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 
 	//TODO externally sync cmdbuf, cmdpool
 
-	i->needToClear = 1;
-	i->clearColor[0] = i->clearColor[1] = packVec4IntoABGR8(pColor->float32);
+	//i->needToClear = 1;
+	//i->clearColor[0] = i->clearColor[1] = packVec4IntoABGR8(pColor->float32);
+
+
+	{ //Simplest case: just submit a job to clear the image
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
+		clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
+											 0, //double buffer in non ms mode
+											 0, //tile allocation block size
+											 0, //tile allocation initial block size
+											 0, //auto initialize tile state data array
+											 getFormatBpp(i->format) == 64, //64 bit color mode
+											 i->samples > 1, //msaa
+											 i->width, i->height,
+											 0, //tile state data array address
+											 0, //tile allocation memory size
+											 0); //tile allocation memory address
+
+		//START_TILE_BINNING resets the statechange counters in the hardware,
+		//which are what is used when a primitive is binned to a tile to
+		//figure out what new state packets need to be written to that tile's
+		//command list.
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
+		clInsertStartTileBinning(&commandBuffer->binCl);
+
+		//Reset the current compressed primitives format.  This gets modified
+		//by VC4_PACKET_GL_INDEXED_PRIMITIVE and
+		//VC4_PACKET_GL_ARRAY_PRIMITIVE, so it needs to be reset at the start
+		//of every tile.
+		//clFit(commandBuffer, &commandBuffer->binCl, V3D21_PRIMITIVE_LIST_FORMAT_length);
+		//clInsertPrimitiveListFormat(&commandBuffer->binCl,
+		//							1, //16 bit
+		//							2); //tris
+
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_INCREMENT_SEMAPHORE_length);
+		clInsertIncrementSemaphore(&commandBuffer->binCl);
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLUSH_length);
+		clInsertFlush(&commandBuffer->binCl);
+	}
 }
 
 /*

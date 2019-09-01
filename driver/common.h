@@ -294,8 +294,6 @@ typedef struct VkCommandBuffer_T
 	//Recorded commands include commands to bind pipelines and descriptor sets to the command buffer, commands to modify dynamic state, commands to draw (for graphics rendering),
 	//commands to dispatch (for compute), commands to execute secondary command buffers (for primary command buffers only), commands to copy buffers and images, and other commands
 
-	struct drm_vc4_submit_cl submitCl;
-
 	//Rpi only supports vertex and pixel shaders
 	//(coordinate shaders will just use the vertex shader push constants)
 	//anything else will be ignored I guess
@@ -318,7 +316,7 @@ typedef struct VkCommandBuffer_T
 	_pipeline* graphicsPipeline;
 	_pipeline* computePipeline;
 
-	uint32_t firstDraw; //so we can set tile binning config etc.
+	uint32_t numDrawCallsSubmitted;
 
 	uint32_t vertexBufferDirty;
 	uint32_t indexBufferDirty;
@@ -475,5 +473,6 @@ void encodeTextureUniform(uint32_t* params,
 uint8_t getTextureDataType(VkFormat format);
 uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter, float maxLod);
 uint8_t getWrapMode(VkSamplerAddressMode mode);
+uint32_t getRenderTargetFormatVC4(VkFormat format);
 void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize);
 void clDump(void* cl, uint32_t size);

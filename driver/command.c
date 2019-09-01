@@ -110,6 +110,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 				break;
 			}
 
+			pCommandBuffers[c]->dev = device;
+
 			pCommandBuffers[c]->shaderRecCount = 0;
 			pCommandBuffers[c]->usageFlags = 0;
 			pCommandBuffers[c]->state = CMDBUF_STATE_INITIAL;
@@ -124,7 +126,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 			pCommandBuffers[c]->currentSubpass = 0;
 			pCommandBuffers[c]->graphicsPipeline = 0;
 			pCommandBuffers[c]->computePipeline = 0;
-			pCommandBuffers[c]->firstDraw = 1;
+			pCommandBuffers[c]->numDrawCallsSubmitted = 0;
 			pCommandBuffers[c]->vertexBufferDirty = 1;
 			pCommandBuffers[c]->indexBufferDirty = 1;
 			pCommandBuffers[c]->viewportDirty = 1;
@@ -300,47 +302,113 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 	{
 		VkCommandBuffer cmdbuf = pSubmits->pCommandBuffers[c];
 
-		cmdbuf->submitCl.bo_handles = cmdbuf->handlesCl.buffer;
-		cmdbuf->submitCl.bo_handle_count = clSize(&cmdbuf->handlesCl) / 4;
-		cmdbuf->submitCl.bin_cl = cmdbuf->binCl.buffer;
-		cmdbuf->submitCl.bin_cl_size = clSize(&cmdbuf->binCl);
-		cmdbuf->submitCl.shader_rec = cmdbuf->shaderRecCl.buffer;
-		cmdbuf->submitCl.shader_rec_size = clSize(&cmdbuf->shaderRecCl);
-		cmdbuf->submitCl.shader_rec_count = cmdbuf->shaderRecCount;
-		cmdbuf->submitCl.uniforms = cmdbuf->uniformsCl.buffer;
-		cmdbuf->submitCl.uniforms_size = clSize(&cmdbuf->uniformsCl);
+		//first entry is assumed to be a marker
+		CLMarker* marker = cmdbuf->binCl.buffer;
 
-		/**/
-		printf("BCL:\n");
-		clDump(cmdbuf->submitCl.bin_cl, cmdbuf->submitCl.bin_cl_size);
-		printf("BO handles: ");
-		for(int d = 0; d < cmdbuf->submitCl.bo_handle_count; ++d)
+		//submit each separate job
+		while(marker)
 		{
-			printf("%u ", *((uint32_t*)(cmdbuf->submitCl.bo_handles)+d));
-		}
-		printf("\nUniforms: ");
-		for(int d = 0; d < cmdbuf->submitCl.uniforms_size / 4; ++d)
-		{
-			printf("%u ", *((uint32_t*)(cmdbuf->submitCl.uniforms)+d));
-		}
-		printf("\nwidth height: %u, %u\n", cmdbuf->submitCl.width, cmdbuf->submitCl.height);
-		printf("tile min/max: %u,%u %u,%u\n", cmdbuf->submitCl.min_x_tile, cmdbuf->submitCl.min_y_tile, cmdbuf->submitCl.max_x_tile, cmdbuf->submitCl.max_y_tile);
-		printf("color read surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.color_read.hindex, cmdbuf->submitCl.color_read.offset, cmdbuf->submitCl.color_read.bits, cmdbuf->submitCl.color_read.flags);
-		printf("color write surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.color_write.hindex, cmdbuf->submitCl.color_write.offset, cmdbuf->submitCl.color_write.bits, cmdbuf->submitCl.color_write.flags);
-		printf("zs read surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.zs_read.hindex, cmdbuf->submitCl.zs_read.offset, cmdbuf->submitCl.zs_read.bits, cmdbuf->submitCl.zs_read.flags);
-		printf("zs write surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.zs_write.hindex, cmdbuf->submitCl.zs_write.offset, cmdbuf->submitCl.zs_write.bits, cmdbuf->submitCl.zs_write.flags);
-		printf("msaa color write surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.msaa_color_write.hindex, cmdbuf->submitCl.msaa_color_write.offset, cmdbuf->submitCl.msaa_color_write.bits, cmdbuf->submitCl.msaa_color_write.flags);
-		printf("msaa zs write surf: hindex, offset, bits, flags %u %u %u %u\n", cmdbuf->submitCl.msaa_zs_write.hindex, cmdbuf->submitCl.msaa_zs_write.offset, cmdbuf->submitCl.msaa_zs_write.bits, cmdbuf->submitCl.msaa_zs_write.flags);
-		printf("clear color packed rgba %u %u\n", cmdbuf->submitCl.clear_color[0], cmdbuf->submitCl.clear_color[1]);
-		printf("clear z %u\n", cmdbuf->submitCl.clear_z);
-		printf("clear s %u\n", cmdbuf->submitCl.clear_s);
-		printf("flags %u\n", cmdbuf->submitCl.flags);
-		/**/
+			struct drm_vc4_submit_cl submitCl =
+			{
+				.color_read.hindex = ~0,
+				.zs_read.hindex = ~0,
+				.color_write.hindex = ~0,
+				.msaa_color_write.hindex = ~0,
+				.zs_write.hindex = ~0,
+				.msaa_zs_write.hindex = ~0,
+			};
+
+			ControlList* handles = marker->handles;
+			_image* i = marker->image;
+
+			//Insert image handle index
+			clFit(cmdbuf, handles, 4);
+			uint32_t imageIdx = clGetHandleIndex(handles, i->boundMem->bo);
+
+			//fill out submit cl fields
+			submitCl.color_write.hindex = imageIdx;
+			submitCl.color_write.offset = 0;
+			submitCl.color_write.flags = 0;
+			submitCl.color_write.bits =
+					VC4_SET_FIELD(getRenderTargetFormatVC4(i->format), VC4_RENDER_CONFIG_FORMAT) |
+					VC4_SET_FIELD(i->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
+
+			submitCl.clear_color[0] = i->clearColor[0];
+			submitCl.clear_color[1] = i->clearColor[1];
+
+			submitCl.min_x_tile = 0;
+			submitCl.min_y_tile = 0;
+
+			uint32_t tileSizeW = 64;
+			uint32_t tileSizeH = 64;
+
+			if(i->samples > 1)
+			{
+				tileSizeW >>= 1;
+				tileSizeH >>= 1;
+			}
+
+			if(getFormatBpp(i->format) == 64)
+			{
+				tileSizeH >>= 1;
+			}
+
+			uint32_t widthInTiles = divRoundUp(i->width, tileSizeW);
+			uint32_t heightInTiles = divRoundUp(i->height, tileSizeH);
+
+			submitCl.max_x_tile = widthInTiles - 1;
+			submitCl.max_y_tile = heightInTiles - 1;
+			submitCl.width = i->width;
+			submitCl.height = i->height;
+			submitCl.flags |= marker->flags;//VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+			submitCl.clear_z = 0; //TODO
+			submitCl.clear_s = 0;
+
+			submitCl.bo_handles = marker->handles;
+			submitCl.bo_handle_count = marker->handlesSize / 4;
+			submitCl.bin_cl = ((uint8_t*)marker) + sizeof(CLMarker);
+			submitCl.bin_cl_size = marker->size;
+			submitCl.shader_rec = marker->shaderRec;
+			submitCl.shader_rec_size = marker->shaderRecSize;
+			submitCl.shader_rec_count = marker->shaderRecCount;
+			submitCl.uniforms = marker->uniforms;
+			submitCl.uniforms_size = marker->uniformsSize;
+
+			/**/
+			printf("BCL:\n");
+			clDump(((uint8_t*)marker) + sizeof(CLMarker), marker->size);
+			printf("BO handles: ");
+			for(int d = 0; d < marker->handlesSize / 4; ++d)
+			{
+				printf("%u ", *((uint32_t*)(marker->handles)+d));
+			}
+			printf("\nUniforms: ");
+			for(int d = 0; d < marker->uniformsSize / 4; ++d)
+			{
+				printf("%u ", *((uint32_t*)(marker->uniforms)+d));
+			}
+			printf("\nwidth height: %u, %u\n", submitCl.width, submitCl.height);
+			printf("tile min/max: %u,%u %u,%u\n", submitCl.min_x_tile, submitCl.min_y_tile, submitCl.max_x_tile, submitCl.max_y_tile);
+			printf("color read surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.color_read.hindex, submitCl.color_read.offset, submitCl.color_read.bits, submitCl.color_read.flags);
+			printf("color write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.color_write.hindex, submitCl.color_write.offset, submitCl.color_write.bits, submitCl.color_write.flags);
+			printf("zs read surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.zs_read.hindex, submitCl.zs_read.offset, submitCl.zs_read.bits, submitCl.zs_read.flags);
+			printf("zs write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.zs_write.hindex, submitCl.zs_write.offset, submitCl.zs_write.bits, submitCl.zs_write.flags);
+			printf("msaa color write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.msaa_color_write.hindex, submitCl.msaa_color_write.offset, submitCl.msaa_color_write.bits, submitCl.msaa_color_write.flags);
+			printf("msaa zs write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.msaa_zs_write.hindex, submitCl.msaa_zs_write.offset, submitCl.msaa_zs_write.bits, submitCl.msaa_zs_write.flags);
+			printf("clear color packed rgba %u %u\n", submitCl.clear_color[0], submitCl.clear_color[1]);
+			printf("clear z %u\n", submitCl.clear_z);
+			printf("clear s %u\n", submitCl.clear_s);
+			printf("flags %u\n", submitCl.flags);
+			/**/
 
 
-		//submit ioctl
-		static uint64_t lastFinishedSeqno = 0;
-		vc4_cl_submit(controlFd, &cmdbuf->submitCl, &queue->lastEmitSeqno, &lastFinishedSeqno);
+			//submit ioctl
+			static uint64_t lastFinishedSeqno = 0;
+			vc4_cl_submit(controlFd, &submitCl, &queue->lastEmitSeqno, &lastFinishedSeqno);
+
+			//advance in linked list
+			marker = marker->nextMarker;
+		}
 	}
 
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)

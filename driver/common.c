@@ -732,6 +732,23 @@ uint8_t getWrapMode(VkSamplerAddressMode mode)
 	}
 }
 
+uint32_t getRenderTargetFormatVC4(VkFormat format)
+{
+	//TODO dithered BGR565
+	switch(format)
+	{
+		case VK_FORMAT_R16G16B16A16_SFLOAT: //HDR mode set in tile binning config mode, so just return a valid format
+		case VK_FORMAT_R8G8B8A8_UNORM:
+			return VC4_RENDER_CONFIG_FORMAT_RGBA8888;
+		case VK_FORMAT_B5G6R5_UNORM_PACK16:
+			return VC4_RENDER_CONFIG_FORMAT_BGR565;
+		default:
+			printf("unsupported rendertarget format: %i\n", format);
+			assert(0);
+			return -1;
+	}
+}
+
 ////////////////////////////////////////////////////
 ////////////////////////////////////////////////////
 /// just so we can return a function pointer, TODO

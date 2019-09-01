@@ -12,6 +12,21 @@ typedef struct ControlListAddress
 	uint32_t offset; //offset within buffer object
 } ControlListAddress;
 
+typedef struct CLMarker
+{
+	struct CLMarker* nextMarker;
+	uint32_t size; //in bytes
+	void* image; //_image* to render to
+	uint8_t* handles;
+	uint32_t handlesSize;
+	uint8_t* shaderRec;
+	uint32_t shaderRecSize;
+	uint32_t shaderRecCount;
+	uint8_t* uniforms;
+	uint32_t uniformsSize;
+	uint32_t flags; //used to store clear flag etc.
+} CLMarker;
+
 #define CONTROL_LIST_SIZE 4096
 
 typedef struct ControlList
@@ -19,6 +34,7 @@ typedef struct ControlList
 	uint8_t* buffer; //TODO size?
 	uint32_t numBlocks;
 	uint8_t* nextFreeByte; //pointer to the next available free byte
+	CLMarker* currMarker;
 } ControlList;
 
 void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, const ControlListAddress* address);
@@ -35,9 +51,9 @@ void clDummyRelocation(ControlList* relocCl, const ControlListAddress* address);
 
 uint32_t divRoundUp(uint32_t n, uint32_t d);
 uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset);
-uint32_t clSize(ControlList* cl);
 uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size);
 void clInit(ControlList* cl, void* buffer);
+void clInsertNewCLMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, ControlList* uniformsCL, void* imagePtr);
 void clInsertData(ControlList* cl, uint32_t size, uint8_t* data);
 void clInsertUniformConstant(ControlList* cl, uint32_t data);
 void clInsertUniformXYScale(ControlList* cl, float data);
