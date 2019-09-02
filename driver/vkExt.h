@@ -72,6 +72,8 @@ typedef struct VkRpiShaderModuleAssemblyCreateInfoEXT {
 	uint32_t					  numMappings;
 } VkRpiShaderModuleAssemblyCreateInfoEXT;
 
+//TODO could use this extension https://vulkan.lunarg.com/doc/view/1.0.30.0/windows/vkspec.chunked/ch29s03.html
+
 //extension name something like: VK_KHR_rpi_surface
 //extension that allows developers to create a surface to render to on Raspbian Stretch Lite
 VkResult vkCreateRpiSurfaceEXT(

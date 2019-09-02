@@ -20,94 +20,112 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	//TODO handle multiple attachments etc.
 	_image* i = fb->attachmentViews[rp->subpasses[cb->currentSubpass].pColorAttachments[0].attachment].image;
 
-	//TODO when doing multiple draw calls (well multipass now)
-	//kernel side expects one Tile Binning Mode Config field per submit
-	//sounds like for each renderpass we'll have to submit one submit, one of these config fields
+	//uint32_t vertexBufferDirty;
+	//uint32_t indexBufferDirty;
+	///uint32_t viewportDirty;
+	///uint32_t lineWidthDirty;
+	///uint32_t depthBiasDirty;
+	///uint32_t depthBoundsDirty;
+	//uint32_t graphicsPipelineDirty;
+	//uint32_t computePipelineDirty;
+	//uint32_t subpassDirty;
+	//uint32_t blendConstantsDirty;
+	//uint32_t scissorDirty;
+	//uint32_t stencilCompareMaskDirty;
+	//uint32_t stencilWriteMaskDirty;
+	//uint32_t stencilReferenceDirty;
+	//uint32_t descriptorSetDirty;
+	//uint32_t pushConstantDirty;
 
-	//stuff needed to submit a draw call:
-	//Tile Binning Mode Configuration
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
-	clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
-										 0, //double buffer in non ms mode
-										 0, //tile allocation block size
-										 0, //tile allocation initial block size
-										 0, //auto initialize tile state data array
-										 getFormatBpp(i->format) == 64, //64 bit color mode
-										 i->samples > 1, //msaa
-										 i->width, i->height,
-										 0, //tile state data array address
-										 0, //tile allocation memory size
-										 0); //tile allocation memory address
+	//if(cb->lineWidthDirty)
+	{
+		//Line width
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_LINE_WIDTH_length);
+		clInsertLineWidth(&commandBuffer->binCl, cb->graphicsPipeline->lineWidth);
 
-	//Start Tile Binning
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
-	clInsertStartTileBinning(&commandBuffer->binCl);
+		cb->lineWidthDirty = 0;
+	}
+
+	//if(cb->viewportDirty)
+	{
+		//Clip Window
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
+		clInsertClipWindow(&commandBuffer->binCl,
+						   i->width,
+						   i->height,
+						   0, //bottom pixel coord
+						   0); //left pixel coord
+
+		//TODO why flipped???
+		//Clipper XY Scaling
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_XY_SCALING_length);
+		clInsertClipperXYScaling(&commandBuffer->binCl, (float)(i->width) * 0.5f * 16.0f, -1.0f * (float)(i->height) * 0.5f * 16.0f);
+
+		//Viewport Offset
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
+		clInsertViewPortOffset(&commandBuffer->binCl, i->width >> 1, i->height >> 1);
+
+		cb->viewportDirty = 0;
+	}
+
+	//if(cb->depthBiasDirty || cb->depthBoundsDirty)
+	{
+		//Configuration Bits
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
+		clInsertConfigurationBits(&commandBuffer->binCl,
+								  1, //TODO earlyz updates enable
+								  0, //TODO earlyz enable
+								  0, //TODO z updates enable
+								  cb->graphicsPipeline->depthTestEnable ? getDepthCompareOp(cb->graphicsPipeline->depthCompareOp) : V3D_COMPARE_FUNC_ALWAYS, //depth compare func
+								  0, //coverage read mode
+								  0, //coverage pipe select
+								  0, //coverage update mode
+								  0, //coverage read type
+								  0, //rasterizer oversample mode
+								  cb->graphicsPipeline->depthBiasEnable, //depth offset enable
+								  cb->graphicsPipeline->frontFace == VK_FRONT_FACE_CLOCKWISE, //clockwise
+								  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_BACK_BIT), //enable back facing primitives
+								  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_FRONT_BIT)); //enable front facing primitives
+
+		//TODO Depth Offset
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_DEPTH_OFFSET_length);
+		clInsertDepthOffset(&commandBuffer->binCl, cb->graphicsPipeline->depthBiasConstantFactor, cb->graphicsPipeline->depthBiasSlopeFactor);
+
+		//TODO how is this calculated?
+		//it's Zc to Zs scale and bias
+		//seems to go from -1.0 .. 1.0 to 0.0 .. 1.0
+		//eg. x * 0.5 + 0.5
+		//cb->graphicsPipeline->minDepthBounds;
+		//Clipper Z Scale and Offset
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_Z_SCALE_AND_OFFSET_length);
+		clInsertClipperZScaleOffset(&commandBuffer->binCl, 0.5f, 0.5f);
+
+		cb->vertexBufferDirty = 0;
+		cb->depthBoundsDirty = 0;
+	}
+
+	//Point size
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_POINT_SIZE_length);
+	clInsertPointSize(&commandBuffer->binCl, 1.0f);
+
+	//TODO?
+	//Flat Shade Flags
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLAT_SHADE_FLAGS_length);
+	clInsertFlatShadeFlags(&commandBuffer->binCl, 0);
+
+
+
+
+
+
+
+
 
 	//Primitive List Format
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_PRIMITIVE_LIST_FORMAT_length);
 	clInsertPrimitiveListFormat(&commandBuffer->binCl,
 								1, //16 bit
 								getTopology(cb->graphicsPipeline->topology)); //tris
-
-	//Clip Window
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
-	clInsertClipWindow(&commandBuffer->binCl,
-					   i->width,
-					   i->height,
-					   0, //bottom pixel coord
-					   0); //left pixel coord
-
-	//Configuration Bits
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
-	clInsertConfigurationBits(&commandBuffer->binCl,
-							  1, //TODO earlyz updates enable
-							  0, //TODO earlyz enable
-							  0, //TODO z updates enable
-							  cb->graphicsPipeline->depthTestEnable ? getDepthCompareOp(cb->graphicsPipeline->depthCompareOp) : V3D_COMPARE_FUNC_ALWAYS, //depth compare func
-							  0, //coverage read mode
-							  0, //coverage pipe select
-							  0, //coverage update mode
-							  0, //coverage read type
-							  0, //rasterizer oversample mode
-							  cb->graphicsPipeline->depthBiasEnable, //depth offset enable
-							  cb->graphicsPipeline->frontFace == VK_FRONT_FACE_CLOCKWISE, //clockwise
-							  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_BACK_BIT), //enable back facing primitives
-							  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_FRONT_BIT)); //enable front facing primitives
-
-	//TODO Depth Offset
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_DEPTH_OFFSET_length);
-	clInsertDepthOffset(&commandBuffer->binCl, cb->graphicsPipeline->depthBiasConstantFactor, cb->graphicsPipeline->depthBiasSlopeFactor);
-
-	//Point size
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_POINT_SIZE_length);
-	clInsertPointSize(&commandBuffer->binCl, 1.0f);
-
-	//Line width
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_LINE_WIDTH_length);
-	clInsertLineWidth(&commandBuffer->binCl, cb->graphicsPipeline->lineWidth);
-
-	//TODO why flipped???
-	//Clipper XY Scaling
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_XY_SCALING_length);
-	clInsertClipperXYScaling(&commandBuffer->binCl, (float)(i->width) * 0.5f * 16.0f, -1.0f * (float)(i->height) * 0.5f * 16.0f);
-
-	//TODO how is this calculated?
-	//it's Zc to Zs scale and bias
-	//seems to go from -1.0 .. 1.0 to 0.0 .. 1.0
-	//eg. x * 0.5 + 0.5
-	//cb->graphicsPipeline->minDepthBounds;
-	//Clipper Z Scale and Offset
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_Z_SCALE_AND_OFFSET_length);
-	clInsertClipperZScaleOffset(&commandBuffer->binCl, 0.5f, 0.5f);
-
-	//Viewport Offset
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
-	clInsertViewPortOffset(&commandBuffer->binCl, i->width >> 1, i->height >> 1);
-
-	//TODO?
-	//Flat Shade Flags
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLAT_SHADE_FLAGS_length);
-	clInsertFlatShadeFlags(&commandBuffer->binCl, 0);
 
 	//TODO how to get address?
 	//GL Shader State
@@ -151,6 +169,8 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clInsertShaderRecord(&commandBuffer->shaderRecCl,
 						 &relocCl,
 						 &commandBuffer->handlesCl,
+						 cb->binCl.currMarker->handlesBuf,
+						 cb->binCl.currMarker->handlesSize,
 						 !cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->hasThreadSwitch,
 						 0, //TODO point size included in shaded vertex data?
 						 1, //TODO enable clipping?
@@ -179,6 +199,8 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clInsertAttributeRecord(&commandBuffer->shaderRecCl,
 							&relocCl,
 							&commandBuffer->handlesCl,
+							cb->binCl.currMarker->handlesBuf,
+							cb->binCl.currMarker->handlesSize,
 							vertexBuffer, //reloc address
 							getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[0].format),
 							cb->graphicsPipeline->vertexBindingDescriptions[0].stride, //stride
@@ -186,49 +208,11 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 							0  //TODO coordinte vpm offset
 							);
 
-	//Insert image handle index
-	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	uint32_t imageIdx = clGetHandleIndex(&commandBuffer->handlesCl, i->boundMem->bo);
 
-	//fill out submit cl fields
-	commandBuffer->submitCl.color_write.hindex = imageIdx;
-	commandBuffer->submitCl.color_write.offset = 0;
-	commandBuffer->submitCl.color_write.flags = 0;
-	//TODO format
-	commandBuffer->submitCl.color_write.bits =
-			VC4_SET_FIELD(VC4_RENDER_CONFIG_FORMAT_RGBA8888, VC4_RENDER_CONFIG_FORMAT) |
-			VC4_SET_FIELD(i->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
 
-	commandBuffer->submitCl.clear_color[0] = i->clearColor[0];
-	commandBuffer->submitCl.clear_color[1] = i->clearColor[1];
 
-	commandBuffer->submitCl.min_x_tile = 0;
-	commandBuffer->submitCl.min_y_tile = 0;
 
-	uint32_t tileSizeW = 64;
-	uint32_t tileSizeH = 64;
 
-	if(i->samples > 1)
-	{
-		tileSizeW >>= 1;
-		tileSizeH >>= 1;
-	}
-
-	if(getFormatBpp(i->format) == 64)
-	{
-		tileSizeH >>= 1;
-	}
-
-	uint32_t widthInTiles = divRoundUp(i->width, tileSizeW);
-	uint32_t heightInTiles = divRoundUp(i->height, tileSizeH);
-
-	commandBuffer->submitCl.max_x_tile = widthInTiles - 1;
-	commandBuffer->submitCl.max_y_tile = heightInTiles - 1;
-	commandBuffer->submitCl.width = i->width;
-	commandBuffer->submitCl.height = i->height;
-	commandBuffer->submitCl.flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
-	commandBuffer->submitCl.clear_z = 0; //TODO
-	commandBuffer->submitCl.clear_s = 0;
 
 	//write uniforms
 	_pipelineLayout* pl = cb->graphicsPipeline->layout;
@@ -252,7 +236,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 					//emit reloc for texture BO
 					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, di->imageView->image->boundMem->bo);
+					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, di->imageView->image->boundMem->bo);
 
 					//emit tex bo reloc index
 					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
@@ -269,7 +253,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 					//emit reloc for BO
 					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, db->buffer->boundMem->bo);
+					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, db->buffer->boundMem->bo);
 
 					//emit bo reloc index
 					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
@@ -284,7 +268,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 					//emit reloc for BO
 					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, dtb->bufferView->buffer->boundMem->bo);
+					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, dtb->bufferView->buffer->boundMem->bo);
 
 					//emit bo reloc index
 					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);

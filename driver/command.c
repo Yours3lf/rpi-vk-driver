@@ -212,21 +212,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
 
 	//When a command buffer begins recording, all state in that command buffer is undefined
 
-	struct drm_vc4_submit_cl submitCl =
-	{
-		.color_read.hindex = ~0,
-		.zs_read.hindex = ~0,
-		.color_write.hindex = ~0,
-		.msaa_color_write.hindex = ~0,
-		.zs_write.hindex = ~0,
-		.msaa_zs_write.hindex = ~0,
-	};
-
 	commandBuffer->usageFlags = pBeginInfo->flags;
-	commandBuffer->shaderRecCount = 0;
 	commandBuffer->state = CMDBUF_STATE_RECORDING;
-	commandBuffer->submitCl = submitCl;
-
 
 	return VK_SUCCESS;
 }
@@ -241,16 +228,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEndCommandBuffer(
 		VkCommandBuffer                             commandBuffer)
 {
 	assert(commandBuffer);
-
-	//Increment the semaphore indicating that binning is done and
-	//unblocking the render thread.  Note that this doesn't act
-	//until the FLUSH completes.
-	//The FLUSH caps all of our bin lists with a
-	//VC4_PACKET_RETURN.
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_INCREMENT_SEMAPHORE_length);
-	clInsertIncrementSemaphore(&commandBuffer->binCl);
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLUSH_length);
-	clInsertFlush(&commandBuffer->binCl);
 
 	commandBuffer->state = CMDBUF_STATE_EXECUTABLE;
 
@@ -305,7 +282,11 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 		//first entry is assumed to be a marker
 		CLMarker* marker = cmdbuf->binCl.buffer;
 
-		//submit each separate job
+		//a command buffer may contain multiple render passes
+		//and commands outside render passes such as clear commands
+		//each of these corresponds to a control list submit
+
+		//submit each separate control list
 		while(marker)
 		{
 			struct drm_vc4_submit_cl submitCl =
@@ -318,12 +299,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 				.msaa_zs_write.hindex = ~0,
 			};
 
-			ControlList* handles = marker->handles;
 			_image* i = marker->image;
 
-			//Insert image handle index
-			clFit(cmdbuf, handles, 4);
-			uint32_t imageIdx = clGetHandleIndex(handles, i->boundMem->bo);
+			//This should not result in an insertion!
+			uint32_t imageIdx = clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, i->boundMem->bo);
 
 			//fill out submit cl fields
 			submitCl.color_write.hindex = imageIdx;
@@ -360,18 +339,26 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 			submitCl.max_y_tile = heightInTiles - 1;
 			submitCl.width = i->width;
 			submitCl.height = i->height;
-			submitCl.flags |= marker->flags;//VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+			submitCl.flags |= marker->flags;
 			submitCl.clear_z = 0; //TODO
 			submitCl.clear_s = 0;
 
-			submitCl.bo_handles = marker->handles;
-			submitCl.bo_handle_count = marker->handlesSize / 4;
+			submitCl.bo_handles = marker->handlesBuf;
 			submitCl.bin_cl = ((uint8_t*)marker) + sizeof(CLMarker);
+			submitCl.shader_rec = marker->shaderRecBuf;
+			submitCl.uniforms = marker->uniformsBuf;
+
+			//marker not closed yet
+			//close here
+			if(!marker->size)
+			{
+				clCloseCurrentMarker(&cmdbuf->binCl, &cmdbuf->handlesCl, &cmdbuf->shaderRecCl, cmdbuf->shaderRecCount, &cmdbuf->uniformsCl);
+			}
+
+			submitCl.bo_handle_count = marker->handlesSize / 4;
 			submitCl.bin_cl_size = marker->size;
-			submitCl.shader_rec = marker->shaderRec;
 			submitCl.shader_rec_size = marker->shaderRecSize;
 			submitCl.shader_rec_count = marker->shaderRecCount;
-			submitCl.uniforms = marker->uniforms;
 			submitCl.uniforms_size = marker->uniformsSize;
 
 			/**/
@@ -380,12 +367,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 			printf("BO handles: ");
 			for(int d = 0; d < marker->handlesSize / 4; ++d)
 			{
-				printf("%u ", *((uint32_t*)(marker->handles)+d));
+				printf("%u ", *((uint32_t*)(marker->handlesBuf)+d));
 			}
 			printf("\nUniforms: ");
 			for(int d = 0; d < marker->uniformsSize / 4; ++d)
 			{
-				printf("%u ", *((uint32_t*)(marker->uniforms)+d));
+				printf("%u ", *((uint32_t*)(marker->uniformsBuf)+d));
 			}
 			printf("\nwidth height: %u, %u\n", submitCl.width, submitCl.height);
 			printf("tile min/max: %u,%u %u,%u\n", submitCl.min_x_tile, submitCl.min_y_tile, submitCl.max_x_tile, submitCl.max_y_tile);

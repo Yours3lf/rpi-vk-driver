@@ -401,6 +401,8 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorSets(
 	{
 		setMapElement(&pl->descriptorSetBindingMap, c, pDescriptorSets[c]);
 	}
+
+	cb->descriptorSetDirty = 1;
 }
 
 VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorSetLayout(

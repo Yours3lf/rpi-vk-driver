@@ -500,7 +500,7 @@ void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize)
 {
 	if(!clHasEnoughSpace(cl, commandSize))
 	{
-		uint32_t currSize = clSize(cl);
+		uint32_t currSize = cl->nextFreeByte - cl->buffer;
 		cl->buffer = consecutivePoolReAllocate(&cb->cp->cpa, cl->buffer, cl->numBlocks); assert(cl->buffer);
 		cl->nextFreeByte = cl->buffer + currSize;
 	}

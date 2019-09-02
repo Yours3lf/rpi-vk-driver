@@ -18,7 +18,7 @@ uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size)
 	assert(cl);
 	assert(cl->buffer);
 	assert(cl->nextFreeByte);
-	uint32_t currSize = cl->nextFreeByte - cl->buffer;;
+	uint32_t currSize = cl->nextFreeByte - cl->buffer;
 	if(currSize + size < CONTROL_LIST_SIZE)
 	{
 		return 1; //fits!
@@ -39,7 +39,7 @@ void clInit(ControlList* cl, void* buffer)
 	cl->currMarker = 0;
 }
 
-void clInsertNewCLMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, ControlList* uniformsCL, void* imagePtr)
+void clInsertNewCLMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, uint32_t shaderRecCount, ControlList* uniformsCL, void* imagePtr)
 {
 	//to be inserted when you'd insert tile binning mode config
 	assert(cl);
@@ -52,17 +52,51 @@ void clInsertNewCLMarker(ControlList* cl, ControlList* handlesCL, ControlList* s
 	marker.nextMarker = 0;
 	marker.size = 0;
 	marker.image = imagePtr;
-	marker.handles = cl->currMarker ? cl->currMarker->handles + cl->currMarker->handlesSize : handlesCL;
 	marker.handlesSize = 0;
-	marker.shaderRec = cl->currMarker ? cl->currMarker->shaderRec + cl->currMarker->shaderRecSize : shaderRecCL;
 	marker.shaderRecSize = 0;
-	marker.shaderRecCount = 0;
-	marker.uniforms = cl->currMarker ? cl->currMarker->uniforms + cl->currMarker->uniformsSize : uniformsCL;
 	marker.uniformsSize = 0;
+	marker.shaderRecCount = 0;
 	marker.flags = 0;
+	marker.handlesBuf = handlesCL->buffer;
+	marker.shaderRecBuf = shaderRecCL->buffer;
+	marker.uniformsBuf = uniformsCL->buffer;
+
+	//close current marker
+	if(cl->currMarker && !cl->currMarker->size)
+	{
+		clCloseCurrentMarker(cl, handlesCL, shaderRecCL, shaderRecCount, uniformsCL);
+	}
+
+	//if this is not the first marker
+	if(cl->currMarker)
+	{
+		marker.handlesBuf = cl->currMarker->handlesBuf + cl->currMarker->handlesSize;
+		marker.shaderRecBuf = cl->currMarker->shaderRecBuf + cl->currMarker->shaderRecSize;
+		marker.uniformsBuf = cl->currMarker->uniformsBuf + cl->currMarker->uniformsSize;
+		marker.shaderRecCount = cl->currMarker->shaderRecCount; //initialize with previous marker's data
+	}
 
 	*(CLMarker*)cl->nextFreeByte = marker;
+	if(cl->currMarker)
+	{
+		cl->currMarker->nextMarker = cl->nextFreeByte;
+	}
+	cl->currMarker = cl->nextFreeByte;
 	cl->nextFreeByte += sizeof(CLMarker);
+}
+
+void clCloseCurrentMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, uint32_t shaderRecCount, ControlList* uniformsCL)
+{
+	assert(cl);
+	assert(handlesCL);
+	assert(shaderRecCL);
+	assert(uniformsCL);
+	assert(cl->currMarker);
+	cl->currMarker->size = cl->nextFreeByte - ((uint8_t*)cl->currMarker + sizeof(CLMarker));
+	cl->currMarker->handlesSize = handlesCL->nextFreeByte - cl->currMarker->handlesBuf;
+	cl->currMarker->shaderRecSize = shaderRecCL->nextFreeByte - cl->currMarker->shaderRecBuf;
+	cl->currMarker->uniformsSize = uniformsCL->nextFreeByte - cl->currMarker->uniformsBuf;
+	cl->currMarker->shaderRecCount = shaderRecCount - cl->currMarker->shaderRecCount; //update shader rec count to reflect added shader recs
 }
 
 void clInsertData(ControlList* cl, uint32_t size, uint8_t* data)
@@ -667,6 +701,7 @@ void clInsertGEMRelocations(ControlList* cl,
 void clInsertShaderRecord(ControlList* cls,
 						  ControlList* relocCl,
 						  ControlList* handlesCl,
+						  uint8_t* handlesBuf, uint32_t handlesSize,
 						  uint32_t fragmentShaderIsSingleThreaded, //0/1
 						  uint32_t pointSizeIncludedInShadedVertexData, //0/1
 						  uint32_t enableClipping, //0/1
@@ -696,14 +731,14 @@ void clInsertShaderRecord(ControlList* cls,
 	*cls->nextFreeByte = 0; cls->nextFreeByte++;
 	*(uint16_t*)cls->nextFreeByte = moveBits(fragmentNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte++;
 	*cls->nextFreeByte |= fragmentNumberOfVaryings; cls->nextFreeByte++;
-	clEmitShaderRelocation(relocCl, handlesCl, &fragmentCodeAddress);
+	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &fragmentCodeAddress);
 	*(uint32_t*)cls->nextFreeByte = fragmentCodeAddress.offset; cls->nextFreeByte += 4;
 	*(uint32_t*)cls->nextFreeByte = fragmentUniformsAddress; cls->nextFreeByte += 4;
 
 	*(uint16_t*)cls->nextFreeByte = moveBits(vertexNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte += 2;
 	*cls->nextFreeByte = vertexAttributeArraySelectBits; cls->nextFreeByte++;
 	*cls->nextFreeByte = vertexTotalAttributesSize; cls->nextFreeByte++;
-	clEmitShaderRelocation(relocCl, handlesCl, &vertexCodeAddress);
+	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &vertexCodeAddress);
 	//TODO wtf???
 	uint32_t offset = moveBits(vertexCodeAddress.offset, 32, 0) | moveBits(vertexUniformsAddress, 32, 0);
 	*(uint32_t*)cls->nextFreeByte = offset; cls->nextFreeByte += 4;
@@ -712,7 +747,7 @@ void clInsertShaderRecord(ControlList* cls,
 	*(uint16_t*)cls->nextFreeByte = moveBits(coordinateNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte += 2;
 	*cls->nextFreeByte = coordinateAttributeArraySelectBits; cls->nextFreeByte++;
 	*cls->nextFreeByte = coordinateTotalAttributesSize; cls->nextFreeByte++;
-	clEmitShaderRelocation(relocCl, handlesCl, &coordinateCodeAddress);
+	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &coordinateCodeAddress);
 	*(uint32_t*)cls->nextFreeByte = coordinateCodeAddress.offset; cls->nextFreeByte += 4;
 	*(uint32_t*)cls->nextFreeByte = coordinateUniformsAddress; cls->nextFreeByte += 4;
 }
@@ -721,6 +756,7 @@ void clInsertShaderRecord(ControlList* cls,
 void clInsertAttributeRecord(ControlList* cls,
 							 ControlList* relocCl,
 							 ControlList* handlesCl,
+							 uint8_t* handlesBuf, uint32_t handlesSize,
 						  ControlListAddress address,
 						  uint32_t sizeBytes,
 						  uint32_t stride,
@@ -732,7 +768,7 @@ void clInsertAttributeRecord(ControlList* cls,
 	assert(cls->nextFreeByte);
 	uint32_t sizeBytesMinusOne = sizeBytes - 1;
 	//TODO is this correct?
-	clEmitShaderRelocation(relocCl, handlesCl, &address);
+	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &address);
 	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
 	*cls->nextFreeByte = sizeBytesMinusOne; cls->nextFreeByte++;
 	*cls->nextFreeByte = stride; cls->nextFreeByte++;
@@ -740,15 +776,16 @@ void clInsertAttributeRecord(ControlList* cls,
 	*cls->nextFreeByte = coordinateVPMOffset; cls->nextFreeByte++;
 }
 
-uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handle)
+uint32_t clGetHandleIndex(ControlList* handlesCl, uint8_t* handlesBuf, uint32_t handlesSize, uint32_t handle)
 {
 	uint32_t c = 0;
 
-	uint32_t numHandles = clSize(handlesCl) / 4;
+	//if curr marker is closed already we need to work with the stored size
+	uint32_t numHandles = (handlesSize ? handlesSize : (handlesCl->nextFreeByte - handlesBuf)) / 4;
 
 	for(; c < numHandles; ++c)
 	{
-		if(((uint32_t*)handlesCl->buffer)[c] == handle)
+		if(((uint32_t*)handlesBuf)[c] == handle)
 		{
 			//found
 			return c;
@@ -763,7 +800,7 @@ uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handle)
 }
 
 //input: 2 cls (cl + handles cl)
-inline void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, const ControlListAddress* address)
+inline void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, uint8_t* handlesBuf, uint32_t handlesSize, const ControlListAddress* address)
 {
 	assert(relocCl);
 	assert(relocCl->buffer);
@@ -775,7 +812,7 @@ inline void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl,
 	assert(address->handle);
 
 	//store offset within handles in cl
-	*(uint32_t*)relocCl->nextFreeByte = clGetHandleIndex(handlesCl, address->handle);
+	*(uint32_t*)relocCl->nextFreeByte = clGetHandleIndex(handlesCl, handlesBuf, handlesSize, address->handle);
 	relocCl->nextFreeByte += 4;
 }
 

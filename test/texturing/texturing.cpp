@@ -68,8 +68,10 @@ VkPipeline blitPipeline; //
 VkPipeline samplePipeline; //
 VkQueue graphicsQueue;
 VkQueue presentQueue;
-VkBuffer vertexBuffer;
-VkDeviceMemory vertexBufferMemory;
+VkBuffer fsqVertexBuffer;
+VkDeviceMemory fsqVertexBufferMemory;
+VkBuffer triangleVertexBuffer;
+VkDeviceMemory triangleVertexBufferMemory;
 VkPhysicalDeviceMemoryProperties pdmp;
 std::vector<VkImageView> views; //?
 VkSurfaceFormatKHR swapchainFormat;
@@ -727,7 +729,7 @@ void recordCommandBuffers()
 			vkCmdBindPipeline(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipeline);
 
 			VkDeviceSize offsets = 0;
-			vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer, &offsets );
+			vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &fsqVertexBuffer, &offsets );
 
 			vkCmdBindDescriptorSets(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipelineLayout, 0, 1, &blitDescriptorSet, 0, 0);
 
@@ -759,7 +761,7 @@ void recordCommandBuffers()
 		{ //render to screen
 			renderPassInfo.framebuffer = fbs[i];
 			renderPassInfo.renderPass = renderPass;
-			renderPassInfo.clearValueCount = 2;
+			renderPassInfo.clearValueCount = 1;
 			renderPassInfo.pClearValues = &clearValue;
 
 			vkCmdBeginRenderPass(presentCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -767,7 +769,7 @@ void recordCommandBuffers()
 			vkCmdBindPipeline(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, samplePipeline);
 
 			VkDeviceSize offsets = 0;
-			vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer, &offsets );
+			vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &triangleVertexBuffer, &offsets );
 
 			vkCmdBindDescriptorSets(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, samplePipelineLayout, 0, 1, &sampleDescriptorSet, 0, 0);
 
@@ -1688,22 +1690,24 @@ void CreateVertexBuffer()
 
 	VkMemoryRequirements mr;
 
-	{ //create staging buffer
+	{ //create fsq vertex buffer
+		unsigned vboSize = sizeof(float) * 2 * 3 * 2; //2 * 3 x vec2
+
 		VkBufferCreateInfo ci = {};
 		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		ci.size = vboSize;
 		ci.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-		VkResult res = vkCreateBuffer(device, &ci, 0, &vertexBuffer);
+		VkResult res = vkCreateBuffer(device, &ci, 0, &fsqVertexBuffer);
 
-		vkGetBufferMemoryRequirements(device, vertexBuffer, &mr);
+		vkGetBufferMemoryRequirements(device, fsqVertexBuffer, &mr);
 
 		VkMemoryAllocateInfo mai = {};
 		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		mai.allocationSize = mr.size;
 		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-		res = vkAllocateMemory(device, &mai, 0, &vertexBufferMemory);
+		res = vkAllocateMemory(device, &mai, 0, &fsqVertexBufferMemory);
 
 		float vertices[] =
 		{
@@ -1717,11 +1721,45 @@ void CreateVertexBuffer()
 		};
 
 		void* data;
-		res = vkMapMemory(device, vertexBufferMemory, 0, mr.size, 0, &data);
+		res = vkMapMemory(device, fsqVertexBufferMemory, 0, mr.size, 0, &data);
 		memcpy(data, vertices, vboSize);
-		vkUnmapMemory(device, vertexBufferMemory);
+		vkUnmapMemory(device, fsqVertexBufferMemory);
 
-		res = vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
+		res = vkBindBufferMemory(device, fsqVertexBuffer, fsqVertexBufferMemory, 0);
+	}
+
+	{ //create triangle vertex buffer
+		unsigned vboSize = sizeof(float) * 1 * 3 * 2; //1 * 3 x vec2
+
+		VkBufferCreateInfo ci = {};
+		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		ci.size = vboSize;
+		ci.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+		VkResult res = vkCreateBuffer(device, &ci, 0, &triangleVertexBuffer);
+
+		vkGetBufferMemoryRequirements(device, triangleVertexBuffer, &mr);
+
+		VkMemoryAllocateInfo mai = {};
+		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		mai.allocationSize = mr.size;
+		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		res = vkAllocateMemory(device, &mai, 0, &triangleVertexBufferMemory);
+
+		float vertices[] =
+		{
+			-1, -1,
+			1, -1,
+			0, 1
+		};
+
+		void* data;
+		res = vkMapMemory(device, triangleVertexBufferMemory, 0, mr.size, 0, &data);
+		memcpy(data, vertices, vboSize);
+		vkUnmapMemory(device, triangleVertexBufferMemory);
+
+		res = vkBindBufferMemory(device, triangleVertexBuffer, triangleVertexBufferMemory, 0);
 	}
 
 	printf("Vertex buffer created\n");

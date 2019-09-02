@@ -24,7 +24,6 @@ void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBegin
 	{
 		if(cb->renderpass->attachments[c].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
 		{
-			cb->fbo->attachmentViews[c].image->needToClear = 1;
 			cb->fbo->attachmentViews[c].image->clearColor[0] = cb->fbo->attachmentViews[c].image->clearColor[1] = packVec4IntoABGR8(pRenderPassBegin->pClearValues->color.float32);
 		}
 		else if(isDepthStencilFormat(cb->renderpass->attachments[c].format) && cb->renderpass->attachments[c].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
@@ -36,6 +35,42 @@ void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBegin
 	}
 
 	cb->currentSubpass = 0;
+
+	//TODO handle multiple attachments
+	_image* i = cb->fbo->attachmentViews[0].image;
+
+	clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
+	clInsertNewCLMarker(&commandBuffer->binCl, &cb->handlesCl, &cb->shaderRecCl, cb->shaderRecCount, &cb->uniformsCl, i);
+
+	//insert reloc for render target
+	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, i->boundMem->bo);
+
+	//TODO handle multiple attachments
+	if(cb->renderpass->attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR)
+	{
+		cb->binCl.currMarker->flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+	}
+
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
+	clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
+										 0, //double buffer in non ms mode
+										 0, //tile allocation block size
+										 0, //tile allocation initial block size
+										 0, //auto initialize tile state data array
+										 getFormatBpp(i->format) == 64, //64 bit color mode
+										 i->samples > 1, //msaa
+										 i->width, i->height,
+										 0, //tile state data array address
+										 0, //tile allocation memory size
+										 0); //tile allocation memory address
+
+	//START_TILE_BINNING resets the statechange counters in the hardware,
+	//which are what is used when a primitive is binned to a tile to
+	//figure out what new state packets need to be written to that tile's
+	//command list.
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
+	clInsertStartTileBinning(&commandBuffer->binCl);
 }
 
 /*
@@ -45,8 +80,19 @@ void vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
 {
 	assert(commandBuffer);
 
-	//TODO switch command buffer to next control record stream?
+	_commandBuffer* cb = commandBuffer;
+
 	//Ending a render pass instance performs any multisample resolve operations on the final subpass
+
+	//Increment the semaphore indicating that binning is done and
+	//unblocking the render thread.  Note that this doesn't act
+	//until the FLUSH completes.
+	//The FLUSH caps all of our bin lists with a
+	//VC4_PACKET_RETURN.
+	clFit(commandBuffer, &cb->binCl, V3D21_INCREMENT_SEMAPHORE_length);
+	clInsertIncrementSemaphore(&cb->binCl);
+	clFit(commandBuffer, &cb->binCl, V3D21_FLUSH_length);
+	clInsertFlush(&cb->binCl);
 }
 
 /*

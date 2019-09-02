@@ -148,80 +148,11 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
 	{
 		_image* i = pImageMemoryBarriers[c].image;
 
-		//assert(i->layout == pImageMemoryBarriers[c].oldLayout || i->layout == VK_IMAGE_LAYOUT_UNDEFINED);
-
 		if(srcStageMask & VK_PIPELINE_STAGE_TRANSFER_BIT &&
 		   pImageMemoryBarriers[c].srcAccessMask & VK_ACCESS_TRANSFER_WRITE_BIT &&
 		   i->needToClear)
 		{
-			//insert CRs to clear the image
-
 			assert(i->layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-			clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
-			clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
-												 0, 0, 0, 0,
-												 getFormatBpp(i->format) == 64, //64 bit color mode
-												 i->samples > 1, //msaa
-												 i->width, i->height, 0, 0, 0);
-
-			//START_TILE_BINNING resets the statechange counters in the hardware,
-			//which are what is used when a primitive is binned to a tile to
-			//figure out what new state packets need to be written to that tile's
-			//command list.
-			clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
-			clInsertStartTileBinning(&commandBuffer->binCl);
-
-			//Reset the current compressed primitives format.  This gets modified
-			//by VC4_PACKET_GL_INDEXED_PRIMITIVE and
-			//VC4_PACKET_GL_ARRAY_PRIMITIVE, so it needs to be reset at the start
-			//of every tile.
-			clFit(commandBuffer, &commandBuffer->binCl, V3D21_PRIMITIVE_LIST_FORMAT_length);
-			clInsertPrimitiveListFormat(&commandBuffer->binCl,
-										1, //16 bit
-										2); //tris
-
-			clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-			uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, i->boundMem->bo);
-			commandBuffer->submitCl.color_write.hindex = idx;
-			commandBuffer->submitCl.color_write.offset = 0;
-			commandBuffer->submitCl.color_write.flags = 0;
-			//TODO format
-			commandBuffer->submitCl.color_write.bits =
-					VC4_SET_FIELD(VC4_RENDER_CONFIG_FORMAT_RGBA8888, VC4_RENDER_CONFIG_FORMAT) |
-					VC4_SET_FIELD(i->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
-
-			commandBuffer->submitCl.clear_color[0] = i->clearColor[0];
-			commandBuffer->submitCl.clear_color[1] = i->clearColor[1];
-
-			//TODO ranges
-			commandBuffer->submitCl.min_x_tile = 0;
-			commandBuffer->submitCl.min_y_tile = 0;
-
-			uint32_t tileSizeW = 64;
-			uint32_t tileSizeH = 64;
-
-			if(i->samples > 1)
-			{
-				tileSizeW >>= 1;
-				tileSizeH >>= 1;
-			}
-
-			if(getFormatBpp(i->format) == 64)
-			{
-				tileSizeH >>= 1;
-			}
-
-			uint32_t widthInTiles = divRoundUp(i->width, tileSizeW);
-			uint32_t heightInTiles = divRoundUp(i->height, tileSizeH);
-
-			commandBuffer->submitCl.max_x_tile = widthInTiles - 1;
-			commandBuffer->submitCl.max_y_tile = heightInTiles - 1;
-			commandBuffer->submitCl.width = i->width;
-			commandBuffer->submitCl.height = i->height;
-			commandBuffer->submitCl.flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
-			commandBuffer->submitCl.clear_z = 0; //TODO
-			commandBuffer->submitCl.clear_s = 0;
 		}
 
 		//transition to new layout

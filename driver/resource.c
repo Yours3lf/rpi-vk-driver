@@ -371,6 +371,8 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPushConstants(
 	{
 		memcpy(cb->pushConstantBufferPixel + offset, pValues, size);
 	}
+
+	cb->pushConstantDirty = 1;
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetImageSubresourceLayout(

@@ -96,11 +96,14 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 
 	//TODO externally sync cmdbuf, cmdpool
 
-	//i->needToClear = 1;
-	//i->clearColor[0] = i->clearColor[1] = packVec4IntoABGR8(pColor->float32);
-
-
 	{ //Simplest case: just submit a job to clear the image
+		clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
+		clInsertNewCLMarker(&commandBuffer->binCl, &commandBuffer->handlesCl, &commandBuffer->shaderRecCl, commandBuffer->shaderRecCount, &commandBuffer->uniformsCl, i);
+
+		//insert reloc for render target
+		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, i->boundMem->bo);
+
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
 		clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
 											 0, //double buffer in non ms mode
@@ -121,19 +124,18 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
 		clInsertStartTileBinning(&commandBuffer->binCl);
 
-		//Reset the current compressed primitives format.  This gets modified
-		//by VC4_PACKET_GL_INDEXED_PRIMITIVE and
-		//VC4_PACKET_GL_ARRAY_PRIMITIVE, so it needs to be reset at the start
-		//of every tile.
-		//clFit(commandBuffer, &commandBuffer->binCl, V3D21_PRIMITIVE_LIST_FORMAT_length);
-		//clInsertPrimitiveListFormat(&commandBuffer->binCl,
-		//							1, //16 bit
-		//							2); //tris
-
+		//Increment the semaphore indicating that binning is done and
+		//unblocking the render thread.  Note that this doesn't act
+		//until the FLUSH completes.
+		//The FLUSH caps all of our bin lists with a
+		//VC4_PACKET_RETURN.
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_INCREMENT_SEMAPHORE_length);
 		clInsertIncrementSemaphore(&commandBuffer->binCl);
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLUSH_length);
 		clInsertFlush(&commandBuffer->binCl);
+
+		i->clearColor[0] = i->clearColor[1] = packVec4IntoABGR8(pColor->float32);
+		commandBuffer->binCl.currMarker->flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
 	}
 }
 

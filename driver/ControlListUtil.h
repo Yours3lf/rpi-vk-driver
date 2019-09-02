@@ -14,17 +14,21 @@ typedef struct ControlListAddress
 
 typedef struct CLMarker
 {
+	//current binning cl buf position is this struct in the CL plus sizeof(this struct)
 	struct CLMarker* nextMarker;
 	uint32_t size; //in bytes
 	void* image; //_image* to render to
-	uint8_t* handles;
+	uint32_t flags; //used to store clear flag etc.
+
+	//pointers that point to where all the other CL data is
+	//plus sizes
+	uint8_t* handlesBuf;
 	uint32_t handlesSize;
-	uint8_t* shaderRec;
+	uint8_t* shaderRecBuf;
 	uint32_t shaderRecSize;
 	uint32_t shaderRecCount;
-	uint8_t* uniforms;
+	uint8_t* uniformsBuf;
 	uint32_t uniformsSize;
-	uint32_t flags; //used to store clear flag etc.
 } CLMarker;
 
 #define CONTROL_LIST_SIZE 4096
@@ -37,7 +41,7 @@ typedef struct ControlList
 	CLMarker* currMarker;
 } ControlList;
 
-void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, const ControlListAddress* address);
+void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, uint8_t* handlesBuf, uint32_t handlesSize, const ControlListAddress* address);
 void clDummyRelocation(ControlList* relocCl, const ControlListAddress* address);
 
 #define __gen_user_data struct ControlList
@@ -53,7 +57,8 @@ uint32_t divRoundUp(uint32_t n, uint32_t d);
 uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset);
 uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size);
 void clInit(ControlList* cl, void* buffer);
-void clInsertNewCLMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, ControlList* uniformsCL, void* imagePtr);
+void clInsertNewCLMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, uint32_t shaderRecCount, ControlList* uniformsCL, void* imagePtr);
+void clCloseCurrentMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, uint32_t shaderRecCount, ControlList* uniformsCL);
 void clInsertData(ControlList* cl, uint32_t size, uint8_t* data);
 void clInsertUniformConstant(ControlList* cl, uint32_t data);
 void clInsertUniformXYScale(ControlList* cl, float data);
@@ -152,6 +157,7 @@ void clInsertGEMRelocations(ControlList* cl,
 void clInsertShaderRecord(ControlList* cls,
 						  ControlList* relocCl,
 						  ControlList* handlesCl,
+						  uint8_t* handlesBuf, uint32_t handlesSize,
 						  uint32_t fragmentShaderIsSingleThreaded, //0/1
 						  uint32_t pointSizeIncludedInShadedVertexData, //0/1
 						  uint32_t enableClipping, //0/1
@@ -172,12 +178,13 @@ void clInsertShaderRecord(ControlList* cls,
 void clInsertAttributeRecord(ControlList* cls,
 							 ControlList* relocCl,
 							 ControlList* handlesCl,
+							 uint8_t* handlesBuf, uint32_t handlesSize,
 						  ControlListAddress address,
 						  uint32_t sizeBytes,
 						  uint32_t stride,
 						  uint32_t vertexVPMOffset,
 						  uint32_t coordinateVPMOffset);
-uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handle);
+uint32_t clGetHandleIndex(ControlList* handlesCl, uint8_t* handlesBuf, uint32_t handlesSize, uint32_t handle);
 
 #if defined (__cplusplus)
 }
