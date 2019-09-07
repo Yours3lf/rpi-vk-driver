@@ -129,7 +129,7 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 
 		if(counter > 100)
 		{
-			printf("--------------detected infinite loop nextFreeCandidate: %p, *nextfreecandidate: %p, p: %p\n", nextFreeBlockCandidate, *nextFreeBlockCandidate, p);
+			fprintf(stderr, "--------------detected infinite loop nextFreeCandidate: %p, *nextfreecandidate: %p, p: %p\n", nextFreeBlockCandidate, *nextFreeBlockCandidate, p);
 			break;
 		}
 

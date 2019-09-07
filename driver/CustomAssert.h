@@ -19,7 +19,7 @@ __inline__ static void DEBUG_BREAK(void)
 	if( expr ){} \
 	else \
 { \
-	printf("Assert failed: %s\n" \
+	fprintf(stderr, "Assert failed: %s\n" \
 	"File: %s\n" \
 	"Line: %i\n", #expr, __FILE__, __LINE__); \
 	DEBUG_BREAK(); \

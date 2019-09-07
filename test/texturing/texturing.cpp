@@ -119,7 +119,7 @@ char* readPPM(const char* fileName)
 	uint16_t magic_number = ((uint16_t*)buf)[0];
 	if(magic_number != ppm_magic)
 	{
-		printf("PPM magic number not found: %u\n", magic_number);
+		fprintf(stderr, "PPM magic number not found: %u\n", magic_number);
 		return 0;
 	}
 

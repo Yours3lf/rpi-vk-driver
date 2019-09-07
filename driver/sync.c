@@ -2,6 +2,41 @@
 
 #include "kernel/vc4_packet.h"
 
+//-----------------------------
+//Semaphore vs Fence:
+// Semaphore is GPU to GPU sync
+// Fence is GPU to CPU sync
+// Both are signalled by the GPU
+// Both are multi-queue
+// But Fence can be waited on by the CPU
+// Semaphore can only be waited on by the GPU
+//
+//Events are general can be signalled by the CPU or the GPU
+// But can only be waited on by the GPU
+// Limited to a single queue
+//
+//TODO as a result the current semaphore
+//implementation is wrong
+//maybe use:
+//clInsertWaitOnSemaphore
+//clInsertIncrementSemaphore
+//
+//seems like each binCL needs to end with increment semaphore
+//signalling that binning is done
+//and each renderCL starts with a wait semaphore (to wait for binning)
+//
+//in theory we could add a wait for semaphore to the start of a binCL
+//and an increment semaphore to either to the end of another binCL or renderCL
+//but we can't control renderCLs as the kernel side creates those...
+//
+//also there's only one of this semaphore, and in Vulkan you can have many
+//and should only signal those selected
+//so maybe we could emulate this in shaders?
+//ie. stall shader until a value is something?
+//and increment said value?
+//but we'd need to patch shaders and it'd probably be slow...
+//-----------------------------
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateSemaphore
  * Semaphores are a synchronization primitive that can be used to insert a dependency between batches submitted to queues.

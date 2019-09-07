@@ -1,7 +1,5 @@
 #include "common.h"
 
-//TODO
-
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(
 	VkDevice                                    device,
 	const VkDescriptorPoolCreateInfo*           pCreateInfo,

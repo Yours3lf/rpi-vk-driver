@@ -47,6 +47,8 @@ VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE
 #define ALLOCATE(size, alignment, scope) (pAllocator == 0) ? malloc(size) : pAllocator->pfnAllocation(pAllocator->pUserData, size, alignment, scope)
 #define FREE(memory) (pAllocator == 0) ? free(memory) : pAllocator->pfnFree(pAllocator->pUserData, memory)
 
+#define UNSUPPORTED(str) fprintf(stderr, "Unsupported: %s\n", str); exit(-1)
+
 typedef struct VkDevice_T _device;
 
 typedef struct VkQueue_T
@@ -60,6 +62,7 @@ typedef struct VkCommandPool_T
 	PoolAllocator pa;
 	ConsecutivePoolAllocator cpa;
 	uint32_t queueFamilyIndex;
+	uint32_t resetAble;
 } _commandPool;
 
 typedef enum commandBufferState

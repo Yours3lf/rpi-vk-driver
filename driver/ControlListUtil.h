@@ -35,7 +35,7 @@ typedef struct CLMarker
 
 typedef struct ControlList
 {
-	uint8_t* buffer; //TODO size?
+	uint8_t* buffer;
 	uint32_t numBlocks;
 	uint8_t* nextFreeByte; //pointer to the next available free byte
 	CLMarker* currMarker;

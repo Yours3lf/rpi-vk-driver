@@ -98,7 +98,7 @@ modeset_dev* modeset_create(int fd)
 	// retrieve resources
 	res = drmModeGetResources(fd);
 	if (!res) {
-		printf("cannot retrieve DRM resources (%d): %m\n", errno);
+		fprintf(stderr, "cannot retrieve DRM resources (%d): %m\n", errno);
 		return 0;
 	}
 
@@ -107,7 +107,7 @@ modeset_dev* modeset_create(int fd)
 		// get information for each connector
 		conn = drmModeGetConnector(fd, res->connectors[i]);
 		if (!conn) {
-			printf("cannot retrieve DRM connector %u:%u (%d): %m\n", i, res->connectors[i], errno);
+			fprintf(stderr, "cannot retrieve DRM connector %u:%u (%d): %m\n", i, res->connectors[i], errno);
 			continue;
 		}
 
@@ -121,7 +121,7 @@ modeset_dev* modeset_create(int fd)
 		if (ret) {
 			if (ret != -ENOENT) {
 				errno = -ret;
-				printf("cannot setup device for connector %u:%u (%d): %m\n", i, res->connectors[i], errno);
+				fprintf(stderr, "cannot setup device for connector %u:%u (%d): %m\n", i, res->connectors[i], errno);
 			}
 			free(dev);
 			drmModeFreeConnector(conn);
@@ -151,7 +151,7 @@ int modeset_fb_for_dev(int fd, modeset_dev* dev, _image* buffer)
 		ret = drmModeSetCrtc(fd, iter->crtc, buffer->fb, 0, 0,
 							 &iter->conn, 1, &iter->mode);
 		if (ret)
-			printf("cannot set CRTC for connector %u (%d): %m\n",
+			fprintf(stderr, "cannot set CRTC for connector %u (%d): %m\n",
 				   iter->conn, errno);
 	}
 
@@ -173,14 +173,14 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 
 	// check if a monitor is connected
 	if (conn->connection != DRM_MODE_CONNECTED) {
-		printf("ignoring unused connector %u\n",
+		fprintf(stderr, "ignoring unused connector %u\n",
 			   conn->connector_id);
 		return -ENOENT;
 	}
 
 	// check if there is at least one valid mode
 	if (conn->count_modes == 0) {
-		printf("no valid mode for connector %u\n",
+		fprintf(stderr, "no valid mode for connector %u\n",
 			   conn->connector_id);
 		return -EFAULT;
 	}
@@ -195,7 +195,7 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 	// find a crtc for this connector
 	ret = modeset_find_crtc(fd, res, conn, dev);
 	if (ret) {
-		printf("no valid crtc for connector %u\n",
+		fprintf(stderr, "no valid crtc for connector %u\n",
 			   conn->connector_id);
 		return ret;
 	}
@@ -273,7 +273,7 @@ static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 	for (i = 0; i < conn->count_encoders; ++i) {
 		enc = drmModeGetEncoder(fd, conn->encoders[i]);
 		if (!enc) {
-			printf("cannot retrieve encoder %u:%u (%d): %m\n",
+			fprintf(stderr, "cannot retrieve encoder %u:%u (%d): %m\n",
 				   i, conn->encoders[i], errno);
 			continue;
 		}
@@ -304,7 +304,7 @@ static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 		drmModeFreeEncoder(enc);
 	}
 
-	printf("cannot find suitable CRTC for connector %u\n",
+	fprintf(stderr, "cannot find suitable CRTC for connector %u\n",
 		   conn->connector_id);
 	return -ENOENT;
 }
@@ -343,7 +343,7 @@ int modeset_create_fb(int fd, _image *buf)
 	ret = drmModeAddFB(fd, buf->width, buf->height, 24, 32, buf->stride,
 					   buf->boundMem->bo, &buf->fb);
 	if (ret) {
-		printf("cannot create framebuffer (%d): %m\n",
+		fprintf(stderr, "cannot create framebuffer (%d): %m\n",
 			   errno);
 		ret = -errno;
 
@@ -469,7 +469,7 @@ void modeset_present_buffer(int fd, modeset_dev* dev, _image* buffer)
 		ret = drmModeSetCrtc(fd, iter->crtc, buffer->fb, 0, 0,
 							 &iter->conn, 1, &iter->mode);
 		if (ret)
-			printf("cannot flip CRTC for connector %u (%d): %m\n",
+			fprintf(stderr, "cannot flip CRTC for connector %u (%d): %m\n",
 				   iter->conn, errno);
 		//else
 		//	iter->front_buf ^= 1;

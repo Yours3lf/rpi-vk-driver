@@ -12,7 +12,7 @@ int openIoctl()
 	{
 		controlFd = open(DRM_IOCTL_CTRL_DEV_FILE_NAME, O_RDWR | O_CLOEXEC);
 		if (controlFd < 0) {
-			printf("Can't open device file: %s \nError: %s\n", DRM_IOCTL_CTRL_DEV_FILE_NAME, strerror(errno));
+			fprintf(stderr, "Can't open device file: %s \nError: %s\n", DRM_IOCTL_CTRL_DEV_FILE_NAME, strerror(errno));
 			return -1;
 		}
 	}
@@ -72,14 +72,14 @@ int vc4_get_chip_info(int fd)
 						 */
 			return 21;
 		} else {
-			printf("Couldn't get V3D IDENT0: %s\n",
+			fprintf(stderr, "Couldn't get V3D IDENT0: %s\n",
 				   strerror(errno));
 			return 0;
 		}
 	}
 	ret = drmIoctl(fd, DRM_IOCTL_VC4_GET_PARAM, &ident1);
 	if (ret != 0) {
-		printf("Couldn't get V3D IDENT1: %s\n",
+		fprintf(stderr, "Couldn't get V3D IDENT1: %s\n",
 			   strerror(errno));
 		return 0;
 	}
@@ -89,7 +89,7 @@ int vc4_get_chip_info(int fd)
 	uint32_t v3d_ver = major * 10 + minor;
 
 	if (v3d_ver != 21 && v3d_ver != 26) {
-		printf("V3D %d.%d not supported.\n",
+		fprintf(stderr, "V3D %d.%d not supported.\n",
 			   v3d_ver / 10,
 			   v3d_ver % 10);
 		return 0;
@@ -109,7 +109,7 @@ int vc4_has_feature(int fd, uint32_t feature)
 
 	if (ret != 0)
 	{
-		printf("Couldn't determine if VC4 has feature: %s\n", strerror(errno));
+		fprintf(stderr, "Couldn't determine if VC4 has feature: %s\n", strerror(errno));
 		return 0;
 	}
 
@@ -151,7 +151,7 @@ uint64_t vc4_bo_get_tiling(int fd, uint32_t bo, uint64_t mod)
 	} else if (mod == DRM_FORMAT_MOD_INVALID) {
 		return get_tiling.modifier;
 	} else if (mod != get_tiling.modifier) {
-		printf("Modifier 0x%llx vs. tiling (0x%llx) mismatch\n",
+		fprintf(stderr, "Modifier 0x%llx vs. tiling (0x%llx) mismatch\n",
 			   (long long)mod, get_tiling.modifier);
 		return -1;
 	}
@@ -173,7 +173,7 @@ int vc4_bo_set_tiling(int fd, uint32_t bo, uint64_t mod)
 					   &set_tiling);
 	if (ret != 0)
 	{
-		printf("Couldn't set tiling: %s\n",
+		fprintf(stderr, "Couldn't set tiling: %s\n",
 			   strerror(errno));
 		return 0;
 	}
@@ -197,14 +197,14 @@ void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t offset, uint32_t s
 	map.handle = bo;
 	ret = drmIoctl(fd, DRM_IOCTL_VC4_MMAP_BO, &map);
 	if (ret != 0) {
-		printf("Couldn't map unsync: %s\n", strerror(errno));
+		fprintf(stderr, "Couldn't map unsync: %s\n", strerror(errno));
 		return 0;
 	}
 
 	void* mapPtr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED,
 						fd, map.offset + offset);
 	if (mapPtr == MAP_FAILED) {
-		printf("mmap of bo %d (offset 0x%016llx, size %d) failed\n",
+		fprintf(stderr, "mmap of bo %d (offset 0x%016llx, size %d) failed\n",
 			   bo, (long long)map.offset + offset, size);
 		return 0;
 	}
@@ -237,7 +237,7 @@ int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns)
 	int ret = drmIoctl(fd, DRM_IOCTL_VC4_WAIT_BO, &wait);
 	if (ret) {
 		if (ret != -ETIME) {
-			printf("BO wait failed: %s\n",
+			fprintf(stderr, "BO wait failed: %s\n",
 				   strerror(errno));
 		}
 
@@ -269,7 +269,7 @@ int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t
 	int ret = drmIoctl(fd, DRM_IOCTL_VC4_WAIT_SEQNO, &wait);
 	if (ret) {
 		if (ret != -ETIME) {
-			printf("Seqno wait failed: %s\n",
+			fprintf(stderr, "Seqno wait failed: %s\n",
 				   strerror(errno));
 		}
 		else
@@ -298,7 +298,7 @@ int vc4_bo_flink(int fd, uint32_t bo, uint32_t *name)
 	};
 	int ret = drmIoctl(fd, DRM_IOCTL_GEM_FLINK, &flink);
 	if (ret) {
-		printf("Failed to flink bo %d: %s\n",
+		fprintf(stderr, "Failed to flink bo %d: %s\n",
 			   bo, strerror(errno));
 		//free(bo);
 		return 0;
@@ -334,7 +334,7 @@ uint32_t vc4_bo_alloc_shader(int fd, const void *data, uint32_t* size)
 				   &create);
 
 	if (ret != 0) {
-		printf("Couldn't create shader: %s\n",
+		fprintf(stderr, "Couldn't create shader: %s\n",
 			   strerror(errno));
 		return 0;
 	}
@@ -354,7 +354,7 @@ uint32_t vc4_bo_open_name(int fd, uint32_t name)
 	};
 	int ret = drmIoctl(fd, DRM_IOCTL_GEM_OPEN, &o);
 	if (ret) {
-		printf("Failed to open bo %d: %s\n",
+		fprintf(stderr, "Failed to open bo %d: %s\n",
 			   name, strerror(errno));
 		return 0;
 	}
@@ -387,7 +387,7 @@ uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
 	uint32_t handle = create.handle;
 
 	if (ret != 0) {
-		printf("Couldn't alloc BO: %s\n",
+		fprintf(stderr, "Couldn't alloc BO: %s\n",
 			   strerror(errno));
 
 		/*if (!list_empty(&screen->bo_cache.time_list) &&
@@ -423,7 +423,7 @@ void vc4_bo_free(int fd, uint32_t bo, void* mappedAddr, uint32_t size)
 	int ret = drmIoctl(fd, DRM_IOCTL_GEM_CLOSE, &c);
 	if (ret != 0)
 	{
-		printf("close object %d: %s\n", bo, strerror(errno));
+		fprintf(stderr, "couldn't close object %d: %s\n", bo, strerror(errno));
 	}
 }
 
@@ -442,7 +442,7 @@ int vc4_bo_unpurgeable(int fd, uint32_t bo, int hasMadvise)
 
 	if (drmIoctl(fd, DRM_IOCTL_VC4_GEM_MADVISE, &arg))
 	{
-		printf("Unpurgable BO madvise failed: %s\n",
+		fprintf(stderr, "Unpurgable BO madvise failed: %s\n",
 			   strerror(errno));
 		return 0;
 	}
@@ -465,7 +465,7 @@ void vc4_bo_purgeable(int fd, uint32_t bo, int hasMadvise)
 		int ret = drmIoctl(fd, DRM_IOCTL_VC4_GEM_MADVISE, &arg);
 		if(ret)
 		{
-			printf("Purgable BO madvise failed: %s\n",
+			fprintf(stderr, "Purgable BO madvise failed: %s\n",
 				   strerror(errno));
 		}
 	}
@@ -489,7 +489,7 @@ void vc4_bo_label(int fd, uint32_t bo, const char* name)
 	int ret = drmIoctl(fd, DRM_IOCTL_VC4_LABEL_BO, &label);
 	if(ret)
 	{
-		printf("BO label failed: %s\n",
+		fprintf(stderr, "BO label failed: %s\n",
 			   strerror(errno));
 	}
 }
@@ -503,7 +503,7 @@ int vc4_bo_get_dmabuf(int fd, uint32_t bo)
 	int ret = drmPrimeHandleToFD(fd, bo,
 								 O_CLOEXEC, &boFd);
 	if (ret != 0) {
-		printf("Failed to export gem bo %d to dmabuf: %s\n",
+		fprintf(stderr, "Failed to export gem bo %d to dmabuf: %s\n",
 			   bo, strerror(errno));
 		return 0;
 	}
@@ -522,7 +522,7 @@ void* vc4_bo_map(int fd, uint32_t bo, uint32_t offset, uint32_t size)
 	//wait infinitely
 	int ok = vc4_bo_wait(fd, bo, WAIT_TIMEOUT_INFINITE);
 	if (!ok) {
-		printf("BO wait for map failed: %s\n", strerror(errno));
+		fprintf(stderr, "BO wait for map failed: %s\n", strerror(errno));
 		return 0;
 	}
 
@@ -540,7 +540,7 @@ void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmitt
 
 	static int warned = 0;
 	if (ret && !warned) {
-		printf("Draw call returned %s.  "
+		fprintf(stderr, "Draw call returned %s.  "
 			   "Expect corruption.\n", strerror(errno));
 		warned = 1;
 	} else if (!ret) {
@@ -554,7 +554,7 @@ void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmitt
 							*lastFinishedSeqno > 0 ? *lastEmittedSeqno - 5 : *lastEmittedSeqno,
 							&timeout))
 		{
-			printf("Job throttling failed\n");
+			fprintf(stderr, "Job throttling failed\n");
 		}
 	}
 }

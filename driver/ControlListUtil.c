@@ -413,7 +413,6 @@ void clInsertShaderState(ControlList* cl,
 	assert(cl);
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_GL_SHADER_STATE_opcode; cl->nextFreeByte++;
-	//TODO is this correct?
 	*(uint32_t*)cl->nextFreeByte =
 			moveBits(address, 28, 4) |
 			moveBits(extendedShaderRecord, 1, 3) |
@@ -723,7 +722,6 @@ void clInsertShaderRecord(ControlList* cls,
 	assert(cls);
 	assert(cls->buffer);
 	assert(cls->nextFreeByte);
-	//TODO is this correct?
 	*cls->nextFreeByte =
 			moveBits(fragmentShaderIsSingleThreaded, 1, 0) |
 			moveBits(pointSizeIncludedInShadedVertexData, 1, 1) |
@@ -739,7 +737,7 @@ void clInsertShaderRecord(ControlList* cls,
 	*cls->nextFreeByte = vertexAttributeArraySelectBits; cls->nextFreeByte++;
 	*cls->nextFreeByte = vertexTotalAttributesSize; cls->nextFreeByte++;
 	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &vertexCodeAddress);
-	//TODO wtf???
+	//TODO wtf??? --> check kernel side...
 	uint32_t offset = moveBits(vertexCodeAddress.offset, 32, 0) | moveBits(vertexUniformsAddress, 32, 0);
 	*(uint32_t*)cls->nextFreeByte = offset; cls->nextFreeByte += 4;
 	cls->nextFreeByte += 4;
@@ -767,7 +765,6 @@ void clInsertAttributeRecord(ControlList* cls,
 	assert(cls->buffer);
 	assert(cls->nextFreeByte);
 	uint32_t sizeBytesMinusOne = sizeBytes - 1;
-	//TODO is this correct?
 	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &address);
 	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
 	*cls->nextFreeByte = sizeBytesMinusOne; cls->nextFreeByte++;

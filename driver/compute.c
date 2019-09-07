@@ -1,6 +1,7 @@
 #include "common.h"
 
 //TODO
+//compute shaders need kernel support
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateComputePipelines(
 	VkDevice                                    device,
@@ -10,6 +11,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateComputePipelines(
 	const VkAllocationCallbacks*                pAllocator,
 	VkPipeline*                                 pPipelines)
 {
+	UNSUPPORTED(vkCreateComputePipelines);
 	return VK_SUCCESS;
 }
 
@@ -18,7 +20,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDispatchIndirect(
 	VkBuffer                                    buffer,
 	VkDeviceSize                                offset)
 {
-
+	UNSUPPORTED(vkCmdDispatchIndirect);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdDispatch(
@@ -27,7 +29,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDispatch(
 	uint32_t                                    groupCountY,
 	uint32_t                                    groupCountZ)
 {
-
+	UNSUPPORTED(vkCmdDispatch);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdDispatchBase(
@@ -39,5 +41,5 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDispatchBase(
 	uint32_t                                    groupCountY,
 	uint32_t                                    groupCountZ)
 {
-
+	UNSUPPORTED(vkCmdDispatchBase);
 }

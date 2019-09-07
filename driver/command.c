@@ -20,14 +20,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
 	assert(device);
 	assert(pCreateInfo);
 
-	//VK_COMMAND_POOL_CREATE_TRANSIENT_BIT
+	//TODO VK_COMMAND_POOL_CREATE_TRANSIENT_BIT
 	//specifies that command buffers allocated from the pool will be short-lived, meaning that they will be reset or freed in a relatively short timeframe.
 	//This flag may be used by the implementation to control memory allocation behavior within the pool.
 	//--> definitely use pool allocator
-
-	//VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
-	//allows any command buffer allocated from a pool to be individually reset to the initial state; either by calling vkResetCommandBuffer, or via the implicit reset when calling vkBeginCommandBuffer.
-	//If this flag is not set on a pool, then vkResetCommandBuffer must not be called for any command buffer allocated from that pool.
 
 	//TODO pool family ignored for now
 
@@ -39,6 +35,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
 	}
 
 	cp->queueFamilyIndex = pCreateInfo->queueFamilyIndex;
+
+	cp->resetAble = pCreateInfo->flags & VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 	//TODO CTS fails as we can't allocate enough memory for some reason
 	//tweak system allocation as root using:
@@ -97,6 +95,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 	VkResult res = VK_SUCCESS;
 
 	_commandPool* cp = (_commandPool*)pAllocateInfo->commandPool;
+
+	//TODO secondary command buffers
 
 	//if(cp->usePoolAllocator)
 	{
@@ -199,21 +199,23 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
 	assert(commandBuffer);
 	assert(pBeginInfo);
 
-	//TODO
+	//TODO secondary command buffers
 
 	//VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
 	//specifies that each recording of the command buffer will only be submitted once, and the command buffer will be reset and recorded again between each submission.
 
-	//VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
+	//TODO VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
 	//specifies that a secondary command buffer is considered to be entirely inside a render pass. If this is a primary command buffer, then this bit is ignored
 
-	//VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
+	//TODO VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
 	//specifies that a command buffer can be resubmitted to a queue while it is in the pending state, and recorded into multiple primary command buffers
 
 	//When a command buffer begins recording, all state in that command buffer is undefined
 
 	commandBuffer->usageFlags = pBeginInfo->flags;
 	commandBuffer->state = CMDBUF_STATE_RECORDING;
+
+	//TODO reset state?
 
 	return VK_SUCCESS;
 }
@@ -260,12 +262,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 {
 	assert(queue);
 
+	//TODO this is incorrect
+	//see sync.c
+	//TODO: deal with pSubmits->pWaitDstStageMask
 	for(int c = 0; c < pSubmits->waitSemaphoreCount; ++c)
 	{
 		sem_wait((sem_t*)pSubmits->pWaitSemaphores[c]);
 	}
-
-	//TODO: deal with pSubmits->pWaitDstStageMask
 
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
 	{
@@ -278,6 +281,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
 	{
 		VkCommandBuffer cmdbuf = pSubmits->pCommandBuffers[c];
+
+		if(!cmdbuf->binCl.currMarker)
+		{
+			//no markers recorded yet, skip
+			continue;
+		}
 
 		//first entry is assumed to be a marker
 		CLMarker* marker = cmdbuf->binCl.buffer;
@@ -303,6 +312,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 
 			//This should not result in an insertion!
 			uint32_t imageIdx = clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, i->boundMem->bo);
+
+			//TODO
+			//depth/stencil/msaa
 
 			//fill out submit cl fields
 			submitCl.color_write.hindex = imageIdx;
@@ -389,8 +401,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 			/**/
 
 
-			//submit ioctl
+			//TODO somehow store last finished globally
+			//so waiting on fences is faster
+			//eg. could be an atomic value
 			static uint64_t lastFinishedSeqno = 0;
+
+			//submit ioctl
 			vc4_cl_submit(controlFd, &submitCl, &queue->lastEmitSeqno, &lastFinishedSeqno);
 
 			//advance in linked list
@@ -418,7 +434,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 		sem_post((sem_t*)pSubmits->pSignalSemaphores[c]);
 	}
 
-	//TODO is this correct?
 	_fence* f = fence;
 	if(f)
 	{
@@ -495,7 +510,9 @@ VKAPI_ATTR void VKAPI_CALL vkTrimCommandPool(
 
 	_commandPool* cp = commandPool;
 
-	//TODO??
+	//TODO trim cp's pool allocator and consecutive pool allocator
+	//by reallocating to just used size
+	//kinda silly, as if you need memory afterwards we need to reallocate again...
 }
 
 /*
@@ -534,8 +551,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandPool(
 		}
 	}
 
-	//TODO secondary command buffer stuff
-	//TODO reset flag
+	//TODO secondary command buffers
+
+	//TODO reset flag --> free all pool resources
 }
 
 /*
@@ -551,6 +569,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandBuffer(
 
 	assert(cb->state != CMDBUF_STATE_PENDING);
 
+	assert(cb->cp->resetAble);
+
 	if(cb->state == CMDBUF_STATE_RECORDING || cb->state == CMDBUF_STATE_EXECUTABLE)
 	{
 		cb->state = CMDBUF_STATE_INVALID;
@@ -560,7 +580,12 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandBuffer(
 		cb->state = CMDBUF_STATE_INITIAL;
 	}
 
-	//TODO flag?
+	if(flags & VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT)
+	{
+		//TODO release resources
+	}
+
+	//TODO reset state?
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdExecuteCommands(
@@ -575,5 +600,5 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetDeviceMask(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    deviceMask)
 {
-
+	UNSUPPORTED(vkCmdSetDeviceMask);
 }

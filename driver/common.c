@@ -146,8 +146,8 @@ uint32_t getFormatBpp(VkFormat f)
 	case VK_FORMAT_UNDEFINED: //TODO
 		return 8;
 	default://
-		printf("format %i\n", f);
-		assert(0);
+		fprintf(stderr, "format %i\n", f);
+		assert(!"Unknown format.");
 		return 0;
 	}
 }
@@ -278,7 +278,8 @@ void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, 
 	}
 	default:
 	{
-		assert(0); //unsupported
+		fprintf(stderr, "bpp: %i\n", bpp);
+		assert(!"Unsupported texture bpp.");
 	}
 	}
 
@@ -528,7 +529,7 @@ void clDump(void* cl, uint32_t size)
 				uint32_t length;
 
 				if (inst == NULL) {
-						printf("0x%08x 0x%08x: Unknown packet 0x%02x (%d)!\n",
+						fprintf(stderr, "0x%08x 0x%08x: Unknown packet 0x%02x (%d)!\n",
 								offset, hw_offset, header, header);
 						return;
 				}
@@ -664,8 +665,8 @@ uint8_t getTextureDataType(VkFormat format)
 	case VK_FORMAT_UNDEFINED: //TODO
 		return -1;
 	default://
-		printf("unsupported format %i\n", format);
-		assert(0);
+		fprintf(stderr, "format %i\n", format);
+		assert(!"Unsupported format.");
 		return -1;
 	}
 }
@@ -726,8 +727,8 @@ uint8_t getWrapMode(VkSamplerAddressMode mode)
 	}
 	else
 	{
-		printf("unsupported wrap mode: %i\n", mode);
-		assert(0);
+		fprintf(stderr, "wrap mode: %i\n", mode);
+		assert(!"Unsupported wrap mode.");
 		return -1;
 	}
 }
@@ -743,16 +744,15 @@ uint32_t getRenderTargetFormatVC4(VkFormat format)
 		case VK_FORMAT_B5G6R5_UNORM_PACK16:
 			return VC4_RENDER_CONFIG_FORMAT_BGR565;
 		default:
-			printf("unsupported rendertarget format: %i\n", format);
-			assert(0);
+			fprintf(stderr, "rendertarget format: %i\n", format);
+			assert(!"Unsupported render target format");
 			return -1;
 	}
 }
 
 ////////////////////////////////////////////////////
 ////////////////////////////////////////////////////
-/// just so we can return a function pointer, TODO
-////////////////////////////////////////////////////
+/// just so we can return a function pointer
 ////////////////////////////////////////////////////
 ////////////////////////////////////////////////////
 
@@ -761,7 +761,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceExternalBufferProperties(
 	const VkPhysicalDeviceExternalBufferInfo*   pExternalBufferInfo,
 	VkExternalBufferProperties*                 pExternalBufferProperties)
 {
-
+	UNSUPPORTED(vkGetPhysicalDeviceExternalBufferProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceExternalFenceProperties(
@@ -769,7 +769,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceExternalFenceProperties(
 	const VkPhysicalDeviceExternalFenceInfo*    pExternalFenceInfo,
 	VkExternalFenceProperties*                  pExternalFenceProperties)
 {
-
+	UNSUPPORTED(vkGetPhysicalDeviceExternalFenceProperties);
 }
 
 
@@ -778,7 +778,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceExternalSemaphoreProperties(
 	const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
 	VkExternalSemaphoreProperties*              pExternalSemaphoreProperties)
 {
-
+	UNSUPPORTED(vkGetPhysicalDeviceExternalSemaphoreProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetDeviceGroupPeerMemoryFeatures(
@@ -788,5 +788,5 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceGroupPeerMemoryFeatures(
 	uint32_t                                    remoteDeviceIndex,
 	VkPeerMemoryFeatureFlags*                   pPeerMemoryFeatures)
 {
-
+	UNSUPPORTED(vkGetDeviceGroupPeerMemoryFeatures);
 }
