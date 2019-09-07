@@ -94,8 +94,6 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 
 	assert(i->usageBits & VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
-	//TODO externally sync cmdbuf, cmdpool
-
 	{ //Simplest case: just submit a job to clear the image
 		clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
 		clInsertNewCLMarker(&commandBuffer->binCl, &commandBuffer->handlesCl, &commandBuffer->shaderRecCl, commandBuffer->shaderRecCount, &commandBuffer->uniformsCl, i);

@@ -1,7 +1,5 @@
 #include "common.h"
 
-//TODO
-
 VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties(
 	VkPhysicalDevice                            physicalDevice,
 	VkFormat                                    format,
@@ -12,7 +10,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties(
 	uint32_t*                                   pPropertyCount,
 		VkSparseImageFormatProperties*              pProperties)
 {
-
+	UNSUPPORTED(vkGetPhysicalDeviceSparseImageFormatProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetImageSparseMemoryRequirements(
@@ -21,7 +19,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageSparseMemoryRequirements(
 	uint32_t*                                   pSparseMemoryRequirementCount,
 	VkSparseImageMemoryRequirements*            pSparseMemoryRequirements)
 {
-
+	UNSUPPORTED(vkGetImageSparseMemoryRequirements);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkQueueBindSparse(
@@ -30,6 +28,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueBindSparse(
 	const VkBindSparseInfo*                     pBindInfo,
 	VkFence                                     fence)
 {
+	UNSUPPORTED(vkQueueBindSparse);
 	return VK_SUCCESS;
 }
 
@@ -39,7 +38,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceSparseImageFormatProperties2(
 	uint32_t*                                   pPropertyCount,
 	VkSparseImageFormatProperties2*             pProperties)
 {
-
+	UNSUPPORTED(vkGetPhysicalDeviceSparseImageFormatProperties2);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetImageSparseMemoryRequirements2(
@@ -48,5 +47,5 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageSparseMemoryRequirements2(
 	uint32_t*                                   pSparseMemoryRequirementCount,
 	VkSparseImageMemoryRequirements2*           pSparseMemoryRequirements)
 {
-
+	UNSUPPORTED(vkGetImageSparseMemoryRequirements2);
 }

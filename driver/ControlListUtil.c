@@ -223,23 +223,23 @@ void clInsertReturnFromSubList(ControlList* cl)
 	cl->nextFreeByte++;
 }
 
-void clInsertStoreMultiSampleResolvedTileColorBuffer(ControlList* cl)
+/*void clInsertStoreMultiSampleResolvedTileColorBuffer(ControlList* cl)
 {
 	assert(cl);
 	assert(cl->buffer);
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_STORE_MULTI_SAMPLE_RESOLVED_TILE_COLOR_BUFFER_opcode;
 	cl->nextFreeByte++;
-}
+}*/
 
-void clInsertStoreMultiSampleResolvedTileColorBufferAndEOF(ControlList* cl)
+/*void clInsertStoreMultiSampleResolvedTileColorBufferAndEOF(ControlList* cl)
 {
 	assert(cl);
 	assert(cl->buffer);
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_STORE_MULTI_SAMPLE_RESOLVED_TILE_COLOR_BUFFER_AND_EOF_opcode;
 	cl->nextFreeByte++;
-}
+}*/
 
 /*
 //input: 2 cls (cl, handles cl)
@@ -394,7 +394,7 @@ void clInsertVertexArrayPrimitives(ControlList* cl,
 	*(uint32_t*)cl->nextFreeByte = firstVertexIndex; cl->nextFreeByte += 4;
 }
 
-void clInsertPrimitiveListFormat(ControlList* cl,
+/*void clInsertPrimitiveListFormat(ControlList* cl,
 								  uint32_t dataType, //1/3: 16 or 32 bit
 								  uint32_t primitiveType) //0/1/2/3: point/line/tri/rhy
 {
@@ -403,7 +403,7 @@ void clInsertPrimitiveListFormat(ControlList* cl,
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_PRIMITIVE_LIST_FORMAT_opcode; cl->nextFreeByte++;
 	*cl->nextFreeByte = moveBits(dataType, 4, 4) | moveBits(primitiveType, 4, 0); cl->nextFreeByte++;
-}
+}*/
 
 void clInsertShaderState(ControlList* cl,
 						  uint32_t address,

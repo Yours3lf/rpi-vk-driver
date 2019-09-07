@@ -13,8 +13,6 @@ void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBegin
 
 	//TODO subpass contents ignored
 
-	//TODO add state tracking to command buffer
-	//only bake into control list when a draw call is issued or similar
 	_commandBuffer* cb = commandBuffer;
 	cb->fbo = pRenderPassBegin->framebuffer;
 	cb->renderpass = pRenderPassBegin->renderPass;
@@ -288,8 +286,6 @@ VkResult vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCr
 	fb->width = pCreateInfo->width;
 	fb->height = pCreateInfo->height;
 	fb->layers = pCreateInfo->layers;
-
-	//TODO errors/validation
 
 	*pFramebuffer = fb;
 

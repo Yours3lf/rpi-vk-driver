@@ -103,7 +103,7 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
  */
 VkResult vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
 {
-	//TODO
+	UNSUPPORTED(vkCreateShaderModule);
 	return VK_SUCCESS;
 }
 

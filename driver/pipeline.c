@@ -30,7 +30,8 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 	assert(pCreateInfos);
 	assert(pPipelines);
 
-	assert(pipelineCache == 0); //TODO not supported right now
+	//TODO pipeline caches
+	//TODO flags
 
 	for(int c = 0; c < createInfoCount; ++c)
 	{
@@ -39,6 +40,8 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
+
+		memset(pip->names, 0, sizeof(char*)*6);
 
 		for(int d = 0; d < pCreateInfos->stageCount; ++d)
 		{
@@ -75,7 +78,7 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 		pip->topology = pCreateInfos->pInputAssemblyState->topology;
 		pip->primitiveRestartEnable = pCreateInfos->pInputAssemblyState->primitiveRestartEnable;
 
-		//TODO tessellation ignored
+		//tessellation ignored
 
 		pip->viewportCount = pCreateInfos->pViewportState->viewportCount;
 		pip->viewports = ALLOCATE(sizeof(VkViewport) * pip->viewportCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
@@ -203,6 +206,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkMergePipelineCaches(
 	uint32_t                                    srcCacheCount,
 	const VkPipelineCache*                      pSrcCaches)
 {
+	//TODO
 	return VK_SUCCESS;
 }
 
@@ -212,6 +216,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineCacheData(
 	size_t*                                     pDataSize,
 	void*                                       pData)
 {
+	//TODO
 	return VK_SUCCESS;
 }
 
@@ -220,7 +225,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineCache(
 	VkPipelineCache                             pipelineCache,
 	const VkAllocationCallbacks*                pAllocator)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineLayout(
@@ -277,7 +282,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineLayout(
 	VkPipelineLayout                            pipelineLayout,
 	const VkAllocationCallbacks*                pAllocator)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineCache(
@@ -286,5 +291,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineCache(
 	const VkAllocationCallbacks*                pAllocator,
 	VkPipelineCache*                            pPipelineCache)
 {
+	//TODO
 	return VK_SUCCESS;
 }

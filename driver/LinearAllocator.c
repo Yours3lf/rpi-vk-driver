@@ -44,5 +44,5 @@ void* linearAllocte(LinearAllocator* la, unsigned s)
 
 void linearFree(LinearAllocator* la, void* p)
 {
-	//assert(0); //this shouldn't really happen, just destroy/reset the whole allocator
+	assert(0); //this shouldn't really happen, just destroy/reset the whole allocator
 }

@@ -1,13 +1,18 @@
 #include "common.h"
 
-//TODO
-
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateQueryPool(
 	VkDevice                                    device,
 	const VkQueryPoolCreateInfo*                pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
 	VkQueryPool*                                pQueryPool)
 {
+	//TODO
+
+	if(pCreateInfo->queryType == VK_QUERY_TYPE_OCCLUSION)
+	{
+		UNSUPPORTED(VK_QUERY_TYPE_OCCLUSION);
+	}
+
 	return VK_SUCCESS;
 }
 
@@ -17,7 +22,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdResetQueryPool(
 	uint32_t                                    firstQuery,
 	uint32_t                                    queryCount)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkDestroyQueryPool(
@@ -25,7 +30,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyQueryPool(
 	VkQueryPool                                 queryPool,
 	const VkAllocationCallbacks*                pAllocator)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdEndQuery(
@@ -33,7 +38,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdEndQuery(
 	VkQueryPool                                 queryPool,
 	uint32_t                                    query)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdBeginQuery(
@@ -42,7 +47,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBeginQuery(
 	uint32_t                                    query,
 	VkQueryControlFlags                         flags)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyQueryPoolResults(
@@ -55,7 +60,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyQueryPoolResults(
 	VkDeviceSize                                stride,
 	VkQueryResultFlags                          flags)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkGetQueryPoolResults(
@@ -68,6 +73,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetQueryPoolResults(
 	VkDeviceSize                                stride,
 	VkQueryResultFlags                          flags)
 {
+	//TODO
 	return VK_SUCCESS;
 }
 
@@ -77,5 +83,5 @@ VKAPI_ATTR void VKAPI_CALL vkCmdWriteTimestamp(
 	VkQueryPool                                 queryPool,
 	uint32_t                                    query)
 {
-
+	//TODO
 }

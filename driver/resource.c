@@ -24,8 +24,6 @@ VkResult vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCreate
 	view->swizzle = pCreateInfo->components;
 	view->subresourceRange = pCreateInfo->subresourceRange;
 
-	//TODO errors/validation
-
 	*pView = view;
 
 	return VK_SUCCESS;
@@ -50,7 +48,7 @@ VkResult vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, 
 	buf->usage = pCreateInfo->usage;
 	buf->boundMem = 0;
 	buf->alignment = ARM_PAGE_SIZE; //TODO
-	buf->alignedSize = getBOAlignedSize(buf->size);
+	buf->alignedSize = getBOAlignedSize(buf->size, ARM_PAGE_SIZE);
 
 	*pBuffer = buf;
 
@@ -67,8 +65,10 @@ void vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryReq
 	assert(pMemoryRequirements);
 
 	pMemoryRequirements->alignment = ((_buffer*)buffer)->alignment;
-	pMemoryRequirements->size = getBOAlignedSize(((_buffer*)buffer)->size);
-	pMemoryRequirements->memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; //TODO
+	//TODO do we really need ARM page size aligned buffers?
+	pMemoryRequirements->size = getBOAlignedSize(((_buffer*)buffer)->size, ARM_PAGE_SIZE);
+	//there's only one memory type so that's gonna be it...
+	pMemoryRequirements->memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetBufferMemoryRequirements2(
@@ -217,7 +217,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(
 	i->layout = pCreateInfo->initialLayout;
 	i->boundMem = 0;
 	i->boundOffset = 0;
-	i->alignment = ARM_PAGE_SIZE;
+	i->alignment = ARM_PAGE_SIZE; //TODO?
 
 	i->concurrentAccess = pCreateInfo->sharingMode; //TODO?
 	i->numQueueFamiliesWithAccess = pCreateInfo->queueFamilyIndexCount;
@@ -283,13 +283,16 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements(
 	i->paddedWidth = i->width;
 	i->paddedHeight = i->height;
 
+	//TODO take into account tiling etc.
+
 	//need to pad to T format, as HW automatically chooses that
 	if(nonPaddedSize > 4096)
 	{
 		getPaddedTextureDimensionsT(i->width, i->height, bpp, &i->paddedWidth, &i->paddedHeight);
 	}
 
-	i->size = getBOAlignedSize(i->paddedWidth * i->paddedHeight * pixelSizeBytes);
+	//TODO does this need to be aligned?
+	i->size = getBOAlignedSize(i->paddedWidth * i->paddedHeight * pixelSizeBytes, ARM_PAGE_SIZE);
 	i->stride = i->paddedWidth * pixelSizeBytes;
 
 	pMemoryRequirements->alignment = ARM_PAGE_SIZE;
@@ -329,7 +332,21 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBindBufferMemory2(
 	uint32_t                                    bindInfoCount,
 	const VkBindBufferMemoryInfo*               pBindInfos)
 {
-	return VK_SUCCESS;
+	assert(device);
+	assert(pBindInfos);
+
+	VkResult ret = VK_SUCCESS;
+
+	for(uint32_t c = 0; c < bindInfoCount; ++c)
+	{
+		VkResult res = vkBindBufferMemory(device, pBindInfos[c].buffer, pBindInfos[c].memory, pBindInfos[c].memoryOffset);
+		if(res != VK_SUCCESS)
+		{
+			ret = res;
+		}
+	}
+
+	return ret;
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements2(
@@ -337,7 +354,10 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements2(
 	const VkImageMemoryRequirementsInfo2*       pInfo,
 	VkMemoryRequirements2*                      pMemoryRequirements)
 {
-
+	assert(device);
+	assert(pInfo);
+	assert(pMemoryRequirements);
+	vkGetImageMemoryRequirements(device, pInfo->image, pMemoryRequirements);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory2(
@@ -345,7 +365,21 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory2(
 	uint32_t                                    bindInfoCount,
 	const VkBindImageMemoryInfo*                pBindInfos)
 {
-	return VK_SUCCESS;
+	assert(device);
+	assert(pBindInfos);
+
+	VkResult ret = VK_SUCCESS;
+
+	for(uint32_t c = 0; c < bindInfoCount; ++c)
+	{
+		VkResult res = vkBindImageMemory(device, pBindInfos[c].image, pBindInfos[c].memory, pBindInfos[c].memoryOffset);
+		if(res != VK_SUCCESS)
+		{
+			ret = res;
+		}
+	}
+
+	return ret;
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdPushConstants(
@@ -381,5 +415,5 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageSubresourceLayout(
 	const VkImageSubresource*                   pSubresource,
 	VkSubresourceLayout*                        pLayout)
 {
-
+	//TODO
 }

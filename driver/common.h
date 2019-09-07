@@ -446,6 +446,8 @@ typedef struct VkDescriptorPool_T
 	ConsecutivePoolAllocator* imageDescriptorCPA;
 	ConsecutivePoolAllocator* bufferDescriptorCPA;
 	ConsecutivePoolAllocator* texelBufferDescriptorCPA;
+
+	uint32_t freeAble;
 } _descriptorPool;
 
 uint32_t getFormatBpp(VkFormat f);

@@ -136,6 +136,8 @@ int vc4_test_tiling(int fd)
 	return 0;
 }
 
+//TODO what is this supposed to do?
+//ask the kernel what is the buffer's tiling?
 uint64_t vc4_bo_get_tiling(int fd, uint32_t bo, uint64_t mod)
 {
 	assert(fd);
@@ -163,7 +165,6 @@ int vc4_bo_set_tiling(int fd, uint32_t bo, uint64_t mod)
 {
 	assert(fd);
 	assert(bo);
-	//assert(mod); //TODO mod can be linear==0
 
 	struct drm_vc4_set_tiling set_tiling = {
 		.handle = bo,
@@ -310,9 +311,9 @@ int vc4_bo_flink(int fd, uint32_t bo, uint32_t *name)
 	return 1;
 }
 
-uint32_t getBOAlignedSize(uint32_t size)
+uint32_t getBOAlignedSize(uint32_t size, uint32_t alignment)
 {
-	return align(size, ARM_PAGE_SIZE);
+	return align(size, alignment);
 }
 
 uint32_t vc4_bo_alloc_shader(int fd, const void *data, uint32_t* size)
@@ -323,7 +324,8 @@ uint32_t vc4_bo_alloc_shader(int fd, const void *data, uint32_t* size)
 
 	int ret;
 
-	uint32_t alignedSize = getBOAlignedSize(*size);
+	//kernel only requires alignmnet to sizeof(uint64_t), not an entire page
+	uint32_t alignedSize = getBOAlignedSize(*size, sizeof(uint64_t));
 
 	struct drm_vc4_create_shader_bo create = {
 		.size = alignedSize,

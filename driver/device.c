@@ -67,10 +67,10 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties(
 	pProperties->apiVersion = VK_DRIVER_VERSION;
 	pProperties->driverVersion = 1; //we'll simply call this v1
 	pProperties->vendorID = 0x14E4; //Broadcom
-	pProperties->deviceID = 0; //TODO dunno?
+	pProperties->deviceID = 0x5250; //RP in HEX
 	pProperties->deviceType = VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
 	strcpy(pProperties->deviceName, "VideoCore IV HW");
-	//pProperties->pipelineCacheUUID
+	//TODO pProperties->pipelineCacheUUID
 	pProperties->limits = _limits;
 	pProperties->sparseProperties = sparseProps;
 }
@@ -98,7 +98,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(
 		VkExtensionProperties*                      pProperties)
 {
 	assert(physicalDevice);
-	assert(!pLayerName); //layers ignored for now
 	assert(pPropertyCount);
 
 	if(!pProperties)
@@ -106,6 +105,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(
 		*pPropertyCount = numDeviceExtensions;
 		return VK_SUCCESS;
 	}
+
+	//TODO layers
 
 	int arraySize = *pPropertyCount;
 	int elementsWritten = min(numDeviceExtensions, arraySize);
@@ -177,6 +178,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 	assert(physicalDevice);
 	assert(pDevice);
 	assert(pCreateInfo);
+
+	//TODO store enabled features and extensions
+	//and check later on if they are enabled.
 
 	//check for enabled extensions
 	for(int c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
@@ -301,6 +305,8 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue2(
 	assert(pQueueInfo);
 	assert(pQueue);
 
+	//TODO handle pNext
+
 	vkGetDeviceQueue(device, pQueueInfo->queueFamilyIndex, pQueueInfo->queueIndex, pQueue);
 }
 
@@ -346,7 +352,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDeviceGroups(
 		return VK_SUCCESS;
 	}
 
-	//TODO
+	//we don't have any other devices...
+	assert(*pPhysicalDeviceGroupCount == 1);
+
 	uint32_t c = 0;
 	for(; c < *pPhysicalDeviceGroupCount; ++c)
 	{
@@ -397,7 +405,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(
 	}
 
 
-	//TODO
+	//there can't be any other device, so this will do fine...
 	_device* d = device;
 	return vkGetInstanceProcAddr(d->dev->instance, pName);
 }
@@ -415,9 +423,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(
 		VkPhysicalDeviceDriverPropertiesKHR* ptr = pProperties->pNext;
 		if(ptr->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR)
 		{
-			//TODO apparently can't expose my own ID :(
-			//has to be "known"
-			ptr->driverID = VK_DRIVER_ID_MESA_RADV_KHR;
+			ptr->driverID = 0x525049564b; //RPIVK in hex
 			const char* driverName = "RPi VK";
 			const char* driverInfo = ""; //TODO maybe version number, git info?
 			strcpy(ptr->driverName, driverName);
@@ -439,63 +445,48 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties(
 	assert(physicalDevice);
 	assert(pFormatProperties);
 
+	//TODO set this per format!
 	if(isDepthStencilFormat(format) && format != VK_FORMAT_S8_UINT)
 	{
 		pFormatProperties->linearTilingFeatures = 0
-												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
-												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
 												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
 												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
 												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
-												| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
 												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
-												| VK_FORMAT_FEATURE_BLIT_DST_BIT
 												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
-												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
 												;
 		pFormatProperties->optimalTilingFeatures = 0
 												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
 												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
-												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
-												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
-												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
-												| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
 												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
 												| VK_FORMAT_FEATURE_BLIT_DST_BIT
 												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
 												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+
 												;
 		pFormatProperties->bufferFeatures = 0
-												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
 												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
 												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
 												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
 												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
-												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
 												;
 	}
 	else
 	{
 		pFormatProperties->linearTilingFeatures = 0
-												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
-												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
 												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
 												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
 												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
-												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
-												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
-												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
 												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
-												| VK_FORMAT_FEATURE_BLIT_DST_BIT
 												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
-												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
 												;
 		pFormatProperties->optimalTilingFeatures = 0
 												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
 												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
-												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
-												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
-												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
 												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
 												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
 												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
@@ -505,12 +496,11 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties(
 												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
 												;
 		pFormatProperties->bufferFeatures = 0
-												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
 												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
 												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
 												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
 												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
-												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
 												;
 	}
 }
@@ -536,6 +526,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties(
 {
 	assert(physicalDevice);
 	assert(pImageFormatProperties);
+
+	//TODO usage, flags tiling etc.
+	//do all this per format...
+
 
 	VkFormat ycbcrConversionRequiredFormats[] =
 	{
@@ -644,7 +638,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(
 	assert(pImageFormatProperties);
 	assert(pImageFormatInfo);
 
-	//TODO
+	//TODO handle pNext
 
 	return vkGetPhysicalDeviceImageFormatProperties(physicalDevice,
 													pImageFormatInfo->format,
@@ -678,5 +672,6 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties2(
 	uint32_t*                                   pQueueFamilyPropertyCount,
 	VkQueueFamilyProperties2*                   pQueueFamilyProperties)
 {
-
+	assert(physicalDevice);
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
 }

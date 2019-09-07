@@ -41,8 +41,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(
 		}
 	}
 
-	//TODO
-	//pCreateInfo->flags
+	//TODO VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT
+
+	dp->freeAble = pCreateInfo->flags & VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 	void* dsmem = ALLOCATE(sizeof(_descriptorSet)*pCreateInfo->maxSets, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!dsmem)
@@ -131,7 +132,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateDescriptorSets(
 
 		_descriptorSetLayout* dsl = pAllocateInfo->pSetLayouts[c];
 
-		//TODO flags
+		//TODO dsl flags
 
 		uint32_t imageDescriptorCount = 0, bufferDescriptorCount = 0, texelBufferDescriptorCount = 0;
 		for(uint32_t d = 0; d < dsl->bindingsCount; ++d)
@@ -186,8 +187,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateDescriptorSets(
 
 		//TODO immutable samplers
 
-		//TODO maybe we could sort them in place
-		//based on binding number
 		uint32_t imageDescriptorCounter = 0, bufferDescriptorCounter = 0, texelBufferDescriptorCounter = 0;
 		for(uint32_t d = 0; d < dsl->bindingsCount; ++d)
 		{
@@ -237,6 +236,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorSetLayout(
 {
 	assert(device);
 	assert(pCreateInfo);
+
+	//TODO flags
 
 	_descriptorSetLayout* dsl = ALLOCATE(sizeof(_descriptorSetLayout), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
@@ -361,6 +362,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetDescriptorPool(
 	VkDescriptorPool                            descriptorPool,
 	VkDescriptorPoolResetFlags                  flags)
 {
+	//TODO
 	return VK_SUCCESS;
 }
 
@@ -369,7 +371,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorPool(
 	VkDescriptorPool                            descriptorPool,
 	const VkAllocationCallbacks*                pAllocator)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorSets(
@@ -408,7 +410,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorSetLayout(
 	VkDescriptorSetLayout                       descriptorSetLayout,
 	const VkAllocationCallbacks*                pAllocator)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkFreeDescriptorSets(
@@ -417,6 +419,14 @@ VKAPI_ATTR VkResult VKAPI_CALL vkFreeDescriptorSets(
 	uint32_t                                    descriptorSetCount,
 	const VkDescriptorSet*                      pDescriptorSets)
 {
+	assert(device);
+	assert(descriptorPool);
+
+	_descriptorPool* dp = descriptorPool;
+	assert(dp->freeAble);
+
+	//TODO
+
 	return VK_SUCCESS;
 }
 
@@ -427,7 +437,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorUpdateTemplate(
 	const VkAllocationCallbacks*                pAllocator,
 	VkDescriptorUpdateTemplate*                 pDescriptorUpdateTemplate)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorUpdateTemplate(
@@ -435,7 +445,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorUpdateTemplate(
 	VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
 	const VkAllocationCallbacks*                pAllocator)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSetWithTemplate(
@@ -444,7 +454,7 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSetWithTemplate(
 	VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
 	const void*                                 pData)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetLayoutSupport(
@@ -452,5 +462,5 @@ VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetLayoutSupport(
 	const VkDescriptorSetLayoutCreateInfo*      pCreateInfo,
 	VkDescriptorSetLayoutSupport*               pSupport)
 {
-
+	//TODO
 }

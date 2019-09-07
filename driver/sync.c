@@ -434,13 +434,14 @@ VKAPI_ATTR void VKAPI_CALL vkCmdWaitEvents(
 	uint32_t                                    imageMemoryBarrierCount,
 	const VkImageMemoryBarrier*                 pImageMemoryBarriers)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkGetEventStatus(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
+	//TODO
 	return VK_SUCCESS;
 }
 
@@ -449,7 +450,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyEvent(
 	VkEvent                                     event,
 	const VkAllocationCallbacks*                pAllocator)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdResetEvent(
@@ -457,7 +458,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdResetEvent(
 	VkEvent                                     event,
 	VkPipelineStageFlags                        stageMask)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateEvent(
@@ -466,6 +467,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateEvent(
 	const VkAllocationCallbacks*                pAllocator,
 	VkEvent*                                    pEvent)
 {
+	//TODO
 	return VK_SUCCESS;
 }
 
@@ -473,6 +475,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetEvent(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
+	//TODO
 	return VK_SUCCESS;
 }
 
@@ -480,6 +483,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkSetEvent(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
+	//TODO
 	return VK_SUCCESS;
 }
 
@@ -488,5 +492,5 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetEvent(
 	VkEvent                                     event,
 	VkPipelineStageFlags                        stageMask)
 {
-
+	//TODO
 }

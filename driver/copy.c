@@ -1,7 +1,5 @@
 #include "common.h"
 
-//TODO
-
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyBufferToImage(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    srcBuffer,
@@ -10,7 +8,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyBufferToImage(
 	uint32_t                                    regionCount,
 	const VkBufferImageCopy*                    pRegions)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdBlitImage(
@@ -23,7 +21,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBlitImage(
 	const VkImageBlit*                          pRegions,
 	VkFilter                                    filter)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdResolveImage(
@@ -35,7 +33,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdResolveImage(
 	uint32_t                                    regionCount,
 	const VkImageResolve*                       pRegions)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyImageToBuffer(
@@ -46,7 +44,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyImageToBuffer(
 	uint32_t                                    regionCount,
 	const VkBufferImageCopy*                    pRegions)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyImage(
@@ -58,7 +56,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyImage(
 	uint32_t                                    regionCount,
 	const VkImageCopy*                          pRegions)
 {
-
+	//TODO
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdCopyBuffer(
@@ -68,5 +66,5 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyBuffer(
 	uint32_t                                    regionCount,
 	const VkBufferCopy*                         pRegions)
 {
-
+	//TODO
 }

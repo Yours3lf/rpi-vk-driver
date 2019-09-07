@@ -62,7 +62,7 @@ void vc4_bo_label(int fd, uint32_t bo, const char* name);
 int vc4_bo_get_dmabuf(int fd, uint32_t bo);
 void* vc4_bo_map(int fd, uint32_t bo, uint32_t offset, uint32_t size);
 void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmittedSeqno, uint64_t* lastFinishedSeqno);
-uint32_t getBOAlignedSize(uint32_t size);
+uint32_t getBOAlignedSize(uint32_t size, uint32_t alignment);
 
 //TODO perfmon
 

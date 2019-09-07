@@ -181,7 +181,8 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceMemoryProperties2(
 	VkPhysicalDevice                            physicalDevice,
 	VkPhysicalDeviceMemoryProperties2*          pMemoryProperties)
 {
-
+	assert(physicalDevice);
+	vkGetPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetDeviceMemoryCommitment(
@@ -189,5 +190,5 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceMemoryCommitment(
 	VkDeviceMemory                              memory,
 	VkDeviceSize*                               pCommittedMemoryInBytes)
 {
-
+	//TODO
 }

@@ -17,8 +17,8 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	//TODO HW-2116 workaround
 	//TODO GFXH-515 / SW-5891 workaround
 
-	//TODO handle multiple attachments etc.
-	_image* i = fb->attachmentViews[rp->subpasses[cb->currentSubpass].pColorAttachments[0].attachment].image;
+	//TODO make this as lightweight as possible to make sure
+	//as many drawcalls can be submitted as possible
 
 	//uint32_t vertexBufferDirty;
 	//uint32_t indexBufferDirty;
@@ -51,19 +51,19 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 		//Clip Window
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
 		clInsertClipWindow(&commandBuffer->binCl,
-						   i->width,
-						   i->height,
-						   0, //bottom pixel coord
-						   0); //left pixel coord
+						   cb->viewport.width,
+						   cb->viewport.height,
+						   cb->viewport.y, //bottom pixel coord
+						   cb->viewport.x); //left pixel coord
 
 		//TODO why flipped???
 		//Clipper XY Scaling
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_XY_SCALING_length);
-		clInsertClipperXYScaling(&commandBuffer->binCl, (float)(i->width) * 0.5f * 16.0f, -1.0f * (float)(i->height) * 0.5f * 16.0f);
+		clInsertClipperXYScaling(&commandBuffer->binCl, (float)(cb->viewport.width) * 0.5f * 16.0f, -1.0f * (float)(cb->viewport.height) * 0.5f * 16.0f);
 
 		//Viewport Offset
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
-		clInsertViewPortOffset(&commandBuffer->binCl, i->width >> 1, i->height >> 1);
+		clInsertViewPortOffset(&commandBuffer->binCl, ((int16_t)cb->viewport.width) >> 1, ((int16_t)cb->viewport.height) >> 1);
 
 		cb->viewportDirty = 0;
 	}
@@ -73,9 +73,9 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 		//Configuration Bits
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
 		clInsertConfigurationBits(&commandBuffer->binCl,
-								  1, //TODO earlyz updates enable
-								  0, //TODO earlyz enable
-								  0, //TODO z updates enable
+								  1, //earlyz updates enable
+								  1, //earlyz enable
+								  cb->graphicsPipeline->depthWriteEnable, //z updates enable
 								  cb->graphicsPipeline->depthTestEnable ? getDepthCompareOp(cb->graphicsPipeline->depthCompareOp) : V3D_COMPARE_FUNC_ALWAYS, //depth compare func
 								  0, //coverage read mode
 								  0, //coverage pipe select
@@ -121,13 +121,6 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 
 
 
-	//Primitive List Format
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_PRIMITIVE_LIST_FORMAT_length);
-	clInsertPrimitiveListFormat(&commandBuffer->binCl,
-								1, //16 bit
-								getTopology(cb->graphicsPipeline->topology)); //tris
-
-	//TODO how to get address?
 	//GL Shader State
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
 	clInsertShaderState(&commandBuffer->binCl,
@@ -173,7 +166,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 						 cb->binCl.currMarker->handlesSize,
 						 !cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->hasThreadSwitch,
 						 0, //TODO point size included in shaded vertex data?
-						 1, //TODO enable clipping?
+						 1, //enable clipping
 						 0, //TODO fragment number of unused uniforms?
 						 0, //TODO fragment number of varyings?
 						 0, //fragment uniform address?
@@ -204,8 +197,8 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 							vertexBuffer, //reloc address
 							getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[0].format),
 							cb->graphicsPipeline->vertexBindingDescriptions[0].stride, //stride
-							0, //TODO vertex vpm offset
-							0  //TODO coordinte vpm offset
+							0, //vertex vpm offset
+							0  //coordinte vpm offset
 							);
 
 
@@ -394,7 +387,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirect(
 	uint32_t                                    drawCount,
 	uint32_t                                    stride)
 {
-
+	UNSUPPORTED(vkCmdDrawIndexedIndirect);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndirect(
@@ -404,5 +397,5 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndirect(
 	uint32_t                                    drawCount,
 	uint32_t                                    stride)
 {
-
+	UNSUPPORTED(vkCmdDrawIndirect);
 }

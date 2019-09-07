@@ -17,8 +17,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(
 		uint32_t*                                   pPropertyCount,
 		VkExtensionProperties*                      pProperties)
 {
-	assert(!pLayerName); //TODO layers ignored for now
 	assert(pPropertyCount);
+
+	//TODO layers
 
 	if(!pProperties)
 	{
@@ -71,9 +72,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 
 	(*pInstance)->numEnabledExtensions = 0;
 
-	//TODO: possibly we need to load layers here
-	//and store them in pInstance
-	assert(pCreateInfo->enabledLayerCount == 0);
+	//TODO handle layers
 
 	if(pCreateInfo->enabledExtensionCount)
 	{
@@ -99,7 +98,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 	//TODO ignored for now
 	//pCreateInfo->pApplicationInfo
 
-	//TODO is there a way to check if there's a gpu (and it's the rPi)?
+	//we assume we are on the RPi and the GPU exists...
 	int gpuExists = access( "/dev/dri/card0", F_OK ) != -1; assert(gpuExists);
 
 	(*pInstance)->dev.path = "/dev/dri/card0";
@@ -341,5 +340,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceLayerProperties(
 	uint32_t*                                   pPropertyCount,
 	VkLayerProperties*                          pProperties)
 {
+	//TODO handle layers
 	return VK_SUCCESS;
 }
