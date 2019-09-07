@@ -43,6 +43,8 @@ codes are allowed:
 - QualityWarning
 - CompatibilityWarning 
 
+There are about 470.000 conformance tests.
+
 ## FAQ
 ### Will this ever be a fully functional VK driver?
 As far as I know the PI is NOT fully VK capable on the hardware level. I can already see that some things will need to be emulated and others won't ever be emulated. The compiler is also a huge unknown at this point as I plan to write one from scratch.
