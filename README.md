@@ -33,7 +33,7 @@
 - [ ] Pipeline cache support
 - [ ] Direct to display support
 - [ ] Secondary command buffers
-
+- [ ] MSAA support
 - [ ] Try to pass as much of the VK CTS as possible with existing feature set
 
 
@@ -84,3 +84,7 @@ CPU performance (eg. number of draw calls) should be enough on the quad-core PIs
 - I'll probably add something to indicate towards the developer that things are emulated or not supported at all.
 - Videocore IV provides some performance counters these will be exposed
 - Videocore IV supports some texture formats that are not present in the spec
+  - bw1: 1 bit black and white
+  - a4: 4 bit alpha
+  - a1: 1 bit alpha
+- vector graphics support?
