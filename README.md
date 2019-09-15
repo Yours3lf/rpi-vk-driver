@@ -10,30 +10,33 @@
   - [ ] varyings
   - [ ] Depth / stencil buffers
   - [ ] Multiple vertex attributes
+  - [ ] Indexed draw calls
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
 - [x] Resources
   - [x] Descriptor support
   - [x] VkSampler support
   - [x] Push constant support
-- [ ] Multipass rendering
+- [ ] Render to texture features
   - [ ] VkRenderPass support
   - [ ] Subpass support
   - [ ] Multiple attachments
+  - [ ] MSAA support
 - [ ] Synchronization
   - [ ] vkCmdPipelineBarrier support
 - [ ] Performance
   - [ ] Performance counters
   - [ ] Queries
   - [ ] Shader performance info
-- [ ] Indexed draw call support
-- [ ] Clear command support
-- [ ] Copy command support
-- [ ] Layer support
-- [ ] Pipeline cache support
-- [ ] Direct to display support
+- [ ] Emulated features
+  - [ ] Clear command support
+  - [ ] Copy command support
+- [ ] Platform features
+  - [ ] Layer support
+  - [ ] Pipeline cache support
+- [ ] WSI
+  - [ ] Direct to display support
 - [ ] Secondary command buffers
-- [ ] MSAA support
 - [ ] Try to pass as much of the VK CTS as possible with existing feature set
 
 
