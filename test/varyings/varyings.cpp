@@ -845,7 +845,6 @@ void CreateShaders()
 0x500009e7009e7000 sig_unlock_score nop nop, r0, r0 ; nop nop, r0, r0
 
 VS prog 2/1 QPU:
-0xd002102702821f80 sig_small_imm fsub rb0, 2.0, uni ; nop nop, r0, r0
 0x00401a00:
 0000 0000 0‭100 0000 0001 1010 0000 0000‬
 ///addr: 0
@@ -854,6 +853,7 @@ VS prog 2/1 QPU:
 ///horizontal
 ///stride=1
 ///vectors to read = 4
+0xd002102702821f80 sig_small_imm fsub rb0, 2.0, uni ; nop nop, r0, r0
 0xe0024c6700401a00 load_imm vr_setup, nop, 0x00401a00 (0.000000)
 0x100049e220c20037 nop nop, r0, r0 ; fmul r2, vpm_read, uni
 0x100049e3209c0017 nop nop, r0, r0 ; fmul r3, r2, rb0
@@ -869,10 +869,29 @@ VS prog 2/1 QPU:
 0x300009e7009e7000 sig_end nop nop, r0, r0 ; nop nop, r0, r0
 0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
 0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
+
+CS prog 2/2 QPU:
+0xe0024c6700201a00 load_imm vr_setup, nop, 0x00201a00 (0.000000)
+0x100208a715c27d80 mov r2, vpm_read ; nop nop, r0, r0
+0xe0025c6700001a00 load_imm vw_setup, nop, 0x00001a00 (0.000000)
+0x100248f095c27d92 mov r3, vpm_read ; mov vpm, r2
+0x10024c21358276de mov vpm, r3 ; fmul r1, r3, uni
+0xd00208e702821f80 sig_small_imm fsub r3, 2.0, uni ; nop nop, r0, r0
+0x100049e220827016 nop nop, r0, r0 ; fmul r2, r2, uni
+0x100049e0209e7013 nop nop, r0, r0 ; fmul r0, r2, r3
+0x10124021279e700b ftoi ra0.16a, r0, r0 ; fmul r1, r1, r3
+0x10220027079e7240 ftoi ra0.16b, r1, r1 ; nop nop, r0, r0
+0xd0020c27159c0fc0 sig_small_imm mov vpm, 0 ; nop nop, r0, r0
+0xd0020c27159e0fc0 sig_small_imm mov vpm, 1.0 ; nop nop, r0, r0
+0x10020c2715027d80 mov vpm, ra0 ; nop nop, r0, r0
+0x10020c2715827d80 mov vpm, uni ; nop nop, r0, r0
+0x10020c27159e76c0 mov vpm, r3 ; nop nop, r0, r0
+0x300009e7009e7000 sig_end nop nop, r0, r0 ; nop nop, r0, r0
+0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
+0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
 	/**/
 
 
-	//TODO doesn't work for some reason...
 	char vs_asm_code[] =
 			///0x40000000 = 2.0
 			///uni = 1.0
@@ -994,7 +1013,7 @@ VS prog 2/1 QPU:
 			"sig_none ; nop = nop(r0, r0) ; r2 = fmul.always(r2, r3);\n"
 			"sig_none ; nop = nop.pm(r0, r0) ; r0.8b = fmul.always(r1, r2) ;"
 			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0) ; r0.8a = v8min.always(b, b) ;"
-			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 1) ; r0.8d = v8min.always(b, b) ;"
+			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0x3f800000) ; r0.8d = v8min.always(b, b) ;"
 			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -1031,7 +1050,18 @@ VS prog 2/1 QPU:
 			"sig_none ; r3 = fadd.pm.always(r0, r5) ; r0.8c = v8min.always(r2, r2) ;"
 			"sig_none ; nop = nop.pm(r0, r0) ; r0.8b = v8min.always(r3, r3) ;"
 			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0) ; r0.8a = v8min.always(b, b) ;"
-			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 1) ; r0.8d = v8min.always(b, b) ;"
+			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0x3f800000) ; r0.8d = v8min.always(b, b) ;"
+
+			///"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0x3f800000) ; r0.8d = v8min.always(b, b) ;"
+			///"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0x3f800000) ; r0.8c = v8min.always(b, b) ;"
+			///"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0x3f800000) ; r0.8b = v8min.always(b, b) ;"
+			///"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0x3f800000) ; r0.8a = v8min.always(b, b) ;"
+
+			///"sig_none ; nop = nop.pm(r0, r0, pay_zw, nop) ; r0.8d = v8min.always(a, a) ;"
+			///"sig_none ; nop = nop.pm(r0, r0, pay_zw, nop) ; r0.8c = v8min.always(a, a) ;"
+			///"sig_none ; nop = nop.pm(r0, r0, pay_zw, nop) ; r0.8b = v8min.always(a, a) ;"
+			///"sig_none ; nop = nop.pm(r0, r0, pay_zw, nop) ; r0.8a = v8min.always(a, a) ;"
+
 			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"

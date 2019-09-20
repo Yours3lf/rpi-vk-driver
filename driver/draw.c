@@ -197,7 +197,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 						 0, //TODO point size included in shaded vertex data?
 						 1, //enable clipping
 						 0, //TODO fragment number of used uniforms?
-						 0, //TODO fragment number of varyings?
+						 cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->numVaryings, //fragment number of varyings
 						 0, //fragment uniform address?
 						 fragCode, //fragment code address
 						 0, //TODO vertex number of used uniforms?

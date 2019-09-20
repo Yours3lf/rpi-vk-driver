@@ -220,6 +220,7 @@ typedef struct VkShaderModule_T
 	VkRpiAssemblyMappingEXT* mappings;
 	uint32_t numMappings;
 	uint32_t hasThreadSwitch;
+	uint32_t numVaryings;
 } _shaderModule;
 
 typedef struct VkDescriptorSetLayout_T

@@ -67,6 +67,31 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
 				}
 			}
 
+			shader->numVaryings = 0;
+			for(uint64_t d = 0; d < numInstructions; ++d)
+			{
+				unsigned is_sem = ((instructions[d] & (0x7fll << 57)) >> 57) == 0x74;
+				unsigned sig_bits = ((instructions[d] & (0xfll << 60)) >> 60);
+
+				//if it's an ALU instruction
+				if(!is_sem && sig_bits != 14 && sig_bits != 15)
+				{
+					unsigned raddr_a = ((instructions[d] & (0x3fll << 18)) >> 18);
+					unsigned raddr_b = ((instructions[d] & (0x3fll << 12)) >> 12);
+
+					if(raddr_a == 35)
+					{
+						shader->numVaryings++;
+					}
+
+					//don't count small immediates
+					if(sig_bits != 13 && raddr_b == 35)
+					{
+						shader->numVaryings++;
+					}
+				}
+			}
+
 			printf("\n");
 
 			FREE(instructions);
