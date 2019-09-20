@@ -37,6 +37,18 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	//uint32_t descriptorSetDirty;
 	//uint32_t pushConstantDirty;
 
+	//TODO multiple viewports
+	VkViewport vp;
+	vp = cb->graphicsPipeline->viewports[0];
+
+	for(uint32_t c = 0; c < cb->graphicsPipeline->dynamicStateCount; ++c)
+	{
+		if(cb->graphicsPipeline->dynamicStates[c] == VK_DYNAMIC_STATE_VIEWPORT)
+		{
+			vp = cb->viewport;
+		}
+	}
+
 	//if(cb->lineWidthDirty)
 	{
 		//Line width
@@ -51,19 +63,19 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 		//Clip Window
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
 		clInsertClipWindow(&commandBuffer->binCl,
-						   cb->viewport.width,
-						   cb->viewport.height,
-						   cb->viewport.y, //bottom pixel coord
-						   cb->viewport.x); //left pixel coord
+						   vp.width,
+						   vp.height,
+						   vp.y, //bottom pixel coord
+						   vp.x); //left pixel coord
 
 		//TODO why flipped???
 		//Clipper XY Scaling
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_XY_SCALING_length);
-		clInsertClipperXYScaling(&commandBuffer->binCl, (float)(cb->viewport.width) * 0.5f * 16.0f, -1.0f * (float)(cb->viewport.height) * 0.5f * 16.0f);
+		clInsertClipperXYScaling(&commandBuffer->binCl, (float)(vp.width) * 0.5f * 16.0f, -1.0f * (float)(vp.height) * 0.5f * 16.0f);
 
 		//Viewport Offset
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
-		clInsertViewPortOffset(&commandBuffer->binCl, ((int16_t)cb->viewport.width) >> 1, ((int16_t)cb->viewport.height) >> 1);
+		clInsertViewPortOffset(&commandBuffer->binCl, ((int16_t)vp.width) >> 1, ((int16_t)vp.height) >> 1);
 
 		cb->viewportDirty = 0;
 	}

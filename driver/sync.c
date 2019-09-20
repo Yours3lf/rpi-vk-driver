@@ -35,6 +35,8 @@
 //ie. stall shader until a value is something?
 //and increment said value?
 //but we'd need to patch shaders and it'd probably be slow...
+//
+//Apparently the RPi contains 16 4bit semaphores that are accessible for each QPU via SFU
 //-----------------------------
 
 /*

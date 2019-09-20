@@ -1340,7 +1340,7 @@ void CreateTexture()
 							 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
 		//TODO
-		//vkEndCommandBuffer(copyCommandBuffer);
+		vkEndCommandBuffer(copyCommandBuffer);
 
 		VkFenceCreateInfo fenceInfo = {};
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -1355,9 +1355,9 @@ void CreateTexture()
 		submitInfo.pCommandBuffers = &copyCommandBuffer;
 
 		//TODO
-		//vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
+		vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
 
-		//vkWaitForFences(device, 1, &fence, VK_TRUE, -1);
+		vkWaitForFences(device, 1, &fence, VK_TRUE, -1);
 
 		vkDestroyFence(device, fence, 0);
 		vkFreeCommandBuffers(device, commandPool, 1, &copyCommandBuffer);
