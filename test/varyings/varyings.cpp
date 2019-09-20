@@ -804,6 +804,73 @@ void CreateFramebuffer()
 
 void CreateShaders()
 {
+	/**
+///Varyings are interpolated using (A * (x - x0) + B * (y - y0)) * W + C
+///Hardware calculates (A * (x - x0) + B * (y - y0)) for us for each varying component
+///but we still need to mul by W and add C
+///C is loaded into R5 when we read a varying (to be used in next instruction)
+
+///exploits multi-threaded fs programs
+///the last cycle of the vertex shader writes W to RA14 and Z to RB14
+///since the regfile is flipped when using multi-threading, they will be persisted to RA15 and RB15
+///Otherwise they would be persisted to RA14 and RB14
+
+//FS prog reading tex with varyings
+0x100049e0203e303e nop nop, r0, r0 ; fmul r0, vary, ra15 //mul by w
+0x100248e1213e317e fadd r3, r0, r5 ; fmul r1, vary, ra15 //add interpolation coefficient C, mul by w
+0x600208a7019e7340 sig_thread_switch fadd r2, r1, r5 ; nop nop, r0, r0
+0x10021e67159e7480 mov tmu0_t, r2 ; nop nop, r0, r0
+0x10021e27159e76c0 mov tmu0_s, r3 ; nop nop, r0, r0
+0xa00009e7009e7000 load_tmu0 nop nop, r0, r0 ; nop nop, r0, r0
+0x190208e7049e7900 fmax r3, r4.8a, r4.8a ; nop nop, r0, r0
+0x1b424823849e791b fmax r0, r4.8b, r4.8b ; mov r3.8a, r3
+0x1d524863849e7900 fmax r1, r4.8c, r4.8c ; mov r3.8b, r0
+0x1f6248a3849e7909 fmax r2, r4.8d, r4.8d ; mov r3.8c, r1
+0x117049e3809e7012 nop nop, r0, r0 ; mov r3.8d, r2
+0x10020ba7159e76c0 mov tlb_color_all, r3 ; nop nop, r0, r0
+0x300009e7009e7000 sig_end nop nop, r0, r0 ; nop nop, r0, r0
+0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
+0x500009e7009e7000 sig_unlock_score nop nop, r0, r0 ; nop nop, r0, r0
+
+//FS prog just outputting varyings
+0x100049e0203e303e nop nop, r0, r0 ; fmul r0, vary, ra15
+0x10024862213e317e fadd r1, r0, r5 ; fmul r2, vary, ra15
+0x114248e0819e7549 fadd r3, r2, r5 ; mov r0.8a, r1
+0x115049e0809e701b nop nop, r0, r0 ; mov r0.8b, r3
+0xd16049e0809c003f sig_small_imm nop nop, r0, r0 ; mov r0.8c, 0
+0xd17049e0809e003f sig_small_imm nop nop, r0, r0 ; mov r0.8d, 1.0
+0x10020ba7159e7000 mov tlb_color_all, r0 ; nop nop, r0, r0
+0x300009e7009e7000 sig_end nop nop, r0, r0 ; nop nop, r0, r0
+0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
+0x500009e7009e7000 sig_unlock_score nop nop, r0, r0 ; nop nop, r0, r0
+
+VS prog 2/1 QPU:
+0xd002102702821f80 sig_small_imm fsub rb0, 2.0, uni ; nop nop, r0, r0
+0x00401a00:
+0000 0000 0‭100 0000 0001 1010 0000 0000‬
+///addr: 0
+///size: 32bit
+///packed
+///horizontal
+///stride=1
+///vectors to read = 4
+0xe0024c6700401a00 load_imm vr_setup, nop, 0x00401a00 (0.000000)
+0x100049e220c20037 nop nop, r0, r0 ; fmul r2, vpm_read, uni
+0x100049e3209c0017 nop nop, r0, r0 ; fmul r3, r2, rb0
+0x1012402027c206f7 ftoi ra0.16a, r3, r3 ; fmul r0, vpm_read, uni
+0x1002482135c00d87 mov r0, vpm_read ; fmul r1, r0, rb0
+0x1022402187c27276 ftoi ra0.16b, r1, r1 ; mov r1, vpm_read
+0xe0025c6700001a00 load_imm vw_setup, nop, 0x00001a00 (0.000000)
+0x10020c2715027d80 mov vpm, ra0 ; nop nop, r0, r0
+0x10020c2715827d80 mov vpm, uni ; nop nop, r0, r0
+0x10020c27159c0fc0 mov vpm, rb0 ; nop nop, r0, r0
+0x10020c27159e7000 mov vpm, r0 ; nop nop, r0, r0
+0x10020c27159e7240 mov vpm, r1 ; nop nop, r0, r0
+0x300009e7009e7000 sig_end nop nop, r0, r0 ; nop nop, r0, r0
+0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
+0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
+	/**/
+
 
 	//TODO doesn't work for some reason...
 	char vs_asm_code[] =
@@ -818,8 +885,8 @@ void CreateShaders()
 			///packed
 			///horizontal
 			///stride=1
-			///vectors to read = 2 (how many components)
-			"sig_load_imm ; vr_setup = load32.always(0x00201a00) ; nop = load32.always() ;\n"
+			///vectors to read = 4 (TODO not exactly clear what this means...)
+			"sig_load_imm ; vr_setup = load32.always(0x00401a00) ; nop = load32.always() ;\n"
 			///uni = viewportXScale
 			///r0 = vpm * uni
 			"sig_none ; nop = nop(r0, r0, vpm_read, uni) ; r0 = fmul.always(a, b) ;\n"
@@ -829,9 +896,11 @@ void CreateShaders()
 			///ra0.16a = int(r1), r2 = vpm * uni
 			"sig_none ; rx0.16a = ftoi.always(r1, r1, vpm_read, uni) ; r2 = fmul.always(a, b) ;\n"
 			///r3 = r2 * rb0
-			"sig_none ; nop = nop(r0, r0, nop, rb0) ; r3 = fmul.always(r2, b) ;\n"
+			///r0 = vpm
+			"sig_none ; r0 = or.always(a, a, vpm_read, rb0) ; r3 = fmul.always(r2, b) ;\n"
 			///ra0.16b = int(r3)
-			"sig_none ; rx0.16b = ftoi.always(r3, r3) ; nop = nop(r0, r0) ;\n"
+			///r1 = vpm
+			"sig_none ; rx0.16b = ftoi.always(r3, r3, vpm_read, nop) ; r1 = v8min.always(a, a) ;\n"
 			///set up VPM write for subsequent writes
 			///0x00001a00: 0000 0000 0000 0000 0001 1010 0000 0000
 			///addr: 0
@@ -850,6 +919,10 @@ void CreateShaders()
 			/// 1.0 / Wc
 			///vpm = rb0 (1)
 			"sig_none ; vpm = or.always(b, b, nop, rb0) ; nop = nop(r0, r0);\n"
+			///vpm = r0
+			"sig_none ; vpm = or.always(r0, r0) ; nop = nop(r0, r0);\n"
+			///vpm = r1
+			"sig_none ; vpm = or.always(r1, r1) ; nop = nop(r0, r0);\n"
 			///END
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
@@ -929,11 +1002,36 @@ void CreateShaders()
 				"\0";
 	/**/
 
-	/**/
+	/**
 	//display a color
 	char fs_asm_code[] =
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_load_imm ; r0 = load32.always(0xffa14ccc) ; nop = load32() ;"
+			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+				"\0";
+	/**/
+
+	/**/
+	//Varyings are interpolated using (A * (x - x0) + B * (y - y0)) * W + C
+	//Hardware calculates (A * (x - x0) + B * (y - y0)) for us for each varying component
+	//but we still need to mul by W and add C
+	//C is loaded into R5 when we read a varying (to be used in next instruction)
+
+	//display a varying
+	char fs_asm_code[] =
+			///r0 = varyingX * W
+			"sig_none ; nop = nop(r0, r0, pay_zw, vary) ; r0 = fmul.always(a, b) ;"
+			///r2 = r0 + r5 (C)
+			///r0 = varyingY * W
+			"sig_none ; r2 = fadd.always(r0, r5, pay_zw, vary) ; r0 = fmul.always(a, b) ;"
+			///r3 = r0 + r5 (C)
+			"sig_none ; r3 = fadd.pm.always(r0, r5) ; r0.8c = v8min.always(r2, r2) ;"
+			"sig_none ; nop = nop.pm(r0, r0) ; r0.8b = v8min.always(r3, r3) ;"
+			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0) ; r0.8a = v8min.always(b, b) ;"
+			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 1) ; r0.8d = v8min.always(b, b) ;"
 			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -1027,22 +1125,30 @@ void CreatePipeline()
 	VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
 		0,
-		sizeof(float) * 2,
+		sizeof(float) * 2 * 2,
 		VK_VERTEX_INPUT_RATE_VERTEX
 	};
 
-	VkVertexInputAttributeDescription vertexInputAttributeDescription =
+	VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] =
 	{
-		0,
-		0,
-		VK_FORMAT_R32G32_SFLOAT,
-		0
+		{
+			0,
+			0,
+			VK_FORMAT_R32G32_SFLOAT,
+			0
+		},
+		{
+			1,
+			0,
+			VK_FORMAT_R32G32_SFLOAT,
+			sizeof(float) * 2
+		}
 	};
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexAttributeDescriptionCount = 1;
-	vertexInputInfo.pVertexAttributeDescriptions = &vertexInputAttributeDescription;
+	vertexInputInfo.vertexAttributeDescriptionCount = 2;
+	vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
 
@@ -1149,8 +1255,8 @@ void CreateVertexBuffer()
 
 		float vertices[] =
 		{ // verts		texcoords
-			-1, -1,		0, 0
-			 1, -1,		1, 0
+			-1, -1,		0, 0,
+			 1, -1,		1, 0,
 			 0,  1,		0.5, 1
 		};
 

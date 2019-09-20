@@ -704,16 +704,16 @@ void clInsertShaderRecord(ControlList* cls,
 						  uint32_t fragmentShaderIsSingleThreaded, //0/1
 						  uint32_t pointSizeIncludedInShadedVertexData, //0/1
 						  uint32_t enableClipping, //0/1
-						  uint32_t fragmentNumberOfUnusedUniforms,
+						  uint32_t fragmentNumberOfUsedUniforms,
 						  uint32_t fragmentNumberOfVaryings,
 						  uint32_t fragmentUniformsAddress,
 						  ControlListAddress fragmentCodeAddress,
-						  uint32_t vertexNumberOfUnusedUniforms,
+						  uint32_t vertexNumberOfUsedUniforms,
 						  uint32_t vertexAttributeArraySelectBits,
 						  uint32_t vertexTotalAttributesSize,
 						  uint32_t vertexUniformsAddress,
 						  ControlListAddress vertexCodeAddress,
-						  uint32_t coordinateNumberOfUnusedUniforms,
+						  uint32_t coordinateNumberOfUsedUniforms,
 						  uint32_t coordinateAttributeArraySelectBits,
 						  uint32_t coordinateTotalAttributesSize,
 						  uint32_t coordinateUniformsAddress,
@@ -727,13 +727,13 @@ void clInsertShaderRecord(ControlList* cls,
 			moveBits(pointSizeIncludedInShadedVertexData, 1, 1) |
 			moveBits(enableClipping, 1, 2); cls->nextFreeByte++;
 	*cls->nextFreeByte = 0; cls->nextFreeByte++;
-	*(uint16_t*)cls->nextFreeByte = moveBits(fragmentNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte++;
+	*(uint16_t*)cls->nextFreeByte = moveBits(fragmentNumberOfUsedUniforms, 16, 0); cls->nextFreeByte++;
 	*cls->nextFreeByte |= fragmentNumberOfVaryings; cls->nextFreeByte++;
 	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &fragmentCodeAddress);
 	*(uint32_t*)cls->nextFreeByte = fragmentCodeAddress.offset; cls->nextFreeByte += 4;
 	*(uint32_t*)cls->nextFreeByte = fragmentUniformsAddress; cls->nextFreeByte += 4;
 
-	*(uint16_t*)cls->nextFreeByte = moveBits(vertexNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte += 2;
+	*(uint16_t*)cls->nextFreeByte = moveBits(vertexNumberOfUsedUniforms, 16, 0); cls->nextFreeByte += 2;
 	*cls->nextFreeByte = vertexAttributeArraySelectBits; cls->nextFreeByte++;
 	*cls->nextFreeByte = vertexTotalAttributesSize; cls->nextFreeByte++;
 	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &vertexCodeAddress);
@@ -742,7 +742,7 @@ void clInsertShaderRecord(ControlList* cls,
 	*(uint32_t*)cls->nextFreeByte = offset; cls->nextFreeByte += 4;
 	cls->nextFreeByte += 4;
 
-	*(uint16_t*)cls->nextFreeByte = moveBits(coordinateNumberOfUnusedUniforms, 16, 0); cls->nextFreeByte += 2;
+	*(uint16_t*)cls->nextFreeByte = moveBits(coordinateNumberOfUsedUniforms, 16, 0); cls->nextFreeByte += 2;
 	*cls->nextFreeByte = coordinateAttributeArraySelectBits; cls->nextFreeByte++;
 	*cls->nextFreeByte = coordinateTotalAttributesSize; cls->nextFreeByte++;
 	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &coordinateCodeAddress);

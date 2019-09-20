@@ -1301,7 +1301,14 @@ void disassemble_qpu_asm(uint64_t instruction)
 
 		if(raddr_a <= 31)
 		{
-			printf("ra%d", raddr_a);
+			if(raddr_a == 15)
+			{
+				printf("pay_zw");
+			}
+			else
+			{
+				printf("ra%d", raddr_a);
+			}
 		}
 		else
 		{
@@ -1372,7 +1379,14 @@ void disassemble_qpu_asm(uint64_t instruction)
 
 		if(raddr_a <= 31)
 		{
-			printf("ra%i", raddr_a);
+			if(raddr_a == 15)
+			{
+				printf("pay_zw");
+			}
+			else
+			{
+				printf("ra%d", raddr_a);
+			}
 		}
 		else
 		{
@@ -1401,7 +1415,14 @@ void disassemble_qpu_asm(uint64_t instruction)
 		{
 			if(raddr_b <= 31)
 			{
-				printf("rb%i", raddr_b);
+				if(raddr_b == 15)
+				{
+					printf("pay_zw");
+				}
+				else
+				{
+					printf("rb%d", raddr_b);
+				}
 			}
 			else
 			{

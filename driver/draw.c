@@ -138,7 +138,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	clInsertShaderState(&commandBuffer->binCl,
 						0, //shader state record address
 						0, //extended shader state record
-						cb->graphicsPipeline->vertexAttributeDescriptionCount);
+						cb->graphicsPipeline->vertexAttributeDescriptionCount & 0x7); //0 -> 8
 
 	//Vertex Array Primitives (draw call)
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
@@ -164,10 +164,27 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	commandBuffer->shaderRecCount++;
 	clFit(commandBuffer, &commandBuffer->shaderRecCl, V3D21_SHADER_RECORD_length);
 	ControlList relocCl = commandBuffer->shaderRecCl;
+
+	uint32_t bindingCount = 0;
+	uint32_t bindingSelectBits = 0;
+	for(uint32_t c = 0 ; c < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++c)
+	{
+		if(cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding])
+		{
+			bindingCount++;
+			bindingSelectBits |= 1 << cb->graphicsPipeline->vertexAttributeDescriptions[c].binding;
+		}
+	}
+
+	uint32_t attribSize = 0;
+	for(uint32_t c = 0; c < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++c)
+	{
+		attribSize += getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[c].format);
+	}
+
 	//TODO number of attribs
 	//3 is the number of type of possible shaders
-	int numAttribs = 1;
-	for(int c = 0; c < (3 + numAttribs)*4; ++c)
+	for(int c = 0; c < (3 + bindingCount)*4; ++c)
 	{
 		clInsertNop(&commandBuffer->shaderRecCl);
 	}
@@ -179,39 +196,45 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 						 !cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->hasThreadSwitch,
 						 0, //TODO point size included in shaded vertex data?
 						 1, //enable clipping
-						 0, //TODO fragment number of unused uniforms?
+						 0, //TODO fragment number of used uniforms?
 						 0, //TODO fragment number of varyings?
 						 0, //fragment uniform address?
 						 fragCode, //fragment code address
-						 0, //TODO vertex number of unused uniforms?
-						 1, //TODO vertex attribute array select bits
-						 8, //TODO vertex total attribute size
+						 0, //TODO vertex number of used uniforms?
+						 bindingSelectBits, //vertex attribute array select bits
+						 attribSize, //vertex total attribute size
 						 0, //vertex uniform address
 						 vertCode, //vertex shader code address
-						 0, //TODO coordinate number of unused uniforms?
-						 1, //TODO coordinate attribute array select bits
-						 8, //TODO coordinate total attribute size
+						 0, //TODO coordinate number of used uniforms?
+						 bindingSelectBits, //coordinate attribute array select bits
+						 attribSize, //coordinate total attribute size
 						 0, //coordinate uniform address
 						 coordCode  //coordinate shader code address
 						 );
 
-	ControlListAddress vertexBuffer = {
-		.handle = cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[0].location]->boundMem->bo,
-		.offset = 0,
-	};
+	for(uint32_t c = 0 ; c < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++c)
+	{
+		if(cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding])
+		{
+			ControlListAddress vertexBuffer = {
+				.handle = cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundMem->bo,
+				.offset = cb->graphicsPipeline->vertexAttributeDescriptions[c].offset,
+			};
 
-	clFit(commandBuffer, &commandBuffer->shaderRecCl, V3D21_ATTRIBUTE_RECORD_length);
-	clInsertAttributeRecord(&commandBuffer->shaderRecCl,
-							&relocCl,
-							&commandBuffer->handlesCl,
-							cb->binCl.currMarker->handlesBuf,
-							cb->binCl.currMarker->handlesSize,
-							vertexBuffer, //reloc address
-							getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[0].format),
-							cb->graphicsPipeline->vertexBindingDescriptions[0].stride, //stride
-							0, //vertex vpm offset
-							0  //coordinte vpm offset
-							);
+			clFit(commandBuffer, &commandBuffer->shaderRecCl, V3D21_ATTRIBUTE_RECORD_length);
+			clInsertAttributeRecord(&commandBuffer->shaderRecCl,
+									&relocCl,
+									&commandBuffer->handlesCl,
+									cb->binCl.currMarker->handlesBuf,
+									cb->binCl.currMarker->handlesSize,
+									vertexBuffer, //reloc address
+									getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding].format),
+									cb->graphicsPipeline->vertexBindingDescriptions[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding].stride, //stride
+									0, //vertex vpm offset
+									0  //coordinte vpm offset
+									);
+		}
+	}
 
 
 
