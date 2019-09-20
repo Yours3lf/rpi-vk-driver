@@ -59,7 +59,7 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
 
 			for(uint64_t c = 0; c < numInstructions; ++c)
 			{
-				if((instructions[c] & (0xf << 60)) == (2 << 60))
+				if((instructions[c] & (0xfll << 60)) == (2ll << 60))
 				{
 					shader->hasThreadSwitch = 1;
 					break;
