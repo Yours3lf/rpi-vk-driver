@@ -804,6 +804,7 @@ void CreateFramebuffer()
 
 void CreateShaders()
 {
+
 	//TODO doesn't work for some reason...
 	char vs_asm_code[] =
 			///0x40000000 = 2.0
@@ -1125,7 +1126,7 @@ uint32_t getMemoryTypeIndex(VkPhysicalDeviceMemoryProperties deviceMemoryPropert
 
 void CreateVertexBuffer()
 {
-	unsigned vboSize = sizeof(float) * 2 * 3; //3 x vec2
+	unsigned vboSize = sizeof(float) * 2 * 2 * 3; //3 x vec2 x 2
 
 	VkMemoryRequirements mr;
 
@@ -1147,10 +1148,10 @@ void CreateVertexBuffer()
 		res = vkAllocateMemory(device, &mai, 0, &vertexBufferMemory);
 
 		float vertices[] =
-		{
-			-1, -1,
-			1, -1,
-			0, 1
+		{ // verts		texcoords
+			-1, -1,		0, 0
+			 1, -1,		1, 0
+			 0,  1,		0.5, 1
 		};
 
 		void* data;
