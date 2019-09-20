@@ -119,11 +119,11 @@ typedef enum {
 static const char *qpu_sig_bits_str[] = {
 		[QPU_SIG_SW_BREAKPOINT] = "sig_brk",
 		[QPU_SIG_NONE] = "sig_none",
-		[QPU_SIG_THREAD_SWITCH] = "sig_switch",
+		[QPU_SIG_THREAD_SWITCH] = "sig_thread_switch",
 		[QPU_SIG_PROG_END] = "sig_end",
 		[QPU_SIG_WAIT_FOR_SCOREBOARD] = "sig_wait_score",
 		[QPU_SIG_SCOREBOARD_UNLOCK] = "sig_unlock_score",
-		[QPU_SIG_LAST_THREAD_SWITCH] = "sig_thread_switch",
+		[QPU_SIG_LAST_THREAD_SWITCH] = "sig_last_thread_switch",
 		[QPU_SIG_COVERAGE_LOAD] = "sig_coverage_load",
 		[QPU_SIG_COLOR_LOAD] = "sig_color_load",
 		[QPU_SIG_COLOR_LOAD_END] = "sig_color_load_end",

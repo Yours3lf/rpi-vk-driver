@@ -51,15 +51,16 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
 			shader->bos[c] = vc4_bo_alloc_shader(controlFd, instructions, &size);
 
 			//TODO if debug...
-			for(uint64_t c = 0; c < numInstructions; ++c)
+			for(uint64_t d = 0; d < numInstructions; ++d)
 			{
-				printf("%#llx ", instructions[c]);
-				disassemble_qpu_asm(instructions[c]);
+				printf("%#llx ", instructions[d]);
+				disassemble_qpu_asm(instructions[d]);
 			}
 
-			for(uint64_t c = 0; c < numInstructions; ++c)
+			for(uint64_t d = 0; d < numInstructions; ++d)
 			{
-				if((instructions[c] & (0xfll << 60)) == (2ll << 60))
+				uint64_t s = (instructions[d] & (0xfll << 60)) >> 60;
+				if(s == 2ll)
 				{
 					shader->hasThreadSwitch = 1;
 					break;
