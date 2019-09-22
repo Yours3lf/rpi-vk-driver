@@ -352,8 +352,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 			submitCl.width = i->width;
 			submitCl.height = i->height;
 			submitCl.flags |= marker->flags;
-			submitCl.clear_z = 0; //TODO
-			submitCl.clear_s = 0;
+			submitCl.clear_z = 0; //TODO probably 0...0xffffff
+			submitCl.clear_s = 0; //TODO probably 0...0xff
 
 			submitCl.bo_handles = marker->handlesBuf;
 			submitCl.bin_cl = ((uint8_t*)marker) + sizeof(CLMarker);
