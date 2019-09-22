@@ -7,9 +7,9 @@
   - [x] shader from assembly, vertices from vertex buffer object, no uniforms, color hardcoded
   - [x] uniforms for matrix multiplication and animation
   - [x] texture coordinates and texture sampling
-  - [ ] varyings
+  - [x] varyings
+  - [x] Multiple vertex attributes
   - [ ] Depth / stencil buffers
-  - [ ] Multiple vertex attributes
   - [ ] Indexed draw calls
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
