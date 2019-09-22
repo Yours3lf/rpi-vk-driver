@@ -386,6 +386,76 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 			{
 				printf("%u ", *((uint32_t*)(marker->uniformsBuf)+d));
 			}
+			printf("\nShader recs: ");
+			uint8_t* ptr = marker->shaderRecBuf + (3 + 2) * 4;
+			for(int d = 0; d < marker->shaderRecCount; ++d)
+			{
+				uint8_t flags = *ptr;
+				uint8_t fragmentShaderIsSingleThreaded = flags & (1 << 0);
+				uint8_t pointSizeIncludedInShadedVertexData = (flags & (1 << 1)) >> 1;
+				uint8_t enableClipping = (flags & (1 << 2)) >> 2;
+				ptr += 2;
+
+				uint8_t fragmentNumberOfUniforms = *ptr; ptr++;
+				uint8_t fragmentNumberOfVaryings = *ptr; ptr++;
+				uint32_t fragmentShaderCodeAddress = *(uint32_t*)ptr; ptr+=4;
+				uint32_t fragmentShaderUniformAddress = *(uint32_t*)ptr; ptr+=4;
+
+				uint16_t vertexNumberOfUniforms = *(uint16_t*)ptr; ptr+=2;
+				uint8_t vertexAttribSelectBits = *ptr; ptr++;
+				uint8_t vertexAttribTotalSize = *ptr; ptr++;
+				uint32_t vertexShaderCodeAddress = *(uint32_t*)ptr; ptr+=4;
+				uint32_t vertexShaderUniformAddress = *(uint32_t*)ptr; ptr+=4;
+
+				uint16_t coordNumberOfUniforms = *(uint16_t*)ptr; ptr+=2;
+				uint8_t coordAttribSelectBits = *ptr; ptr++;
+				uint8_t coordAttribTotalSize = *ptr; ptr++;
+				uint32_t coordShaderCodeAddress = *(uint32_t*)ptr; ptr+=4;
+				uint32_t coordShaderUniformAddress = *(uint32_t*)ptr; ptr+=4;
+
+				printf("\nfragmentShaderIsSingleThreaded: %i", fragmentShaderIsSingleThreaded);
+				printf("\npointSizeIncludedInShadedVertexData: %i", pointSizeIncludedInShadedVertexData);
+				printf("\nenableClipping: %i", enableClipping);
+
+				printf("\nfragmentNumberOfUniforms: %i", fragmentNumberOfUniforms);
+				printf("\nfragmentNumberOfVaryings: %i", fragmentNumberOfVaryings);
+				printf("\nfragmentShaderCodeAddress: %i", fragmentShaderCodeAddress);
+				printf("\nfragmentShaderUniformAddress: %i", fragmentShaderUniformAddress);
+
+				printf("\nvertexNumberOfUniforms: %i", vertexNumberOfUniforms);
+				printf("\nvertexAttribSelectBits: %i", vertexAttribSelectBits);
+				printf("\nvertexAttribTotalSize: %i", vertexAttribTotalSize);
+				printf("\nvertexShaderCodeAddress: %i", vertexShaderCodeAddress);
+				printf("\nvertexShaderUniformAddress: %i", vertexShaderUniformAddress);
+
+				printf("\ncoordNumberOfUniforms: %i", coordNumberOfUniforms);
+				printf("\ncoordAttribSelectBits: %i", coordAttribSelectBits);
+				printf("\ncoordAttribTotalSize: %i", coordAttribTotalSize);
+				printf("\ncoordShaderCodeAddress: %i", coordShaderCodeAddress);
+				printf("\ncoordShaderUniformAddress: %i", coordShaderUniformAddress);
+
+				uint8_t numAttribs = 0;
+				for(uint8_t e = 0; e < 8; ++e)
+				{
+					numAttribs += (vertexAttribSelectBits & (1 << e)) >> e;
+				}
+
+				for(uint8_t e = 0; e < numAttribs; ++e)
+				{
+					uint32_t attribBaseAddress = *(uint32_t*)ptr; ptr+=4;
+					uint8_t attribNumBytes = *ptr; ptr++;
+					uint8_t attribStride = *ptr; ptr++;
+					uint8_t attribVsVPMOffset = *ptr; ptr++;
+					uint8_t attribCsVPMOffset = *ptr; ptr++;
+
+					printf("\nattrib \#%i", e);
+					printf("\nattribBaseAddress: %i", attribBaseAddress);
+					printf("\nattribNumBytes: %i", attribNumBytes);
+					printf("\nattribStride: %i", attribStride);
+					printf("\nattribVsVPMOffset: %i", attribVsVPMOffset);
+					printf("\nattribCsVPMOffset: %i", attribCsVPMOffset);
+				}
+			}
 			printf("\nwidth height: %u, %u\n", submitCl.width, submitCl.height);
 			printf("tile min/max: %u,%u %u,%u\n", submitCl.min_x_tile, submitCl.min_y_tile, submitCl.max_x_tile, submitCl.max_y_tile);
 			printf("color read surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.color_read.hindex, submitCl.color_read.offset, submitCl.color_read.bits, submitCl.color_read.flags);
