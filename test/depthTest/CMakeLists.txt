@@ -1,0 +1,9 @@
+file(GLOB testSrc
+	"*.h"
+	"*.cpp"
+)
+
+add_executable(depthTest ${testSrc} )
+target_compile_options(depthTest PRIVATE -Wall -std=c++11 -std=c11)
+
+target_link_libraries(depthTest vulkan-1-rpi)

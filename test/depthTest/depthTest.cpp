@@ -40,7 +40,8 @@ void CreateRenderPass();
 void CreateFramebuffer();
 void CreateShaders();
 void CreatePipeline();
- void CreateDescriptorSet();
+void CreateUniformBuffer();
+void CreateDescriptorSet();
 void CreateVertexBuffer();
 void CreateTexture();
 void recordCommandBuffers();
@@ -60,97 +61,22 @@ std::vector<VkCommandBuffer> presentCommandBuffers; //
 std::vector<VkImage> swapChainImages; //
 VkRenderPass renderPass; //
 std::vector<VkFramebuffer> fbs; //
-VkShaderModule blitShaderModule; //
-VkShaderModule sampleShaderModule; //
-VkPipeline blitPipeline; //
-VkPipeline samplePipeline; //
+VkShaderModule shaderModule; //
+VkPipeline pipeline; //
 VkQueue graphicsQueue;
 VkQueue presentQueue;
-VkBuffer fsqVertexBuffer;
-VkDeviceMemory fsqVertexBufferMemory;
-VkBuffer triangleVertexBuffer;
-VkDeviceMemory triangleVertexBufferMemory;
+VkBuffer vertexBuffer1;
+VkDeviceMemory vertexBufferMemory1;
+VkBuffer vertexBuffer2;
+VkDeviceMemory vertexBufferMemory2;
 VkPhysicalDeviceMemoryProperties pdmp;
 std::vector<VkImageView> views; //?
 VkSurfaceFormatKHR swapchainFormat;
 VkExtent2D swapChainExtent;
-VkDescriptorPool descriptorPool;
-VkDescriptorSet blitDescriptorSet;
-VkDescriptorSetLayout blitDsl;
-VkPipelineLayout blitPipelineLayout;
-VkDescriptorSet sampleDescriptorSet;
-VkDescriptorSetLayout sampleDsl;
-VkPipelineLayout samplePipelineLayout;
-VkImage textureImage;
-VkDeviceMemory textureMemory;
-VkSampler textureSampler;
-VkImageView textureView;
-VkBuffer texelBuffer;
-VkDeviceMemory texelBufferMemory;
-VkBufferView texelBufferView;
-VkRenderPass offscreenRenderPass;
-VkFramebuffer offscreenFramebuffer;
+VkPipelineLayout pipelineLayout;
 
 uint32_t graphicsQueueFamily;
 uint32_t presentQueueFamily;
-
-char* readPPM(const char* fileName)
-{
-	uint16_t ppm_magic;
-	((uint8_t*)&ppm_magic)[0] = 'P';
-	((uint8_t*)&ppm_magic)[1] = '6';
-
-	FILE* fd = fopen(fileName, "rb");
-	fseek (fd , 0 , SEEK_END);
-	uint32_t fsize = ftell(fd);
-	rewind(fd);
-	char* buf = (char*)malloc(fsize);
-
-	if(!buf)
-	{
-		return 0;
-	}
-
-	fread(buf, 1, fsize, fd);
-	fclose(fd);
-
-	uint16_t magic_number = ((uint16_t*)buf)[0];
-	if(magic_number != ppm_magic)
-	{
-		fprintf(stderr, "PPM magic number not found: %u\n", magic_number);
-		return 0;
-	}
-
-	char* widthStr = strtok(buf+3, " ");
-	char* heightStr = strtok(0, "\n");
-	char* maxValStr = strtok(0, "\n");
-	int width = atoi(widthStr);
-	int height = atoi(heightStr);
-	int maxVal = atoi(maxValStr);
-
-	printf("Image size: %i x %i\n", width, height);
-	printf("Max value: %i\n", maxVal);
-
-	char* imageBuf = maxValStr + strlen(maxValStr) + 1;
-
-	//convert to BGRA (A=1)
-	char* retBuf = (char*)malloc(width * height * 4);
-
-	for(int y = 0; y < height; ++y)
-		{
-			for(int x = 0; x < width; ++x)
-			{
-				retBuf[(y*width+x)*4+0] = imageBuf[(y*width+x)*3+2];
-				retBuf[(y*width+x)*4+1] = imageBuf[(y*width+x)*3+1];
-				retBuf[(y*width+x)*4+2] = imageBuf[(y*width+x)*3+0];
-				retBuf[(y*width+x)*4+3] = 0xff;
-			}
-		}
-
-	free(buf);
-
-	return retBuf;
-}
 
 void cleanup() {
 	vkDeviceWaitIdle(device);
@@ -170,9 +96,9 @@ void cleanup() {
 
 	vkDestroyRenderPass(device, renderPass, 0);
 
-	//vkDestroyShaderModule(device, shaderModule, 0);
+	vkDestroyShaderModule(device, shaderModule, 0);
 
-	//vkDestroyPipeline(device, pipeline, 0);
+	vkDestroyPipeline(device, pipeline, 0);
 
 	// Note: implicitly destroys images (in fact, we're not allowed to do that explicitly)
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
@@ -216,9 +142,8 @@ void setupVulkan() {
 	CreateRenderPass();
 	CreateFramebuffer();
 	CreateVertexBuffer();
+	//CreateUniformBuffer();
 	CreateShaders();
-	CreateTexture();
-	CreateDescriptorSet();
 	CreatePipeline();
 	recordCommandBuffers();
 }
@@ -711,83 +636,37 @@ void recordCommandBuffers()
 		// Record command buffer
 		vkBeginCommandBuffer(presentCommandBuffers[i], &beginInfo);
 
-		{ //offscreen rendering
-			VkClearValue offscreenClearValues =
-			{
-				.color = { 1.0f, 0.0f, 1.0f, 1.0f }
-			};
+		renderPassInfo.framebuffer = fbs[i];
 
-			renderPassInfo.framebuffer = offscreenFramebuffer;
-			renderPassInfo.renderPass = offscreenRenderPass;
-			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &offscreenClearValues;
+		vkCmdBeginRenderPass(presentCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-			vkCmdBeginRenderPass(presentCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-			vkCmdBindPipeline(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipeline);
+		//vkCmdSetViewport(presentCommandBuffers[i], 0, 1, &viewport);
 
-			VkDeviceSize offsets = 0;
-			vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &fsqVertexBuffer, &offsets );
+		//vkCmdSetScissor(presentCommandBuffers[i], 0, 1, &scissor);
 
-			vkCmdBindDescriptorSets(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipelineLayout, 0, 1, &blitDescriptorSet, 0, 0);
+		VkDeviceSize offsets = 0;
+		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer1, &offsets );
 
-			float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
-			float viewportScaleX = (float)(swapChainExtent.width) * 0.5f * 16.0f;
-			float viewportScaleY = -1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
-			float Zs = 0.5f;
+		float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
+		float viewportScaleX = (float)(swapChainExtent.width) * 0.5f * 16.0f;
+		float viewportScaleY = -1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
+		float Zs = 0.5f;
+		float Zo = 0.5f;
 
-			uint32_t vertConstants[4];
-			vertConstants[0] = *(uint32_t*)&Wcoeff;
-			vertConstants[1] = *(uint32_t*)&viewportScaleX;
-			vertConstants[2] = *(uint32_t*)&viewportScaleY;
-			vertConstants[3] = *(uint32_t*)&Zs;
+		uint32_t pushConstants[5];
+		pushConstants[0] = *(uint32_t*)&Wcoeff;
+		pushConstants[1] = *(uint32_t*)&viewportScaleX;
+		pushConstants[2] = *(uint32_t*)&viewportScaleY;
+		pushConstants[3] = *(uint32_t*)&Zs;
+		pushConstants[4] = *(uint32_t*)&Zo;
 
-			vkCmdPushConstants(presentCommandBuffers[i], blitPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vertConstants), &vertConstants);
+		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
 
-			uint32_t size = swapChainExtent.width * swapChainExtent.height * 4 - 4;//swapChainExtent.width * swapChainExtent.height * 4;
-			uint32_t fragConstants[2];
-			fragConstants[0] = size;
-			fragConstants[1] = 0;
+		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
 
-			vkCmdPushConstants(presentCommandBuffers[i], blitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragConstants), &fragConstants);
-
-			vkCmdDraw(presentCommandBuffers[i], 6, 1, 0, 0);
-
-			vkCmdEndRenderPass(presentCommandBuffers[i]);
-		}
-
-		{ //render to screen
-			renderPassInfo.framebuffer = fbs[i];
-			renderPassInfo.renderPass = renderPass;
-			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &clearValue;
-
-			vkCmdBeginRenderPass(presentCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			vkCmdBindPipeline(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, samplePipeline);
-
-			VkDeviceSize offsets = 0;
-			vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &triangleVertexBuffer, &offsets );
-
-			vkCmdBindDescriptorSets(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, samplePipelineLayout, 0, 1, &sampleDescriptorSet, 0, 0);
-
-			float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
-			float viewportScaleX = (float)(swapChainExtent.width) * 0.5f * 16.0f;
-			float viewportScaleY = -1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
-			float Zs = 0.5f;
-
-			uint32_t pushConstants[4];
-			pushConstants[0] = *(uint32_t*)&Wcoeff;
-			pushConstants[1] = *(uint32_t*)&viewportScaleX;
-			pushConstants[2] = *(uint32_t*)&viewportScaleY;
-			pushConstants[3] = *(uint32_t*)&Zs;
-
-			vkCmdPushConstants(presentCommandBuffers[i], samplePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
-
-			vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
-
-			vkCmdEndRenderPass(presentCommandBuffers[i]);
-		}
+		vkCmdEndRenderPass(presentCommandBuffers[i]);
 
 		if (vkEndCommandBuffer(presentCommandBuffers[i]) != VK_SUCCESS) {
 			std::cerr << "failed to record command buffer" << std::endl;
@@ -940,8 +819,8 @@ void CreateShaders()
 			///packed
 			///horizontal
 			///stride=1
-			///vectors to read = 2 (how many components)
-			"sig_load_imm ; vr_setup = load32.always(0x00201a00) ; nop = load32.always() ;\n"
+			///vectors to read = 3 (how many components)
+			"sig_load_imm ; vr_setup = load32.always(0x00301a00) ; nop = load32.always() ;\n"
 			///uni = viewportXScale
 			///r0 = vpm * uni
 			"sig_none ; nop = nop(r0, r0, vpm_read, uni) ; r0 = fmul.always(a, b) ;\n"
@@ -982,7 +861,7 @@ void CreateShaders()
 			///uni = 1.0
 			///r3 = 2.0 - uni
 			"sig_small_imm ; r3 = fsub.always(b, a, uni, 0x40000000) ; nop = nop(r0, r0);\n"
-			"sig_load_imm ; vr_setup = load32.always(0x00201a00) ; nop = load32.always() ;\n"
+			"sig_load_imm ; vr_setup = load32.always(0x00301a00) ; nop = load32.always() ;\n"
 			///r2 = vpm
 			"sig_none ; r2 = or.always(a, a, vpm_read, nop) ; nop = nop(r0, r0);\n"
 			"sig_load_imm ; vw_setup = load32.always.ws(0x00001a00) ; nop = load32.always() ;\n"
@@ -1033,84 +912,42 @@ void CreateShaders()
 	//BGRA
 
 	/**
-	"General-memory lookups are performed by writing to just the ‘s’ parameter, using the absolute memory
-	address. In this case no uniform is read. General-memory lookups always return a 32-bit value, and the bottom
-	two bits of the address are ignored."
+	//rainbow colors
+	char fs_asm_code[] =
+			"sig_none ; r1 = itof.always(a, a, x_pix, uni) ; r3 = v8min.always(b, b) ;" //can't use mul pipeline for conversion :(
+			"sig_load_imm ; r2 = load32.always(0x3a088888) ; nop = load32() ;" //1/1920
+			"sig_none ; nop = nop(r0, r0) ; r2 = fmul.always(r2, r3);\n"
+			"sig_none ; r1 = itof.pm.always(b, b, x_pix, y_pix) ; r0.8c = fmul.always(r1, r2) ;"
+			"sig_load_imm ; r2 = load32.always(0x3a72b9d6) ; nop = load32() ;" //1/1080
+			"sig_none ; nop = nop(r0, r0) ; r2 = fmul.always(r2, r3);\n"
+			"sig_none ; nop = nop.pm(r0, r0) ; r0.8b = fmul.always(r1, r2) ;"
+			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0) ; r0.8a = v8min.always(b, b) ;"
+			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 1) ; r0.8d = v8min.always(b, b) ;"
+			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+				"\0";
 	/**/
 
-	//blit buffer to texture (generic buffer read)
-	char blit_fs_asm_code[] =
-			"sig_load_imm ; r2 = load32.always(0x44f00000) ; nop = load32() ;" //width = 1920.0
-			"sig_none ; r1 = itof.always(b, b, x_pix, y_pix) ; nop = nop(r0, r0) ;" //FragCoord Y
-			"sig_none ; r0 = itof.always(a, a, x_pix, y_pix) ; r1 = fmul.always(r1, r2) ;" //FragCoord X, r1 = Y * width
-			"sig_none ; r0 = fadd.always(r0, r1) ; r0 = nop(r0, r0) ;" //r0 = Y * width + X
-			"sig_small_imm ; r0 = nop(r0, r0, nop, 0x40800000) ; r0 = fmul.always(r0, b) ;" //r0 = (Y * width + X) * 4
-			"sig_none ; r0 = ftoi.always(r0, r0) ; nop = nop(r0, r0) ;" //convert to integer
-			///write general mem access address
-			///first argument must be clamped to [0...bufsize-4]
-			///eg must do min(max(x,0), uni)
-			///second argument must be a uniform (containing base address, which is 0)
-			///writing tmu0_s signals that all coordinates are written
-			"sig_small_imm ; r0 = max.always(r0, b, nop, 0) ; nop = nop(r0, r0) ;" //clamp general access
-			"sig_none ; r0 = min.always(r0, b, nop, uni) ; nop = nop(r0, r0) ;" //uni = 1920 * 1080 * 4 - 4
-			"sig_none ; tmu0_s = add.always(r0, b, nop, uni) ; nop = nop(r0, r0) ;"
-			///suspend thread (after 2 nops) to wait for TMU request to finish
-			"sig_thread_switch ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+	/**/
+	//display a color
+	char fs_asm_code[] =
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			///read TMU0 request result to R4
-			"sig_load_tmu0 ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			///when thread has been awakened, MOV from R4 to R0
-			"sig_none ; r0 = fmax.pm.always.8a(r4, r4) ; nop = nop(r0, r0) ;"
-			"sig_none ; r1 = fmax.pm.always.8b(r4, r4) ; r0.8a = v8min.always(r0, r0) ;"
-			"sig_none ; r2 = fmax.pm.always.8c(r4, r4) ; r0.8b = v8min.always(r1, r1) ;"
-			"sig_none ; r3 = fmax.pm.always.8d(r4, r4) ; r0.8c = v8min.always(r2, r2) ;"
-			"sig_none ; nop = nop.pm(r0, r0) ; r0.8d = v8min.always(r3, r3) ;"
+			"sig_load_imm ; r0 = load32.always(0xffa14ccc) ; nop = load32() ;"
 			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 				"\0";
+	/**/
 
-	//sample texture
-	char sample_fs_asm_code[] =
-			"sig_none ; r0 = itof.always(b, b, x_pix, y_pix) ; nop = nop(r0, r0) ;"
-			"sig_load_imm ; r2 = load32.always(0x3a72b9d6) ; nop = load32() ;" //1/1080
-			"sig_none ; r0 = itof.always(a, a, x_pix, y_pix) ; r1 = fmul.always(r2, r0); ;" //r1 contains tex coord y
-			"sig_load_imm ; r2 = load32.always(0x3a088888) ; nop = load32() ;" //1/1920
-			///write texture addresses (x, y)
-			///writing tmu0_s signals that all coordinates are written
-			"sig_none ; tmu0_t = or.always(r1, r1) ; r0 = fmul.always(r2, r0) ;" //r0 contains tex coord x
-			"sig_none ; tmu0_s = or.always(r0, r0) ; nop = nop(r0, r0) ;"
-			///suspend thread (after 2 nops) to wait for TMU request to finish
-			"sig_thread_switch ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			///read TMU0 request result to R4
-			"sig_load_tmu0 ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			///when thread has been awakened, MOV from R4 to R0
-			"sig_none ; r0 = fmax.pm.always.8a(r4, r4) ; nop = nop(r0, r0) ;"
-			"sig_none ; r1 = fmax.pm.always.8b(r4, r4) ; r0.8a = v8min.always(r0, r0) ;"
-			"sig_none ; r2 = fmax.pm.always.8c(r4, r4) ; r0.8b = v8min.always(r1, r1) ;"
-			"sig_none ; r3 = fmax.pm.always.8d(r4, r4) ; r0.8c = v8min.always(r2, r2) ;"
-			"sig_none ; nop = nop.pm(r0, r0) ; r0.8d = v8min.always(r3, r3) ;"
-			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-				"\0";
-
-	char* blit_asm_strings[] =
+	char* asm_strings[] =
 	{
-		(char*)cs_asm_code, (char*)vs_asm_code, (char*)blit_fs_asm_code, 0
+		(char*)cs_asm_code, (char*)vs_asm_code, (char*)fs_asm_code, 0
 	};
 
-	char* sample_asm_strings[] =
-	{
-		(char*)cs_asm_code, (char*)vs_asm_code, (char*)sample_fs_asm_code, 0
-	};
-
-	VkRpiAssemblyMappingEXT blit_mappings[] = {
+	VkRpiAssemblyMappingEXT mappings[] = {
 		//vertex shader uniforms
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
@@ -1154,96 +991,18 @@ void CreateShaders()
 			0, //descriptor set #
 			0, //descriptor binding #
 			0, //descriptor array element #
-			0, //resource offset
-			VK_SHADER_STAGE_FRAGMENT_BIT
-		},
-		{
-			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
-			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
-			0, //descriptor set #
-			0, //descriptor binding #
-			0, //descriptor array element #
-			4, //resource offset
-			VK_SHADER_STAGE_FRAGMENT_BIT
-		},
-		//fragment shader uniforms
-		{
-			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
-			VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, //descriptor type
-			0, //descriptor set #
-			0, //descriptor binding #
-			0, //descriptor array element #
-			0, //resource offset
-			VK_SHADER_STAGE_FRAGMENT_BIT
-		}
-	};
-
-	VkRpiAssemblyMappingEXT sample_mappings[] = {
-		//vertex shader uniforms
-		{
-			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
-			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
-			0, //descriptor set #
-			0, //descriptor binding #
-			0, //descriptor array element #
-			0, //resource offset
+			16, //resource offset
 			VK_SHADER_STAGE_VERTEX_BIT
-		},
-		{
-			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
-			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
-			0, //descriptor set #
-			0, //descriptor binding #
-			0, //descriptor array element #
-			4, //resource offset
-			VK_SHADER_STAGE_VERTEX_BIT
-		},
-		{
-			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
-			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
-			0, //descriptor set #
-			0, //descriptor binding #
-			0, //descriptor array element #
-			8, //resource offset
-			VK_SHADER_STAGE_VERTEX_BIT
-		},
-		{
-			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
-			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
-			0, //descriptor set #
-			0, //descriptor binding #
-			0, //descriptor array element #
-			12, //resource offset
-			VK_SHADER_STAGE_VERTEX_BIT
-		},
-		//fragment shader uniforms
-		{
-			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
-			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, //descriptor type
-			0, //descriptor set #
-			0, //descriptor binding #
-			0, //descriptor array element #
-			0, //resource offset
-			VK_SHADER_STAGE_FRAGMENT_BIT
 		}
 	};
 
 	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo;
-	shaderModuleCreateInfo.asmStrings = blit_asm_strings;
-	shaderModuleCreateInfo.mappings = blit_mappings;
-	shaderModuleCreateInfo.numMappings = sizeof(blit_mappings) / sizeof(VkRpiAssemblyMappingEXT);
+	shaderModuleCreateInfo.asmStrings = asm_strings;
+	shaderModuleCreateInfo.mappings = mappings;
+	shaderModuleCreateInfo.numMappings = sizeof(mappings) / sizeof(VkRpiAssemblyMappingEXT);
 
-	VkResult res = vkCreateShaderModuleFromRpiAssemblyEXT(device, &shaderModuleCreateInfo, 0, &blitShaderModule);
-	assert(blitShaderModule);
-
-	shaderModuleCreateInfo.asmStrings = sample_asm_strings;
-	shaderModuleCreateInfo.mappings = sample_mappings;
-	shaderModuleCreateInfo.numMappings = sizeof(sample_mappings) / sizeof(VkRpiAssemblyMappingEXT);
-
-	res = vkCreateShaderModuleFromRpiAssemblyEXT(device, &shaderModuleCreateInfo, 0, &sampleShaderModule);
-	assert(sampleShaderModule);
-
-	//exit(-1);
+	VkResult res = vkCreateShaderModuleFromRpiAssemblyEXT(device, &shaderModuleCreateInfo, 0, &shaderModule);
+	assert(shaderModule);
 }
 
 
@@ -1251,10 +1010,34 @@ void CreateShaders()
 
 void CreatePipeline()
 {
+	VkPushConstantRange pushConstantRanges[1];
+	pushConstantRanges[0].offset = 0;
+	pushConstantRanges[0].size = 5 * 4; //5 * 32bits
+	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	VkPipelineLayoutCreateInfo pipelineLayoutCI = {};
+	pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutCI.setLayoutCount = 0;
+	pipelineLayoutCI.pushConstantRangeCount = 1;
+	pipelineLayoutCI.pPushConstantRanges = &pushConstantRanges[0];
+	vkCreatePipelineLayout(device, &pipelineLayoutCI, 0, &pipelineLayout);
+
+
+	VkPipelineShaderStageCreateInfo shaderStageCreateInfo[2] = {};
+
+	shaderStageCreateInfo[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+	shaderStageCreateInfo[0].module = shaderModule;
+	shaderStageCreateInfo[0].pName = "main";
+	shaderStageCreateInfo[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfo[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	shaderStageCreateInfo[1].module = shaderModule;
+	shaderStageCreateInfo[1].pName = "main";
+
 	VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
 		0,
-		sizeof(float) * 2,
+		sizeof(float) * 3,
 		VK_VERTEX_INPUT_RATE_VERTEX
 	};
 
@@ -1262,7 +1045,7 @@ void CreatePipeline()
 	{
 		0,
 		0,
-		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32_SFLOAT,
 		0
 	};
 
@@ -1313,99 +1096,22 @@ void CreatePipeline()
 	depthStencilState.depthTestEnable = false;
 	depthStencilState.stencilTestEnable = false;
 
-	{ //create blit pipeline
-		VkPushConstantRange pushConstantRanges[2];
-		pushConstantRanges[0].offset = 0;
-		pushConstantRanges[0].size = 4 * 4; //4 * 32bits
-		pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	VkGraphicsPipelineCreateInfo pipelineInfo = {};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = &shaderStageCreateInfo[0];
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &pipelineIACreateInfo;
+	pipelineInfo.pViewportState = &vpCreateInfo;
+	pipelineInfo.pRasterizationState = &rastCreateInfo;
+	pipelineInfo.pMultisampleState = &pipelineMSCreateInfo;
+	pipelineInfo.pColorBlendState = &blendCreateInfo;
+	pipelineInfo.renderPass = renderPass;
+	pipelineInfo.basePipelineIndex = -1;
+	pipelineInfo.pDepthStencilState = &depthStencilState;
+	pipelineInfo.layout = pipelineLayout;
 
-		pushConstantRanges[1].offset = 0;
-		pushConstantRanges[1].size = 3 * 4; //3 * 32bits
-		pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		VkPipelineShaderStageCreateInfo shaderStageCreateInfo[2] = {};
-
-		shaderStageCreateInfo[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageCreateInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		shaderStageCreateInfo[0].module = blitShaderModule;
-		shaderStageCreateInfo[0].pName = "main";
-		shaderStageCreateInfo[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageCreateInfo[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shaderStageCreateInfo[1].module = blitShaderModule;
-		shaderStageCreateInfo[1].pName = "main";
-
-		VkPipelineLayoutCreateInfo pipelineLayoutCI = {};
-		pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutCI.setLayoutCount = 1;
-		pipelineLayoutCI.pSetLayouts = &blitDsl;
-		pipelineLayoutCI.pushConstantRangeCount = 2;
-		pipelineLayoutCI.pPushConstantRanges = &pushConstantRanges[0];
-		vkCreatePipelineLayout(device, &pipelineLayoutCI, 0, &blitPipelineLayout);
-
-		VkGraphicsPipelineCreateInfo pipelineInfo = {};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = &shaderStageCreateInfo[0];
-		pipelineInfo.pVertexInputState = &vertexInputInfo;
-		pipelineInfo.pInputAssemblyState = &pipelineIACreateInfo;
-		pipelineInfo.pViewportState = &vpCreateInfo;
-		pipelineInfo.pRasterizationState = &rastCreateInfo;
-		pipelineInfo.pMultisampleState = &pipelineMSCreateInfo;
-		pipelineInfo.pColorBlendState = &blendCreateInfo;
-		pipelineInfo.renderPass = offscreenRenderPass;
-		pipelineInfo.basePipelineIndex = -1;
-		pipelineInfo.pDepthStencilState = &depthStencilState;
-		pipelineInfo.layout = blitPipelineLayout;
-
-		VkResult res = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &blitPipeline);
-	}
-
-	{ //create sample pipeline
-		VkPushConstantRange pushConstantRanges[2];
-		pushConstantRanges[0].offset = 0;
-		pushConstantRanges[0].size = 4 * 4; //4 * 32bits
-		pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-		pushConstantRanges[1].offset = 0;
-		pushConstantRanges[1].size = 1 * 4; //1 * 32bits
-		pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		VkPipelineShaderStageCreateInfo shaderStageCreateInfo[2] = {};
-
-		shaderStageCreateInfo[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageCreateInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		shaderStageCreateInfo[0].module = sampleShaderModule;
-		shaderStageCreateInfo[0].pName = "main";
-		shaderStageCreateInfo[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageCreateInfo[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shaderStageCreateInfo[1].module = sampleShaderModule;
-		shaderStageCreateInfo[1].pName = "main";
-
-		VkPipelineLayoutCreateInfo pipelineLayoutCI = {};
-		pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutCI.setLayoutCount = 1;
-		pipelineLayoutCI.pSetLayouts = &sampleDsl;
-		pipelineLayoutCI.pushConstantRangeCount = 2;
-		pipelineLayoutCI.pPushConstantRanges = &pushConstantRanges[0];
-		vkCreatePipelineLayout(device, &pipelineLayoutCI, 0, &samplePipelineLayout);
-
-		VkGraphicsPipelineCreateInfo pipelineInfo = {};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = &shaderStageCreateInfo[0];
-		pipelineInfo.pVertexInputState = &vertexInputInfo;
-		pipelineInfo.pInputAssemblyState = &pipelineIACreateInfo;
-		pipelineInfo.pViewportState = &vpCreateInfo;
-		pipelineInfo.pRasterizationState = &rastCreateInfo;
-		pipelineInfo.pMultisampleState = &pipelineMSCreateInfo;
-		pipelineInfo.pColorBlendState = &blendCreateInfo;
-		pipelineInfo.renderPass = renderPass;
-		pipelineInfo.basePipelineIndex = -1;
-		pipelineInfo.pDepthStencilState = &depthStencilState;
-		pipelineInfo.layout = samplePipelineLayout;
-
-		VkResult res = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &samplePipeline);
-	}
+	VkResult res = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &pipeline);
 
 	printf("Graphics pipeline created\n");
 }
@@ -1428,336 +1134,69 @@ uint32_t getMemoryTypeIndex(VkPhysicalDeviceMemoryProperties deviceMemoryPropert
 	assert(0);
 }
 
-void CreateTexture()
-{
-	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
-
-	uint32_t width = swapChainExtent.width, height = swapChainExtent.height;
-	uint32_t mipLevels = 1;
-
-	char* texData = readPPM("image.ppm");
-
-	{ //create storage texel buffer for generic mem address TMU ops test
-		VkBufferCreateInfo bufferCreateInfo = {};
-		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferCreateInfo.size = width * height * 4;
-		bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		vkCreateBuffer(device, &bufferCreateInfo, 0, &texelBuffer);
-
-		VkMemoryRequirements mr;
-		vkGetBufferMemoryRequirements(device, texelBuffer, &mr);
-
-		VkMemoryAllocateInfo mai = {};
-		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		mai.allocationSize = mr.size;
-		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-		vkAllocateMemory(device, &mai, 0, &texelBufferMemory);
-
-		void* data;
-		vkMapMemory(device, texelBufferMemory, 0, mr.size, 0, &data);
-		memcpy(data, texData, width * height * 4);
-		vkUnmapMemory(device, texelBufferMemory);
-
-		free(texData);
-
-		vkBindBufferMemory(device, texelBuffer, texelBufferMemory, 0);
-
-		VkBufferViewCreateInfo bufferViewCreateInfo = {};
-		bufferViewCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
-		bufferViewCreateInfo.buffer = texelBuffer;
-		bufferViewCreateInfo.format = format;
-		bufferViewCreateInfo.offset = 0;
-		bufferViewCreateInfo.range = VK_WHOLE_SIZE;
-
-		vkCreateBufferView(device, &bufferViewCreateInfo, 0, &texelBufferView);
-	}
-
-	{ //create texture that we'll write to		
-		VkImageCreateInfo imageCreateInfo = {};
-		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = format;
-		imageCreateInfo.mipLevels = mipLevels;
-		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageCreateInfo.extent = { width, height, 1 };
-		vkCreateImage(device, &imageCreateInfo, 0, &textureImage);
-
-		VkMemoryRequirements mr;
-		vkGetImageMemoryRequirements(device, textureImage, &mr);
-
-		VkMemoryAllocateInfo mai = {};
-		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		mai.allocationSize = mr.size;
-		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		vkAllocateMemory(device, &mai, 0, &textureMemory);
-
-		vkBindImageMemory(device, textureImage, textureMemory, 0);
-
-		VkImageViewCreateInfo view = {};
-		view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		view.format = format;
-		view.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-		view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		view.subresourceRange.baseMipLevel = 0;
-		view.subresourceRange.baseArrayLayer = 0;
-		view.subresourceRange.layerCount = 1;
-		view.subresourceRange.levelCount = 1;
-		view.image = textureImage;
-		vkCreateImageView(device, &view, nullptr, &textureView);
-
-		VkSamplerCreateInfo sampler = {};
-		sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		sampler.magFilter = VK_FILTER_NEAREST;
-		sampler.minFilter = VK_FILTER_NEAREST;
-		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		sampler.mipLodBias = 0.0f;
-		sampler.compareOp = VK_COMPARE_OP_NEVER;
-		sampler.minLod = 0.0f;
-		sampler.maxLod = 0.0f;
-		sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
-		vkCreateSampler(device, &sampler, 0, &textureSampler);
-
-		VkAttachmentDescription attachmentDescription = {};
-		attachmentDescription.format = format;
-		attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-
-		VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-
-		VkSubpassDescription subpassDescription = {};
-		subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpassDescription.colorAttachmentCount = 1;
-		subpassDescription.pColorAttachments = &colorReference;
-
-		VkSubpassDependency dependencies[2];
-		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependencies[0].dstSubpass = 0;
-		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-		dependencies[1].srcSubpass = 0;
-		dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-		VkRenderPassCreateInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pAttachments = &attachmentDescription;
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpassDescription;
-		renderPassInfo.dependencyCount = 2;
-		renderPassInfo.pDependencies = dependencies;
-
-		vkCreateRenderPass(device, &renderPassInfo, 0, &offscreenRenderPass);
-
-		VkImageView attachments = textureView;
-
-		VkFramebufferCreateInfo framebufferCreateInfo = {};
-		framebufferCreateInfo.renderPass = offscreenRenderPass;
-		framebufferCreateInfo.attachmentCount = 1;
-		framebufferCreateInfo.pAttachments = &attachments;
-		framebufferCreateInfo.width = width;
-		framebufferCreateInfo.height = height;
-		framebufferCreateInfo.layers = 1;
-
-		vkCreateFramebuffer(device, &framebufferCreateInfo, 0, &offscreenFramebuffer);
-	}
-}
-
-void CreateDescriptorSet()
-{
-	{ //create blit dsl
-		VkDescriptorSetLayoutBinding setLayoutBinding = {};
-		setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-		setLayoutBinding.binding = 0;
-		setLayoutBinding.descriptorCount = 1;
-		setLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {};
-		descriptorLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorLayoutCI.bindingCount = 1;
-		descriptorLayoutCI.pBindings = &setLayoutBinding;
-
-		vkCreateDescriptorSetLayout(device, &descriptorLayoutCI, 0, &blitDsl);
-	}
-
-	{ //create sample dsl
-		VkDescriptorSetLayoutBinding setLayoutBinding = {};
-		setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		setLayoutBinding.binding = 0;
-		setLayoutBinding.descriptorCount = 1;
-		setLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {};
-		descriptorLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorLayoutCI.bindingCount = 1;
-		descriptorLayoutCI.pBindings = &setLayoutBinding;
-
-		vkCreateDescriptorSetLayout(device, &descriptorLayoutCI, 0, &sampleDsl);
-	}
-
-	VkDescriptorPoolSize descriptorPoolSizes[2]{};
-	descriptorPoolSizes[0] = {};
-	descriptorPoolSizes[0].descriptorCount = 1;
-	descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-	descriptorPoolSizes[1] = {};
-	descriptorPoolSizes[1].descriptorCount = 1;
-	descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-
-	VkDescriptorPoolCreateInfo descriptorPoolCI = {};
-	descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	descriptorPoolCI.poolSizeCount = 2;
-	descriptorPoolCI.pPoolSizes = descriptorPoolSizes;
-	descriptorPoolCI.maxSets = 2;
-
-	vkCreateDescriptorPool(device, &descriptorPoolCI, 0, &descriptorPool);
-
-	{ //create blit descriptor set
-		VkDescriptorSetAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = descriptorPool;
-		allocInfo.descriptorSetCount = 1;
-		allocInfo.pSetLayouts = &blitDsl;
-
-		vkAllocateDescriptorSets(device, &allocInfo, &blitDescriptorSet);
-
-		VkWriteDescriptorSet writeDescriptorSet = {};
-		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSet.dstSet = blitDescriptorSet;
-		writeDescriptorSet.dstBinding = 0;
-		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-		writeDescriptorSet.pTexelBufferView = &texelBufferView;
-		writeDescriptorSet.descriptorCount = 1;
-
-		vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);
-	}
-
-	{ //create sample descriptor set
-		VkDescriptorSetAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = descriptorPool;
-		allocInfo.descriptorSetCount = 1;
-		allocInfo.pSetLayouts = &sampleDsl;
-
-		vkAllocateDescriptorSets(device, &allocInfo, &sampleDescriptorSet);
-
-		VkDescriptorImageInfo imageInfo;
-		imageInfo.imageView = textureView;
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.sampler = textureSampler;
-
-		VkWriteDescriptorSet writeDescriptorSet = {};
-		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSet.dstSet = sampleDescriptorSet;
-		writeDescriptorSet.dstBinding = 0;
-		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		writeDescriptorSet.pImageInfo = &imageInfo;
-		writeDescriptorSet.descriptorCount = 1;
-
-		vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);
-	}
-}
-
 void CreateVertexBuffer()
 {
-	unsigned vboSize = sizeof(float) * 2 * 3 * 2; //2 * 3 x vec2
+	unsigned vboSize = sizeof(float) * 3 * 3; //3 x vec3
+
+	VkBufferCreateInfo ci = {};
+	ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	ci.size = vboSize;
+	ci.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 	VkMemoryRequirements mr;
 
-	{ //create fsq vertex buffer
-		unsigned vboSize = sizeof(float) * 2 * 3 * 2; //2 * 3 x vec2
+	{ //create staging buffer
+		VkResult res = vkCreateBuffer(device, &ci, 0, &vertexBuffer1);
 
-		VkBufferCreateInfo ci = {};
-		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		ci.size = vboSize;
-		ci.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-
-		VkResult res = vkCreateBuffer(device, &ci, 0, &fsqVertexBuffer);
-
-		vkGetBufferMemoryRequirements(device, fsqVertexBuffer, &mr);
+		vkGetBufferMemoryRequirements(device, vertexBuffer1, &mr);
 
 		VkMemoryAllocateInfo mai = {};
 		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		mai.allocationSize = mr.size;
 		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-		res = vkAllocateMemory(device, &mai, 0, &fsqVertexBufferMemory);
+		res = vkAllocateMemory(device, &mai, 0, &vertexBufferMemory1);
 
 		float vertices[] =
 		{
-			-1, -1,
-			1, -1,
-			1, 1,
-
-			1, 1,
-			-1, 1,
-			-1, -1
+			-1, -1, 0.2,
+			 1, -1, 0.2,
+			 0,  1, 0.2
 		};
 
 		void* data;
-		res = vkMapMemory(device, fsqVertexBufferMemory, 0, mr.size, 0, &data);
+		res = vkMapMemory(device, vertexBufferMemory1, 0, mr.size, 0, &data);
 		memcpy(data, vertices, vboSize);
-		vkUnmapMemory(device, fsqVertexBufferMemory);
+		vkUnmapMemory(device, vertexBufferMemory1);
 
-		res = vkBindBufferMemory(device, fsqVertexBuffer, fsqVertexBufferMemory, 0);
+		res = vkBindBufferMemory(device, vertexBuffer1, vertexBufferMemory1, 0);
 	}
 
-	{ //create triangle vertex buffer
-		unsigned vboSize = sizeof(float) * 1 * 3 * 2; //1 * 3 x vec2
+	{ //create staging buffer
+		VkResult res = vkCreateBuffer(device, &ci, 0, &vertexBuffer2);
 
-		VkBufferCreateInfo ci = {};
-		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		ci.size = vboSize;
-		ci.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-
-		VkResult res = vkCreateBuffer(device, &ci, 0, &triangleVertexBuffer);
-
-		vkGetBufferMemoryRequirements(device, triangleVertexBuffer, &mr);
+		vkGetBufferMemoryRequirements(device, vertexBuffer2, &mr);
 
 		VkMemoryAllocateInfo mai = {};
 		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		mai.allocationSize = mr.size;
 		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-		res = vkAllocateMemory(device, &mai, 0, &triangleVertexBufferMemory);
+		res = vkAllocateMemory(device, &mai, 0, &vertexBufferMemory2);
 
 		float vertices[] =
 		{
-			-1, -1,
-			1, -1,
-			0, 1
+			-0.5, -1, 0.5,
+			 1.5, -1, 0.5,
+			 0.5,  1, 0.5
 		};
 
 		void* data;
-		res = vkMapMemory(device, triangleVertexBufferMemory, 0, mr.size, 0, &data);
+		res = vkMapMemory(device, vertexBufferMemory2, 0, mr.size, 0, &data);
 		memcpy(data, vertices, vboSize);
-		vkUnmapMemory(device, triangleVertexBufferMemory);
+		vkUnmapMemory(device, vertexBufferMemory2);
 
-		res = vkBindBufferMemory(device, triangleVertexBuffer, triangleVertexBufferMemory, 0);
+		res = vkBindBufferMemory(device, vertexBuffer2, vertexBufferMemory2, 0);
 	}
 
 	printf("Vertex buffer created\n");

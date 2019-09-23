@@ -8,8 +8,6 @@
 
 #include "driver/vkExt.h"
 
-#include "QPUassembler/qpu_assembler.h"
-
 //#define GLFW_INCLUDE_VULKAN
 //#define VK_USE_PLATFORM_WIN32_KHR
 //#include <GLFW/glfw3.h>
@@ -805,16 +803,6 @@ void CreateFramebuffer()
 void CreateShaders()
 {
 	/**
-///Varyings are interpolated using (A * (x - x0) + B * (y - y0)) * W + C
-///Hardware calculates (A * (x - x0) + B * (y - y0)) for us for each varying component
-///but we still need to mul by W and add C
-///C is loaded into R5 when we read a varying (to be used in next instruction)
-
-///exploits multi-threaded fs programs
-///the last cycle of the vertex shader writes W to RA14 and Z to RB14
-///since the regfile is flipped when using multi-threading, they will be persisted to RA15 and RB15
-///Otherwise they would be persisted to RA14 and RB14
-
 //FS prog reading tex with varyings
 0x100049e0203e303e nop nop, r0, r0 ; fmul r0, vary, ra15 //mul by w
 0x100248e1213e317e fadd r3, r0, r5 ; fmul r1, vary, ra15 //add interpolation coefficient C, mul by w
@@ -831,64 +819,6 @@ void CreateShaders()
 0x300009e7009e7000 sig_end nop nop, r0, r0 ; nop nop, r0, r0
 0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
 0x500009e7009e7000 sig_unlock_score nop nop, r0, r0 ; nop nop, r0, r0
-
-//FS prog just outputting varyings
-0x100049e0203e303e nop nop, r0, r0 ; fmul r0, vary, ra15
-0x10024862213e317e fadd r1, r0, r5 ; fmul r2, vary, ra15
-0x114248e0819e7549 fadd r3, r2, r5 ; mov r0.8a, r1
-0x115049e0809e701b nop nop, r0, r0 ; mov r0.8b, r3
-0xd16049e0809c003f sig_small_imm nop nop, r0, r0 ; mov r0.8c, 0
-0xd17049e0809e003f sig_small_imm nop nop, r0, r0 ; mov r0.8d, 1.0
-0x10020ba7159e7000 mov tlb_color_all, r0 ; nop nop, r0, r0
-0x300009e7009e7000 sig_end nop nop, r0, r0 ; nop nop, r0, r0
-0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
-0x500009e7009e7000 sig_unlock_score nop nop, r0, r0 ; nop nop, r0, r0
-
-VS prog 2/1 QPU:
-0x00401a00:
-0000 0000 0‭100 0000 0001 1010 0000 0000‬
-///addr: 0
-///size: 32bit
-///packed
-///horizontal
-///stride=1
-///vectors to read = 4
-0xd002102702821f80 sig_small_imm fsub rb0, 2.0, uni ; nop nop, r0, r0
-0xe0024c6700401a00 load_imm vr_setup, nop, 0x00401a00 (0.000000)
-0x100049e220c20037 nop nop, r0, r0 ; fmul r2, vpm_read, uni
-0x100049e3209c0017 nop nop, r0, r0 ; fmul r3, r2, rb0
-0x1012402027c206f7 ftoi ra0.16a, r3, r3 ; fmul r0, vpm_read, uni
-0x1002482135c00d87 mov r0, vpm_read ; fmul r1, r0, rb0
-0x1022402187c27276 ftoi ra0.16b, r1, r1 ; mov r1, vpm_read
-0xe0025c6700001a00 load_imm vw_setup, nop, 0x00001a00 (0.000000)
-0x10020c2715027d80 mov vpm, ra0 ; nop nop, r0, r0
-0x10020c2715827d80 mov vpm, uni ; nop nop, r0, r0
-0x10020c27159c0fc0 mov vpm, rb0 ; nop nop, r0, r0
-0x10020c27159e7000 mov vpm, r0 ; nop nop, r0, r0
-0x10020c27159e7240 mov vpm, r1 ; nop nop, r0, r0
-0x300009e7009e7000 sig_end nop nop, r0, r0 ; nop nop, r0, r0
-0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
-0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
-
-CS prog 2/2 QPU:
-0xe0024c6700201a00 load_imm vr_setup, nop, 0x00201a00 (0.000000)
-0x100208a715c27d80 mov r2, vpm_read ; nop nop, r0, r0
-0xe0025c6700001a00 load_imm vw_setup, nop, 0x00001a00 (0.000000)
-0x100248f095c27d92 mov r3, vpm_read ; mov vpm, r2
-0x10024c21358276de mov vpm, r3 ; fmul r1, r3, uni
-0xd00208e702821f80 sig_small_imm fsub r3, 2.0, uni ; nop nop, r0, r0
-0x100049e220827016 nop nop, r0, r0 ; fmul r2, r2, uni
-0x100049e0209e7013 nop nop, r0, r0 ; fmul r0, r2, r3
-0x10124021279e700b ftoi ra0.16a, r0, r0 ; fmul r1, r1, r3
-0x10220027079e7240 ftoi ra0.16b, r1, r1 ; nop nop, r0, r0
-0xd0020c27159c0fc0 sig_small_imm mov vpm, 0 ; nop nop, r0, r0
-0xd0020c27159e0fc0 sig_small_imm mov vpm, 1.0 ; nop nop, r0, r0
-0x10020c2715027d80 mov vpm, ra0 ; nop nop, r0, r0
-0x10020c2715827d80 mov vpm, uni ; nop nop, r0, r0
-0x10020c27159e76c0 mov vpm, r3 ; nop nop, r0, r0
-0x300009e7009e7000 sig_end nop nop, r0, r0 ; nop nop, r0, r0
-0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
-0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
 	/**/
 
 
@@ -931,7 +861,7 @@ CS prog 2/2 QPU:
 			/// Ys and Xs
 			///vpm = ra0
 			"sig_none ; vpm = or.always(a, a, ra0, nop) ; nop = nop(r0, r0);\n"
-			/// Zc
+			/// Zs
 			///uni = 0.5
 			///vpm = uni
 			"sig_none ; vpm = or.always(a, a, uni, nop) ; nop = nop(r0, r0);\n"

@@ -8,8 +8,6 @@
 
 #include "driver/vkExt.h"
 
-#include "QPUassembler/qpu_assembler.h"
-
 //#define GLFW_INCLUDE_VULKAN
 //#define VK_USE_PLATFORM_WIN32_KHR
 //#include <GLFW/glfw3.h>
@@ -842,7 +840,7 @@ void CreateShaders()
 			/// Ys and Xs
 			///vpm = ra0
 			"sig_none ; vpm = or.always(a, a, ra0, nop) ; nop = nop(r0, r0);\n"
-			/// Zc
+			/// Zs
 			///uni = 0.5
 			///vpm = uni
 			"sig_none ; vpm = or.always(a, a, uni, nop) ; nop = nop(r0, r0);\n"
