@@ -2,7 +2,8 @@
 
 #include "kernel/vc4_packet.h"
 
-static void drawCommon(VkCommandBuffer commandBuffer)
+//returns max index
+static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 {
 	assert(commandBuffer);
 
@@ -207,10 +208,27 @@ static void drawCommon(VkCommandBuffer commandBuffer)
 						 coordCode  //coordinate shader code address
 						 );
 
+	uint32_t maxIndex = 0xffff;
 	for(uint32_t c = 0 ; c < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++c)
 	{
 		if(cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding])
 		{
+			uint32_t formatByteSize = getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[c].format);
+
+			//TODO the indexing here is incorrect....
+			uint32_t stride = cb->graphicsPipeline->vertexBindingDescriptions[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding].stride;
+
+			if(stride > 0)
+			{
+				//TODO offset
+				uint32_t usedIndices = (cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundMem->size - formatByteSize) / stride;
+
+				if(usedIndices < maxIndex)
+				{
+					maxIndex = usedIndices;
+				}
+			}
+
 			ControlListAddress vertexBuffer = {
 				.handle = cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundMem->bo,
 				.offset = cb->graphicsPipeline->vertexAttributeDescriptions[c].offset,
@@ -223,8 +241,8 @@ static void drawCommon(VkCommandBuffer commandBuffer)
 									cb->binCl.currMarker->handlesBuf,
 									cb->binCl.currMarker->handlesSize,
 									vertexBuffer, //reloc address
-									getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding].format),
-									cb->graphicsPipeline->vertexBindingDescriptions[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding].stride, //stride
+									formatByteSize,
+									stride,
 									cb->graphicsPipeline->vertexAttributeDescriptions[c].offset, //vertex vpm offset
 									cb->graphicsPipeline->vertexAttributeDescriptions[c].offset  //coordinte vpm offset
 									);
@@ -389,6 +407,9 @@ static void drawCommon(VkCommandBuffer commandBuffer)
 			}
 		}
 	}
+
+
+	return maxIndex;
 }
 
 /*
@@ -397,6 +418,12 @@ static void drawCommon(VkCommandBuffer commandBuffer)
 void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
 	assert(commandBuffer);
+
+	if(instanceCount != 1 || firstInstance != 0)
+	{
+		unsigned instancing;
+		UNSUPPORTED(instancing);
+	}
 
 	drawCommon(commandBuffer);
 
@@ -419,19 +446,25 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexed(
 {
 	assert(commandBuffer);
 
-	drawCommon(commandBuffer);
+	if(instanceCount != 1 || firstInstance != 0)
+	{
+		unsigned instancing;
+		UNSUPPORTED(instancing);
+	}
+
+	uint32_t maxIndex = drawCommon(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
 
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, cb->indexBuffer);
+	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, cb->indexBuffer->boundMem->bo);
 
-	clInsertGEMRelocations(&commandBuffer->binCl, cb->indexBuffer->boundMem->bo, 0);
+	clInsertGEMRelocations(&commandBuffer->binCl, idx, 0);
 
 	//Submit draw call: vertex Array Primitives
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
 	clInsertIndexedPrimitiveList(&commandBuffer->binCl,
-								 0xffff, //TODO max index?
+								 maxIndex, //max index
 								 0, //TODO we can pass an offset here
 								 indexCount,
 								 1, //we only support 16 bit indices

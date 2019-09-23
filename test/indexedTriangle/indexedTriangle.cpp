@@ -67,6 +67,8 @@ VkQueue graphicsQueue;
 VkQueue presentQueue;
 VkBuffer vertexBuffer;
 VkDeviceMemory vertexBufferMemory;
+VkBuffer indexBuffer;
+VkDeviceMemory indexBufferMemory;
 VkPhysicalDeviceMemoryProperties pdmp;
 std::vector<VkImageView> views; //?
 VkSurfaceFormatKHR swapchainFormat;
@@ -647,6 +649,8 @@ void recordCommandBuffers()
 		VkDeviceSize offsets = 0;
 		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer, &offsets );
 
+		vkCmdBindIndexBuffer(presentCommandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
 		float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
 		float viewportScaleX = (float)(swapChainExtent.width) * 0.5f * 16.0f;
 		float viewportScaleY = -1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
@@ -660,7 +664,7 @@ void recordCommandBuffers()
 
 		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
 
-		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
+		vkCmdDrawIndexed(presentCommandBuffers[i], 3, 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(presentCommandBuffers[i]);
 
@@ -1063,7 +1067,7 @@ void CreatePipeline()
 	VkPipelineRasterizationStateCreateInfo rastCreateInfo = {};
 	rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-	rastCreateInfo.cullMode = VK_CULL_MODE_NONE;
+	rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
 	rastCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rastCreateInfo.lineWidth = 1.0f;
 
@@ -1124,6 +1128,7 @@ uint32_t getMemoryTypeIndex(VkPhysicalDeviceMemoryProperties deviceMemoryPropert
 void CreateVertexBuffer()
 {
 	unsigned vboSize = sizeof(float) * 2 * 3; //3 x vec2
+	unsigned iboSize = sizeof(uint16_t) * 3; //3 x ushort
 
 	VkMemoryRequirements mr;
 
@@ -1146,6 +1151,12 @@ void CreateVertexBuffer()
 
 		float vertices[] =
 		{
+			//ccw order
+			//0, 1,
+			//1, -1,
+			//-1, -1
+
+			//cw order
 			-1, -1,
 			1, -1,
 			0, 1
@@ -1157,6 +1168,36 @@ void CreateVertexBuffer()
 		vkUnmapMemory(device, vertexBufferMemory);
 
 		res = vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
+	}
+
+	{ //create staging buffer
+		VkBufferCreateInfo ci = {};
+		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		ci.size = iboSize;
+		ci.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+
+		VkResult res = vkCreateBuffer(device, &ci, 0, &indexBuffer);
+
+		vkGetBufferMemoryRequirements(device, indexBuffer, &mr);
+
+		VkMemoryAllocateInfo mai = {};
+		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		mai.allocationSize = mr.size;
+		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		res = vkAllocateMemory(device, &mai, 0, &indexBufferMemory);
+
+		uint16_t indices[] =
+		{
+			2, 1, 0
+		};
+
+		void* data;
+		res = vkMapMemory(device, indexBufferMemory, 0, mr.size, 0, &data);
+		memcpy(data, indices, iboSize);
+		vkUnmapMemory(device, indexBufferMemory);
+
+		res = vkBindBufferMemory(device, indexBuffer, indexBufferMemory, 0);
 	}
 
 	printf("Vertex buffer created\n");
