@@ -144,8 +144,8 @@ void setupVulkan() {
 	createLogicalDevice();
 	createSemaphores();
 	createSwapChain();
-	createDepthBuffer();
 	createCommandQueues();
+	createDepthBuffer();
 	CreateRenderPass();
 	CreateFramebuffer();
 	CreateVertexBuffer();
