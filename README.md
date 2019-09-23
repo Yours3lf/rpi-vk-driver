@@ -9,7 +9,8 @@
   - [x] texture coordinates and texture sampling
   - [x] varyings
   - [x] Multiple vertex attributes
-  - [ ] Depth / stencil buffers
+  - [x] Depth buffers
+  - [ ] Stencil buffers
   - [ ] Indexed draw calls
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
