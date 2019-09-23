@@ -82,6 +82,7 @@ CPU performance (eg. number of draw calls) should be enough on the quad-core PIs
 - tessellation shaders
 - geometry shaders
 - 32 bit indices
+- instancing
 - some vertex buffer formats
 
 ### What additional features will this driver support?
