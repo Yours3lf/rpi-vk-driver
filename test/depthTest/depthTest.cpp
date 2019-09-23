@@ -646,9 +646,6 @@ void recordCommandBuffers()
 
 		//vkCmdSetScissor(presentCommandBuffers[i], 0, 1, &scissor);
 
-		VkDeviceSize offsets = 0;
-		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer1, &offsets );
-
 		float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
 		float viewportScaleX = (float)(swapChainExtent.width) * 0.5f * 16.0f;
 		float viewportScaleY = -1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
@@ -664,6 +661,17 @@ void recordCommandBuffers()
 
 		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
 
+		uint32_t fragColor = 0xffa14ccc;
+		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragColor), &fragColor);
+
+		VkDeviceSize offsets = 0;
+		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer1, &offsets );
+		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
+
+		fragColor = 0xffafcd02;
+		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragColor), &fragColor);
+
+		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer2, &offsets );
 		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
 
 		vkCmdEndRenderPass(presentCommandBuffers[i]);
@@ -830,9 +838,11 @@ void CreateShaders()
 			///ra0.16a = int(r1), r2 = vpm * uni
 			"sig_none ; rx0.16a = ftoi.always(r1, r1, vpm_read, uni) ; r2 = fmul.always(a, b) ;\n"
 			///r3 = r2 * rb0
-			"sig_none ; nop = nop(r0, r0, nop, rb0) ; r3 = fmul.always(r2, b) ;\n"
+			///r0 = vpm
+			"sig_none ; r0 = or.always(a, a, vpm_read, rb0) ; r3 = fmul.always(r2, b) ;\n"
 			///ra0.16b = int(r3)
-			"sig_none ; rx0.16b = ftoi.always(r3, r3) ; nop = nop(r0, r0) ;\n"
+			///r0 = r0 * 0.5
+			"sig_none ; rx0.16b = ftoi.always(r3, r3, uni, nop) ; r0 = fmul.always(r0, a) ;\n"
 			///set up VPM write for subsequent writes
 			///0x00001a00: 0000 0000 0000 0000 0001 1010 0000 0000
 			///addr: 0
@@ -847,7 +857,7 @@ void CreateShaders()
 			/// Zs
 			///uni = 0.5
 			///vpm = uni
-			"sig_none ; vpm = or.always(a, a, uni, nop) ; nop = nop(r0, r0);\n"
+			"sig_none ; vpm = fadd.always(r0, a, uni, nop) ; nop = nop(r0, r0);\n"
 			/// 1.0 / Wc
 			///vpm = rb0 (1)
 			"sig_none ; vpm = or.always(b, b, nop, rb0) ; nop = nop(r0, r0);\n"
@@ -877,24 +887,24 @@ void CreateShaders()
 			///r1 = r1 * uni
 			"sig_none ; nop = nop(r0, r0, uni, nop) ; r1 = fmul.always(r1, a);\n"
 			///r0 = r2 * r3
-			"sig_none ; nop = nop(r0, r0) ; r0 = fmul.always(r2, r3);\n"
+			///r2 = vpm
+			"sig_none ; r2 = or.always(a, a, vpm_read, nop) ; r0 = fmul.always(r2, r3);\n"
 			///ra0.16a = r0, r1 = r1 * r3
 			"sig_none ; rx0.16a = ftoi.always(r0, r0) ; r1 = fmul.always(r1, r3) ;\n"
 			///ra0.16b = r1
-			"sig_none ; rx0.16b = ftoi.always(r1, r1) ; nop = nop(r0, r0) ;\n"
 			///write Zc
-			///vpm = 0
-			"sig_small_imm ; vpm = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;\n"
+			"sig_none ; rx0.16b = ftoi.always(r1, r1) ; vpm = v8min.always(r2, r2) ;\n"
 			///write Wc
 			///vpm = 1.0
-			"sig_small_imm ; vpm = or.always(b, b, nop, 0x3f800000) ; nop = nop(r0, r0) ;\n"
+			///r2 = r2 * uni (0.5)
+			"sig_small_imm ; vpm = or.always(b, b, uni, 0x3f800000) ; r2 = fmul.always(r2, a) ;\n"
 			///write Ys and Xs
 			///vpm = ra0
 			"sig_none ; vpm = or.always(a, a, ra0, nop) ; nop = nop(r0, r0) ;\n"
 			///write Zs
 			///uni = 0.5
-			///vpm = uni
-			"sig_none ; vpm = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;\n"
+			///vpm = r2
+			"sig_none ; vpm = fadd.always(r2, a, uni, nop) ; nop = nop(r0, r0) ;\n"
 			///write 1/Wc
 			///vpm = r3
 			"sig_none ; vpm = or.always(r3, r3) ; nop = nop(r0, r0) ;\n"
@@ -933,9 +943,7 @@ void CreateShaders()
 	/**/
 	//display a color
 	char fs_asm_code[] =
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_load_imm ; r0 = load32.always(0xffa14ccc) ; nop = load32() ;"
-			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; tlb_color_all = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -993,6 +1001,15 @@ void CreateShaders()
 			0, //descriptor array element #
 			16, //resource offset
 			VK_SHADER_STAGE_VERTEX_BIT
+		},
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			0, //resource offset
+			VK_SHADER_STAGE_FRAGMENT_BIT
 		}
 	};
 
@@ -1010,15 +1027,19 @@ void CreateShaders()
 
 void CreatePipeline()
 {
-	VkPushConstantRange pushConstantRanges[1];
+	VkPushConstantRange pushConstantRanges[2];
 	pushConstantRanges[0].offset = 0;
 	pushConstantRanges[0].size = 5 * 4; //5 * 32bits
 	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+	pushConstantRanges[1].offset = 0;
+	pushConstantRanges[1].size = 1 * 4; //1 * 32bits
+	pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
 	VkPipelineLayoutCreateInfo pipelineLayoutCI = {};
 	pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutCI.setLayoutCount = 0;
-	pipelineLayoutCI.pushConstantRangeCount = 1;
+	pipelineLayoutCI.pushConstantRangeCount = 2;
 	pipelineLayoutCI.pPushConstantRanges = &pushConstantRanges[0];
 	vkCreatePipelineLayout(device, &pipelineLayoutCI, 0, &pipelineLayout);
 
