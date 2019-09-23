@@ -10,7 +10,7 @@
   - [x] varyings
   - [x] Multiple vertex attributes
   - [x] Depth buffers
-  - [ ] Stencil buffers
+  - [x] Stencil buffers
   - [ ] Indexed draw calls
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
