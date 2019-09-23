@@ -11,7 +11,7 @@
   - [x] Multiple vertex attributes
   - [x] Depth buffers
   - [x] Stencil buffers
-  - [ ] Indexed draw calls
+  - [x] Indexed draw calls
   - [ ] blending
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
