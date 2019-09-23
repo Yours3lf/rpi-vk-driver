@@ -401,7 +401,7 @@ int isDepthStencilFormat(VkFormat format)
 	}
 }
 
-uint32_t getDepthCompareOp(VkCompareOp op)
+uint32_t getCompareOp(VkCompareOp op)
 {
 	switch(op)
 	{
@@ -424,6 +424,31 @@ uint32_t getDepthCompareOp(VkCompareOp op)
 	default:
 		return -1;
 	}
+}
+
+uint32_t getStencilOp(VkStencilOp op)
+{
+	switch(op)
+	{
+	case VK_STENCIL_OP_ZERO:
+		return 0;
+	case VK_STENCIL_OP_KEEP:
+		return 1;
+	case VK_STENCIL_OP_REPLACE:
+		return 2;
+	case VK_STENCIL_OP_INCREMENT_AND_CLAMP:
+		return 3;
+	case VK_STENCIL_OP_DECREMENT_AND_CLAMP:
+		return 4;
+	case VK_STENCIL_OP_INVERT:
+		return 5;
+	case VK_STENCIL_OP_INCREMENT_AND_WRAP:
+		return 6;
+	case VK_STENCIL_OP_DECREMENT_AND_WRAP:
+		return 7;
+	default:
+		return -1;
+	};
 }
 
 uint32_t getTopology(VkPrimitiveTopology topology)
@@ -630,6 +655,126 @@ void encodeTextureUniform(uint32_t* params, //array of 4 uint32_t
 	//TODO
 	//child images
 	params[3] = 0;
+}
+
+void encodeDepthStencilValue(uint32_t *values, uint32_t* numValues, VkStencilOpState front, VkStencilOpState back)
+{
+	assert(values);
+	assert(numValues);
+
+	if(front.compareMask == back.compareMask &&
+	   front.compareOp == back.compareOp &&
+	   front.depthFailOp == back.depthFailOp &&
+	   front.failOp == back.failOp &&
+	   front.passOp == back.passOp &&
+	   front.reference == back.reference &&
+	   front.writeMask == back.writeMask
+	   )
+	{
+		*numValues = 1;
+
+		values[0] = 0
+				| (front.compareMask & 0xff)
+				| (front.reference & 0xff) << 0x8
+				| (getCompareOp(front.compareOp) & 0x3) << 16
+				| (getStencilOp(front.failOp) & 0x3) << 19
+				| (getStencilOp(front.passOp) & 0x3) << 22
+				| (getStencilOp(front.depthFailOp) & 0x3) << 25
+				| 3 << 30; //front and back
+
+		switch(front.writeMask)
+		{
+		case 0x1:
+			values[0] |= 0 << 28;
+			break;
+		case 0x3:
+			values[0] |= 1 << 28;
+			break;
+		case 0xf:
+			values[0] |= 2 << 28;
+			break;
+		case 0xff:
+			values[0] |= 3 << 28;
+			break;
+		default:
+			values[1] = 0
+					| front.writeMask & 0xff
+					| (front.writeMask & 0xff) << 8;
+			*numValues = 2;
+			break;
+		};
+	}
+	else
+	{
+		*numValues = 2;
+
+		values[0] = 0
+				| (front.compareMask & 0xff)
+				| (front.reference & 0xff) << 0x8
+				| (getCompareOp(front.compareOp) & 0x3) << 16
+				| (getStencilOp(front.failOp) & 0x3) << 19
+				| (getStencilOp(front.passOp) & 0x3) << 22
+				| (getStencilOp(front.depthFailOp) & 0x3) << 25
+				| 1 << 30; //front
+
+		values[1] = 0
+				| (back.compareMask & 0xff)
+				| (back.reference & 0xff) << 0x8
+				| (getCompareOp(back.compareOp) & 0x3) << 16
+				| (getStencilOp(back.failOp) & 0x3) << 19
+				| (getStencilOp(back.passOp) & 0x3) << 22
+				| (getStencilOp(back.depthFailOp) & 0x3) << 25
+				| 2 << 30; //front
+
+		if((front.writeMask == 0x1 ||
+		   front.writeMask == 0x3 ||
+		   front.writeMask == 0xf ||
+		   front.writeMask == 0xff) &&
+		   (back.writeMask == 0x1 ||
+		   back.writeMask == 0x3 ||
+		   back.writeMask == 0xf ||
+		   back.writeMask == 0xff))
+		{
+			switch(front.writeMask)
+			{
+			case 0x1:
+				values[0] |= 0 << 28;
+				break;
+			case 0x3:
+				values[0] |= 1 << 28;
+				break;
+			case 0xf:
+				values[0] |= 2 << 28;
+				break;
+			case 0xff:
+				values[0] |= 3 << 28;
+				break;
+			};
+
+			switch(back.writeMask)
+			{
+			case 0x1:
+				values[1] |= 0 << 28;
+				break;
+			case 0x3:
+				values[1] |= 1 << 28;
+				break;
+			case 0xf:
+				values[1] |= 2 << 28;
+				break;
+			case 0xff:
+				values[1] |= 3 << 28;
+				break;
+			};
+		}
+		else
+		{
+			values[2] = 0
+					| front.writeMask & 0xff
+					| (back.writeMask & 0xff) << 8;
+			*numValues = 3;
+		}
+	}
 }
 
 uint8_t getTextureDataType(VkFormat format)

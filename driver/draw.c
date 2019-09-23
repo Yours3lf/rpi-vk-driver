@@ -88,7 +88,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 								  1, //earlyz updates enable
 								  1, //earlyz enable
 								  cb->graphicsPipeline->depthWriteEnable, //z updates enable
-								  cb->graphicsPipeline->depthTestEnable ? getDepthCompareOp(cb->graphicsPipeline->depthCompareOp) : V3D_COMPARE_FUNC_ALWAYS, //depth compare func
+								  cb->graphicsPipeline->depthTestEnable ? getCompareOp(cb->graphicsPipeline->depthCompareOp) : V3D_COMPARE_FUNC_ALWAYS, //depth compare func
 								  0, //coverage read mode
 								  0, //coverage pipe select
 								  0, //coverage update mode

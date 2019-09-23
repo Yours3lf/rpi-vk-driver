@@ -458,7 +458,8 @@ int findInstanceExtension(char* name);
 int findDeviceExtension(char* name);
 void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, uint32_t* paddedWidth, uint32_t* paddedHeight);
 int isDepthStencilFormat(VkFormat format);
-uint32_t getDepthCompareOp(VkCompareOp op);
+uint32_t getCompareOp(VkCompareOp op);
+uint32_t getStencilOp(VkStencilOp op);
 uint32_t getTopology(VkPrimitiveTopology topology);
 uint32_t getPrimitiveMode(VkPrimitiveTopology topology);
 uint32_t getFormatByteSize(VkFormat format);
@@ -476,6 +477,7 @@ void encodeTextureUniform(uint32_t* params,
 						  uint8_t wrapT,
 						  uint8_t wrapS,
 						  uint8_t noAutoLod);
+void encodeDepthStencilValue(uint32_t* values, uint32_t* numValues, VkStencilOpState front, VkStencilOpState back);
 uint8_t getTextureDataType(VkFormat format);
 uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter, float maxLod);
 uint8_t getWrapMode(VkSamplerAddressMode mode);

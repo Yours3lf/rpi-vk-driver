@@ -63,7 +63,8 @@ std::vector<VkCommandBuffer> presentCommandBuffers; //
 std::vector<VkImage> swapChainImages; //
 VkRenderPass renderPass; //
 std::vector<VkFramebuffer> fbs; //
-VkShaderModule shaderModule; //
+VkShaderModule shaderModule1; //
+VkShaderModule shaderModule2; //
 VkPipeline pipeline1; //
 VkPipeline pipeline2; //
 VkQueue graphicsQueue;
@@ -103,7 +104,7 @@ void cleanup() {
 
 	vkDestroyRenderPass(device, renderPass, 0);
 
-	vkDestroyShaderModule(device, shaderModule, 0);
+	//vkDestroyShaderModule(device, shaderModule, 0);
 
 	//vkDestroyPipeline(device, pipeline, 0);
 
@@ -1087,7 +1088,47 @@ void CreateShaders()
 	//display a color
 	char fs_asm_code[] =
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			///stencil setup state
+			///  28   24   20   16   12    8    4    0
+			///1111 0100 1001 0111 1110 1110 1111 1111
+			/// -> 0xF497EEFF‬
+			///selection = front and back (0x3)
+			///write mask = 0xff
+			///z test fail op = replace (0x2)
+			///z test pass op = replace (0x2)
+			///stencil test fail op = replace (0x2)
+			///stencil function = always (0x7)
+			///stencil ref value = 0xee
+			///stencil function mask = 0xff
+			"sig_load_imm ; r0 = load32.always(0xF497EEFF‬) ; nop = load32() ;" //stencil setup state
+			"sig_none ; tlb_stencil_setup = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
+			///omit color write
+			"sig_none ; r0 = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
+			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+				"\0";
+	/**/
+
+	/**/
+	//display a color
+	char fs_asm_code2[] =
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			///stencil setup state
+			///  28   24   20   16   12    8    4    0
+			///1111 0010 0100 1101 1110 1110 1111 1111
+			/// -> 0xF24DEEFF
+			///selection = front and back (0x3)
+			///write mask = 0xff
+			///z test fail op = keep (0x1)
+			///z test pass op = keep (0x1)
+			///stencil test fail op = keep (0x1)
+			///stencil function = not equal (0x5)
+			///stencil ref value = 0xee
+			///stencil function mask = 0xff
+			"sig_load_imm ; r0 = load32.always(0xF24DEEFF) ; nop = load32() ;" //stencil setup state
+			"sig_none ; tlb_stencil_setup = or.always(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
 			"sig_none ; tlb_color_all = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -1164,8 +1205,13 @@ void CreateShaders()
 	shaderModuleCreateInfo.mappings = mappings;
 	shaderModuleCreateInfo.numMappings = sizeof(mappings) / sizeof(VkRpiAssemblyMappingEXT);
 
-	VkResult res = vkCreateShaderModuleFromRpiAssemblyEXT(device, &shaderModuleCreateInfo, 0, &shaderModule);
-	assert(shaderModule);
+	VkResult res = vkCreateShaderModuleFromRpiAssemblyEXT(device, &shaderModuleCreateInfo, 0, &shaderModule1);
+	assert(shaderModule1);
+
+	asm_strings[2] = (char*)fs_asm_code2;
+
+	res = vkCreateShaderModuleFromRpiAssemblyEXT(device, &shaderModuleCreateInfo, 0, &shaderModule2);
+	assert(shaderModule2);
 }
 
 
@@ -1194,11 +1240,11 @@ void CreatePipeline()
 
 	shaderStageCreateInfo[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderStageCreateInfo[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-	shaderStageCreateInfo[0].module = shaderModule;
+	shaderStageCreateInfo[0].module = shaderModule1;
 	shaderStageCreateInfo[0].pName = "main";
 	shaderStageCreateInfo[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderStageCreateInfo[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	shaderStageCreateInfo[1].module = shaderModule;
+	shaderStageCreateInfo[1].module = shaderModule1;
 	shaderStageCreateInfo[1].pName = "main";
 
 	VkVertexInputBindingDescription vertexInputBindingDescription =
@@ -1296,6 +1342,9 @@ void CreatePipeline()
 	depthStencilState.back = depthStencilState.front;
 
 	blendAttachState.colorWriteMask = 0xf;
+
+	shaderStageCreateInfo[0].module = shaderModule2;
+	shaderStageCreateInfo[1].module = shaderModule2;
 
 	res = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &pipeline2);
 
