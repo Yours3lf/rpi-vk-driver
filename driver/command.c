@@ -309,12 +309,15 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 			};
 
 			_image* i = marker->image;
+			_image* dsI = marker->depthStencilImage;
 
 			//This should not result in an insertion!
 			uint32_t imageIdx = clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, i->boundMem->bo);
+			uint32_t depthStencilImageIdx = dsI ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, dsI->boundMem->bo) : 0;
 
-			//TODO
-			//depth/stencil/msaa
+			//TODO msaa, read fields
+
+			//TODO handle don't care store bit
 
 			//fill out submit cl fields
 			submitCl.color_write.hindex = imageIdx;
@@ -326,6 +329,15 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 
 			submitCl.clear_color[0] = i->clearColor[0];
 			submitCl.clear_color[1] = i->clearColor[1];
+
+			submitCl.zs_write.hindex = depthStencilImageIdx;
+			submitCl.zs_write.offset = 0;
+			submitCl.zs_write.flags = 0;
+			submitCl.zs_write.bits = VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+									 VC4_SET_FIELD(dsI->tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
+
+			submitCl.clear_z = dsI->clearColor[0]; //0...1 -> 0...0xffffff
+			submitCl.clear_s = dsI->clearColor[1]; //0...0xff
 
 			submitCl.min_x_tile = 0;
 			submitCl.min_y_tile = 0;
@@ -352,8 +364,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 			submitCl.width = i->width;
 			submitCl.height = i->height;
 			submitCl.flags |= marker->flags;
-			submitCl.clear_z = 0; //TODO probably 0...0xffffff
-			submitCl.clear_s = 0; //TODO probably 0...0xff
 
 			submitCl.bo_handles = marker->handlesBuf;
 			submitCl.bin_cl = ((uint8_t*)marker) + sizeof(CLMarker);
@@ -387,7 +397,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 				printf("%u ", *((uint32_t*)(marker->uniformsBuf)+d));
 			}
 			printf("\nShader recs: ");
-			uint8_t* ptr = marker->shaderRecBuf + (3 + 2) * 4;
+			uint8_t* ptr = marker->shaderRecBuf + (3 + 1) * 4;
 			for(int d = 0; d < marker->shaderRecCount; ++d)
 			{
 				uint8_t flags = *ptr;

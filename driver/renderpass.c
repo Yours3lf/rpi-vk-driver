@@ -22,32 +22,60 @@ void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBegin
 	{
 		if(cb->renderpass->attachments[c].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
 		{
-			cb->fbo->attachmentViews[c].image->clearColor[0] = cb->fbo->attachmentViews[c].image->clearColor[1] = packVec4IntoABGR8(pRenderPassBegin->pClearValues->color.float32);
+			if(!isDepthStencilFormat(cb->renderpass->attachments[c].format))
+			{
+				cb->fbo->attachmentViews[c].image->clearColor[0] = cb->fbo->attachmentViews[c].image->clearColor[1] = packVec4IntoABGR8(pRenderPassBegin->pClearValues[c].color.float32);
+			}
+			else
+			{
+				//for combined depth/stencil images clearColor 0 is depth and 1 is stencil
+				cb->fbo->attachmentViews[c].image->clearColor[0] = (uint32_t)(pRenderPassBegin->pClearValues[c].depthStencil.depth * 0xffffff) & 0xffffff;
+			}
 		}
-		else if(isDepthStencilFormat(cb->renderpass->attachments[c].format) && cb->renderpass->attachments[c].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+
+		if(isDepthStencilFormat(cb->renderpass->attachments[c].format) && cb->renderpass->attachments[c].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
 		{
-			//TODO how to pack depth/stencil clear values???
-			//cb->fbo->attachmentViews[c].image->needToClear = 1;
-			//cb->fbo->attachmentViews[c].image->clearColor = packVec4IntoABGR8(pRenderPassBegin->pClearValues->depthStencil.depth);
+			cb->fbo->attachmentViews[c].image->clearColor[1] = pRenderPassBegin->pClearValues[c].depthStencil.stencil & 0xff;
 		}
 	}
 
 	cb->currentSubpass = 0;
 
 	//TODO handle multiple attachments
-	_image* i = cb->fbo->attachmentViews[0].image;
+	_image* i = 0;
+	_image* dsI = 0;
+
+	for(uint32_t c = 0; c < cb->fbo->numAttachmentViews; ++c)
+	{
+		if(!isDepthStencilFormat(cb->fbo->attachmentViews[c].image->format))
+		{
+			i = cb->fbo->attachmentViews[c].image;
+		}
+		else
+		{
+			dsI = cb->fbo->attachmentViews[c].image;
+		}
+	}
 
 	clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
-	clInsertNewCLMarker(&commandBuffer->binCl, &cb->handlesCl, &cb->shaderRecCl, cb->shaderRecCount, &cb->uniformsCl, i);
+	clInsertNewCLMarker(&commandBuffer->binCl, &cb->handlesCl, &cb->shaderRecCl, cb->shaderRecCount, &cb->uniformsCl, i, dsI);
 
 	//insert reloc for render target
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
 	clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, i->boundMem->bo);
 
+	//insert reloc for depth/stencil image
+	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, dsI->boundMem->bo);
+
 	//TODO handle multiple attachments
-	if(cb->renderpass->attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR)
+	for(uint32_t c = 0; c < cb->renderpass->numAttachments; ++c)
 	{
-		cb->binCl.currMarker->flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+		if(cb->renderpass->attachments[c].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR)
+		{
+			//TODO separate clear for color / depth / stencil?
+			cb->binCl.currMarker->flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+		}
 	}
 
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);

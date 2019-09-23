@@ -766,10 +766,6 @@ void recordCommandBuffers()
 
 		vkCmdBindPipeline(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-		//vkCmdSetViewport(presentCommandBuffers[i], 0, 1, &viewport);
-
-		//vkCmdSetScissor(presentCommandBuffers[i], 0, 1, &scissor);
-
 		float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
 		float viewportScaleX = (float)(swapChainExtent.width) * 0.5f * 16.0f;
 		float viewportScaleY = -1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
@@ -785,14 +781,16 @@ void recordCommandBuffers()
 
 		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
 
-		uint32_t fragColor = 0xffa14ccc;
+		//even thought yellow is rendered last, if depth buffering works we expect purple to be on top
+
+		uint32_t fragColor = 0xffa14ccc; //purple
 		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragColor), &fragColor);
 
 		VkDeviceSize offsets = 0;
 		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer1, &offsets );
 		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
 
-		fragColor = 0xffafcd02;
+		fragColor = 0xffafcd02; //yellow
 		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragColor), &fragColor);
 
 		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer2, &offsets );
@@ -1089,6 +1087,9 @@ void CreateShaders()
 	/**/
 	//display a color
 	char fs_asm_code[] =
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
 			"sig_none ; tlb_color_all = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
