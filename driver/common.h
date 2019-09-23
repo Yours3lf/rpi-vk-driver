@@ -354,6 +354,9 @@ typedef struct VkCommandBuffer_T
 
 	uint32_t vertexBufferOffsets[8];
 	_buffer* vertexBuffers[8];
+
+	uint32_t indexBufferOffset;
+	_buffer* indexBuffer;
 } _commandBuffer;
 
 typedef struct VkFence_T

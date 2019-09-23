@@ -127,6 +127,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 			pCommandBuffers[c]->graphicsPipeline = 0;
 			pCommandBuffers[c]->computePipeline = 0;
 			pCommandBuffers[c]->numDrawCallsSubmitted = 0;
+			pCommandBuffers[c]->indexBuffer = 0;
+			pCommandBuffers[c]->indexBufferOffset = 0;
 			pCommandBuffers[c]->vertexBufferDirty = 1;
 			pCommandBuffers[c]->indexBufferDirty = 1;
 			pCommandBuffers[c]->viewportDirty = 1;
@@ -330,14 +332,22 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
 			submitCl.clear_color[0] = i->clearColor[0];
 			submitCl.clear_color[1] = i->clearColor[1];
 
-			submitCl.zs_write.hindex = depthStencilImageIdx;
-			submitCl.zs_write.offset = 0;
-			submitCl.zs_write.flags = 0;
-			submitCl.zs_write.bits = VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
-									 VC4_SET_FIELD(dsI->tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
+			if(dsI)
+			{
+				submitCl.zs_write.hindex = depthStencilImageIdx;
+				submitCl.zs_write.offset = 0;
+				submitCl.zs_write.flags = 0;
+				submitCl.zs_write.bits = VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+										 VC4_SET_FIELD(dsI->tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
 
-			submitCl.clear_z = dsI->clearColor[0]; //0...1 -> 0...0xffffff
-			submitCl.clear_s = dsI->clearColor[1]; //0...0xff
+				submitCl.clear_z = dsI->clearColor[0]; //0...1 -> 0...0xffffff
+				submitCl.clear_s = dsI->clearColor[1]; //0...0xff
+			}
+			else
+			{
+				submitCl.clear_z = 0;
+				submitCl.clear_s = 0;
+			}
 
 			submitCl.min_x_tile = 0;
 			submitCl.min_y_tile = 0;

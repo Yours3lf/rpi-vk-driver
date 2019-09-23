@@ -207,7 +207,19 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBindIndexBuffer(
 	VkDeviceSize                                offset,
 	VkIndexType                                 indexType)
 {
-	//TODO
+	assert(commandBuffer);
+
+	if(indexType == VK_INDEX_TYPE_UINT32)
+	{
+		UNSUPPORTED(VK_INDEX_TYPE_UINT32);
+	}
+
+	_commandBuffer* cb = commandBuffer;
+
+	cb->indexBuffer = buffer;
+	cb->indexBufferOffset = offset;
+
+	cb->indexBufferDirty = 1;
 }
 
 /*

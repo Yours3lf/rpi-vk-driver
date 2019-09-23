@@ -65,8 +65,11 @@ void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBegin
 	clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, i->boundMem->bo);
 
 	//insert reloc for depth/stencil image
-	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, dsI->boundMem->bo);
+	if(dsI)
+	{
+		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, dsI->boundMem->bo);
+	}
 
 	//TODO handle multiple attachments
 	for(uint32_t c = 0; c < cb->renderpass->numAttachments; ++c)

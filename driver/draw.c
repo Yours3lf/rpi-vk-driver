@@ -2,10 +2,7 @@
 
 #include "kernel/vc4_packet.h"
 
-/*
- * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdDraw
- */
-void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+static void drawCommon(VkCommandBuffer commandBuffer)
 {
 	assert(commandBuffer);
 
@@ -85,8 +82,8 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 		//Configuration Bits
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
 		clInsertConfigurationBits(&commandBuffer->binCl,
-								  1, //earlyz updates enable
-								  1, //earlyz enable
+								  cb->graphicsPipeline->depthWriteEnable, //earlyz updates enable
+								  cb->graphicsPipeline->depthTestEnable, //earlyz enable
 								  cb->graphicsPipeline->depthWriteEnable, //z updates enable
 								  cb->graphicsPipeline->depthTestEnable ? getCompareOp(cb->graphicsPipeline->depthCompareOp) : V3D_COMPARE_FUNC_ALWAYS, //depth compare func
 								  0, //coverage read mode
@@ -140,10 +137,6 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 						0, //extended shader state record
 						cb->graphicsPipeline->vertexAttributeDescriptionCount & 0x7); //number of attribute arrays, 0 -> 8
 
-	//Vertex Array Primitives (draw call)
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
-	clInsertVertexArrayPrimitives(&commandBuffer->binCl, firstVertex, vertexCount, getPrimitiveMode(cb->graphicsPipeline->topology));
-
 	//emit shader record
 	ControlListAddress fragCode = {
 		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]))->bos[RPI_ASSEMBLY_TYPE_FRAGMENT],
@@ -182,7 +175,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 		attribSize += getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[c].format);
 	}
 
-	//TODO number of attribs
+	//number of attribs
 	//3 is the number of type of possible shaders
 	for(int c = 0; c < (3 + attribCount)*4; ++c)
 	{
@@ -237,12 +230,6 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 									);
 		}
 	}
-
-
-
-
-
-
 
 	//write uniforms
 	_pipelineLayout* pl = cb->graphicsPipeline->layout;
@@ -402,6 +389,22 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 			}
 		}
 	}
+}
+
+/*
+ * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdDraw
+ */
+void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+{
+	assert(commandBuffer);
+
+	drawCommon(commandBuffer);
+
+	_commandBuffer* cb = commandBuffer;
+
+	//Submit draw call: vertex Array Primitives
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
+	clInsertVertexArrayPrimitives(&commandBuffer->binCl, firstVertex, vertexCount, getPrimitiveMode(cb->graphicsPipeline->topology));
 
 	cb->numDrawCallsSubmitted++;
 }
@@ -414,7 +417,27 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexed(
 	int32_t                                     vertexOffset,
 	uint32_t                                    firstInstance)
 {
-	//TODO
+	assert(commandBuffer);
+
+	drawCommon(commandBuffer);
+
+	_commandBuffer* cb = commandBuffer;
+
+	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, cb->indexBuffer);
+
+	clInsertGEMRelocations(&commandBuffer->binCl, cb->indexBuffer->boundMem->bo, 0);
+
+	//Submit draw call: vertex Array Primitives
+	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
+	clInsertIndexedPrimitiveList(&commandBuffer->binCl,
+								 0xffff, //TODO max index?
+								 0, //TODO we can pass an offset here
+								 indexCount,
+								 1, //we only support 16 bit indices
+								 getPrimitiveMode(cb->graphicsPipeline->topology));
+
+	cb->numDrawCallsSubmitted++;
 }
 
 VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirect(
