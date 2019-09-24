@@ -821,34 +821,6 @@ void CreateFramebuffer()
 
 void CreateShaders()
 {
-	/**
-//blending equation
-rR = (sR * sA) + (dR * (1 - sA))
-rG = (sG * sA) + (dG * (1 - sA))
-rB = (sB * sA) + (dB * (1 - sA))
-rA = (sA * sA) + (dA * (1 - sA))
-0x100049e0203e303e nop nop, r0, r0 ; fmul r0, vary, ra15
-0x100248a1213e317e fadd r2, r0, r5 ; fmul r1, vary, ra15
-0x114248e1819e7352 fadd r3, r1, r5 ; mov r1.8a, r2
-0x115049e1809e701b nop nop, r0, r0 ; mov r1.8b, r3
-0xd16049e1809c003f sig_small_imm nop nop, r0, r0 ; mov r1.8c, 0
-0x113049e0809e7012 nop nop, r0, r0 ; mov r0.8888, r2 //mov r2 to all channels
-0x117049e1809e7012 nop nop, r0, r0 ; mov r1.8d, r2   //mov r2 to alpha
-//r3 = r1 * r0 (sRGBA * sAAAA)
-//r1 = ~r0 (essentially 1-sA)
-0x10024863779e7008 not r1, r0, r0 ; v8muld r3, r1, r0
-//load tlb color to r4
-0x800009e7009e7000 sig_color_load nop nop, r0, r0 ; nop nop, r0, r0
-//r2 = r4 * r1 (dRGBA * (1 - sA))
-0x100049e2609e7021 nop nop, r0, r0 ; v8muld r2, r4, r1
-//tlb color (all samples) = r3 + r2
-0x100059eec09e701a nop nop, r0, r0 ; v8adds tlb_color_all, r3, r2
-0x300009e7009e7000 sig_end nop nop, r0, r0 ; nop nop, r0, r0
-0x100009e7009e7000 nop nop, r0, r0 ; nop nop, r0, r0
-0x500009e7009e7000 sig_unlock_score nop nop, r0, r0 ; nop nop, r0, r0
-	/**/
-
-
 	char vs_asm_code[] =
 			///0x40000000 = 2.0
 			///uni = 1.0
@@ -980,7 +952,26 @@ rA = (sA * sA) + (dA * (1 - sA))
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
-			"sig_none ; tlb_color_all = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
+			/// instead of outputting the final color
+			/// we patch the shader (eventually in the driver)
+			/// so that it performs the desired blending mode
+			///"sig_none ; tlb_color_all = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
+			///"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			///"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			///"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			///
+			/// r0 contains sRGBA
+			"sig_none ; r0 = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
+			/// prepare sAAAA to r1
+			/// load tbl color dRGBA to r4
+			"sig_color_load ; r1.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;"
+			/// prepare 1 - sAAAA to r2
+			/// prepare sRGBA * sAAAA to r0
+			"sig_none ; r2 = not.always(r1, r1) ; r0 = v8muld.always(r0, r1) ;"
+			/// prepare (1 - sAAAA) * dRGBA
+			"sig_none ; nop = nop(r0, r0) ; r2 = v8muld.always(r2, r4) ;"
+			/// output sRGBA * sAAAA + dRGBA * (1 - sAAAA)
+			"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8adds.always(r2, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
