@@ -33,6 +33,10 @@
 - [ ] Emulated features
   - [ ] Clear command support
   - [ ] Copy command support
+- [ ] Shader patching
+  - [ ] Stencil state
+  - [ ] Depth writes
+  - [ ] Blending mode
 - [ ] Platform features
   - [ ] Layer support
   - [ ] Pipeline cache support
