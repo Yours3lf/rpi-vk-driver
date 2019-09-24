@@ -12,7 +12,7 @@
   - [x] Depth buffers
   - [x] Stencil buffers
   - [x] Indexed draw calls
-  - [ ] blending
+  - [x] blending
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
 - [x] Resources
