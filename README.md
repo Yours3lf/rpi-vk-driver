@@ -37,6 +37,7 @@
   - [ ] Stencil state
   - [ ] Depth writes
   - [ ] Blending mode
+  - [ ] Vertex attrib format
 - [ ] Platform features
   - [ ] Layer support
   - [ ] Pipeline cache support
