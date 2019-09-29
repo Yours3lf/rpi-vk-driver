@@ -77,10 +77,10 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
 	//"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8adds.always(r2, r0) ;"
 
 	///VK_BLEND_FACTOR_ZERO
-	"sig_small_imm ; r1 = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;"
+	//"sig_small_imm ; r1 = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;"
 
 	///VK_BLEND_FACTOR_ONE
-	"sig_small_imm ; r1 = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
+	//"sig_small_imm ; r1 = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
 
 	///VK_BLEND_FACTOR_SRC_COLOR
 	//"sig_none ; r1 = or.always(r0, r0) ; r0 = v8muld.always(r0, r1) ;"
