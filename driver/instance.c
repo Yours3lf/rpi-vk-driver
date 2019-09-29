@@ -1,5 +1,85 @@
 #include "common.h"
 
+#include <vulkan/vk_icd.h>
+
+#include "declarations.h"
+
+#define RETFUNC(f) if(!strcmp(pName, #f)) return rpi_##f
+
+static uint32_t loaderVersion = -1;
+
+VKAPI_ATTR VkResult VKAPI_CALL vk_icdNegotiateLoaderICDInterfaceVersion(uint32_t* pSupportedVersion)
+{
+	assert(pSupportedVersion);
+	loaderVersion = *pSupportedVersion;
+
+	*pSupportedVersion = 2; //we support v2
+}
+
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(VkInstance instance, const char* pName)
+{
+	if(loaderVersion == -1)
+	{
+		//dealing with legacy ICD loader, as vk_icdNegotiateLoaderICDInterfaceVersion has not been called
+		loaderVersion = 1;
+	}
+
+	RETFUNC(vkCreateInstance);
+	RETFUNC(vkEnumerateInstanceExtensionProperties);
+	RETFUNC(vkEnumerateInstanceVersion);
+	RETFUNC(vkDestroyInstance);
+	RETFUNC(vkEnumeratePhysicalDevices);
+	RETFUNC(vkGetInstanceProcAddr);
+	RETFUNC(vkEnumeratePhysicalDeviceGroups);
+	RETFUNC(vkDestroySurfaceKHR);
+	RETFUNC(vkGetPhysicalDeviceFeatures);
+	RETFUNC(vkGetPhysicalDeviceFeatures2);
+	RETFUNC(vkGetPhysicalDeviceProperties);
+	RETFUNC(vkGetPhysicalDeviceProperties2);
+	RETFUNC(vkGetPhysicalDeviceFormatProperties);
+	RETFUNC(vkGetPhysicalDeviceFormatProperties2);
+	RETFUNC(vkGetPhysicalDeviceImageFormatProperties);
+	RETFUNC(vkGetPhysicalDeviceImageFormatProperties2);
+	RETFUNC(vkGetPhysicalDeviceProperties);
+	RETFUNC(vkGetPhysicalDeviceProperties2);
+	RETFUNC(vkGetPhysicalDeviceQueueFamilyProperties);
+	RETFUNC(vkGetPhysicalDeviceQueueFamilyProperties2);
+	RETFUNC(vkGetPhysicalDeviceMemoryProperties);
+	RETFUNC(vkGetPhysicalDeviceMemoryProperties2);
+	RETFUNC(vkCreateDevice);
+	RETFUNC(vkDestroyDevice);
+	RETFUNC(vkEnumerateDeviceExtensionProperties);
+	RETFUNC(vkEnumerateDeviceLayerProperties);
+
+	return 0;
+}
+
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetPhysicalDeviceProcAddr(VkInstance instance,
+												   const char* pName)
+{
+	RETFUNC(vkEnumeratePhysicalDevices);
+	RETFUNC(vkEnumeratePhysicalDeviceGroups);
+	RETFUNC(vkGetPhysicalDeviceFeatures);
+	RETFUNC(vkGetPhysicalDeviceFeatures2);
+	RETFUNC(vkGetPhysicalDeviceProperties);
+	RETFUNC(vkGetPhysicalDeviceProperties2);
+	RETFUNC(vkGetPhysicalDeviceFormatProperties);
+	RETFUNC(vkGetPhysicalDeviceFormatProperties2);
+	RETFUNC(vkGetPhysicalDeviceImageFormatProperties);
+	RETFUNC(vkGetPhysicalDeviceImageFormatProperties2);
+	RETFUNC(vkGetPhysicalDeviceProperties);
+	RETFUNC(vkGetPhysicalDeviceProperties2);
+	RETFUNC(vkGetPhysicalDeviceQueueFamilyProperties);
+	RETFUNC(vkGetPhysicalDeviceQueueFamilyProperties2);
+	RETFUNC(vkGetPhysicalDeviceMemoryProperties);
+	RETFUNC(vkGetPhysicalDeviceMemoryProperties2);
+	RETFUNC(vkCreateDevice);
+	RETFUNC(vkEnumerateDeviceExtensionProperties);
+	RETFUNC(vkEnumerateDeviceLayerProperties);
+
+	return 0;
+}
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateInstanceExtensionProperties
  * When pLayerName parameter is NULL, only extensions provided by the Vulkan implementation or by implicitly enabled layers are returned. When pLayerName is the name of a layer,
@@ -12,7 +92,7 @@
  * two calls may retrieve different results if a pLayerName is available in one call but not in another. The extensions supported by a layer may also change between two calls,
  * e.g. if the layer implementation is replaced by a different version between those calls.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceExtensionProperties(
 		const char*                                 pLayerName,
 		uint32_t*                                   pPropertyCount,
 		VkExtensionProperties*                      pProperties)
@@ -55,7 +135,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceExtensionProperties(
  * vkCreateInstance must return VK_ERROR_EXTENSION_NOT_PRESENT. After verifying and enabling the instance layers and extensions the VkInstance object is
  * created and returned to the application.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 		const VkInstanceCreateInfo*                 pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
 		VkInstance*                                 pInstance)
@@ -69,6 +149,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
+
+	set_loader_magic_value(&(*pInstance)->loaderData);
 
 	(*pInstance)->numEnabledExtensions = 0;
 
@@ -104,6 +186,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
 	(*pInstance)->dev.path = "/dev/dri/card0";
 	(*pInstance)->dev.instance = *pInstance;
 
+	set_loader_magic_value(&(*pInstance)->dev.loaderData);
+
 	int ret = openIoctl(); assert(ret != -1);
 
 	(*pInstance)->chipVersion = vc4_get_chip_info(controlFd);
@@ -121,7 +205,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateInstance(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyInstance
  *
  */
-VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyInstance(
 		VkInstance                                  instance,
 		const VkAllocationCallbacks*                pAllocator)
 {
@@ -136,7 +220,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyInstance(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateInstanceVersion
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceVersion(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceVersion(
 	uint32_t*                                   pApiVersion)
 {
 	assert(pApiVersion);
@@ -144,12 +228,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceVersion(
 	return VK_SUCCESS;
 }
 
-#define RETFUNC(f) if(!strcmp(pName, #f)) return f
-
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetInstanceProcAddr
  */
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	VkInstance                                  instance,
 	const char*                                 pName)
 {
@@ -336,7 +418,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(
 	return 0;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateInstanceLayerProperties(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceLayerProperties(
 	uint32_t*                                   pPropertyCount,
 	VkLayerProperties*                          pProperties)
 {

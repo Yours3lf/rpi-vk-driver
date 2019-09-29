@@ -11,7 +11,7 @@
  * not be used concurrently in multiple threads. That includes use via recording commands on any command buffers allocated from the pool,
  * as well as operations that allocate, free, and reset command buffers or the pool itself.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 		VkDevice                                    device,
 		const VkCommandPoolCreateInfo*              pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
@@ -83,7 +83,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateCommandPool(
  * vkAllocateCommandBuffers can be used to create multiple command buffers. If the creation of any of those command buffers fails,
  * the implementation must destroy all successfully created command buffer objects from this command, set all entries of the pCommandBuffers array to NULL and return the error.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateCommandBuffers(
 		VkDevice                                    device,
 		const VkCommandBufferAllocateInfo*          pAllocateInfo,
 		VkCommandBuffer*                            pCommandBuffers)
@@ -109,6 +109,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 				res = VK_ERROR_OUT_OF_HOST_MEMORY;
 				break;
 			}
+
+			set_loader_magic_value(&pCommandBuffers[c]->loaderData);
 
 			pCommandBuffers[c]->dev = device;
 
@@ -194,7 +196,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateCommandBuffers(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkBeginCommandBuffer
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBeginCommandBuffer(
 		VkCommandBuffer                             commandBuffer,
 		const VkCommandBufferBeginInfo*             pBeginInfo)
 {
@@ -228,7 +230,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBeginCommandBuffer(
  * If the application wishes to further use the command buffer, the command buffer must be reset. The command buffer must have been in the recording state,
  * and is moved to the executable state.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkEndCommandBuffer(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEndCommandBuffer(
 		VkCommandBuffer                             commandBuffer)
 {
 	assert(commandBuffer);
@@ -256,7 +258,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEndCommandBuffer(
  * referenced by pSubmits is unaffected by the call or its failure. If vkQueueSubmit fails in such a way that the implementation is unable to make that guarantee,
  * the implementation must return VK_ERROR_DEVICE_LOST. See Lost Device.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 		VkQueue                                     queue,
 		uint32_t                                    submitCount,
 		const VkSubmitInfo*                         pSubmits,
@@ -537,7 +539,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueSubmit(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkFreeCommandBuffers
  * Any primary command buffer that is in the recording or executable state and has any element of pCommandBuffers recorded into it, becomes invalid.
  */
-VKAPI_ATTR void VKAPI_CALL vkFreeCommandBuffers(
+VKAPI_ATTR void VKAPI_CALL rpi_vkFreeCommandBuffers(
 		VkDevice                                    device,
 		VkCommandPool                               commandPool,
 		uint32_t                                    commandBufferCount,
@@ -568,7 +570,7 @@ VKAPI_ATTR void VKAPI_CALL vkFreeCommandBuffers(
  * Any primary command buffer allocated from another VkCommandPool that is in the recording or executable state and has a secondary command buffer
  * allocated from commandPool recorded into it, becomes invalid.
  */
-VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyCommandPool(
 		VkDevice                                    device,
 		VkCommandPool                               commandPool,
 		const VkAllocationCallbacks*                pAllocator)
@@ -590,7 +592,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyCommandPool(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkTrimCommandPool
  */
-VKAPI_ATTR void VKAPI_CALL vkTrimCommandPool(
+VKAPI_ATTR void VKAPI_CALL rpi_vkTrimCommandPool(
 	VkDevice                                    device,
 	VkCommandPool                               commandPool,
 	VkCommandPoolTrimFlags                      flags)
@@ -608,7 +610,7 @@ VKAPI_ATTR void VKAPI_CALL vkTrimCommandPool(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkResetCommandPool
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandPool(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandPool(
 	VkDevice                                    device,
 	VkCommandPool                               commandPool,
 	VkCommandPoolResetFlags                     flags)
@@ -649,7 +651,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandPool(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkResetCommandBuffer
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandBuffer(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandBuffer(
 	VkCommandBuffer                             commandBuffer,
 	VkCommandBufferResetFlags                   flags)
 {
@@ -678,7 +680,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetCommandBuffer(
 	//TODO reset state?
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdExecuteCommands(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdExecuteCommands(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    commandBufferCount,
 	const VkCommandBuffer*                      pCommandBuffers)
@@ -686,7 +688,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdExecuteCommands(
 
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdSetDeviceMask(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDeviceMask(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    deviceMask)
 {

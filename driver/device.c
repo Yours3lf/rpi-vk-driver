@@ -8,7 +8,7 @@
  * If pPhysicalDeviceCount is smaller than the number of physical devices available, VK_INCOMPLETE will be returned instead of VK_SUCCESS, to indicate that not all the
  * available physical devices were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDevices(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDevices(
 		VkInstance                                  instance,
 		uint32_t*                                   pPhysicalDeviceCount,
 		VkPhysicalDevice*                           pPhysicalDevices)
@@ -48,7 +48,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDevices(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceProperties
  */
-VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceProperties(
 		VkPhysicalDevice                            physicalDevice,
 		VkPhysicalDeviceProperties*                 pProperties)
 {
@@ -78,7 +78,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceFeatures
  */
-VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFeatures(
 		VkPhysicalDevice                            physicalDevice,
 		VkPhysicalDeviceFeatures*                   pFeatures)
 {
@@ -91,7 +91,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateDeviceExtensionProperties
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceExtensionProperties(
 		VkPhysicalDevice                            physicalDevice,
 		const char*                                 pLayerName,
 		uint32_t*                                   pPropertyCount,
@@ -133,7 +133,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceExtensionProperties(
  * and on return the variable is overwritten with the number of structures actually written to pQueueFamilyProperties. If pQueueFamilyPropertyCount
  * is less than the number of queue families available, at most pQueueFamilyPropertyCount structures will be written.
  */
-VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties(
 		VkPhysicalDevice                            physicalDevice,
 		uint32_t*                                   pQueueFamilyPropertyCount,
 		VkQueueFamilyProperties*                    pQueueFamilyProperties)
@@ -169,7 +169,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties(
  * time for the creation to succeed. Multiple logical devices can be created from the same physical device. Logical device creation may
  * fail due to lack of device-specific resources (in addition to the other errors). If that occurs, vkCreateDevice will return VK_ERROR_TOO_MANY_OBJECTS.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 		VkPhysicalDevice                            physicalDevice,
 		const VkDeviceCreateInfo*                   pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
@@ -212,6 +212,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
+
+	set_loader_magic_value(&(*pDevice)->loaderData);
 
 	(*pDevice)->dev = physicalDevice;
 
@@ -266,6 +268,8 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
 			for(int d = 0; d < pCreateInfo->pQueueCreateInfos[c].queueCount; ++d)
 			{
 				(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex][d].lastEmitSeqno = 0;
+				(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex][d].dev = *pDevice;
+				set_loader_magic_value(&(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex][d].loaderData);
 			}
 
 			(*pDevice)->numQueues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex] = pCreateInfo->pQueueCreateInfos[c].queueCount;
@@ -280,7 +284,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice(
  * vkGetDeviceQueue must only be used to get queues that were created with the flags parameter of VkDeviceQueueCreateInfo set to zero.
  * To get queues that were created with a non-zero flags parameter use vkGetDeviceQueue2.
  */
-VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue(
 		VkDevice                                    device,
 		uint32_t                                    queueFamilyIndex,
 		uint32_t                                    queueIndex,
@@ -293,10 +297,9 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue(
 	assert(queueIndex < device->numQueues[queueFamilyIndex]);
 
 	*pQueue = &device->queues[queueFamilyIndex][queueIndex];
-	(*pQueue)->dev = device;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue2(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue2(
 	VkDevice                                    device,
 	const VkDeviceQueueInfo2*                   pQueueInfo,
 	VkQueue*                                    pQueue)
@@ -316,7 +319,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetDeviceQueue2(
  * Prior to destroying a device, an application is responsible for destroying/freeing any Vulkan objects that were created using that device as the
  * first parameter of the corresponding vkCreate* or vkAllocate* command
  */
-VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDevice(
 		VkDevice                                    device,
 		const VkAllocationCallbacks*                pAllocator)
 {
@@ -338,7 +341,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDevice(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumeratePhysicalDeviceGroups
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDeviceGroups(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceGroups(
 	VkInstance                                  instance,
 	uint32_t*                                   pPhysicalDeviceGroupCount,
 	VkPhysicalDeviceGroupProperties*            pPhysicalDeviceGroupProperties)
@@ -371,7 +374,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDeviceGroups(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(
+extern VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(VkInstance                                  instance,
+																		  const char*                                 pName);
+
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetDeviceProcAddr(
 	VkDevice                                    device,
 	const char*                                 pName)
 {
@@ -407,10 +413,10 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetDeviceProcAddr(
 
 	//there can't be any other device, so this will do fine...
 	_device* d = device;
-	return vkGetInstanceProcAddr(d->dev->instance, pName);
+	return rpi_vkGetInstanceProcAddr(d->dev->instance, pName);
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceProperties2(
 	VkPhysicalDevice                            physicalDevice,
 	VkPhysicalDeviceProperties2*                pProperties)
 {
@@ -437,7 +443,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceProperties2(
 	}
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties(
 	VkPhysicalDevice                            physicalDevice,
 	VkFormat                                    format,
 	VkFormatProperties*                         pFormatProperties)
@@ -505,7 +511,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties(
 	}
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties2(
 	VkPhysicalDevice                            physicalDevice,
 	VkFormat                                    format,
 	VkFormatProperties2*                        pFormatProperties)
@@ -515,7 +521,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFormatProperties2(
 	vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &pFormatProperties->formatProperties);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties(
 	VkPhysicalDevice                            physicalDevice,
 	VkFormat                                    format,
 	VkImageType                                 type,
@@ -636,7 +642,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties2(
 	VkPhysicalDevice                            physicalDevice,
 	const VkPhysicalDeviceImageFormatInfo2*     pImageFormatInfo,
 	VkImageFormatProperties2*                   pImageFormatProperties)
@@ -656,7 +662,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties2(
 													&pImageFormatProperties->imageFormatProperties);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceLayerProperties(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceLayerProperties(
 	VkPhysicalDevice                            physicalDevice,
 	uint32_t*                                   pPropertyCount,
 	VkLayerProperties*                          pProperties)
@@ -665,7 +671,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumerateDeviceLayerProperties(
 	return vkEnumerateInstanceLayerProperties(pPropertyCount, pProperties);
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFeatures2(
 	VkPhysicalDevice                            physicalDevice,
 	VkPhysicalDeviceFeatures2*                  pFeatures)
 {
@@ -674,7 +680,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceFeatures2(
 	vkGetPhysicalDeviceFeatures(physicalDevice, &pFeatures->features);
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyProperties2(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties2(
 	VkPhysicalDevice                            physicalDevice,
 	uint32_t*                                   pQueueFamilyPropertyCount,
 	VkQueueFamilyProperties2*                   pQueueFamilyProperties)

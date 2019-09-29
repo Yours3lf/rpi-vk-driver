@@ -5,7 +5,7 @@
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceMemoryProperties
  */
-void vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties)
+void rpi_vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties)
 {
 	assert(physicalDevice);
 	assert(pMemoryProperties);
@@ -59,7 +59,7 @@ void vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhys
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkAllocateMemory
  */
-VkResult vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
+VkResult rpi_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
 {
 	assert(device);
 	assert(pAllocateInfo);
@@ -92,7 +92,7 @@ VkResult vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocate
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkMapMemory
  */
-VkResult vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData)
+VkResult rpi_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData)
 {
 	assert(device);
 	assert(memory);
@@ -128,7 +128,7 @@ VkResult vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkUnmapMemory
  */
-void vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
+void rpi_vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
 {
 	assert(device);
 	assert(memory);
@@ -139,7 +139,7 @@ void vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
 	((_deviceMemory*)memory)->mappedOffset = 0;
 }
 
-void vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
+void rpi_vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
 
@@ -154,7 +154,7 @@ void vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCall
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkFlushMappedMemoryRanges
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkFlushMappedMemoryRanges(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkFlushMappedMemoryRanges(
 	VkDevice                                    device,
 	uint32_t                                    memoryRangeCount,
 	const VkMappedMemoryRange*                  pMemoryRanges)
@@ -167,7 +167,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkFlushMappedMemoryRanges(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkInvalidateMappedMemoryRanges
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkInvalidateMappedMemoryRanges(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkInvalidateMappedMemoryRanges(
 	VkDevice                                    device,
 	uint32_t                                    memoryRangeCount,
 	const VkMappedMemoryRange*                  pMemoryRanges)
@@ -177,7 +177,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkInvalidateMappedMemoryRanges(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceMemoryProperties2(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceMemoryProperties2(
 	VkPhysicalDevice                            physicalDevice,
 	VkPhysicalDeviceMemoryProperties2*          pMemoryProperties)
 {
@@ -185,7 +185,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceMemoryProperties2(
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties);
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetDeviceMemoryCommitment(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceMemoryCommitment(
 	VkDevice                                    device,
 	VkDeviceMemory                              memory,
 	VkDeviceSize*                               pCommittedMemoryInBytes)

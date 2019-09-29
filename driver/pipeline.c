@@ -6,7 +6,7 @@
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBindPipeline
  */
-void vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
+void rpi_vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
 {
 	assert(commandBuffer);
 
@@ -97,7 +97,7 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateGraphicsPipelines
  */
-VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
+VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 {
 	assert(device);
 	assert(createInfoCount > 0);
@@ -299,7 +299,7 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 	return VK_SUCCESS;
 }
 
-void vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
+void rpi_vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
 
@@ -322,7 +322,7 @@ void vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationC
 	}
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkMergePipelineCaches(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkMergePipelineCaches(
 	VkDevice                                    device,
 	VkPipelineCache                             dstCache,
 	uint32_t                                    srcCacheCount,
@@ -332,7 +332,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkMergePipelineCaches(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineCacheData(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPipelineCacheData(
 	VkDevice                                    device,
 	VkPipelineCache                             pipelineCache,
 	size_t*                                     pDataSize,
@@ -342,7 +342,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineCacheData(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineCache(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyPipelineCache(
 	VkDevice                                    device,
 	VkPipelineCache                             pipelineCache,
 	const VkAllocationCallbacks*                pAllocator)
@@ -350,7 +350,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineCache(
 	UNSUPPORTED(vkDestroyPipelineCache);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineLayout(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineLayout(
 	VkDevice                                    device,
 	const VkPipelineLayoutCreateInfo*           pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
@@ -399,7 +399,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineLayout(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineLayout(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyPipelineLayout(
 	VkDevice                                    device,
 	VkPipelineLayout                            pipelineLayout,
 	const VkAllocationCallbacks*                pAllocator)
@@ -407,7 +407,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineLayout(
 	//TODO
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineCache(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineCache(
 	VkDevice                                    device,
 	const VkPipelineCacheCreateInfo*            pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,

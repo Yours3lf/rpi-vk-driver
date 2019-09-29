@@ -217,6 +217,15 @@ void createInstance() {
 }
 
 void createWindowSurface() {
+	typedef VkResult (VKAPI_PTR *PFN_vkCreateRpiSurfaceEXT)(
+				VkInstance                                  instance,
+				const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
+				const VkAllocationCallbacks*                pAllocator,
+				VkSurfaceKHR*                               pSurface);
+
+	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
+
+
 	if (vkCreateRpiSurfaceEXT(instance, 0, 0, &windowSurface) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;
 		assert(0);
@@ -958,7 +967,15 @@ void CreateFramebuffer()
 
 void CreateShaders()
 {
-	//TODO doesn't work for some reason...
+	typedef VkResult (VKAPI_PTR *PFN_vkCreateShaderModuleFromRpiAssemblyEXT)(
+							VkDevice									device,
+							VkRpiShaderModuleAssemblyCreateInfoEXT*		pCreateInfo,
+							const VkAllocationCallbacks*                pAllocator,
+							VkShaderModule*								pShaderModule
+							);
+
+	PFN_vkCreateShaderModuleFromRpiAssemblyEXT vkCreateShaderModuleFromRpiAssemblyEXT = (PFN_vkCreateShaderModuleFromRpiAssemblyEXT)vkGetInstanceProcAddr(instance, "vkCreateShaderModuleFromRpiAssemblyEXT");
+
 	char vs_asm_code[] =
 			///0x40000000 = 2.0
 			///uni = 1.0

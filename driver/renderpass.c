@@ -5,7 +5,7 @@
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBeginRenderPass
  */
-void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents)
+void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents)
 {
 	assert(commandBuffer);
 	assert(pRenderPassBegin);
@@ -105,7 +105,7 @@ void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBegin
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdEndRenderPass
  */
-void vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
+void rpi_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
 {
 	assert(commandBuffer);
 
@@ -127,7 +127,7 @@ void vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateRenderPass
  */
-VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
+VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
 {
 	assert(device);
 	assert(pCreateInfo);
@@ -256,7 +256,7 @@ VkResult vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCrea
 	return VK_SUCCESS;
 }
 
-void vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
+void rpi_vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
 
@@ -286,7 +286,7 @@ void vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAlloc
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateFramebuffer
  */
-VkResult vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
+VkResult rpi_vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
 {
 	assert(device);
 	assert(pCreateInfo);
@@ -323,7 +323,7 @@ VkResult vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCr
 	return VK_SUCCESS;
 }
 
-void vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator)
+void rpi_vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
 
@@ -338,7 +338,7 @@ void vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAl
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdNextSubpass
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdNextSubpass(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdNextSubpass(
 	VkCommandBuffer                             commandBuffer,
 	VkSubpassContents                           contents)
 {
@@ -353,7 +353,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdNextSubpass(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetRenderAreaGranularity
  */
-VKAPI_ATTR void VKAPI_CALL vkGetRenderAreaGranularity(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetRenderAreaGranularity(
 	VkDevice                                    device,
 	VkRenderPass                                renderPass,
 	VkExtent2D*                                 pGranularity)

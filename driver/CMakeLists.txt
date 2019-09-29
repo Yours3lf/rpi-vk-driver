@@ -3,7 +3,7 @@ file(GLOB driverSrc
 	"*.c"
 )
 
-add_library(vulkan-1-rpi SHARED ${driverSrc})
-target_compile_options(vulkan-1-rpi PRIVATE -Wall -Werror=implicit-function-declaration -std=c11)
+add_library(rpi-vk-driver SHARED ${driverSrc})
+target_compile_options(rpi-vk-driver PRIVATE -Wall -Werror=implicit-function-declaration -std=c11)
 
-target_link_libraries(vulkan-1-rpi drm pthread brcm QPUassembler)
+target_link_libraries(rpi-vk-driver drm pthread brcm QPUassembler)

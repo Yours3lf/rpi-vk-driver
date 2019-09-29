@@ -1,6 +1,6 @@
 #include "common.h"
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateSampler(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSampler(
 	VkDevice                                    device,
 	const VkSamplerCreateInfo*                  pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
@@ -38,7 +38,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSampler(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroySampler(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySampler(
 	VkDevice                                    device,
 	VkSampler                                   sampler,
 	const VkAllocationCallbacks*                pAllocator)
@@ -48,7 +48,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySampler(
 	FREE(sampler);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateSamplerYcbcrConversion(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSamplerYcbcrConversion(
 	VkDevice                                    device,
 	const VkSamplerYcbcrConversionCreateInfo*   pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
@@ -58,7 +58,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSamplerYcbcrConversion(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroySamplerYcbcrConversion(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySamplerYcbcrConversion(
 	VkDevice                                    device,
 	VkSamplerYcbcrConversion                    ycbcrConversion,
 	const VkAllocationCallbacks*                pAllocator)

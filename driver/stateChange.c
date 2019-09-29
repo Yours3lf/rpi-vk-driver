@@ -5,7 +5,7 @@
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetViewport
  */
-void vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
+void rpi_vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
 {
 	assert(commandBuffer);
 	assert(firstViewport == 0);
@@ -23,7 +23,7 @@ void vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uin
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetScissor
  */
-void vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors)
+void rpi_vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors)
 {
 	assert(commandBuffer);
 	assert(firstScissor == 0);
@@ -41,7 +41,7 @@ void vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint3
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBindVertexBuffers
  */
-void vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
+void rpi_vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
 {
 	assert(commandBuffer);
 
@@ -61,7 +61,7 @@ void vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding
  * Color and depth/stencil images can be cleared outside a render pass instance using vkCmdClearColorImage or vkCmdClearDepthStencilImage, respectively.
  * These commands are only allowed outside of a render pass instance.
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearColorImage(
 		VkCommandBuffer                             commandBuffer,
 		VkImage                                     image,
 		VkImageLayout                               imageLayout,
@@ -140,7 +140,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearColorImage(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdClearDepthStencilImage
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdClearDepthStencilImage(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearDepthStencilImage(
 	VkCommandBuffer                             commandBuffer,
 	VkImage                                     image,
 	VkImageLayout                               imageLayout,
@@ -158,7 +158,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearDepthStencilImage(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdClearAttachments
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdClearAttachments(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    attachmentCount,
 	const VkClearAttachment*                    pAttachments,
@@ -175,7 +175,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdClearAttachments(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdFillBuffer
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdFillBuffer(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdFillBuffer(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    dstBuffer,
 	VkDeviceSize                                dstOffset,
@@ -188,7 +188,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdFillBuffer(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdUpdateBuffer
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdUpdateBuffer(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdUpdateBuffer(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    dstBuffer,
 	VkDeviceSize                                dstOffset,
@@ -201,7 +201,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdUpdateBuffer(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBindIndexBuffer
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdBindIndexBuffer(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBindIndexBuffer(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    buffer,
 	VkDeviceSize                                offset,
@@ -225,7 +225,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBindIndexBuffer(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetLineWidth
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdSetLineWidth(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetLineWidth(
 	VkCommandBuffer                             commandBuffer,
 	float                                       lineWidth)
 {
@@ -240,7 +240,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetLineWidth(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetDepthBias
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdSetDepthBias(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDepthBias(
 	VkCommandBuffer                             commandBuffer,
 	float                                       depthBiasConstantFactor,
 	float                                       depthBiasClamp,
@@ -259,7 +259,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetDepthBias(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetBlendConstants
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdSetBlendConstants(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetBlendConstants(
 	VkCommandBuffer                             commandBuffer,
 	const float                                 blendConstants[4])
 {
@@ -274,7 +274,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetBlendConstants(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetDepthBounds
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdSetDepthBounds(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDepthBounds(
 	VkCommandBuffer                             commandBuffer,
 	float                                       minDepthBounds,
 	float                                       maxDepthBounds)
@@ -291,7 +291,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetDepthBounds(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetStencilCompareMask
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdSetStencilCompareMask(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilCompareMask(
 	VkCommandBuffer                             commandBuffer,
 	VkStencilFaceFlags                          faceMask,
 	uint32_t                                    compareMask)
@@ -316,7 +316,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetStencilCompareMask(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetStencilWriteMask
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdSetStencilWriteMask(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilWriteMask(
 	VkCommandBuffer                             commandBuffer,
 	VkStencilFaceFlags                          faceMask,
 	uint32_t                                    writeMask)
@@ -341,7 +341,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdSetStencilWriteMask(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetStencilReference
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdSetStencilReference(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilReference(
 	VkCommandBuffer                             commandBuffer,
 	VkStencilFaceFlags                          faceMask,
 	uint32_t                                    reference)

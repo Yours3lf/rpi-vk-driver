@@ -6,7 +6,7 @@
 /*
  * Implementation of our RPI specific "extension"
  */
-VkResult vkCreateRpiSurfaceEXT(
+VkResult rpi_vkCreateRpiSurfaceEXT(
 		VkInstance                                  instance,
 		const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
@@ -29,7 +29,7 @@ VkResult vkCreateRpiSurfaceEXT(
  * and does not imply destroying the native surface, closing a window, or similar behavior
  * (but we'll do so anyways...)
  */
-VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
 		VkInstance                                  instance,
 		VkSurfaceKHR                                surface,
 		const VkAllocationCallbacks*                pAllocator)
@@ -54,7 +54,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(
  *
  * capabilities the specified device supports for a swapchain created for the surface
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		VkSurfaceCapabilitiesKHR*                   pSurfaceCapabilities)
@@ -89,7 +89,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
  * at most pSurfaceFormatCount structures will be written. If pSurfaceFormatCount is smaller than the number of format pairs supported for the given surface,
  * VK_INCOMPLETE will be returned instead of VK_SUCCESS to indicate that not all the available values were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		uint32_t*                                   pSurfaceFormatCount,
@@ -134,7 +134,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(
  * If pPresentModeCount is smaller than the number of presentation modes supported for the given surface, VK_INCOMPLETE will be returned instead of
  * VK_SUCCESS to indicate that not all the available values were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		uint32_t*                                   pPresentModeCount,
@@ -174,7 +174,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateSwapchainKHR
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 		VkDevice                                    device,
 		const VkSwapchainCreateInfoKHR*             pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
@@ -285,7 +285,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
  * If pSwapchainImageCount is smaller than the number of presentable images for swapchain, VK_INCOMPLETE will be returned instead of VK_SUCCESS to
  * indicate that not all the available values were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainImagesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetSwapchainImagesKHR(
 		VkDevice                                    device,
 		VkSwapchainKHR                              swapchain,
 		uint32_t*                                   pSwapchainImageCount,
@@ -324,7 +324,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSwapchainImagesKHR(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkAcquireNextImageKHR
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireNextImageKHR(
 		VkDevice                                    device,
 		VkSwapchainKHR                              swapchain,
 		uint64_t                                    timeout,
@@ -367,7 +367,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAcquireNextImageKHR(
  * However, if the presentation request is rejected by the presentation engine with an error VK_ERROR_OUT_OF_DATE_KHR or VK_ERROR_SURFACE_LOST_KHR,
  * the set of queue operations are still considered to be enqueued and thus any semaphore to be waited on gets unsignaled when the corresponding queue operation is complete.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueuePresentKHR(
 		VkQueue                                     queue,
 		const VkPresentInfoKHR*                     pPresentInfo)
 {
@@ -393,7 +393,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroySwapchainKHR
  */
-VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
 		VkDevice                                    device,
 		VkSwapchainKHR                              swapchain,
 		const VkAllocationCallbacks*                pAllocator)
@@ -422,7 +422,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySwapchainKHR(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceSurfaceSupportKHR
  * does this queue family support presentation to this surface?
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceSupportKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceSupportKHR(
 		VkPhysicalDevice                            physicalDevice,
 		uint32_t                                    queueFamilyIndex,
 		VkSurfaceKHR                                surface,

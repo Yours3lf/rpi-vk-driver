@@ -52,7 +52,7 @@
  * These mechanisms indirectly enable applications to share semaphore state between two or more semaphores and other synchronization primitives across process and API boundaries.
  * When created, the semaphore is in the unsignaled state.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateSemaphore(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSemaphore(
 		VkDevice                                    device,
 		const VkSemaphoreCreateInfo*                pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
@@ -97,7 +97,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSemaphore(
  *
  * If dependencyFlags includes VK_DEPENDENCY_BY_REGION_BIT, then any dependency between framebuffer-space pipeline stages is framebuffer-local - otherwise it is framebuffer-global.
  */
-VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdPipelineBarrier(
 		VkCommandBuffer                             commandBuffer,
 		VkPipelineStageFlags                        srcStageMask,
 		VkPipelineStageFlags                        dstStageMask,
@@ -201,7 +201,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPipelineBarrier(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDeviceWaitIdle
  * vkDeviceWaitIdle is equivalent to calling vkQueueWaitIdle for all queues owned by device.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkDeviceWaitIdle(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkDeviceWaitIdle(
 		VkDevice									device)
 {
 	assert(device);
@@ -222,7 +222,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkDeviceWaitIdle(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkQueueWaitIdle
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkQueueWaitIdle(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueWaitIdle(
 	VkQueue                                     queue)
 {
 	assert(queue);
@@ -238,7 +238,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueueWaitIdle(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroySemaphore
  */
-VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySemaphore(
 		VkDevice                                    device,
 		VkSemaphore                                 semaphore,
 		const VkAllocationCallbacks*                pAllocator)
@@ -255,7 +255,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySemaphore(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateFence
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateFence(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateFence(
 	VkDevice                                    device,
 	const VkFenceCreateInfo*                    pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
@@ -283,7 +283,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateFence(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyFence
  */
-VKAPI_ATTR void VKAPI_CALL vkDestroyFence(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyFence(
 	VkDevice                                    device,
 	VkFence                                     fence,
 	const VkAllocationCallbacks*                pAllocator)
@@ -299,7 +299,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyFence(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetFenceStatus
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceStatus(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetFenceStatus(
 	VkDevice                                    device,
 	VkFence                                     fence)
 {
@@ -315,7 +315,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceStatus(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkResetFences
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkResetFences(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetFences(
 	VkDevice                                    device,
 	uint32_t                                    fenceCount,
 	const VkFence*                              pFences)
@@ -335,7 +335,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetFences(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkWaitForFences
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkWaitForFences(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
 	VkDevice                                    device,
 	uint32_t                                    fenceCount,
 	const VkFence*                              pFences,
@@ -423,7 +423,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkWaitForFences(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdWaitEvents(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdWaitEvents(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    eventCount,
 	const VkEvent*                              pEvents,
@@ -436,63 +436,63 @@ VKAPI_ATTR void VKAPI_CALL vkCmdWaitEvents(
 	uint32_t                                    imageMemoryBarrierCount,
 	const VkImageMemoryBarrier*                 pImageMemoryBarriers)
 {
-	//TODO
+	UNSUPPORTED(vkCmdWaitEvents);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkGetEventStatus(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetEventStatus(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
-	//TODO
+	UNSUPPORTED(vkGetEventStatus);
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyEvent(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyEvent(
 	VkDevice                                    device,
 	VkEvent                                     event,
 	const VkAllocationCallbacks*                pAllocator)
 {
-	//TODO
+	UNSUPPORTED(vkDestroyEvent);
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdResetEvent(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdResetEvent(
 	VkCommandBuffer                             commandBuffer,
 	VkEvent                                     event,
 	VkPipelineStageFlags                        stageMask)
 {
-	//TODO
+	UNSUPPORTED(vkCmdResetEvent);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateEvent(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateEvent(
 	VkDevice                                    device,
 	const VkEventCreateInfo*                    pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
 	VkEvent*                                    pEvent)
 {
-	//TODO
+	UNSUPPORTED(vkCreateEvent);
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkResetEvent(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetEvent(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
-	//TODO
+	UNSUPPORTED(vkResetEvent);
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkSetEvent(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkSetEvent(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
-	//TODO
+	UNSUPPORTED(vkSetEvent);
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdSetEvent(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetEvent(
 	VkCommandBuffer                             commandBuffer,
 	VkEvent                                     event,
 	VkPipelineStageFlags                        stageMask)
 {
-	//TODO
+	UNSUPPORTED(vkCmdSetEvent);
 }

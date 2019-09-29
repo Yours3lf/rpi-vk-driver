@@ -3,7 +3,7 @@
 //TODO
 //compute shaders need kernel support
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateComputePipelines(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateComputePipelines(
 	VkDevice                                    device,
 	VkPipelineCache                             pipelineCache,
 	uint32_t                                    createInfoCount,
@@ -15,7 +15,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateComputePipelines(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdDispatchIndirect(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDispatchIndirect(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    buffer,
 	VkDeviceSize                                offset)
@@ -23,7 +23,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDispatchIndirect(
 	UNSUPPORTED(vkCmdDispatchIndirect);
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdDispatch(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDispatch(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    groupCountX,
 	uint32_t                                    groupCountY,
@@ -32,7 +32,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDispatch(
 	UNSUPPORTED(vkCmdDispatch);
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdDispatchBase(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDispatchBase(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    baseGroupX,
 	uint32_t                                    baseGroupY,

@@ -5,7 +5,7 @@
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateImageView
  */
-VkResult vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView)
+VkResult rpi_vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView)
 {
 	assert(device);
 	assert(pCreateInfo);
@@ -32,7 +32,7 @@ VkResult vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCreate
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateBuffer
  */
-VkResult vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer)
+VkResult rpi_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer)
 {
 	assert(device);
 	assert(pCreateInfo);
@@ -58,7 +58,7 @@ VkResult vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetBufferMemoryRequirements
  */
-void vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryRequirements* pMemoryRequirements)
+void rpi_vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryRequirements* pMemoryRequirements)
 {
 	assert(device);
 	assert(buffer);
@@ -71,7 +71,7 @@ void vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryReq
 	pMemoryRequirements->memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetBufferMemoryRequirements2(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetBufferMemoryRequirements2(
 	VkDevice                                    device,
 	const VkBufferMemoryRequirementsInfo2*      pInfo,
 	VkMemoryRequirements2*                      pMemoryRequirements)
@@ -86,7 +86,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetBufferMemoryRequirements2(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkBindBufferMemory
  */
-VkResult vkBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset)
+VkResult rpi_vkBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset)
 {
 	assert(device);
 	assert(buffer);
@@ -106,7 +106,7 @@ VkResult vkBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory mem
 	return VK_SUCCESS;
 }
 
-void vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator)
+void rpi_vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
 
@@ -117,7 +117,7 @@ void vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbac
 	}
 }
 
-void vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator)
+void rpi_vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator)
 {
 	assert(device);
 
@@ -132,7 +132,7 @@ void vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocati
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateBufferView
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateBufferView(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateBufferView(
 	VkDevice                                    device,
 	const VkBufferViewCreateInfo*               pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
@@ -162,7 +162,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateBufferView(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyBufferView
  */
-VKAPI_ATTR void VKAPI_CALL vkDestroyBufferView(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyBufferView(
 	VkDevice                                    device,
 	VkBufferView                                bufferView,
 	const VkAllocationCallbacks*                pAllocator)
@@ -179,7 +179,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyBufferView(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateImage
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	VkDevice                                    device,
 	const VkImageCreateInfo*                    pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
@@ -244,7 +244,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyImage
  */
-VKAPI_ATTR void VKAPI_CALL vkDestroyImage(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyImage(
 	VkDevice                                    device,
 	VkImage                                     image,
 	const VkAllocationCallbacks*                pAllocator)
@@ -266,7 +266,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyImage(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetImageMemoryRequirements
  */
-VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 	VkDevice                                    device,
 	VkImage                                     image,
 	VkMemoryRequirements*                       pMemoryRequirements)
@@ -303,7 +303,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkBindImageMemory
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory(
 	VkDevice                                    device,
 	VkImage                                     image,
 	VkDeviceMemory                              memory,
@@ -327,7 +327,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkBindBufferMemory2(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindBufferMemory2(
 	VkDevice                                    device,
 	uint32_t                                    bindInfoCount,
 	const VkBindBufferMemoryInfo*               pBindInfos)
@@ -349,7 +349,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBindBufferMemory2(
 	return ret;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements2(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements2(
 	VkDevice                                    device,
 	const VkImageMemoryRequirementsInfo2*       pInfo,
 	VkMemoryRequirements2*                      pMemoryRequirements)
@@ -360,7 +360,7 @@ VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements2(
 	vkGetImageMemoryRequirements(device, pInfo->image, pMemoryRequirements);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory2(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory2(
 	VkDevice                                    device,
 	uint32_t                                    bindInfoCount,
 	const VkBindImageMemoryInfo*                pBindInfos)
@@ -382,7 +382,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBindImageMemory2(
 	return ret;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdPushConstants(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdPushConstants(
 	VkCommandBuffer                             commandBuffer,
 	VkPipelineLayout                            layout,
 	VkShaderStageFlags                          stageFlags,
@@ -409,7 +409,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPushConstants(
 	cb->pushConstantDirty = 1;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetImageSubresourceLayout(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageSubresourceLayout(
 	VkDevice                                    device,
 	VkImage                                     image,
 	const VkImageSubresource*                   pSubresource,

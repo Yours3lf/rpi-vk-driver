@@ -415,7 +415,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdDraw
  */
-void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+void rpi_vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
 	assert(commandBuffer);
 
@@ -436,7 +436,7 @@ void vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t ins
 	cb->numDrawCallsSubmitted++;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexed(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    indexCount,
 	uint32_t                                    instanceCount,
@@ -473,7 +473,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexed(
 	cb->numDrawCallsSubmitted++;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirect(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexedIndirect(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    buffer,
 	VkDeviceSize                                offset,
@@ -483,7 +483,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirect(
 	UNSUPPORTED(vkCmdDrawIndexedIndirect);
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndirect(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndirect(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    buffer,
 	VkDeviceSize                                offset,

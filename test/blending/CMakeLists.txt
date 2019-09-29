@@ -6,4 +6,4 @@ file(GLOB testSrc
 add_executable(blending ${testSrc} )
 target_compile_options(blending PRIVATE -Wall -std=c++11 -std=c11)
 
-target_link_libraries(blending vulkan-1-rpi)
+target_link_libraries(blending vulkan)

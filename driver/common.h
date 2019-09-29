@@ -5,6 +5,7 @@
 #include <drm/vc4_drm.h>
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vk_icd.h>
 #include "vkExt.h"
 
 #include "AlignedAllocator.h"
@@ -53,6 +54,7 @@ typedef struct VkDevice_T _device;
 
 typedef struct VkQueue_T
 {
+	VK_LOADER_DATA loaderData;
 	uint64_t lastEmitSeqno;
 	_device* dev;
 } _queue;
@@ -79,6 +81,7 @@ typedef struct VkInstance_T _instance;
 
 typedef struct VkPhysicalDevice_T
 {
+	VK_LOADER_DATA loaderData;
 	//hardware id?
 	char* path;
 	_instance* instance;
@@ -86,6 +89,7 @@ typedef struct VkPhysicalDevice_T
 
 typedef struct VkInstance_T
 {
+	VK_LOADER_DATA loaderData;
 	_physicalDevice dev;
 	//supposedly this should contain all the enabled layers?
 	int enabledExtensions[numInstanceExtensions];
@@ -100,6 +104,7 @@ typedef struct VkInstance_T
 
 typedef struct VkDevice_T
 {
+	VK_LOADER_DATA loaderData;
 	int enabledExtensions[numDeviceExtensions];
 	int numEnabledExtensions;
 	VkPhysicalDeviceFeatures enabledFeatures;
@@ -294,6 +299,8 @@ typedef struct VkPipeline_T
 
 typedef struct VkCommandBuffer_T
 {
+	VK_LOADER_DATA loaderData;
+
 	_device* dev; //device from which it was created
 
 	//Recorded commands include commands to bind pipelines and descriptor sets to the command buffer, commands to modify dynamic state, commands to draw (for graphics rendering),

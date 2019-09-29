@@ -1,6 +1,6 @@
 #include "common.h"
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateQueryPool(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateQueryPool(
 	VkDevice                                    device,
 	const VkQueryPoolCreateInfo*                pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
@@ -16,7 +16,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateQueryPool(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdResetQueryPool(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdResetQueryPool(
 	VkCommandBuffer                             commandBuffer,
 	VkQueryPool                                 queryPool,
 	uint32_t                                    firstQuery,
@@ -25,7 +25,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdResetQueryPool(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyQueryPool(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyQueryPool(
 	VkDevice                                    device,
 	VkQueryPool                                 queryPool,
 	const VkAllocationCallbacks*                pAllocator)
@@ -33,7 +33,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyQueryPool(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdEndQuery(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdEndQuery(
 	VkCommandBuffer                             commandBuffer,
 	VkQueryPool                                 queryPool,
 	uint32_t                                    query)
@@ -41,7 +41,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdEndQuery(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdBeginQuery(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBeginQuery(
 	VkCommandBuffer                             commandBuffer,
 	VkQueryPool                                 queryPool,
 	uint32_t                                    query,
@@ -50,7 +50,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBeginQuery(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdCopyQueryPoolResults(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyQueryPoolResults(
 	VkCommandBuffer                             commandBuffer,
 	VkQueryPool                                 queryPool,
 	uint32_t                                    firstQuery,
@@ -63,7 +63,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyQueryPoolResults(
 	//TODO
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkGetQueryPoolResults(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetQueryPoolResults(
 	VkDevice                                    device,
 	VkQueryPool                                 queryPool,
 	uint32_t                                    firstQuery,
@@ -77,7 +77,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetQueryPoolResults(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdWriteTimestamp(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdWriteTimestamp(
 	VkCommandBuffer                             commandBuffer,
 	VkPipelineStageFlagBits                     pipelineStage,
 	VkQueryPool                                 queryPool,

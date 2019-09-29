@@ -167,6 +167,14 @@ void createInstance() {
 }
 
 void createWindowSurface() {
+	typedef VkResult (VKAPI_PTR *PFN_vkCreateRpiSurfaceEXT)(
+			VkInstance                                  instance,
+			const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
+			const VkAllocationCallbacks*                pAllocator,
+			VkSurfaceKHR*                               pSurface);
+
+	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
+
 	if (vkCreateRpiSurfaceEXT(instance, 0, 0, &windowSurface) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;
 		assert(0);

@@ -1,6 +1,6 @@
 #include "common.h"
 
-VKAPI_ATTR void VKAPI_CALL vkCmdCopyBufferToImage(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    srcBuffer,
 	VkImage                                     dstImage,
@@ -11,7 +11,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyBufferToImage(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdBlitImage(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 	VkCommandBuffer                             commandBuffer,
 	VkImage                                     srcImage,
 	VkImageLayout                               srcImageLayout,
@@ -24,7 +24,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBlitImage(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdResolveImage(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdResolveImage(
 	VkCommandBuffer                             commandBuffer,
 	VkImage                                     srcImage,
 	VkImageLayout                               srcImageLayout,
@@ -36,7 +36,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdResolveImage(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdCopyImageToBuffer(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyImageToBuffer(
 	VkCommandBuffer                             commandBuffer,
 	VkImage                                     srcImage,
 	VkImageLayout                               srcImageLayout,
@@ -47,7 +47,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyImageToBuffer(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdCopyImage(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyImage(
 	VkCommandBuffer                             commandBuffer,
 	VkImage                                     srcImage,
 	VkImageLayout                               srcImageLayout,
@@ -59,7 +59,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCopyImage(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdCopyBuffer(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBuffer(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    srcBuffer,
 	VkBuffer                                    dstBuffer,

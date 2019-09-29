@@ -1,6 +1,6 @@
 #include "common.h"
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 	VkDevice                                    device,
 	const VkDescriptorPoolCreateInfo*           pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
@@ -116,7 +116,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorPool(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkAllocateDescriptorSets(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateDescriptorSets(
 	VkDevice                                    device,
 	const VkDescriptorSetAllocateInfo*          pAllocateInfo,
 	VkDescriptorSet*                            pDescriptorSets)
@@ -228,7 +228,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAllocateDescriptorSets(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorSetLayout(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorSetLayout(
 	VkDevice                                    device,
 	const VkDescriptorSetLayoutCreateInfo*      pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
@@ -263,7 +263,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorSetLayout(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSets(
+VKAPI_ATTR void VKAPI_CALL rpi_vkUpdateDescriptorSets(
 	VkDevice                                    device,
 	uint32_t                                    descriptorWriteCount,
 	const VkWriteDescriptorSet*                 pDescriptorWrites,
@@ -357,7 +357,7 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSets(
 	}
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkResetDescriptorPool(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetDescriptorPool(
 	VkDevice                                    device,
 	VkDescriptorPool                            descriptorPool,
 	VkDescriptorPoolResetFlags                  flags)
@@ -366,7 +366,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkResetDescriptorPool(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorPool(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorPool(
 	VkDevice                                    device,
 	VkDescriptorPool                            descriptorPool,
 	const VkAllocationCallbacks*                pAllocator)
@@ -374,7 +374,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorPool(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorSets(
+VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBindDescriptorSets(
 	VkCommandBuffer                             commandBuffer,
 	VkPipelineBindPoint                         pipelineBindPoint,
 	VkPipelineLayout                            layout,
@@ -405,7 +405,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorSets(
 	cb->descriptorSetDirty = 1;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorSetLayout(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorSetLayout(
 	VkDevice                                    device,
 	VkDescriptorSetLayout                       descriptorSetLayout,
 	const VkAllocationCallbacks*                pAllocator)
@@ -413,7 +413,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorSetLayout(
 	//TODO
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkFreeDescriptorSets(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkFreeDescriptorSets(
 	VkDevice                                    device,
 	VkDescriptorPool                            descriptorPool,
 	uint32_t                                    descriptorSetCount,
@@ -431,7 +431,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkFreeDescriptorSets(
 }
 
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorUpdateTemplate(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorUpdateTemplate(
 	VkDevice                                    device,
 	const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
@@ -440,7 +440,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDescriptorUpdateTemplate(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorUpdateTemplate(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorUpdateTemplate(
 	VkDevice                                    device,
 	VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
 	const VkAllocationCallbacks*                pAllocator)
@@ -448,7 +448,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDescriptorUpdateTemplate(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSetWithTemplate(
+VKAPI_ATTR void VKAPI_CALL rpi_vkUpdateDescriptorSetWithTemplate(
 	VkDevice                                    device,
 	VkDescriptorSet                             descriptorSet,
 	VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
@@ -457,7 +457,7 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSetWithTemplate(
 	//TODO
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetLayoutSupport(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetDescriptorSetLayoutSupport(
 	VkDevice                                    device,
 	const VkDescriptorSetLayoutCreateInfo*      pCreateInfo,
 	VkDescriptorSetLayoutSupport*               pSupport)
