@@ -5,14 +5,15 @@
 //https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#features-limits
 static VkPhysicalDeviceLimits _limits =
 {
-	//TODO these values might change
-	.maxImageDimension1D = 16384,
-	.maxImageDimension2D = 16384,
+	//TODO we could use these hard limits to optimise some of the driver code
+	//eg. staticcally allocated buffers instead of dynamically growing ones
+	.maxImageDimension1D = 2048,
+	.maxImageDimension2D = 2048,
 	.maxImageDimension3D = 2084,
-	.maxImageDimensionCube = 16384,
+	.maxImageDimensionCube = 2048,
 	.maxImageArrayLayers = 2048,
 	.maxTexelBufferElements = 134217728,
-	.maxUniformBufferRange = 65536,
+	.maxUniformBufferRange = 4294967295, //handled as buffers
 	.maxStorageBufferRange = 4294967295,
 	.maxPushConstantsSize = 256,
 	.maxMemoryAllocationCount = 4096,
@@ -25,10 +26,10 @@ static VkPhysicalDeviceLimits _limits =
 	.maxPerStageDescriptorStorageBuffers = 4096,
 	.maxPerStageDescriptorSampledImages = 16384,
 	.maxPerStageDescriptorStorageImages = 16384,
-	.maxPerStageDescriptorInputAttachments = 8, //TODO
+	.maxPerStageDescriptorInputAttachments = 8,
 	.maxPerStageResources = 53268,
 	.maxDescriptorSetSamplers = 4000,
-	.maxDescriptorSetUniformBuffers = 72, //TODO
+	.maxDescriptorSetUniformBuffers = 72,
 	.maxDescriptorSetUniformBuffersDynamic = 72,
 	.maxDescriptorSetStorageBuffers = 4096,
 	.maxDescriptorSetStorageBuffersDynamic = 16,
@@ -39,7 +40,7 @@ static VkPhysicalDeviceLimits _limits =
 	.maxVertexInputBindings = 8, //TODO will fail CTS, MIN is 16
 	.maxVertexInputAttributeOffset = 2047,
 	.maxVertexInputBindingStride = 2048,
-	.maxVertexOutputComponents = 128, //TODO?
+	.maxVertexOutputComponents = 128,
 	.maxTessellationGenerationLevel = 0, //No tessellation
 	.maxTessellationPatchSize = 0,
 	.maxTessellationControlPerVertexInputComponents = 0,
@@ -48,7 +49,7 @@ static VkPhysicalDeviceLimits _limits =
 	.maxTessellationControlTotalOutputComponents = 0,
 	.maxTessellationEvaluationInputComponents = 0,
 	.maxTessellationEvaluationOutputComponents = 0,
-	.maxGeometryShaderInvocations = 0, //TODO no geometry shaders for now
+	.maxGeometryShaderInvocations = 0, //no geometry shaders
 	.maxGeometryInputComponents = 0,
 	.maxGeometryOutputComponents = 0,
 	.maxGeometryOutputVertices = 0,
@@ -64,13 +65,13 @@ static VkPhysicalDeviceLimits _limits =
 	.subPixelPrecisionBits = 8,
 	.subTexelPrecisionBits = 8,
 	.mipmapPrecisionBits = 8,
-	.maxDrawIndexedIndexValue = 4294967295,
-	.maxDrawIndirectCount = 4294967295,
+	.maxDrawIndexedIndexValue = 65535,
+	.maxDrawIndirectCount = 0,
 	.maxSamplerLodBias = 15,
-	.maxSamplerAnisotropy = 16.0,
+	.maxSamplerAnisotropy = 1.0,
 	.maxViewports = 1,
-	.maxViewportDimensions = {16384,16384},
-	.viewportBoundsRange = {-32768,32768},
+	.maxViewportDimensions = {4096,4096},
+	.viewportBoundsRange = {-8192,8192},
 	.viewportSubPixelBits = 8,
 	.minMemoryMapAlignment = 0x40, //TODO
 	.minTexelBufferOffsetAlignment = 0x10,
@@ -78,24 +79,24 @@ static VkPhysicalDeviceLimits _limits =
 	.minStorageBufferOffsetAlignment = 0x20,
 	.minTexelOffset = -8,
 	.maxTexelOffset = 7,
-	.minTexelGatherOffset = -32,
-	.maxTexelGatherOffset = 31,
+	.minTexelGatherOffset = 0,
+	.maxTexelGatherOffset = 0,
 	.minInterpolationOffset = -0.5,
 	.maxInterpolationOffset = 0.4375,
 	.subPixelInterpolationOffsetBits = 4,
-	.maxFramebufferWidth = 16384,
-	.maxFramebufferHeight = 16384,
+	.maxFramebufferWidth = 4096,
+	.maxFramebufferHeight = 4096,
 	.maxFramebufferLayers = 2048,
-	.framebufferColorSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
-	.framebufferDepthSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
-	.framebufferStencilSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
-	.framebufferNoAttachmentsSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
+	.framebufferColorSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_4_BIT,
+	.framebufferDepthSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_4_BIT,
+	.framebufferStencilSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_4_BIT,
+	.framebufferNoAttachmentsSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_4_BIT,
 	.maxColorAttachments = 8,
-	.sampledImageColorSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
-	.sampledImageIntegerSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
-	.sampledImageDepthSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
-	.sampledImageStencilSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
-	.storageImageSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_2_BIT | VK_SAMPLE_COUNT_4_BIT | VK_SAMPLE_COUNT_8_BIT,
+	.sampledImageColorSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_4_BIT,
+	.sampledImageIntegerSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_4_BIT,
+	.sampledImageDepthSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_4_BIT,
+	.sampledImageStencilSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_4_BIT,
+	.storageImageSampleCounts = VK_SAMPLE_COUNT_1_BIT | VK_SAMPLE_COUNT_4_BIT,
 	.maxSampleMaskWords = 1,
 	.timestampComputeAndGraphics = 1,
 	.timestampPeriod = 1,
@@ -117,17 +118,17 @@ static VkPhysicalDeviceLimits _limits =
 static VkPhysicalDeviceFeatures _features =
 {
 	//TODO this might change
-	.robustBufferAccess = 1,
-	.fullDrawIndexUint32 = 1, //TODO
+	.robustBufferAccess = 0,
+	.fullDrawIndexUint32 = 0,
 	.imageCubeArray = 1, //TODO
 	.independentBlend = 1,
 	.geometryShader = 0,
 	.tessellationShader = 0,
-	.sampleRateShading = 1, //TODO
+	.sampleRateShading = 0,
 	.dualSrcBlend = 1,
-	.logicOp = 1,
-	.multiDrawIndirect = 1,
-	.drawIndirectFirstInstance = 1,
+	.logicOp = 0, //TODO
+	.multiDrawIndirect = 0,
+	.drawIndirectFirstInstance = 0,
 	.depthClamp = 1,
 	.depthBiasClamp = 1,
 	.fillModeNonSolid = 1,
@@ -136,18 +137,18 @@ static VkPhysicalDeviceFeatures _features =
 	.largePoints = 1,
 	.alphaToOne = 1,
 	.multiViewport = 0,
-	.samplerAnisotropy = 1,
-	.textureCompressionETC2 = 0,
+	.samplerAnisotropy = 0,
+	.textureCompressionETC2 = 1,
 	.textureCompressionASTC_LDR = 0,
 	.textureCompressionBC = 0,
-	.occlusionQueryPrecise = 1,
+	.occlusionQueryPrecise = 0,
 	.pipelineStatisticsQuery = 1,
-	.vertexPipelineStoresAndAtomics = 1,
-	.fragmentStoresAndAtomics = 1,
+	.vertexPipelineStoresAndAtomics = 0,
+	.fragmentStoresAndAtomics = 0,
 	.shaderTessellationAndGeometryPointSize = 0,
-	.shaderImageGatherExtended = 1,
-	.shaderStorageImageExtendedFormats = 1,
-	.shaderStorageImageMultisample = 1,
+	.shaderImageGatherExtended = 0,
+	.shaderStorageImageExtendedFormats = 0,
+	.shaderStorageImageMultisample = 0,
 	.shaderStorageImageReadWithoutFormat = 0,
 	.shaderStorageImageWriteWithoutFormat = 0,
 	.shaderUniformBufferArrayDynamicIndexing = 1,
@@ -159,18 +160,18 @@ static VkPhysicalDeviceFeatures _features =
 	.shaderFloat64 = 0,
 	.shaderInt64 = 0,
 	.shaderInt16 = 0,
-	.shaderResourceResidency = 1,
-	.shaderResourceMinLod = 1,
-	.sparseBinding = 1,
-	.sparseResidencyBuffer = 1,
-	.sparseResidencyImage2D = 1,
-	.sparseResidencyImage3D = 1,
-	.sparseResidency2Samples = 1,
-	.sparseResidency4Samples = 1,
-	.sparseResidency8Samples = 1,
+	.shaderResourceResidency = 0,
+	.shaderResourceMinLod = 0,
+	.sparseBinding = 0,
+	.sparseResidencyBuffer = 0,
+	.sparseResidencyImage2D = 0,
+	.sparseResidencyImage3D = 0,
+	.sparseResidency2Samples = 0,
+	.sparseResidency4Samples = 0,
+	.sparseResidency8Samples = 0,
 	.sparseResidency16Samples = 0,
-	.sparseResidencyAliased = 1,
-	.variableMultisampleRate = 1,
+	.sparseResidencyAliased = 0,
+	.variableMultisampleRate = 0,
 	.inheritedQueries = 1,
 };
 #define numFeatures (sizeof(_features)/sizeof(VkBool32))
@@ -194,6 +195,10 @@ static VkSurfaceFormatKHR supportedSurfaceFormats[] =
 	},
 	{
 		.format = VK_FORMAT_R16G16B16A16_SFLOAT,
+		.colorSpace = VK_COLOR_SPACE_PASS_THROUGH_EXT
+	},
+	{
+		.format = VK_FORMAT_B5G6R5_UNORM_PACK16,
 		.colorSpace = VK_COLOR_SPACE_PASS_THROUGH_EXT
 	}
 };
@@ -264,10 +269,7 @@ static VkExtensionProperties deviceExtensions[] =
 
 static VkMemoryType memoryTypes[] =
 {
-	{
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		0
-	},
+	//TODO might change this
 	{
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		0
@@ -284,103 +286,22 @@ static VkMemoryHeap memoryHeaps[] =
 };
 #define numMemoryHeaps (sizeof(memoryHeaps) / sizeof(VkMemoryHeap))
 
-static VkFormat unsupportedFormats[] =
+static VkFormat supportedFormats[] =
 {
-	VK_FORMAT_BC1_RGB_UNORM_BLOCK, //bc formats
-	VK_FORMAT_BC1_RGB_SRGB_BLOCK,
-	VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
-	VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
-	VK_FORMAT_BC2_UNORM_BLOCK,
-	VK_FORMAT_BC2_SRGB_BLOCK,
-	VK_FORMAT_BC3_UNORM_BLOCK,
-	VK_FORMAT_BC3_SRGB_BLOCK,
-	VK_FORMAT_BC4_UNORM_BLOCK,
-	VK_FORMAT_BC4_SNORM_BLOCK,
-	VK_FORMAT_BC5_UNORM_BLOCK,
-	VK_FORMAT_BC5_SNORM_BLOCK,
-	VK_FORMAT_BC6H_UFLOAT_BLOCK,
-	VK_FORMAT_BC6H_SFLOAT_BLOCK,
-	VK_FORMAT_BC7_UNORM_BLOCK,
-	VK_FORMAT_BC7_SRGB_BLOCK,
-	VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK, //etc2 formats
-	VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
-	VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
-	VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
-	VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
-	VK_FORMAT_EAC_R11_UNORM_BLOCK, //eac formats
-	VK_FORMAT_EAC_R11_SNORM_BLOCK,
-	VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
-	VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
-	VK_FORMAT_ASTC_4x4_UNORM_BLOCK, //astc formats
-	VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
-	VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
-	VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
-	VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
-	VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
-	VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
-	VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
-	VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
-	VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
-	VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
-	VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
-	VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
-	VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
-	VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
-	VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
-	VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
-	VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
-	VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
-	VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
-	VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
-	VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
-	VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
-	VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
-	VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
-	VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
-	VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
-	VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
-	VK_FORMAT_B8G8R8G8_422_UNORM, //TODO yuv formats???
-	VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
-	VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
-	VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM,
-	VK_FORMAT_G8_B8R8_2PLANE_422_UNORM,
-	VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM,
-	VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,
-	VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,
-	VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16,
-	VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16,
-	VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16,
-	VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16,
-	VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16,
-	VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,
-	VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,
-	VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16,
-	VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16,
-	VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16,
-	VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16,
-	VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16,
-	VK_FORMAT_G16B16G16R16_422_UNORM,
-	VK_FORMAT_B16G16R16G16_422_UNORM,
-	VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM,
-	VK_FORMAT_G16_B16R16_2PLANE_420_UNORM,
-	VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
-	VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
-	VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM,
-	VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
-	VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16,
-	VK_FORMAT_R10X6G10X6_UNORM_2PACK16,
-	VK_FORMAT_R12X4G12X4_UNORM_2PACK16,
-	VK_FORMAT_R10X6_UNORM_PACK16,
-	VK_FORMAT_R12X4_UNORM_PACK16,
-	VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG, //pvrtc formats
-	VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG,
-	VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG,
-	VK_FORMAT_PVRTC2_4BPP_UNORM_BLOCK_IMG,
-	VK_FORMAT_PVRTC1_2BPP_SRGB_BLOCK_IMG,
-	VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG,
-	VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG,
-	VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG
+	VK_FORMAT_R16G16B16A16_SFLOAT,
+	VK_FORMAT_R8G8B8_UNORM,
+	VK_FORMAT_R8G8B8A8_UNORM,
+	VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+	VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+	VK_FORMAT_R5G6B5_UNORM_PACK16,
+	VK_FORMAT_R8G8_UNORM,
+	VK_FORMAT_R16_SFLOAT,
+	VK_FORMAT_R16_SINT,
+	VK_FORMAT_R8_UNORM,
+	VK_FORMAT_R8_SINT,
+	VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
+	VK_FORMAT_G8B8G8R8_422_UNORM
 };
-#define numUnsupportedFormats (sizeof(unsupportedFormats)/sizeof(VkFormat))
+#define numSupportedFormats (sizeof(supportedFormats)/sizeof(VkFormat))
 
 #define VK_DRIVER_VERSION VK_MAKE_VERSION(1, 1, 0)

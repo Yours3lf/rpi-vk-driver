@@ -566,12 +566,19 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceImageFormatProperties(
 	};
 	#define numYcbcrConversionRequiredFormats (sizeof(ycbcrConversionRequiredFormats)/sizeof(VkFormat))
 
-	for(uint32_t c = 0; c < numUnsupportedFormats; ++c)
+	uint32_t supported = 0;
+	for(uint32_t c = 0; c < numSupportedFormats; ++c)
 	{
-		if(format == unsupportedFormats[c])
+		if(format == supportedFormats[c])
 		{
-			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+			supported = 1;
+			break;
 		}
+	}
+
+	if(!supported)
+	{
+		return VK_ERROR_FORMAT_NOT_SUPPORTED;
 	}
 
 	pImageFormatProperties->maxArrayLayers = _limits.maxImageArrayLayers;
