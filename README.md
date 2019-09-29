@@ -34,8 +34,8 @@
   - [ ] Clear command support
   - [ ] Copy command support
 - [ ] Shader patching
-  - [ ] Stencil state
-  - [ ] Depth writes
+  - [x] Stencil state
+  - [x] Depth writes
   - [ ] Blending mode
   - [ ] Vertex attrib format
 - [ ] Platform features
