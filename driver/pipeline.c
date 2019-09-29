@@ -30,6 +30,11 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 	assert(pCreateInfos);
 	assert(pPipelines);
 
+	if(pipelineCache)
+	{
+		UNSUPPORTED(pipelineCache);
+	}
+
 	//TODO pipeline caches
 	//TODO flags
 
@@ -206,7 +211,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkMergePipelineCaches(
 	uint32_t                                    srcCacheCount,
 	const VkPipelineCache*                      pSrcCaches)
 {
-	//TODO
+	UNSUPPORTED(vkMergePipelineCaches);
 	return VK_SUCCESS;
 }
 
@@ -216,7 +221,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineCacheData(
 	size_t*                                     pDataSize,
 	void*                                       pData)
 {
-	//TODO
+	UNSUPPORTED(vkGetPipelineCacheData);
 	return VK_SUCCESS;
 }
 
@@ -225,7 +230,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyPipelineCache(
 	VkPipelineCache                             pipelineCache,
 	const VkAllocationCallbacks*                pAllocator)
 {
-	//TODO
+	UNSUPPORTED(vkDestroyPipelineCache);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineLayout(
@@ -291,6 +296,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreatePipelineCache(
 	const VkAllocationCallbacks*                pAllocator,
 	VkPipelineCache*                            pPipelineCache)
 {
-	//TODO
+	UNSUPPORTED(vkCreatePipelineCache);
 	return VK_SUCCESS;
 }
