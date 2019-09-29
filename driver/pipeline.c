@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include "kernel/vc4_packet.h"
+#include "../QPUassembler/qpu_assembler.h"
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBindPipeline
@@ -18,6 +19,46 @@ void vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipeli
 	{
 		cb->computePipeline = pipeline;
 	}
+}
+
+void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, const VkPipelineDepthStencilStateCreateInfo* dsi, const VkAllocationCallbacks* pAllocator)
+{
+	assert(instructions);
+	assert(size);
+	assert(dsi);
+
+	uint32_t numExtraInstructions = 0;
+	numExtraInstructions += dsi->depthWriteEnable || dsi->stencilTestEnable;
+
+	uint32_t values[3];
+	uint32_t numValues;
+	encodeStencilValue(values, &numValues, dsi->front, dsi->back, dsi->stencilTestEnable);
+
+	numExtraInstructions += numValues * 2;
+
+	uint32_t newSize = *size + numExtraInstructions * sizeof(uint64_t);
+	uint64_t* tmp = ALLOCATE(newSize, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+	memset(tmp, 0, newSize);
+	memcpy(tmp + numExtraInstructions, *instructions, *size);
+
+	///"sig_load_imm ; r0 = load32.always(0xF497EEFF‬) ; nop = load32() ;" //stencil setup state
+	///"sig_none ; tlb_stencil_setup = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+	for(uint32_t c = 0; c < numValues; ++c)
+	{
+		tmp[c] = encode_load_imm(0, 0, 1, 0, 0, 0, 32 + c, 39, values[c]); //r0 = load32.always(values[c])
+		tmp[numValues + c] = encode_alu(1, 0, 0, 0, 1, 0, 0, 0, 43, 39, 0, 21, 0, 0, c, c, 0, 0); //tlb_stencil_setup = or.always(r0, r0)
+	}
+
+	///"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
+	if(dsi->depthWriteEnable || dsi->stencilTestEnable)
+	{
+		tmp[numValues*2] = encode_alu(1, 0, 0, 0, 1, 0, 0, 0, 44, 39, 0, 21, 0, 15, 7, 7, 0, 0);
+	}
+
+	//replace instructions pointer
+	FREE(*instructions);
+	*instructions = tmp;
+	*size = newSize;
 }
 
 /*
@@ -47,122 +88,165 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 		}
 
 		memset(pip->names, 0, sizeof(char*)*6);
+		memset(pip->modules, 0, sizeof(_shaderModule*)*6);
 
-		for(int d = 0; d < pCreateInfos->stageCount; ++d)
+		for(int d = 0; d < pCreateInfos[c].stageCount; ++d)
 		{
-			uint32_t idx = ulog2(pCreateInfos->pStages[d].stage);
-			pip->modules[idx] = pCreateInfos->pStages[d].module;
+			uint32_t idx = ulog2(pCreateInfos[c].pStages[d].stage);
+			pip->modules[idx] = pCreateInfos[c].pStages[d].module;
 
-			pip->names[idx] = ALLOCATE(strlen(pCreateInfos->pStages[d].pName)+1, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+			_shaderModule* s = pip->modules[idx];
+
+			pip->names[idx] = ALLOCATE(strlen(pCreateInfos[c].pStages[d].pName)+1, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!pip->names[idx])
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
-			memcpy(pip->names[idx], pCreateInfos->pStages[d].pName, strlen(pCreateInfos->pStages[d].pName)+1);
+			memcpy(pip->names[idx], pCreateInfos[c].pStages[d].pName, strlen(pCreateInfos[c].pStages[d].pName)+1);
+
+			//patch fragment shader
+			if(pCreateInfos[c].pStages[d].stage & VK_SHADER_STAGE_FRAGMENT_BIT)
+			{
+				patchShaderDepthStencilBlending(&s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT], &s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT], pCreateInfos[c].pDepthStencilState, pAllocator);
+
+				//TODO if debug...
+				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT] / 8; ++e)
+				{
+					printf("%#llx ", s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT][e]);
+					disassemble_qpu_asm(s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT][e]);
+				}
+
+				printf("\n");
+
+				s->bos[RPI_ASSEMBLY_TYPE_FRAGMENT] = vc4_bo_alloc_shader(controlFd, s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT], &s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT]);
+			}
+
+			if(pCreateInfos[c].pStages[d].stage & VK_SHADER_STAGE_VERTEX_BIT)
+			{
+				//TODO if debug...
+				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_VERTEX] / 8; ++e)
+				{
+					printf("%#llx ", s->instructions[RPI_ASSEMBLY_TYPE_VERTEX][e]);
+					disassemble_qpu_asm(s->instructions[RPI_ASSEMBLY_TYPE_VERTEX][e]);
+				}
+
+				printf("\n");
+
+				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_COORDINATE] / 8; ++e)
+				{
+					printf("%#llx ", s->instructions[RPI_ASSEMBLY_TYPE_COORDINATE][e]);
+					disassemble_qpu_asm(s->instructions[RPI_ASSEMBLY_TYPE_COORDINATE][e]);
+				}
+
+				printf("\n");
+
+				s->bos[RPI_ASSEMBLY_TYPE_COORDINATE] = vc4_bo_alloc_shader(controlFd, s->instructions[RPI_ASSEMBLY_TYPE_COORDINATE], &s->sizes[RPI_ASSEMBLY_TYPE_COORDINATE]);
+				s->bos[RPI_ASSEMBLY_TYPE_VERTEX] = vc4_bo_alloc_shader(controlFd, s->instructions[RPI_ASSEMBLY_TYPE_VERTEX], &s->sizes[RPI_ASSEMBLY_TYPE_VERTEX]);
+			}
 		}
 
-		pip->vertexAttributeDescriptionCount = pCreateInfos->pVertexInputState->vertexAttributeDescriptionCount;
+		pip->vertexAttributeDescriptionCount = pCreateInfos[c].pVertexInputState->vertexAttributeDescriptionCount;
 		pip->vertexAttributeDescriptions = ALLOCATE(sizeof(VkVertexInputAttributeDescription) * pip->vertexAttributeDescriptionCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->vertexAttributeDescriptions)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		memcpy(pip->vertexAttributeDescriptions, pCreateInfos->pVertexInputState->pVertexAttributeDescriptions, sizeof(VkVertexInputAttributeDescription) * pip->vertexAttributeDescriptionCount);
+		memcpy(pip->vertexAttributeDescriptions, pCreateInfos[c].pVertexInputState->pVertexAttributeDescriptions, sizeof(VkVertexInputAttributeDescription) * pip->vertexAttributeDescriptionCount);
 
-		pip->vertexBindingDescriptionCount = pCreateInfos->pVertexInputState->vertexBindingDescriptionCount;
+		pip->vertexBindingDescriptionCount = pCreateInfos[c].pVertexInputState->vertexBindingDescriptionCount;
 		pip->vertexBindingDescriptions = ALLOCATE(sizeof(VkVertexInputBindingDescription) * pip->vertexBindingDescriptionCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->vertexBindingDescriptions)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		memcpy(pip->vertexBindingDescriptions, pCreateInfos->pVertexInputState->pVertexBindingDescriptions, sizeof(VkVertexInputBindingDescription) * pip->vertexBindingDescriptionCount);
+		memcpy(pip->vertexBindingDescriptions, pCreateInfos[c].pVertexInputState->pVertexBindingDescriptions, sizeof(VkVertexInputBindingDescription) * pip->vertexBindingDescriptionCount);
 
-		pip->topology = pCreateInfos->pInputAssemblyState->topology;
-		pip->primitiveRestartEnable = pCreateInfos->pInputAssemblyState->primitiveRestartEnable;
+		pip->topology = pCreateInfos[c].pInputAssemblyState->topology;
+		pip->primitiveRestartEnable = pCreateInfos[c].pInputAssemblyState->primitiveRestartEnable;
 
 		//tessellation ignored
 
-		pip->viewportCount = pCreateInfos->pViewportState->viewportCount;
+		pip->viewportCount = pCreateInfos[c].pViewportState->viewportCount;
 		pip->viewports = ALLOCATE(sizeof(VkViewport) * pip->viewportCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->viewports)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		memcpy(pip->viewports, pCreateInfos->pViewportState->pViewports, sizeof(VkViewport) * pip->viewportCount);
+		memcpy(pip->viewports, pCreateInfos[c].pViewportState->pViewports, sizeof(VkViewport) * pip->viewportCount);
 
 
-		pip->scissorCount = pCreateInfos->pViewportState->scissorCount;
+		pip->scissorCount = pCreateInfos[c].pViewportState->scissorCount;
 		pip->scissors = ALLOCATE(sizeof(VkRect2D) * pip->viewportCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->scissors)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		memcpy(pip->scissors, pCreateInfos->pViewportState->pScissors, sizeof(VkRect2D) * pip->scissorCount);
+		memcpy(pip->scissors, pCreateInfos[c].pViewportState->pScissors, sizeof(VkRect2D) * pip->scissorCount);
 
-		pip->depthClampEnable = pCreateInfos->pRasterizationState->depthClampEnable;
-		pip->rasterizerDiscardEnable = pCreateInfos->pRasterizationState->rasterizerDiscardEnable;
-		pip->polygonMode = pCreateInfos->pRasterizationState->polygonMode;
-		pip->cullMode = pCreateInfos->pRasterizationState->cullMode;
-		pip->frontFace = pCreateInfos->pRasterizationState->frontFace;
-		pip->depthBiasEnable = pCreateInfos->pRasterizationState->depthBiasEnable;
-		pip->depthBiasConstantFactor = pCreateInfos->pRasterizationState->depthBiasConstantFactor;
-		pip->depthBiasClamp = pCreateInfos->pRasterizationState->depthBiasClamp;
-		pip->depthBiasSlopeFactor = pCreateInfos->pRasterizationState->depthBiasSlopeFactor;
-		pip->lineWidth = pCreateInfos->pRasterizationState->lineWidth;
+		pip->depthClampEnable = pCreateInfos[c].pRasterizationState->depthClampEnable;
+		pip->rasterizerDiscardEnable = pCreateInfos[c].pRasterizationState->rasterizerDiscardEnable;
+		pip->polygonMode = pCreateInfos[c].pRasterizationState->polygonMode;
+		pip->cullMode = pCreateInfos[c].pRasterizationState->cullMode;
+		pip->frontFace = pCreateInfos[c].pRasterizationState->frontFace;
+		pip->depthBiasEnable = pCreateInfos[c].pRasterizationState->depthBiasEnable;
+		pip->depthBiasConstantFactor = pCreateInfos[c].pRasterizationState->depthBiasConstantFactor;
+		pip->depthBiasClamp = pCreateInfos[c].pRasterizationState->depthBiasClamp;
+		pip->depthBiasSlopeFactor = pCreateInfos[c].pRasterizationState->depthBiasSlopeFactor;
+		pip->lineWidth = pCreateInfos[c].pRasterizationState->lineWidth;
 
-		pip->rasterizationSamples = pCreateInfos->pMultisampleState->rasterizationSamples;
-		pip->sampleShadingEnable = pCreateInfos->pMultisampleState->sampleShadingEnable;
-		pip->minSampleShading = pCreateInfos->pMultisampleState->minSampleShading;
-		if(pCreateInfos->pMultisampleState->pSampleMask)
+		pip->rasterizationSamples = pCreateInfos[c].pMultisampleState->rasterizationSamples;
+		pip->sampleShadingEnable = pCreateInfos[c].pMultisampleState->sampleShadingEnable;
+		pip->minSampleShading = pCreateInfos[c].pMultisampleState->minSampleShading;
+		if(pCreateInfos[c].pMultisampleState->pSampleMask)
 		{
-			pip->sampleMask = *pCreateInfos->pMultisampleState->pSampleMask;
+			pip->sampleMask = *pCreateInfos[c].pMultisampleState->pSampleMask;
 		}
 		else
 		{
 			pip->sampleMask = 0;
 		}
-		pip->alphaToCoverageEnable = pCreateInfos->pMultisampleState->alphaToCoverageEnable;
-		pip->alphaToOneEnable = pCreateInfos->pMultisampleState->alphaToOneEnable;
+		pip->alphaToCoverageEnable = pCreateInfos[c].pMultisampleState->alphaToCoverageEnable;
+		pip->alphaToOneEnable = pCreateInfos[c].pMultisampleState->alphaToOneEnable;
 
-		pip->depthTestEnable = pCreateInfos->pDepthStencilState->depthTestEnable;
-		pip->depthWriteEnable = pCreateInfos->pDepthStencilState->depthWriteEnable;
-		pip->depthCompareOp = pCreateInfos->pDepthStencilState->depthCompareOp;
-		pip->depthBoundsTestEnable = pCreateInfos->pDepthStencilState->depthBoundsTestEnable;
-		pip->stencilTestEnable = pCreateInfos->pDepthStencilState->stencilTestEnable;
-		pip->front = pCreateInfos->pDepthStencilState->front;
-		pip->back = pCreateInfos->pDepthStencilState->back;
-		pip->minDepthBounds = pCreateInfos->pDepthStencilState->minDepthBounds;
-		pip->maxDepthBounds = pCreateInfos->pDepthStencilState->maxDepthBounds;
+		pip->depthTestEnable = pCreateInfos[c].pDepthStencilState->depthTestEnable;
+		pip->depthWriteEnable = pCreateInfos[c].pDepthStencilState->depthWriteEnable;
+		pip->depthCompareOp = pCreateInfos[c].pDepthStencilState->depthCompareOp;
+		pip->depthBoundsTestEnable = pCreateInfos[c].pDepthStencilState->depthBoundsTestEnable;
+		pip->stencilTestEnable = pCreateInfos[c].pDepthStencilState->stencilTestEnable;
+		pip->front = pCreateInfos[c].pDepthStencilState->front;
+		pip->back = pCreateInfos[c].pDepthStencilState->back;
+		pip->minDepthBounds = pCreateInfos[c].pDepthStencilState->minDepthBounds;
+		pip->maxDepthBounds = pCreateInfos[c].pDepthStencilState->maxDepthBounds;
 
-		pip->logicOpEnable = pCreateInfos->pColorBlendState->logicOpEnable;
-		pip->logicOp = pCreateInfos->pColorBlendState->logicOp;
-		pip->attachmentCount = pCreateInfos->pColorBlendState->attachmentCount;
+		pip->logicOpEnable = pCreateInfos[c].pColorBlendState->logicOpEnable;
+		pip->logicOp = pCreateInfos[c].pColorBlendState->logicOp;
+		pip->attachmentCount = pCreateInfos[c].pColorBlendState->attachmentCount;
 		pip->attachmentBlendStates = ALLOCATE(sizeof(VkPipelineColorBlendAttachmentState) * pip->attachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->attachmentBlendStates)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		memcpy(pip->attachmentBlendStates, pCreateInfos->pColorBlendState->pAttachments, sizeof(VkPipelineColorBlendAttachmentState) * pip->attachmentCount);
+		memcpy(pip->attachmentBlendStates, pCreateInfos[c].pColorBlendState->pAttachments, sizeof(VkPipelineColorBlendAttachmentState) * pip->attachmentCount);
 
-		memcpy(pip->blendConstants, pCreateInfos->pColorBlendState, sizeof(float)*4);
+		memcpy(pip->blendConstants, pCreateInfos[c].pColorBlendState, sizeof(float)*4);
 
 
-		if(pCreateInfos->pDynamicState)
+		if(pCreateInfos[c].pDynamicState)
 		{
-			pip->dynamicStateCount = pCreateInfos->pDynamicState->dynamicStateCount;
+			pip->dynamicStateCount = pCreateInfos[c].pDynamicState->dynamicStateCount;
 			pip->dynamicStates = ALLOCATE(sizeof(VkDynamicState)*pip->dynamicStateCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!pip->dynamicStates)
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
-			memcpy(pip->dynamicStates, pCreateInfos->pDynamicState->pDynamicStates, sizeof(VkDynamicState)*pip->dynamicStateCount);
+			memcpy(pip->dynamicStates, pCreateInfos[c].pDynamicState->pDynamicStates, sizeof(VkDynamicState)*pip->dynamicStateCount);
 		}
 		else
 		{
@@ -170,9 +254,9 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 			pip->dynamicStates = 0;
 		}
 
-		pip->layout = pCreateInfos->layout;
-		pip->renderPass = pCreateInfos->renderPass;
-		pip->subpass = pCreateInfos->subpass;
+		pip->layout = pCreateInfos[c].layout;
+		pip->renderPass = pCreateInfos[c].renderPass;
+		pip->subpass = pCreateInfos[c].subpass;
 
 		//TODO derivative pipelines ignored
 

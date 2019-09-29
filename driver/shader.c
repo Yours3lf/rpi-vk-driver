@@ -33,8 +33,8 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
 			uint32_t size = sizeof(uint64_t)*numInstructions;
 			//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
 			//why not map kernel space mem to user space instead?
-			uint64_t* instructions = ALLOCATE(size, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
-			if(!instructions)
+			shader->instructions[c] = ALLOCATE(size, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+			if(!shader->instructions[c])
 			{
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
@@ -44,22 +44,13 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
 			char* tmpShaderStr = ALLOCATE(stringLength+1, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			memcpy(tmpShaderStr, pCreateInfo->asmStrings[c], stringLength+1);
 
-			assemble_qpu_asm(tmpShaderStr, instructions);
+			assemble_qpu_asm(tmpShaderStr, shader->instructions[c]);
 
 			FREE(tmpShaderStr);
 
-			shader->bos[c] = vc4_bo_alloc_shader(controlFd, instructions, &size);
-
-			//TODO if debug...
 			for(uint64_t d = 0; d < numInstructions; ++d)
 			{
-				printf("%#llx ", instructions[d]);
-				disassemble_qpu_asm(instructions[d]);
-			}
-
-			for(uint64_t d = 0; d < numInstructions; ++d)
-			{
-				uint64_t s = (instructions[d] & (0xfll << 60)) >> 60;
+				uint64_t s = (shader->instructions[c][d] & (0xfll << 60)) >> 60;
 				if(s == 2ll)
 				{
 					shader->hasThreadSwitch = 1;
@@ -70,14 +61,14 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
 			shader->numVaryings = 0;
 			for(uint64_t d = 0; d < numInstructions; ++d)
 			{
-				unsigned is_sem = ((instructions[d] & (0x7fll << 57)) >> 57) == 0x74;
-				unsigned sig_bits = ((instructions[d] & (0xfll << 60)) >> 60);
+				unsigned is_sem = ((shader->instructions[c][d] & (0x7fll << 57)) >> 57) == 0x74;
+				unsigned sig_bits = ((shader->instructions[c][d] & (0xfll << 60)) >> 60);
 
 				//if it's an ALU instruction
 				if(!is_sem && sig_bits != 14 && sig_bits != 15)
 				{
-					unsigned raddr_a = ((instructions[d] & (0x3fll << 18)) >> 18);
-					unsigned raddr_b = ((instructions[d] & (0x3fll << 12)) >> 12);
+					unsigned raddr_a = ((shader->instructions[c][d] & (0x3fll << 18)) >> 18);
+					unsigned raddr_b = ((shader->instructions[c][d] & (0x3fll << 12)) >> 12);
 
 					if(raddr_a == 35)
 					{
@@ -91,10 +82,6 @@ VkResult vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModu
 					}
 				}
 			}
-
-			printf("\n");
-
-			FREE(instructions);
 
 			shader->sizes[c] = size;
 		}

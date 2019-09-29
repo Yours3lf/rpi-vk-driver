@@ -217,6 +217,7 @@ typedef struct VkShaderModule_T
 {
 	uint32_t bos[RPI_ASSEMBLY_TYPE_MAX];
 	uint32_t sizes[RPI_ASSEMBLY_TYPE_MAX];
+	uint64_t* instructions[RPI_ASSEMBLY_TYPE_MAX];
 	VkRpiAssemblyMappingEXT* mappings;
 	uint32_t numMappings;
 	uint32_t hasThreadSwitch;
@@ -480,7 +481,7 @@ void encodeTextureUniform(uint32_t* params,
 						  uint8_t wrapT,
 						  uint8_t wrapS,
 						  uint8_t noAutoLod);
-void encodeDepthStencilValue(uint32_t* values, uint32_t* numValues, VkStencilOpState front, VkStencilOpState back);
+void encodeStencilValue(uint32_t* values, uint32_t* numValues, VkStencilOpState front, VkStencilOpState back, uint8_t stencilTestEnable);
 uint8_t getTextureDataType(VkFormat format);
 uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter, float maxLod);
 uint8_t getWrapMode(VkSamplerAddressMode mode);

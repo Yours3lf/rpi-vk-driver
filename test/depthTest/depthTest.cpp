@@ -1087,9 +1087,6 @@ void CreateShaders()
 	/**/
 	//display a color
 	char fs_asm_code[] =
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
 			"sig_none ; tlb_color_all = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"

@@ -657,10 +657,15 @@ void encodeTextureUniform(uint32_t* params, //array of 4 uint32_t
 	params[3] = 0;
 }
 
-void encodeDepthStencilValue(uint32_t *values, uint32_t* numValues, VkStencilOpState front, VkStencilOpState back)
+void encodeStencilValue(uint32_t *values, uint32_t* numValues, VkStencilOpState front, VkStencilOpState back, uint8_t stencilTestEnable)
 {
 	assert(values);
 	assert(numValues);
+
+	if(!stencilTestEnable)
+	{
+		front.compareOp = back.compareOp = VK_COMPARE_OP_ALWAYS;
+	}
 
 	if(front.compareMask == back.compareMask &&
 	   front.compareOp == back.compareOp &&
@@ -676,10 +681,10 @@ void encodeDepthStencilValue(uint32_t *values, uint32_t* numValues, VkStencilOpS
 		values[0] = 0
 				| (front.compareMask & 0xff)
 				| (front.reference & 0xff) << 0x8
-				| (getCompareOp(front.compareOp) & 0x3) << 16
-				| (getStencilOp(front.failOp) & 0x3) << 19
-				| (getStencilOp(front.passOp) & 0x3) << 22
-				| (getStencilOp(front.depthFailOp) & 0x3) << 25
+				| (getCompareOp(front.compareOp) & 0x7) << 16
+				| (getStencilOp(front.failOp) & 0x7) << 19
+				| (getStencilOp(front.passOp) & 0x7) << 22
+				| (getStencilOp(front.depthFailOp) & 0x7) << 25
 				| 3 << 30; //front and back
 
 		switch(front.writeMask)
@@ -711,19 +716,19 @@ void encodeDepthStencilValue(uint32_t *values, uint32_t* numValues, VkStencilOpS
 		values[0] = 0
 				| (front.compareMask & 0xff)
 				| (front.reference & 0xff) << 0x8
-				| (getCompareOp(front.compareOp) & 0x3) << 16
-				| (getStencilOp(front.failOp) & 0x3) << 19
-				| (getStencilOp(front.passOp) & 0x3) << 22
-				| (getStencilOp(front.depthFailOp) & 0x3) << 25
+				| (getCompareOp(front.compareOp) & 0x7) << 16
+				| (getStencilOp(front.failOp) & 0x7) << 19
+				| (getStencilOp(front.passOp) & 0x7) << 22
+				| (getStencilOp(front.depthFailOp) & 0x7) << 25
 				| 1 << 30; //front
 
 		values[1] = 0
 				| (back.compareMask & 0xff)
 				| (back.reference & 0xff) << 0x8
-				| (getCompareOp(back.compareOp) & 0x3) << 16
-				| (getStencilOp(back.failOp) & 0x3) << 19
-				| (getStencilOp(back.passOp) & 0x3) << 22
-				| (getStencilOp(back.depthFailOp) & 0x3) << 25
+				| (getCompareOp(back.compareOp) & 0x7) << 16
+				| (getStencilOp(back.failOp) & 0x7) << 19
+				| (getStencilOp(back.passOp) & 0x7) << 22
+				| (getStencilOp(back.depthFailOp) & 0x7) << 25
 				| 2 << 30; //front
 
 		if((front.writeMask == 0x1 ||

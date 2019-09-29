@@ -949,9 +949,6 @@ void CreateShaders()
 	/**/
 	//display a color
 	char fs_asm_code[] =
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
 			/// instead of outputting the final color
 			/// we patch the shader (eventually in the driver)
 			/// so that it performs the desired blending mode

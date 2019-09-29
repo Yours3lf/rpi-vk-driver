@@ -1087,22 +1087,6 @@ void CreateShaders()
 	/**/
 	//display a color
 	char fs_asm_code[] =
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			///stencil setup state
-			///  28   24   20   16   12    8    4    0
-			///1111 0100 1001 0111 1110 1110 1111 1111
-			/// -> 0xF497EEFF‬
-			///selection = front and back (0x3)
-			///write mask = 0xff
-			///z test fail op = replace (0x2)
-			///z test pass op = replace (0x2)
-			///stencil test fail op = replace (0x2)
-			///stencil function = always (0x7)
-			///stencil ref value = 0xee
-			///stencil function mask = 0xff
-			"sig_load_imm ; r0 = load32.always(0xF497EEFF‬) ; nop = load32() ;" //stencil setup state
-			"sig_none ; tlb_stencil_setup = or.always(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
 			///omit color write
 			"sig_none ; r0 = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -1114,22 +1098,6 @@ void CreateShaders()
 	/**/
 	//display a color
 	char fs_asm_code2[] =
-			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-			///stencil setup state
-			///  28   24   20   16   12    8    4    0
-			///1111 0010 0100 1101 1110 1110 1111 1111
-			/// -> 0xF24DEEFF
-			///selection = front and back (0x3)
-			///write mask = 0xff
-			///z test fail op = keep (0x1)
-			///z test pass op = keep (0x1)
-			///stencil test fail op = keep (0x1)
-			///stencil function = not equal (0x5)
-			///stencil ref value = 0xee
-			///stencil function mask = 0xff
-			"sig_load_imm ; r0 = load32.always(0xF24DEEFF) ; nop = load32() ;" //stencil setup state
-			"sig_none ; tlb_stencil_setup = or.always(r0, r0) ; nop = nop(r0, r0) ;"
-			"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
 			"sig_none ; tlb_color_all = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -1336,9 +1304,9 @@ void CreatePipeline()
 
 
 	depthStencilState.front.compareOp = VK_COMPARE_OP_NOT_EQUAL;
-	depthStencilState.front.depthFailOp	 = VK_STENCIL_OP_REPLACE;
-	depthStencilState.front.failOp = VK_STENCIL_OP_REPLACE;
-	depthStencilState.front.passOp = VK_STENCIL_OP_REPLACE;
+	depthStencilState.front.depthFailOp	 = VK_STENCIL_OP_KEEP;
+	depthStencilState.front.failOp = VK_STENCIL_OP_KEEP;
+	depthStencilState.front.passOp = VK_STENCIL_OP_KEEP;
 	depthStencilState.back = depthStencilState.front;
 
 	blendAttachState.colorWriteMask = 0xf;

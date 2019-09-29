@@ -139,7 +139,7 @@ static const char *qpu_sig_bits_str[] = {
 //Returns the small immediate value to be encoded in to the raddr b field if
 //the argument can be represented as one, or ~0 otherwise.
 //48: Small immediate value for rotate-by-r5, and 49-63 are "rotate by n channels"
-uint8_t qpu_encode_small_immediate(uint32_t i)
+static uint8_t qpu_encode_small_immediate(uint32_t i)
 {
 		if (i <= 15)
 				return i;
