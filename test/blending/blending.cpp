@@ -1130,8 +1130,14 @@ void CreatePipeline()
 	pipelineMSCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 
 	VkPipelineColorBlendAttachmentState blendAttachState = {};
-	blendAttachState.colorWriteMask = 0xf;
-	blendAttachState.blendEnable = false;
+	blendAttachState.colorWriteMask = 0xf; //RGBA
+	blendAttachState.blendEnable = true;
+	blendAttachState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	blendAttachState.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	blendAttachState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	blendAttachState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	blendAttachState.colorBlendOp = VK_BLEND_OP_ADD;
+	blendAttachState.alphaBlendOp = VK_BLEND_OP_ADD;
 
 	VkPipelineColorBlendStateCreateInfo blendCreateInfo = {};
 	blendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;

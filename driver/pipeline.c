@@ -21,7 +21,8 @@ void vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipeli
 	}
 }
 
-void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, const VkPipelineDepthStencilStateCreateInfo* dsi, const VkAllocationCallbacks* pAllocator)
+//TODO multiple attachments
+void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, const VkPipelineDepthStencilStateCreateInfo* dsi, const VkPipelineColorBlendAttachmentState* bas, const VkAllocationCallbacks* pAllocator)
 {
 	assert(instructions);
 	assert(size);
@@ -54,6 +55,38 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
 	{
 		tmp[numValues*2] = encode_alu(1, 0, 0, 0, 1, 0, 0, 0, 44, 39, 0, 21, 0, 15, 7, 7, 0, 0);
 	}
+
+
+	//patch blending
+	/// patch shader so that r0 will contain whatever would be written to tlb_color_all
+	/// r0 contains sRGBA
+	//"sig_none ; r0 = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
+
+	/// prepare sAAAA to r1
+	/// load tbl color dRGBA to r4
+	//"sig_color_load ; r1.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;"
+
+	/// prepare 1 - sAAAA to r2
+	/// prepare sRGBA * sAAAA to r0
+	//"sig_none ; r2 = not.always(r1, r1) ; r0 = v8muld.always(r0, r1) ;"
+
+	/// prepare (1 - sAAAA) * dRGBA
+	//"sig_none ; nop = nop(r0, r0) ; r2 = v8muld.always(r2, r4) ;"
+
+	/// output sRGBA * sAAAA + dRGBA * (1 - sAAAA)
+	//"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8adds.always(r2, r0) ;"
+
+	///VK_BLEND_FACTOR_ZERO
+	"sig_small_imm ; r1 = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;"
+
+	///VK_BLEND_FACTOR_ONE
+	"sig_small_imm ; r1 = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
+
+	///VK_BLEND_FACTOR_SRC_COLOR
+	//"sig_none ; r1 = or.always(r0, r0) ; r0 = v8muld.always(r0, r1) ;"
+
+	//TODO
+
 
 	//replace instructions pointer
 	FREE(*instructions);
@@ -108,7 +141,7 @@ VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCach
 			//patch fragment shader
 			if(pCreateInfos[c].pStages[d].stage & VK_SHADER_STAGE_FRAGMENT_BIT)
 			{
-				patchShaderDepthStencilBlending(&s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT], &s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT], pCreateInfos[c].pDepthStencilState, pAllocator);
+				patchShaderDepthStencilBlending(&s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT], &s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT], pCreateInfos[c].pDepthStencilState, pCreateInfos[c].pColorBlendState->pAttachments, pAllocator);
 
 				//TODO if debug...
 				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT] / 8; ++e)
