@@ -5,13 +5,26 @@
 
 #include "declarations.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayPlaneSurfaceKHR(
+	VkInstance                                  instance,
+	const VkDisplaySurfaceCreateInfoKHR*        pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkSurfaceKHR*                               pSurface)
+{
+	fprintf(stderr, "vkCreateDisplayPlaneSurfaceKHR\n");
+}
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroySurfaceKHR
  * Destroying a VkSurfaceKHR merely severs the connection between Vulkan and the native surface,
  * and does not imply destroying the native surface, closing a window, or similar behavior
  * (but we'll do so anyways...)
  */
-VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
 		VkInstance                                  instance,
 		VkSurfaceKHR                                surface,
 		const VkAllocationCallbacks*                pAllocator)
@@ -36,7 +49,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(
  *
  * capabilities the specified device supports for a swapchain created for the surface
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		VkSurfaceCapabilitiesKHR*                   pSurfaceCapabilities)
@@ -71,7 +84,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
  * at most pSurfaceFormatCount structures will be written. If pSurfaceFormatCount is smaller than the number of format pairs supported for the given surface,
  * VK_INCOMPLETE will be returned instead of VK_SUCCESS to indicate that not all the available values were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		uint32_t*                                   pSurfaceFormatCount,
@@ -116,7 +129,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(
  * If pPresentModeCount is smaller than the number of presentation modes supported for the given surface, VK_INCOMPLETE will be returned instead of
  * VK_SUCCESS to indicate that not all the available values were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		uint32_t*                                   pPresentModeCount,
@@ -156,7 +169,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateSwapchainKHR
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 		VkDevice                                    device,
 		const VkSwapchainCreateInfoKHR*             pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
@@ -404,7 +417,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceSurfaceSupportKHR
  * does this queue family support presentation to this surface?
  */
-VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceSupportKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceSupportKHR(
 		VkPhysicalDevice                            physicalDevice,
 		uint32_t                                    queueFamilyIndex,
 		VkSurfaceKHR                                surface,
@@ -422,3 +435,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceSupportKHR(
 	*pSupported = VK_TRUE;
 	return VK_SUCCESS;
 }
+
+#ifdef __cplusplus
+}
+#endif

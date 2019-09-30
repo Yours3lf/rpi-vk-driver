@@ -231,14 +231,17 @@ void createInstance() {
 	debugCallbackInfo.flags = 0xffffffff;
 	debugCallbackInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)debugCallback;
 
+	const char* enabledExtensions[] = {
+		"VK_KHR_surface",
+			"VK_KHR_display"
+	};
+
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pNext = &debugCallbackInfo;
 	createInfo.pApplicationInfo = &appInfo;
-	//createInfo.enabledExtensionCount = glfwExtensionCount;
-	createInfo.enabledExtensionCount = 0;
-	//createInfo.ppEnabledExtensionNames = glfwExtensions;
-	createInfo.ppEnabledExtensionNames = 0;
+	createInfo.enabledExtensionCount = sizeof(enabledExtensions) / sizeof(const char*);
+	createInfo.ppEnabledExtensionNames = enabledExtensions;
 	createInfo.enabledLayerCount = 0;
 	createInfo.ppEnabledLayerNames = 0;
 
@@ -257,8 +260,11 @@ void createWindowSurface() {
 	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = 0;
 	vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
 
-	VkRpiPhysicalDevice* ptr = (VkRpiPhysicalDevice*)physicalDevice;
-	ptr->customData = &windowSurface;
+	windowSurface = 0;
+
+	LoaderTrampoline* trampoline = (LoaderTrampoline*)physicalDevice;
+	VkRpiPhysicalDevice* realPhysicalDevice = trampoline->loaderTerminator->physicalDevice;
+	realPhysicalDevice->customData = (uintptr_t)&windowSurface;
 
 	if (vkCreateRpiSurfaceEXT(physicalDevice) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;

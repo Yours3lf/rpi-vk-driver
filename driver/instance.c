@@ -380,6 +380,13 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	RETFUNC(vkGetDescriptorSetLayoutSupport);
 	RETFUNC(vkBindBufferMemory2);
 
+	RETFUNC(vkDestroySurfaceKHR);
+	RETFUNC(vkCreateSwapchainKHR);
+	RETFUNC(vkGetPhysicalDeviceSurfaceSupportKHR);
+	RETFUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+	RETFUNC(vkGetPhysicalDeviceSurfaceFormatsKHR);
+	RETFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR);
+
 	return 0;
 }
 

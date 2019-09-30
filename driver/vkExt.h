@@ -1,5 +1,6 @@
 #pragma once
 
+#define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 
 #ifdef __cplusplus
@@ -8,14 +9,34 @@ extern "C" {
 
 typedef VkResult (*PFN_vkCreateRpiSurfaceEXT)(
 			VkPhysicalDevice                            physicalDevice);
-typedef VkResult (*PFN__vkCreateShaderModuleFromRpiAssemblyEXT)(
+typedef VkResult (*PFN_vkCreateShaderModuleFromRpiAssemblyEXT)(
 			VkPhysicalDevice                            physicalDevice);
 
+// Sooo we're not really getting the REAL VkPhysicalDevice from the Loader
+// But rather a Trampoline object that points to a Terminator that finally points to
+// The real object
+// Therefore if we would like to pass on information in our VkPhysicalDevice object
+// We need to walk this chain...
 typedef struct VkRpiPhysicalDevice
 {
-	void* dummy;
-	void* customData;
+	uintptr_t loaderData;
+	uintptr_t customData;
 } VkRpiPhysicalDevice;
+
+typedef struct LoaderTerminator
+{
+	uintptr_t a;
+	uintptr_t b;
+	uint8_t c;
+	VkRpiPhysicalDevice* physicalDevice;
+} LoaderTerminator;
+
+typedef struct LoaderTrampoline
+{
+	uintptr_t a;
+	uintptr_t b;
+	LoaderTerminator* loaderTerminator;
+} LoaderTrampoline;
 
 //we need something like the other platforms to create surfaces on the RPI
 //so I created this little "extension"

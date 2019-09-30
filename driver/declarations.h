@@ -4,6 +4,7 @@
 extern "C" {
 #endif
 
+#define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
@@ -947,6 +948,40 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDescriptorSetLayoutSupport(
 	VkDevice                                    device,
 	const VkDescriptorSetLayoutCreateInfo*      pCreateInfo,
 	VkDescriptorSetLayoutSupport*               pSupport);
+
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
+		VkInstance                                  instance,
+		VkSurfaceKHR                                surface,
+		const VkAllocationCallbacks*                pAllocator);
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
+		VkDevice                                    device,
+		const VkSwapchainCreateInfoKHR*             pCreateInfo,
+		const VkAllocationCallbacks*                pAllocator,
+		VkSwapchainKHR*                             pSwapchain);
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceSupportKHR(
+		VkPhysicalDevice                            physicalDevice,
+		uint32_t                                    queueFamilyIndex,
+		VkSurfaceKHR                                surface,
+		VkBool32*                                   pSupported);
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+		VkPhysicalDevice                            physicalDevice,
+		VkSurfaceKHR                                surface,
+		VkSurfaceCapabilitiesKHR*                   pSurfaceCapabilities);
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
+		VkPhysicalDevice                            physicalDevice,
+		VkSurfaceKHR                                surface,
+		uint32_t*                                   pSurfaceFormatCount,
+		VkSurfaceFormatKHR*                         pSurfaceFormats);
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
+		VkPhysicalDevice                            physicalDevice,
+		VkSurfaceKHR                                surface,
+		uint32_t*                                   pPresentModeCount,
+		VkPresentModeKHR*                           pPresentModes);
 
 #ifdef __cplusplus
 }
