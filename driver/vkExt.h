@@ -1,5 +1,22 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef VkResult (*PFN_vkCreateRpiSurfaceEXT)(
+			VkPhysicalDevice                            physicalDevice);
+typedef VkResult (*PFN__vkCreateShaderModuleFromRpiAssemblyEXT)(
+			VkPhysicalDevice                            physicalDevice);
+
+typedef struct VkRpiPhysicalDevice
+{
+	void* dummy;
+	void* customData;
+} VkRpiPhysicalDevice;
+
 //we need something like the other platforms to create surfaces on the RPI
 //so I created this little "extension"
 //full spec in this file ;)
@@ -67,3 +84,8 @@ typedef struct VkRpiShaderModuleAssemblyCreateInfoEXT {
 	VkRpiAssemblyMappingEXT*	  mappings;
 	uint32_t					  numMappings;
 } VkRpiShaderModuleAssemblyCreateInfoEXT;
+
+#ifdef __cplusplus
+}
+#endif
+

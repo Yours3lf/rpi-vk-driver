@@ -29,18 +29,21 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(VkInstance in
 
 	void* ptr = rpi_vkGetInstanceProcAddr(instance, pName);
 
-	fprintf(stderr, "-----------------rpi_vkGetInstanceProcAddr: %s, %p\n", pName, ptr);
 	return ptr;
 }
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetPhysicalDeviceProcAddr(VkInstance instance,
 												   const char* pName)
 {
-	fprintf(stderr, "-----------------vk_icdGetPhysicalDeviceProcAddr: %s\n", pName);
+	void* ptr = 0;
 
-	RETFUNC(vkGetRpiExtensionPointerEXT);
+	if(!strcmp(pName, "vkCreateRpiSurfaceEXT"))
+		ptr = &rpi_vkCreateRpiSurfaceEXT;
 
-	return 0;
+	if(!strcmp(pName, "vkCreateShaderModuleFromRpiAssemblyEXT"))
+		ptr = &rpi_vkCreateShaderModuleFromRpiAssemblyEXT;
+
+	return ptr;
 }
 
 /*

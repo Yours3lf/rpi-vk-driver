@@ -253,28 +253,14 @@ void createInstance() {
 	}
 }
 
-extern "C" {
-typedef VkResult (*PFN_vkCreateRpiSurfaceEXT)(
-			VkPhysicalDevice                            physicalDevice,
-			const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
-			const VkAllocationCallbacks*                pAllocator,
-			VkSurfaceKHR*                               pSurface);
-typedef VkResult (*PFN_vkGetRpiExtensionPointerEXT)(
-		VkPhysicalDevice                            physicalDevice
-		);
-}
-
-PFN_vkGetRpiExtensionPointerEXT vkGetRpiExtensionPointerEXT = 0;
-
 void createWindowSurface() {
-	vkGetRpiExtensionPointerEXT = (PFN_vkGetRpiExtensionPointerEXT)vkGetInstanceProcAddr(instance, "vkGetRpiExtensionPointerEXT");
-	fprintf(stderr, "%p\n", vkGetRpiExtensionPointerEXT);
-
 	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = 0;
-	vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetRpiExtensionPointerEXT((VkPhysicalDevice)"vkCreateRpiSurfaceEXT");
-	fprintf(stderr, "%p\n", vkCreateRpiSurfaceEXT);
+	vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
 
-	if (vkCreateRpiSurfaceEXT(physicalDevice, 0, 0, &windowSurface) != VK_SUCCESS) {
+	VkRpiPhysicalDevice* ptr = (VkRpiPhysicalDevice*)physicalDevice;
+	ptr->customData = &windowSurface;
+
+	if (vkCreateRpiSurfaceEXT(physicalDevice) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;
 		assert(0);
 	}

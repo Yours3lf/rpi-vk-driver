@@ -948,11 +948,6 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDescriptorSetLayoutSupport(
 	const VkDescriptorSetLayoutCreateInfo*      pCreateInfo,
 	VkDescriptorSetLayoutSupport*               pSupport);
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
-	VkInstance                                  instance,
-	VkSurfaceKHR                                surface,
-	const VkAllocationCallbacks*                pAllocator);
-
 #ifdef __cplusplus
 }
 #endif

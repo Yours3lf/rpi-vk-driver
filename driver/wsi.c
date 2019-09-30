@@ -5,56 +5,13 @@
 
 #include "declarations.h"
 
-#include "vkExtFunctions.h"
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void* _getFuncPtr(const char* name)
-{
-	if(!strcmp(name, "vkCreateRpiSurfaceEXT"))
-		return (void*)&rpi_vkCreateRpiSurfaceEXT;
-
-	if(!strcmp(name, "vkCreateShaderModuleFromRpiAssemblyEXT"))
-		return (void*)&rpi_vkCreateShaderModuleFromRpiAssemblyEXT;
-
-	return 0;
-}
-
-#ifdef __cplusplus
-}
-#endif
-
-
-/*
- * Implementation of our RPI specific "extension"
- */
-VkResult rpi_vkCreateRpiSurfaceEXT(
-		VkInstance                                  instance,
-		const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
-		const VkAllocationCallbacks*                pAllocator,
-		VkSurfaceKHR*                               pSurface)
-{
-	assert(instance);
-	//assert(pCreateInfo); //ignored for now
-	assert(pSurface);
-
-	//TODO use allocator!
-
-	*pSurface = (VkSurfaceKHR)modeset_create(controlFd);
-
-	return VK_SUCCESS;
-}
-
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroySurfaceKHR
  * Destroying a VkSurfaceKHR merely severs the connection between Vulkan and the native surface,
  * and does not imply destroying the native surface, closing a window, or similar behavior
  * (but we'll do so anyways...)
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
+VKAPI_ATTR void VKAPI_CALL vkDestroySurfaceKHR(
 		VkInstance                                  instance,
 		VkSurfaceKHR                                surface,
 		const VkAllocationCallbacks*                pAllocator)
@@ -79,7 +36,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
  *
  * capabilities the specified device supports for a swapchain created for the surface
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		VkSurfaceCapabilitiesKHR*                   pSurfaceCapabilities)
@@ -114,7 +71,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
  * at most pSurfaceFormatCount structures will be written. If pSurfaceFormatCount is smaller than the number of format pairs supported for the given surface,
  * VK_INCOMPLETE will be returned instead of VK_SUCCESS to indicate that not all the available values were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceFormatsKHR(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		uint32_t*                                   pSurfaceFormatCount,
@@ -159,7 +116,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
  * If pPresentModeCount is smaller than the number of presentation modes supported for the given surface, VK_INCOMPLETE will be returned instead of
  * VK_SUCCESS to indicate that not all the available values were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfacePresentModesKHR(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		uint32_t*                                   pPresentModeCount,
@@ -199,7 +156,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateSwapchainKHR
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(
 		VkDevice                                    device,
 		const VkSwapchainCreateInfoKHR*             pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
@@ -447,7 +404,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceSurfaceSupportKHR
  * does this queue family support presentation to this surface?
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceSupportKHR(
+VKAPI_ATTR VkResult VKAPI_CALL vkGetPhysicalDeviceSurfaceSupportKHR(
 		VkPhysicalDevice                            physicalDevice,
 		uint32_t                                    queueFamilyIndex,
 		VkSurfaceKHR                                surface,

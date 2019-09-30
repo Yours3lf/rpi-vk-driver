@@ -83,6 +83,10 @@ typedef struct VkInstance_T _instance;
 typedef struct VkPhysicalDevice_T
 {
 	VK_LOADER_DATA loaderData;
+	//apparently unknown physical device extensions can't quite pass anything other than VkPhysicalDevice
+	//now that object has to have the loader magic
+	//so we just provide a custom data pointer so that our extensions can be used...
+	void* customData;
 	//hardware id?
 	char* path;
 	_instance* instance;
