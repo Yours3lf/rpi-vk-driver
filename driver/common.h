@@ -4,6 +4,7 @@
 #include <drm/drm_fourcc.h>
 #include <drm/vc4_drm.h>
 
+#define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_icd.h>
 #include "vkExt.h"

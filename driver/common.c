@@ -911,7 +911,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceExternalBufferProperties(
 	const VkPhysicalDeviceExternalBufferInfo*   pExternalBufferInfo,
 	VkExternalBufferProperties*                 pExternalBufferProperties)
 {
-	UNSUPPORTED(vkGetPhysicalDeviceExternalBufferProperties);
+	UNSUPPORTED(rpi_vkGetPhysicalDeviceExternalBufferProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceExternalFenceProperties(
@@ -919,7 +919,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceExternalFenceProperties(
 	const VkPhysicalDeviceExternalFenceInfo*    pExternalFenceInfo,
 	VkExternalFenceProperties*                  pExternalFenceProperties)
 {
-	UNSUPPORTED(vkGetPhysicalDeviceExternalFenceProperties);
+	UNSUPPORTED(rpi_vkGetPhysicalDeviceExternalFenceProperties);
 }
 
 
@@ -928,7 +928,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceExternalSemaphoreProperties(
 	const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
 	VkExternalSemaphoreProperties*              pExternalSemaphoreProperties)
 {
-	UNSUPPORTED(vkGetPhysicalDeviceExternalSemaphoreProperties);
+	UNSUPPORTED(rpi_vkGetPhysicalDeviceExternalSemaphoreProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceGroupPeerMemoryFeatures(
@@ -938,5 +938,5 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceGroupPeerMemoryFeatures(
 	uint32_t                                    remoteDeviceIndex,
 	VkPeerMemoryFeatureFlags*                   pPeerMemoryFeatures)
 {
-	UNSUPPORTED(vkGetDeviceGroupPeerMemoryFeatures);
+	UNSUPPORTED(rpi_vkGetDeviceGroupPeerMemoryFeatures);
 }

@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include "declarations.h"
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#devsandqueues-physical-device-enumeration
  * If pPhysicalDevices is NULL, then the number of physical devices available is returned in pPhysicalDeviceCount. Otherwise, pPhysicalDeviceCount must point to a
@@ -310,7 +312,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue2(
 
 	//TODO handle pNext
 
-	vkGetDeviceQueue(device, pQueueInfo->queueFamilyIndex, pQueueInfo->queueIndex, pQueue);
+	rpi_vkGetDeviceQueue(device, pQueueInfo->queueFamilyIndex, pQueueInfo->queueIndex, pQueue);
 }
 
 /*
@@ -422,7 +424,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceProperties2(
 {
 	assert(physicalDevice);
 	assert(pProperties);
-	vkGetPhysicalDeviceProperties(physicalDevice, &pProperties->properties);
+	rpi_vkGetPhysicalDeviceProperties(physicalDevice, &pProperties->properties);
 
 	if(pProperties->pNext)
 	{
@@ -518,7 +520,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties2(
 {
 	assert(physicalDevice);
 	assert(pFormatProperties);
-	vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &pFormatProperties->formatProperties);
+	rpi_vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &pFormatProperties->formatProperties);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties(
@@ -653,7 +655,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties2(
 
 	//TODO handle pNext
 
-	return vkGetPhysicalDeviceImageFormatProperties(physicalDevice,
+	return rpi_vkGetPhysicalDeviceImageFormatProperties(physicalDevice,
 													pImageFormatInfo->format,
 													pImageFormatInfo->type,
 													pImageFormatInfo->tiling,
@@ -668,7 +670,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceLayerProperties(
 	VkLayerProperties*                          pProperties)
 {
 	//deprecated, just return instance layers
-	return vkEnumerateInstanceLayerProperties(pPropertyCount, pProperties);
+	return rpi_vkEnumerateInstanceLayerProperties(pPropertyCount, pProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFeatures2(
@@ -677,7 +679,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFeatures2(
 {
 	assert(physicalDevice);
 	assert(pFeatures);
-	vkGetPhysicalDeviceFeatures(physicalDevice, &pFeatures->features);
+	rpi_vkGetPhysicalDeviceFeatures(physicalDevice, &pFeatures->features);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties2(
@@ -686,5 +688,5 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties2(
 	VkQueueFamilyProperties2*                   pQueueFamilyProperties)
 {
 	assert(physicalDevice);
-	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
+	rpi_vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
 }

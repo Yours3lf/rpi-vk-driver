@@ -11,7 +11,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateComputePipelines(
 	const VkAllocationCallbacks*                pAllocator,
 	VkPipeline*                                 pPipelines)
 {
-	UNSUPPORTED(vkCreateComputePipelines);
+	UNSUPPORTED(rpi_vkCreateComputePipelines);
 	return VK_SUCCESS;
 }
 
@@ -20,7 +20,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDispatchIndirect(
 	VkBuffer                                    buffer,
 	VkDeviceSize                                offset)
 {
-	UNSUPPORTED(vkCmdDispatchIndirect);
+	UNSUPPORTED(rpi_vkCmdDispatchIndirect);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDispatch(
@@ -29,7 +29,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDispatch(
 	uint32_t                                    groupCountY,
 	uint32_t                                    groupCountZ)
 {
-	UNSUPPORTED(vkCmdDispatch);
+	UNSUPPORTED(rpi_vkCmdDispatch);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDispatchBase(
@@ -41,5 +41,5 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDispatchBase(
 	uint32_t                                    groupCountY,
 	uint32_t                                    groupCountZ)
 {
-	UNSUPPORTED(vkCmdDispatchBase);
+	UNSUPPORTED(rpi_vkCmdDispatchBase);
 }

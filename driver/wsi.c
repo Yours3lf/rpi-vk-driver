@@ -3,6 +3,8 @@
 
 #include "kernel/vc4_packet.h"
 
+#include "declarations.h"
+
 /*
  * Implementation of our RPI specific "extension"
  */
@@ -234,7 +236,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 
 
 		VkMemoryRequirements mr;
-		vkGetImageMemoryRequirements(device, &s->images[c], &mr);
+		rpi_vkGetImageMemoryRequirements(device, &s->images[c], &mr);
 
 		//TODO is this the right place to do this?
 		s->images[c].tiling = VC4_TILING_FORMAT_T;
@@ -253,9 +255,9 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 		}
 
 		VkDeviceMemory mem;
-		vkAllocateMemory(device, &ai, 0, &mem);
+		rpi_vkAllocateMemory(device, &ai, 0, &mem);
 
-		vkBindImageMemory(device, &s->images[c], mem, 0);
+		rpi_vkBindImageMemory(device, &s->images[c], mem, 0);
 
 		//set tiling to T if size > 4KB
 		if(s->images[c].tiling == VC4_TILING_FORMAT_T)
@@ -408,7 +410,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
 	{
 		for(int c = 0; c < s->numImages; ++c)
 		{
-			vkFreeMemory(device, s->images[c].boundMem, 0);
+			rpi_vkFreeMemory(device, s->images[c].boundMem, 0);
 			modeset_destroy_fb(controlFd, &s->images[c]);
 		}
 

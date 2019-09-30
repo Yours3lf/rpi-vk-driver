@@ -7,5 +7,5 @@ file(GLOB asmSrc
 	"qpu_assembler.c"
 )
 
-add_library(QPUassembler SHARED ${asmSrc})
+add_library(QPUassembler OBJECT ${asmSrc})
 target_compile_options(QPUassembler PRIVATE -Wall -Werror=implicit-function-declaration -std=c11)

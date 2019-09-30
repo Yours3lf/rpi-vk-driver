@@ -692,5 +692,5 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDeviceMask(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    deviceMask)
 {
-	UNSUPPORTED(vkCmdSetDeviceMask);
+	UNSUPPORTED(rpi_vkCmdSetDeviceMask);
 }

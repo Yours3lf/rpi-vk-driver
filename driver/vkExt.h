@@ -76,14 +76,14 @@ typedef struct VkRpiShaderModuleAssemblyCreateInfoEXT {
 
 //extension name something like: VK_KHR_rpi_surface
 //extension that allows developers to create a surface to render to on Raspbian Stretch Lite
-VkResult vkCreateRpiSurfaceEXT(
+VkResult rpi_vkCreateRpiSurfaceEXT(
 		VkInstance                                  instance,
 		const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
 		VkSurfaceKHR*                               pSurface);
 
 //extension that allows developers to submit QPU assembly directly and thus hand optimise code
-VkResult vkCreateShaderModuleFromRpiAssemblyEXT(
+VkResult rpi_vkCreateShaderModuleFromRpiAssemblyEXT(
 		VkDevice									device,
 		VkRpiShaderModuleAssemblyCreateInfoEXT*		pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,

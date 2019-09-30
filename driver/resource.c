@@ -80,7 +80,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetBufferMemoryRequirements2(
 	assert(pInfo);
 	assert(pMemoryRequirements);
 
-	vkGetBufferMemoryRequirements(device, pInfo->buffer, &pMemoryRequirements->memoryRequirements);
+	rpi_vkGetBufferMemoryRequirements(device, pInfo->buffer, &pMemoryRequirements->memoryRequirements);
 }
 
 /*
@@ -339,7 +339,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindBufferMemory2(
 
 	for(uint32_t c = 0; c < bindInfoCount; ++c)
 	{
-		VkResult res = vkBindBufferMemory(device, pBindInfos[c].buffer, pBindInfos[c].memory, pBindInfos[c].memoryOffset);
+		VkResult res = rpi_vkBindBufferMemory(device, pBindInfos[c].buffer, pBindInfos[c].memory, pBindInfos[c].memoryOffset);
 		if(res != VK_SUCCESS)
 		{
 			ret = res;
@@ -357,7 +357,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements2(
 	assert(device);
 	assert(pInfo);
 	assert(pMemoryRequirements);
-	vkGetImageMemoryRequirements(device, pInfo->image, pMemoryRequirements);
+	rpi_vkGetImageMemoryRequirements(device, pInfo->image, pMemoryRequirements);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory2(
@@ -372,7 +372,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory2(
 
 	for(uint32_t c = 0; c < bindInfoCount; ++c)
 	{
-		VkResult res = vkBindImageMemory(device, pBindInfos[c].image, pBindInfos[c].memory, pBindInfos[c].memoryOffset);
+		VkResult res = rpi_vkBindImageMemory(device, pBindInfos[c].image, pBindInfos[c].memory, pBindInfos[c].memoryOffset);
 		if(res != VK_SUCCESS)
 		{
 			ret = res;

@@ -10,7 +10,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceSparseImageFormatProperties(
 	uint32_t*                                   pPropertyCount,
 		VkSparseImageFormatProperties*              pProperties)
 {
-	UNSUPPORTED(vkGetPhysicalDeviceSparseImageFormatProperties);
+	UNSUPPORTED(rpi_vkGetPhysicalDeviceSparseImageFormatProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageSparseMemoryRequirements(
@@ -19,7 +19,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageSparseMemoryRequirements(
 	uint32_t*                                   pSparseMemoryRequirementCount,
 	VkSparseImageMemoryRequirements*            pSparseMemoryRequirements)
 {
-	UNSUPPORTED(vkGetImageSparseMemoryRequirements);
+	UNSUPPORTED(rpi_vkGetImageSparseMemoryRequirements);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueBindSparse(
@@ -28,7 +28,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueBindSparse(
 	const VkBindSparseInfo*                     pBindInfo,
 	VkFence                                     fence)
 {
-	UNSUPPORTED(vkQueueBindSparse);
+	UNSUPPORTED(rpi_vkQueueBindSparse);
 	return VK_SUCCESS;
 }
 
@@ -38,7 +38,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceSparseImageFormatProperties2(
 	uint32_t*                                   pPropertyCount,
 	VkSparseImageFormatProperties2*             pProperties)
 {
-	UNSUPPORTED(vkGetPhysicalDeviceSparseImageFormatProperties2);
+	UNSUPPORTED(rpi_vkGetPhysicalDeviceSparseImageFormatProperties2);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageSparseMemoryRequirements2(
@@ -47,5 +47,5 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageSparseMemoryRequirements2(
 	uint32_t*                                   pSparseMemoryRequirementCount,
 	VkSparseImageMemoryRequirements2*           pSparseMemoryRequirements)
 {
-	UNSUPPORTED(vkGetImageSparseMemoryRequirements2);
+	UNSUPPORTED(rpi_vkGetImageSparseMemoryRequirements2);
 }

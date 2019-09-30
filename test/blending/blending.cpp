@@ -158,6 +158,42 @@ void mainLoop() {
 	}
 }
 
+VkBool32 debugCallback(
+	VkDebugReportFlagsEXT                       flags,
+	VkDebugReportObjectTypeEXT                  objectType,
+	uint64_t                                    object,
+	size_t                                      location,
+	int32_t                                     messageCode,
+	const char*                                 pLayerPrefix,
+	const char*                                 pMessage,
+	void*                                       pUserData)
+{
+	std::cerr << "Debug callback: ";
+	if(flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
+		std::cerr << "info ";
+
+	if(flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
+		std::cerr << "warn ";
+	if(flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+		std::cerr << "perf ";
+
+	if(flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+		std::cerr << "error ";
+
+	if(flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
+		std::cerr << "debug ";
+
+	std::cerr << std::endl
+			<< "object type: " << objectType
+			<< " object: " << object
+			<< " location: " << location
+			<< " message code: " << messageCode << std::endl
+			<< " layer prefix: " << pLayerPrefix << std::endl
+			<< " message: " << pMessage
+			<< std::endl;
+
+}
+
 void createInstance() {
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -190,8 +226,14 @@ void createInstance() {
 		std::cout << "\t" << extension.extensionName << std::endl;
 	}
 
+	VkDebugReportCallbackCreateInfoEXT debugCallbackInfo = {};
+	debugCallbackInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+	debugCallbackInfo.flags = 0xffffffff;
+	debugCallbackInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)debugCallback;
+
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	createInfo.pNext = &debugCallbackInfo;
 	createInfo.pApplicationInfo = &appInfo;
 	//createInfo.enabledExtensionCount = glfwExtensionCount;
 	createInfo.enabledExtensionCount = 0;

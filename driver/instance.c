@@ -3,6 +3,7 @@
 #include <vulkan/vk_icd.h>
 
 #include "declarations.h"
+#include "vkExt.h"
 
 #define RETFUNC(f) if(!strcmp(pName, #f)) return rpi_##f
 
@@ -18,64 +19,23 @@ VKAPI_ATTR VkResult VKAPI_CALL vk_icdNegotiateLoaderICDInterfaceVersion(uint32_t
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(VkInstance instance, const char* pName)
 {
+	fprintf(stderr, "-----------------vk_icdGetInstanceProcAddr: %s\n", pName);
+
 	if(loaderVersion == -1)
 	{
 		//dealing with legacy ICD loader, as vk_icdNegotiateLoaderICDInterfaceVersion has not been called
 		loaderVersion = 1;
 	}
 
-	RETFUNC(vkCreateInstance);
-	RETFUNC(vkEnumerateInstanceExtensionProperties);
-	RETFUNC(vkEnumerateInstanceVersion);
-	RETFUNC(vkDestroyInstance);
-	RETFUNC(vkEnumeratePhysicalDevices);
-	RETFUNC(vkGetInstanceProcAddr);
-	RETFUNC(vkEnumeratePhysicalDeviceGroups);
-	RETFUNC(vkDestroySurfaceKHR);
-	RETFUNC(vkGetPhysicalDeviceFeatures);
-	RETFUNC(vkGetPhysicalDeviceFeatures2);
-	RETFUNC(vkGetPhysicalDeviceProperties);
-	RETFUNC(vkGetPhysicalDeviceProperties2);
-	RETFUNC(vkGetPhysicalDeviceFormatProperties);
-	RETFUNC(vkGetPhysicalDeviceFormatProperties2);
-	RETFUNC(vkGetPhysicalDeviceImageFormatProperties);
-	RETFUNC(vkGetPhysicalDeviceImageFormatProperties2);
-	RETFUNC(vkGetPhysicalDeviceProperties);
-	RETFUNC(vkGetPhysicalDeviceProperties2);
-	RETFUNC(vkGetPhysicalDeviceQueueFamilyProperties);
-	RETFUNC(vkGetPhysicalDeviceQueueFamilyProperties2);
-	RETFUNC(vkGetPhysicalDeviceMemoryProperties);
-	RETFUNC(vkGetPhysicalDeviceMemoryProperties2);
-	RETFUNC(vkCreateDevice);
-	RETFUNC(vkDestroyDevice);
-	RETFUNC(vkEnumerateDeviceExtensionProperties);
-	RETFUNC(vkEnumerateDeviceLayerProperties);
-
-	return 0;
+	return rpi_vkGetInstanceProcAddr(instance, pName);
 }
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetPhysicalDeviceProcAddr(VkInstance instance,
 												   const char* pName)
 {
-	RETFUNC(vkEnumeratePhysicalDevices);
-	RETFUNC(vkEnumeratePhysicalDeviceGroups);
-	RETFUNC(vkGetPhysicalDeviceFeatures);
-	RETFUNC(vkGetPhysicalDeviceFeatures2);
-	RETFUNC(vkGetPhysicalDeviceProperties);
-	RETFUNC(vkGetPhysicalDeviceProperties2);
-	RETFUNC(vkGetPhysicalDeviceFormatProperties);
-	RETFUNC(vkGetPhysicalDeviceFormatProperties2);
-	RETFUNC(vkGetPhysicalDeviceImageFormatProperties);
-	RETFUNC(vkGetPhysicalDeviceImageFormatProperties2);
-	RETFUNC(vkGetPhysicalDeviceProperties);
-	RETFUNC(vkGetPhysicalDeviceProperties2);
-	RETFUNC(vkGetPhysicalDeviceQueueFamilyProperties);
-	RETFUNC(vkGetPhysicalDeviceQueueFamilyProperties2);
-	RETFUNC(vkGetPhysicalDeviceMemoryProperties);
-	RETFUNC(vkGetPhysicalDeviceMemoryProperties2);
-	RETFUNC(vkCreateDevice);
-	RETFUNC(vkEnumerateDeviceExtensionProperties);
-	RETFUNC(vkEnumerateDeviceLayerProperties);
+	fprintf(stderr, "-----------------vk_icdGetPhysicalDeviceProcAddr: %s\n", pName);
+
+
 
 	return 0;
 }
@@ -235,6 +195,8 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	VkInstance                                  instance,
 	const char*                                 pName)
 {
+	fprintf(stderr, "-----------------rpi_vkGetInstanceProcAddr: %s\n", pName);
+
 	//TODO take instance into consideration
 	//eg only return extension functions that are enabled?
 
@@ -414,6 +376,8 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	RETFUNC(vkGetDescriptorSetLayoutSupport);
 	RETFUNC(vkBindBufferMemory2);
 
+	RETFUNC(vkCreateRpiSurfaceEXT);
+	RETFUNC(vkCreateShaderModuleFromRpiAssemblyEXT);
 
 	return 0;
 }

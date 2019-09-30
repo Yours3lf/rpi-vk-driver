@@ -182,7 +182,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceMemoryProperties2(
 	VkPhysicalDeviceMemoryProperties2*          pMemoryProperties)
 {
 	assert(physicalDevice);
-	vkGetPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties);
+	rpi_vkGetPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceMemoryCommitment(
