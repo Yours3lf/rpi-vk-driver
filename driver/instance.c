@@ -3,9 +3,9 @@
 #include <vulkan/vk_icd.h>
 
 #include "declarations.h"
-#include "vkExt.h"
+#include "vkExtFunctions.h"
 
-#define RETFUNC(f) if(!strcmp(pName, #f)) return rpi_##f
+#define RETFUNC(f) if(!strcmp(pName, #f)) return &rpi_##f
 
 static uint32_t loaderVersion = -1;
 
@@ -14,20 +14,23 @@ VKAPI_ATTR VkResult VKAPI_CALL vk_icdNegotiateLoaderICDInterfaceVersion(uint32_t
 	assert(pSupportedVersion);
 	loaderVersion = *pSupportedVersion;
 
-	*pSupportedVersion = 2; //we support v2
+	*pSupportedVersion = 4; //we support v4
+
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(VkInstance instance, const char* pName)
 {
-	fprintf(stderr, "-----------------vk_icdGetInstanceProcAddr: %s\n", pName);
-
 	if(loaderVersion == -1)
 	{
 		//dealing with legacy ICD loader, as vk_icdNegotiateLoaderICDInterfaceVersion has not been called
 		loaderVersion = 1;
 	}
 
-	return rpi_vkGetInstanceProcAddr(instance, pName);
+	void* ptr = rpi_vkGetInstanceProcAddr(instance, pName);
+
+	fprintf(stderr, "-----------------rpi_vkGetInstanceProcAddr: %s, %p\n", pName, ptr);
+	return ptr;
 }
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetPhysicalDeviceProcAddr(VkInstance instance,
@@ -35,7 +38,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetPhysicalDeviceProcAddr(VkInsta
 {
 	fprintf(stderr, "-----------------vk_icdGetPhysicalDeviceProcAddr: %s\n", pName);
 
-
+	RETFUNC(vkGetRpiExtensionPointerEXT);
 
 	return 0;
 }
@@ -195,8 +198,6 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	VkInstance                                  instance,
 	const char*                                 pName)
 {
-	fprintf(stderr, "-----------------rpi_vkGetInstanceProcAddr: %s\n", pName);
-
 	//TODO take instance into consideration
 	//eg only return extension functions that are enabled?
 
@@ -375,9 +376,6 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	RETFUNC(vkUpdateDescriptorSetWithTemplate);
 	RETFUNC(vkGetDescriptorSetLayoutSupport);
 	RETFUNC(vkBindBufferMemory2);
-
-	RETFUNC(vkCreateRpiSurfaceEXT);
-	RETFUNC(vkCreateShaderModuleFromRpiAssemblyEXT);
 
 	return 0;
 }

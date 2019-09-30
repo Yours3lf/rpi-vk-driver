@@ -1,9 +1,5 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 //we need something like the other platforms to create surfaces on the RPI
 //so I created this little "extension"
 //full spec in this file ;)
@@ -71,28 +67,3 @@ typedef struct VkRpiShaderModuleAssemblyCreateInfoEXT {
 	VkRpiAssemblyMappingEXT*	  mappings;
 	uint32_t					  numMappings;
 } VkRpiShaderModuleAssemblyCreateInfoEXT;
-
-//TODO could use this extension https://vulkan.lunarg.com/doc/view/1.0.30.0/windows/vkspec.chunked/ch29s03.html
-
-//extension name something like: VK_KHR_rpi_surface
-//extension that allows developers to create a surface to render to on Raspbian Stretch Lite
-VkResult rpi_vkCreateRpiSurfaceEXT(
-		VkInstance                                  instance,
-		const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
-		const VkAllocationCallbacks*                pAllocator,
-		VkSurfaceKHR*                               pSurface);
-
-//extension that allows developers to submit QPU assembly directly and thus hand optimise code
-VkResult rpi_vkCreateShaderModuleFromRpiAssemblyEXT(
-		VkDevice									device,
-		VkRpiShaderModuleAssemblyCreateInfoEXT*		pCreateInfo,
-		const VkAllocationCallbacks*                pAllocator,
-		VkShaderModule*								pShaderModule
-		);
-
-//TODO performance counters / perfmon
-
-
-#ifdef __cplusplus
-}
-#endif

@@ -4,12 +4,17 @@
 
 #include "QPUassembler/qpu_assembler.h"
 
+#include "vkExt.h"
+
 //TODO collect shader performance data
 //eg number of texture samples etc.
 //TODO check if shader has flow control and make sure instance also has flow control
 //TODO make sure instance has threaded fs if shader contains thread switch
 
-VkResult rpi_vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice device, VkRpiShaderModuleAssemblyCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
+VkResult rpi_vkCreateShaderModuleFromRpiAssemblyEXT(VkDevice                            device,
+													VkRpiShaderModuleAssemblyCreateInfoEXT*		pCreateInfo,
+													const VkAllocationCallbacks*				pAllocator,
+													VkShaderModule*								pShaderModule)
 {
 	assert(device);
 	assert(pCreateInfo);

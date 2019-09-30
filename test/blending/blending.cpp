@@ -132,8 +132,8 @@ void run() {
 
 void setupVulkan() {
 	createInstance();
-	createWindowSurface();
 	findPhysicalDevice();
+	createWindowSurface();
 	checkSwapChainSupport();
 	findQueueFamilies();
 	createLogicalDevice();
@@ -253,17 +253,28 @@ void createInstance() {
 	}
 }
 
+extern "C" {
+typedef VkResult (*PFN_vkCreateRpiSurfaceEXT)(
+			VkPhysicalDevice                            physicalDevice,
+			const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
+			const VkAllocationCallbacks*                pAllocator,
+			VkSurfaceKHR*                               pSurface);
+typedef VkResult (*PFN_vkGetRpiExtensionPointerEXT)(
+		VkPhysicalDevice                            physicalDevice
+		);
+}
+
+PFN_vkGetRpiExtensionPointerEXT vkGetRpiExtensionPointerEXT = 0;
+
 void createWindowSurface() {
-	typedef VkResult (VKAPI_PTR *PFN_vkCreateRpiSurfaceEXT)(
-				VkInstance                                  instance,
-				const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
-				const VkAllocationCallbacks*                pAllocator,
-				VkSurfaceKHR*                               pSurface);
+	vkGetRpiExtensionPointerEXT = (PFN_vkGetRpiExtensionPointerEXT)vkGetInstanceProcAddr(instance, "vkGetRpiExtensionPointerEXT");
+	fprintf(stderr, "%p\n", vkGetRpiExtensionPointerEXT);
 
-	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
+	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = 0;
+	vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetRpiExtensionPointerEXT((VkPhysicalDevice)"vkCreateRpiSurfaceEXT");
+	fprintf(stderr, "%p\n", vkCreateRpiSurfaceEXT);
 
-
-	if (vkCreateRpiSurfaceEXT(instance, 0, 0, &windowSurface) != VK_SUCCESS) {
+	if (vkCreateRpiSurfaceEXT(physicalDevice, 0, 0, &windowSurface) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;
 		assert(0);
 	}

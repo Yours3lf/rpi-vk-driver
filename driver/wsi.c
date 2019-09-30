@@ -5,6 +5,29 @@
 
 #include "declarations.h"
 
+#include "vkExtFunctions.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void* _getFuncPtr(const char* name)
+{
+	if(!strcmp(name, "vkCreateRpiSurfaceEXT"))
+		return (void*)&rpi_vkCreateRpiSurfaceEXT;
+
+	if(!strcmp(name, "vkCreateShaderModuleFromRpiAssemblyEXT"))
+		return (void*)&rpi_vkCreateShaderModuleFromRpiAssemblyEXT;
+
+	return 0;
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+
 /*
  * Implementation of our RPI specific "extension"
  */

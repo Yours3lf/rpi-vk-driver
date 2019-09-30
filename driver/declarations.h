@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <vulkan/vulkan.h>
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
@@ -948,3 +952,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
 	VkInstance                                  instance,
 	VkSurfaceKHR                                surface,
 	const VkAllocationCallbacks*                pAllocator);
+
+#ifdef __cplusplus
+}
+#endif
