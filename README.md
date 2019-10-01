@@ -19,6 +19,8 @@
   - [x] Descriptor support
   - [x] VkSampler support
   - [x] Push constant support
+- [x] Platform features
+  - [x] Layer support
 - [ ] Render to texture features
   - [ ] VkRenderPass support
   - [ ] Subpass support
@@ -38,8 +40,6 @@
   - [x] Depth writes
   - [ ] Blending mode
   - [ ] Vertex attrib format
-- [ ] Platform features
-  - [x] Layer support
 - [ ] WSI
   - [ ] Direct to display support
 - [ ] Secondary command buffers
