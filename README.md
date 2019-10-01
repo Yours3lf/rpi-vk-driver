@@ -39,7 +39,7 @@
   - [ ] Blending mode
   - [ ] Vertex attrib format
 - [ ] Platform features
-  - [ ] Layer support
+  - [x] Layer support
 - [ ] WSI
   - [ ] Direct to display support
 - [ ] Secondary command buffers
