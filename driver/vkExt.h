@@ -38,28 +38,6 @@ typedef struct LoaderTrampoline
 	LoaderTerminator* loaderTerminator;
 } LoaderTrampoline;
 
-//we need something like the other platforms to create surfaces on the RPI
-//so I created this little "extension"
-//full spec in this file ;)
-
-typedef enum VkRpiSurfaceCreateFlagsEXT {
-	//reserved
-	VK_RPI_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-} VkRpiSurfaceCreateFlagsEXT;
-
-typedef struct VkRpiSurfaceCreateInfoEXT {
-	VkStructureType               sType;
-	const void*                   pNext;
-	VkRpiSurfaceCreateFlagsEXT    flags; //reserved
-	//maybe include some other stuff dunno
-} VkRpiSurfaceCreateInfoEXT;
-
-typedef enum VkRpiAssemblyMappingTypeEXT {
-	VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR = 0,
-	VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT = 1,
-	VK_RPI_ASSEMBLY_MAPPING_TYPE_MAX
-} VkRpiAssemblyMappingTypeEXT;
-
 /*
  * assembly to vulkan resource mapping
  *
@@ -87,6 +65,18 @@ typedef enum VkRpiAssemblyMappingTypeEXT {
  *
  */
 
+typedef enum VkRpiSurfaceCreateFlagsEXT {
+	//reserved
+	VK_RPI_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+} VkRpiSurfaceCreateFlagsEXT;
+
+
+typedef enum VkRpiAssemblyMappingTypeEXT {
+	VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR = 0,
+	VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT = 1,
+	VK_RPI_ASSEMBLY_MAPPING_TYPE_MAX
+} VkRpiAssemblyMappingTypeEXT;
+
 //defines mapping for a single uniform FIFO read to a Vulkan resource
 typedef struct VkRpiAssemblyMappingEXT {
 	VkRpiAssemblyMappingTypeEXT	mappingType;
@@ -98,12 +88,26 @@ typedef struct VkRpiAssemblyMappingEXT {
 	VkShaderStageFlagBits		shaderStage;
 } VkRpiAssemblyMappingEXT;
 
+//we need something like the other platforms to create surfaces on the RPI
+//so I created this little "extension"
+//full spec in this file ;)
+
+typedef struct VkRpiSurfaceCreateInfoEXT {
+	VkStructureType               sType;
+	const void*                   pNext;
+	VkRpiSurfaceCreateFlagsEXT    flags; //reserved
+	const VkAllocationCallbacks*  pAllocator;
+	VkSurfaceKHR*				  pSurface;
+} VkRpiSurfaceCreateInfoEXT;
+
 typedef struct VkRpiShaderModuleAssemblyCreateInfoEXT {
 	VkStructureType               sType;
 	const void*                   pNext;
 	char**						  asmStrings;
 	VkRpiAssemblyMappingEXT*	  mappings;
 	uint32_t					  numMappings;
+	const VkAllocationCallbacks*  pAllocator;
+	VkShaderModule*				  pShaderModule;
 } VkRpiShaderModuleAssemblyCreateInfoEXT;
 
 #ifdef __cplusplus

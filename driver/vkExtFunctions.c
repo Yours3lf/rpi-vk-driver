@@ -12,18 +12,17 @@ extern "C" {
 /*
  * Implementation of our RPI specific "extension"
  */
-VkResult rpi_vkCreateRpiSurfaceEXT(
-		VkPhysicalDevice		                    physicalDevice)
+VkResult rpi_vkCreateRpiSurfaceEXT(VkPhysicalDevice physicalDevice)
 {
 	assert(physicalDevice);
 
 	//TODO use allocator!
 
 	_physicalDevice* ptr = physicalDevice;
-	VkSurfaceKHR* surfPtr = ptr->customData;
+	VkRpiSurfaceCreateInfoEXT* ci = ptr->customData;
 	VkSurfaceKHR surfRes = (VkSurfaceKHR)modeset_create(controlFd);
 
-	*surfPtr = surfRes;
+	*ci->pSurface = surfRes;
 
 	return VK_SUCCESS;
 }
@@ -33,15 +32,17 @@ VkResult rpi_vkCreateRpiSurfaceEXT(
 //TODO check if shader has flow control and make sure instance also has flow control
 //TODO make sure instance has threaded fs if shader contains thread switch
 
-VkResult rpi_vkCreateShaderModuleFromRpiAssemblyEXT(VkPhysicalDevice		                    physicalDevice,
-													VkRpiShaderModuleAssemblyCreateInfoEXT*		pCreateInfo,
-													const VkAllocationCallbacks*				pAllocator,
-													VkShaderModule*								pShaderModule)
+VkResult rpi_vkCreateShaderModuleFromRpiAssemblyEXT(VkPhysicalDevice physicalDevice)
 {
 	assert(physicalDevice);
-	assert(pCreateInfo);
-	assert(pShaderModule);
-	assert(pCreateInfo->asmStrings);
+
+	_physicalDevice* ptr = physicalDevice;
+	VkRpiShaderModuleAssemblyCreateInfoEXT* ci = ptr->customData;
+	const const VkAllocationCallbacks* pAllocator = ci->pAllocator;
+
+	assert(ci);
+	assert(ci->pShaderModule);
+	assert(ci->asmStrings);
 
 	_shaderModule* shader = ALLOCATE(sizeof(_shaderModule), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
@@ -54,9 +55,9 @@ VkResult rpi_vkCreateShaderModuleFromRpiAssemblyEXT(VkPhysicalDevice		          
 
 	for(int c = 0; c < RPI_ASSEMBLY_TYPE_MAX; ++c)
 	{
-		if(pCreateInfo->asmStrings[c])
+		if(ci->asmStrings[c])
 		{
-			uint32_t numInstructions = get_num_instructions(pCreateInfo->asmStrings[c]);
+			uint32_t numInstructions = get_num_instructions(ci->asmStrings[c]);
 			uint32_t size = sizeof(uint64_t)*numInstructions;
 			//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
 			//why not map kernel space mem to user space instead?
@@ -67,9 +68,9 @@ VkResult rpi_vkCreateShaderModuleFromRpiAssemblyEXT(VkPhysicalDevice		          
 			}
 
 			//need to create a temporary copy as the assembly algorithm is destructive
-			uint32_t stringLength = strlen(pCreateInfo->asmStrings[c]);
+			uint32_t stringLength = strlen(ci->asmStrings[c]);
 			char* tmpShaderStr = ALLOCATE(stringLength+1, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
-			memcpy(tmpShaderStr, pCreateInfo->asmStrings[c], stringLength+1);
+			memcpy(tmpShaderStr, ci->asmStrings[c], stringLength+1);
 
 			assemble_qpu_asm(tmpShaderStr, shader->instructions[c]);
 
@@ -119,21 +120,21 @@ VkResult rpi_vkCreateShaderModuleFromRpiAssemblyEXT(VkPhysicalDevice		          
 		}
 	}
 
-	shader->numMappings = pCreateInfo->numMappings;
+	shader->numMappings = ci->numMappings;
 
-	if(pCreateInfo->numMappings > 0)
+	if(ci->numMappings > 0)
 	{
-		shader->mappings = ALLOCATE(sizeof(VkRpiAssemblyMappingEXT)*pCreateInfo->numMappings, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		shader->mappings = ALLOCATE(sizeof(VkRpiAssemblyMappingEXT)*ci->numMappings, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 		if(!shader->mappings)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		memcpy(shader->mappings, pCreateInfo->mappings, sizeof(VkRpiAssemblyMappingEXT)*pCreateInfo->numMappings);
+		memcpy(shader->mappings, ci->mappings, sizeof(VkRpiAssemblyMappingEXT)*ci->numMappings);
 	}
 
-	*pShaderModule = shader;
+	*ci->pShaderModule = shader;
 
 	return VK_SUCCESS;
 }

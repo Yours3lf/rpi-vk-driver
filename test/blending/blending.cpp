@@ -158,42 +158,6 @@ void mainLoop() {
 	}
 }
 
-VkBool32 debugCallback(
-	VkDebugReportFlagsEXT                       flags,
-	VkDebugReportObjectTypeEXT                  objectType,
-	uint64_t                                    object,
-	size_t                                      location,
-	int32_t                                     messageCode,
-	const char*                                 pLayerPrefix,
-	const char*                                 pMessage,
-	void*                                       pUserData)
-{
-	std::cerr << "Debug callback: ";
-	if(flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
-		std::cerr << "info ";
-
-	if(flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
-		std::cerr << "warn ";
-	if(flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-		std::cerr << "perf ";
-
-	if(flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
-		std::cerr << "error ";
-
-	if(flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
-		std::cerr << "debug ";
-
-	std::cerr << std::endl
-			<< "object type: " << objectType
-			<< " object: " << object
-			<< " location: " << location
-			<< " message code: " << messageCode << std::endl
-			<< " layer prefix: " << pLayerPrefix << std::endl
-			<< " message: " << pMessage
-			<< std::endl;
-
-}
-
 void createInstance() {
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -226,11 +190,6 @@ void createInstance() {
 		std::cout << "\t" << extension.extensionName << std::endl;
 	}
 
-	VkDebugReportCallbackCreateInfoEXT debugCallbackInfo = {};
-	debugCallbackInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-	debugCallbackInfo.flags = 0xffffffff;
-	debugCallbackInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)debugCallback;
-
 	const char* enabledExtensions[] = {
 		"VK_KHR_surface",
 			"VK_KHR_display"
@@ -238,13 +197,13 @@ void createInstance() {
 
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.pNext = &debugCallbackInfo;
+	createInfo.pNext = 0;
 	createInfo.pApplicationInfo = &appInfo;
 	createInfo.enabledExtensionCount = sizeof(enabledExtensions) / sizeof(const char*);
 	createInfo.ppEnabledExtensionNames = enabledExtensions;
 	createInfo.enabledLayerCount = 0;
 	createInfo.ppEnabledLayerNames = 0;
-
+//
 	// Initialize Vulkan instance
 	VkResult res;
 	if ((res = vkCreateInstance(&createInfo, nullptr, &instance)) != VK_SUCCESS) {
@@ -264,7 +223,11 @@ void createWindowSurface() {
 
 	LoaderTrampoline* trampoline = (LoaderTrampoline*)physicalDevice;
 	VkRpiPhysicalDevice* realPhysicalDevice = trampoline->loaderTerminator->physicalDevice;
-	realPhysicalDevice->customData = (uintptr_t)&windowSurface;
+
+	VkRpiSurfaceCreateInfoEXT ci = {};
+	ci.pSurface = &windowSurface;
+
+	realPhysicalDevice->customData = (uintptr_t)&ci;
 
 	if (vkCreateRpiSurfaceEXT(physicalDevice) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;
@@ -876,15 +839,6 @@ void CreateFramebuffer()
 
 void CreateShaders()
 {
-	typedef VkResult (VKAPI_PTR *PFN_vkCreateShaderModuleFromRpiAssemblyEXT)(
-							VkDevice									device,
-							VkRpiShaderModuleAssemblyCreateInfoEXT*		pCreateInfo,
-							const VkAllocationCallbacks*                pAllocator,
-							VkShaderModule*								pShaderModule
-							);
-
-	PFN_vkCreateShaderModuleFromRpiAssemblyEXT vkCreateShaderModuleFromRpiAssemblyEXT = (PFN_vkCreateShaderModuleFromRpiAssemblyEXT)vkGetInstanceProcAddr(instance, "vkCreateShaderModuleFromRpiAssemblyEXT");
-
 	char vs_asm_code[] =
 			///0x40000000 = 2.0
 			///uni = 1.0
@@ -1102,12 +1056,20 @@ void CreateShaders()
 		}
 	};
 
-	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo;
+	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {};
 	shaderModuleCreateInfo.asmStrings = asm_strings;
 	shaderModuleCreateInfo.mappings = mappings;
 	shaderModuleCreateInfo.numMappings = sizeof(mappings) / sizeof(VkRpiAssemblyMappingEXT);
+	shaderModuleCreateInfo.pShaderModule = &shaderModule;
 
-	VkResult res = vkCreateShaderModuleFromRpiAssemblyEXT(device, &shaderModuleCreateInfo, 0, &shaderModule);
+	LoaderTrampoline* trampoline = (LoaderTrampoline*)physicalDevice;
+	VkRpiPhysicalDevice* realPhysicalDevice = trampoline->loaderTerminator->physicalDevice;
+
+	realPhysicalDevice->customData = (uintptr_t)&shaderModuleCreateInfo;
+
+	PFN_vkCreateShaderModuleFromRpiAssemblyEXT vkCreateShaderModuleFromRpiAssemblyEXT = (PFN_vkCreateShaderModuleFromRpiAssemblyEXT)vkGetInstanceProcAddr(instance, "vkCreateShaderModuleFromRpiAssemblyEXT");
+
+	VkResult res = vkCreateShaderModuleFromRpiAssemblyEXT(physicalDevice);
 	assert(shaderModule);
 }
 

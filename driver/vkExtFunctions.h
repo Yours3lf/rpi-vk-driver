@@ -13,11 +13,7 @@ extern VkResult rpi_vkCreateRpiSurfaceEXT(
 
 //extension that allows developers to submit QPU assembly directly and thus hand optimise code
 extern VkResult rpi_vkCreateShaderModuleFromRpiAssemblyEXT(
-		VkPhysicalDevice		                    physicalDevice,
-		VkRpiShaderModuleAssemblyCreateInfoEXT*		pCreateInfo,
-		const VkAllocationCallbacks*                pAllocator,
-		VkShaderModule*								pShaderModule
-		);
+		VkPhysicalDevice		                    physicalDevice);
 
 //TODO performance counters / perfmon
 

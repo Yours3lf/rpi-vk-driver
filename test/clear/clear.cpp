@@ -74,8 +74,8 @@ void run() {
 
 void setupVulkan() {
 	createInstance();
-	createWindowSurface();
 	findPhysicalDevice();
+	createWindowSurface();
 	checkSwapChainSupport();
 	findQueueFamilies();
 	createLogicalDevice();
@@ -146,13 +146,17 @@ void createInstance() {
 		std::cout << "\t" << extension.extensionName << std::endl;
 	}
 
+	const char* enabledExtensions[] = {
+		"VK_KHR_surface",
+			"VK_KHR_display"
+	};
+
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	createInfo.pNext = 0;
 	createInfo.pApplicationInfo = &appInfo;
-	//createInfo.enabledExtensionCount = glfwExtensionCount;
-	createInfo.enabledExtensionCount = 0;
-	//createInfo.ppEnabledExtensionNames = glfwExtensions;
-	createInfo.ppEnabledExtensionNames = 0;
+	createInfo.enabledExtensionCount = sizeof(enabledExtensions) / sizeof(const char*);
+	createInfo.ppEnabledExtensionNames = enabledExtensions;
 	createInfo.enabledLayerCount = 0;
 	createInfo.ppEnabledLayerNames = 0;
 
@@ -167,15 +171,20 @@ void createInstance() {
 }
 
 void createWindowSurface() {
-	typedef VkResult (VKAPI_PTR *PFN_vkCreateRpiSurfaceEXT)(
-			VkInstance                                  instance,
-			const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
-			const VkAllocationCallbacks*                pAllocator,
-			VkSurfaceKHR*                               pSurface);
+	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = 0;
+	vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
 
-	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
+	windowSurface = 0;
+//
+	LoaderTrampoline* trampoline = (LoaderTrampoline*)physicalDevice;
+	VkRpiPhysicalDevice* realPhysicalDevice = trampoline->loaderTerminator->physicalDevice;
 
-	if (vkCreateRpiSurfaceEXT(instance, 0, 0, &windowSurface) != VK_SUCCESS) {
+	VkRpiSurfaceCreateInfoEXT ci = {};
+	ci.pSurface = &windowSurface;
+
+	realPhysicalDevice->customData = (uintptr_t)&ci;
+
+	if (vkCreateRpiSurfaceEXT(physicalDevice) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;
 		assert(0);
 	}

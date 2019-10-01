@@ -983,6 +983,24 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
 		uint32_t*                                   pPresentModeCount,
 		VkPresentModeKHR*                           pPresentModes);
 
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetSwapchainImagesKHR(
+		VkDevice                                    device,
+		VkSwapchainKHR                              swapchain,
+		uint32_t*                                   pSwapchainImageCount,
+		VkImage*                                    pSwapchainImages);
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireNextImageKHR(
+		VkDevice                                    device,
+		VkSwapchainKHR                              swapchain,
+		uint64_t                                    timeout,
+		VkSemaphore                                 semaphore,
+		VkFence                                     fence,
+		uint32_t*                                   pImageIndex);
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueuePresentKHR(
+		VkQueue                                     queue,
+		const VkPresentInfoKHR*                     pPresentInfo);
+
 #ifdef __cplusplus
 }
 #endif

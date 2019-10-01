@@ -131,8 +131,8 @@ void run() {
 
 void setupVulkan() {
 	createInstance();
-	createWindowSurface();
 	findPhysicalDevice();
+	createWindowSurface();
 	checkSwapChainSupport();
 	findQueueFamilies();
 	createLogicalDevice();
@@ -189,13 +189,17 @@ void createInstance() {
 		std::cout << "\t" << extension.extensionName << std::endl;
 	}
 
+	const char* enabledExtensions[] = {
+		"VK_KHR_surface",
+			"VK_KHR_display"
+	};
+
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	createInfo.pNext = 0;
 	createInfo.pApplicationInfo = &appInfo;
-	//createInfo.enabledExtensionCount = glfwExtensionCount;
-	createInfo.enabledExtensionCount = 0;
-	//createInfo.ppEnabledExtensionNames = glfwExtensions;
-	createInfo.ppEnabledExtensionNames = 0;
+	createInfo.enabledExtensionCount = sizeof(enabledExtensions) / sizeof(const char*);
+	createInfo.ppEnabledExtensionNames = enabledExtensions;
 	createInfo.enabledLayerCount = 0;
 	createInfo.ppEnabledLayerNames = 0;
 
@@ -210,17 +214,20 @@ void createInstance() {
 }
 
 void createWindowSurface() {
-	typedef VkResult (VKAPI_PTR *PFN_vkCreateRpiSurfaceEXT)(
-				VkInstance                                  instance,
-				const VkRpiSurfaceCreateInfoEXT*            pCreateInfo,
-				const VkAllocationCallbacks*                pAllocator,
-				VkSurfaceKHR*                               pSurface);
+	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = 0;
+	vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
 
-	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
+	windowSurface = 0;
 
+	LoaderTrampoline* trampoline = (LoaderTrampoline*)physicalDevice;
+	VkRpiPhysicalDevice* realPhysicalDevice = trampoline->loaderTerminator->physicalDevice;
 
+	VkRpiSurfaceCreateInfoEXT ci = {};
+	ci.pSurface = &windowSurface;
 
-	if (vkCreateRpiSurfaceEXT(instance, 0, 0, &windowSurface) != VK_SUCCESS) {
+	realPhysicalDevice->customData = (uintptr_t)&ci;
+
+	if (vkCreateRpiSurfaceEXT(physicalDevice) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;
 		assert(0);
 	}
@@ -816,16 +823,6 @@ void CreateFramebuffer()
 
 void CreateShaders()
 {
-	typedef VkResult (VKAPI_PTR *PFN_vkCreateShaderModuleFromRpiAssemblyEXT)(
-							VkDevice									device,
-							VkRpiShaderModuleAssemblyCreateInfoEXT*		pCreateInfo,
-							const VkAllocationCallbacks*                pAllocator,
-							VkShaderModule*								pShaderModule
-							);
-
-	PFN_vkCreateShaderModuleFromRpiAssemblyEXT vkCreateShaderModuleFromRpiAssemblyEXT = (PFN_vkCreateShaderModuleFromRpiAssemblyEXT)vkGetInstanceProcAddr(instance, "vkCreateShaderModuleFromRpiAssemblyEXT");
-
-
 	char vs_asm_code[] =
 			///0x40000000 = 2.0
 			///uni = 1.0
@@ -1006,12 +1003,20 @@ void CreateShaders()
 		}
 	};
 
-	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo;
+	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {};
 	shaderModuleCreateInfo.asmStrings = asm_strings;
 	shaderModuleCreateInfo.mappings = mappings;
 	shaderModuleCreateInfo.numMappings = sizeof(mappings) / sizeof(VkRpiAssemblyMappingEXT);
+	shaderModuleCreateInfo.pShaderModule = &shaderModule;
 
-	VkResult res = vkCreateShaderModuleFromRpiAssemblyEXT(device, &shaderModuleCreateInfo, 0, &shaderModule);
+	LoaderTrampoline* trampoline = (LoaderTrampoline*)physicalDevice;
+	VkRpiPhysicalDevice* realPhysicalDevice = trampoline->loaderTerminator->physicalDevice;
+
+	realPhysicalDevice->customData = (uintptr_t)&shaderModuleCreateInfo;
+
+	PFN_vkCreateShaderModuleFromRpiAssemblyEXT vkCreateShaderModuleFromRpiAssemblyEXT = (PFN_vkCreateShaderModuleFromRpiAssemblyEXT)vkGetInstanceProcAddr(instance, "vkCreateShaderModuleFromRpiAssemblyEXT");
+
+	VkResult res = vkCreateShaderModuleFromRpiAssemblyEXT(physicalDevice);
 	assert(shaderModule);
 }
 

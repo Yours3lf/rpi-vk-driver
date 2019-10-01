@@ -387,6 +387,10 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	RETFUNC(vkGetPhysicalDeviceSurfaceFormatsKHR);
 	RETFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR);
 
+	RETFUNC(vkGetSwapchainImagesKHR);
+	RETFUNC(vkAcquireNextImageKHR);
+	RETFUNC(vkQueuePresentKHR);
+
 	return 0;
 }
 
