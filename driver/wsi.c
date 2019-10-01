@@ -202,6 +202,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 
 	for(int c = 0; c < pCreateInfo->minImageCount; ++c)
 	{
+		s->images[c].boundMem = 0;
+		s->images[c].boundOffset = 0;
 		s->images[c].width = pCreateInfo->imageExtent.width;
 		s->images[c].height = pCreateInfo->imageExtent.height;
 		s->images[c].depth = 1;

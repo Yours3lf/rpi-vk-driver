@@ -33,6 +33,8 @@ std::vector<VkCommandBuffer> presentCommandBuffers;
 uint32_t graphicsQueueFamily;
 uint32_t presentQueueFamily;
 
+VkDebugUtilsMessengerEXT debugMessenger;
+
 // Note: support swap chain recreation (not only required for resized windows!)
 // Note: window resize may not result in Vulkan telling that the swap chain should be recreated, should be handled explicitly!
 void run();
@@ -86,7 +88,7 @@ void setupVulkan() {
 
 void mainLoop() {
 	//while (!glfwWindowShouldClose(window)) {
-	for(int c = 0; c < 10; ++c){
+	for(int c = 0; c < 2; ++c){
 	//for(int c = 0; c < 1; ++c){
 		draw();
 
@@ -112,6 +114,17 @@ void cleanup() {
 	vkDestroySurfaceKHR(instance, windowSurface, nullptr);
 
 	vkDestroyInstance(instance, nullptr);
+}
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	void* pUserData) {
+
+	std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+
+	return VK_FALSE;
 }
 
 void createInstance() {
@@ -146,9 +159,42 @@ void createInstance() {
 		std::cout << "\t" << extension.extensionName << std::endl;
 	}
 
+	uint32_t layerCount = 0;
+	vkEnumerateInstanceLayerProperties(&layerCount, 0);
+
+	if (layerCount == 0) {
+		std::cerr << "no layers supported!" << std::endl;
+		assert(0);
+	}
+
+	std::vector<VkLayerProperties> availableLayers(layerCount);
+	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+	std::cout << "supported layers:" << std::endl;
+
+	for (const auto& layer : availableLayers) {
+		std::cout << "\t" << layer.layerName << std::endl;
+	}
+
+
 	const char* enabledExtensions[] = {
 		"VK_KHR_surface",
-			"VK_KHR_display"
+		"VK_KHR_display",
+		"VK_EXT_debug_utils"
+	};
+
+	char *instance_validation_layers[] = {
+		"VK_LAYER_LUNARG_standard_validation"
+	};
+
+	const VkApplicationInfo app = {
+		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		.pNext = NULL,
+		.pApplicationName = "clear test",
+		.applicationVersion = 0,
+		.pEngineName = "test engine",
+		.engineVersion = 0,
+		.apiVersion = VK_API_VERSION_1_1,
 	};
 
 	VkInstanceCreateInfo createInfo = {};
@@ -157,8 +203,8 @@ void createInstance() {
 	createInfo.pApplicationInfo = &appInfo;
 	createInfo.enabledExtensionCount = sizeof(enabledExtensions) / sizeof(const char*);
 	createInfo.ppEnabledExtensionNames = enabledExtensions;
-	createInfo.enabledLayerCount = 0;
-	createInfo.ppEnabledLayerNames = 0;
+	createInfo.enabledLayerCount = 1;
+	createInfo.ppEnabledLayerNames = (const char *const *)instance_validation_layers;
 
 	// Initialize Vulkan instance
 	if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
@@ -168,6 +214,16 @@ void createInstance() {
 	else {
 		std::cout << "created vulkan instance" << std::endl;
 	}
+
+	VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {};
+	debugMessengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	debugMessengerCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	debugMessengerCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	debugMessengerCreateInfo.pfnUserCallback = debugCallback;
+	debugMessengerCreateInfo.pUserData = nullptr; // Optional
+
+	auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+	func(instance, &debugMessengerCreateInfo, 0, &debugMessenger);
 }
 
 void createWindowSurface() {
