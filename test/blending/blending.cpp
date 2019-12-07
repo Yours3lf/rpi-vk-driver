@@ -964,6 +964,49 @@ void CreateShaders()
 				"\0";
 	/**/
 
+	/**
+	  blending depends on MSAA state
+	  eg. if MSAA is enabled we need to do blending per sample!
+	  Rr = Rs * sr OP Rd * dr
+	  Gr = Gs * sg OP Gd * dg
+	  Br = Bs * sb OP Bd * db
+	  Ar = As * sa OP Ad * da
+
+	  multiplication of factors: v8muld
+
+	  OP can be:
+	  add: v8adds
+	  sub: v8subs
+	  reverse sub: v8subs
+
+	  factors sx and dx can be:
+	  zero: small immediate
+	  one: small immediate
+	  src color:
+	  1 - src color: not
+	  dst color:
+	  1 - dst color: not
+	  src alpha:
+	  1 - src alpha: not
+	  dst alpha:
+	  1 - dst alpha: not
+	  constant color: load immediate
+	  1 - constant color:
+	  constant alpha:
+	  1 - constant alpha:
+
+	  24
+	  16
+	  16777215: 00ff ffff
+	 -16777216: ff00 0000
+	  src alpha saturate:
+	  i = min(As, 1 - Ad)
+	  res = (i, i, i, 1)
+	  1-Ad not(Ad)
+	  minres = v8min As, 1-Ad
+	  (minres & (00ff ffff)) | (ff00 0000)
+	/**/
+
 	/**/
 	//display a color
 	char fs_asm_code[] =
