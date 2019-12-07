@@ -4,15 +4,11 @@
 git clone https://github.com/raspberrypi/tools.git
 
 ### Establish sysroot
-mkdir sysroot  
-mkdir sysroot/usr  
-mkdir sysroot/usr/local  
-scp -r [user]@[ipaddress]:/lib sysroot/lib  
-scp -r [user]@[ipaddress]:/usr/include sysroot/usr/include  
-scp -r [user]@[ipaddress]:/usr/lib sysroot/usr/lib  
-scp -r [user]@[ipaddress]:/usr/local/include sysroot/usr/local/include  
-scp -r [user]@[ipaddress]:/usr/local/lib sysroot/usr/local/lib  
-mv sysroot tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot
+rsync -avz [user]@[ipaddress]:/lib tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/lib  
+rsync -avz [user]@[ipaddress]:/usr/include tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/usr/include  
+rsync -avz [user]@[ipaddress]:/usr/lib tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/usr/lib  
+rsync -avz [user]@[ipaddress]:/usr/local/include tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/usr/local/include  
+rsync -avhe [user]@[ipaddress]:/usr/local/lib tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/usr/local/lib  
 
 ### Clone RPi VK Driver
 git clone https://github.com/Yours3lf/rpi-vk-driver.git  
