@@ -57,35 +57,129 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
 	}
 
 
-	//patch blending
+	//TODO patch blending
+	//TODO optimise
+
 	/// patch shader so that r0 will contain whatever would be written to tlb_color_all
 	/// r0 contains sRGBA
 	//"sig_none ; r0 = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
 
-	/// prepare sAAAA to r1
+	/// load dRGBA to r1
 	/// load tbl color dRGBA to r4
-	//"sig_color_load ; r1.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;"
+	//"sig_color_load ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+	//"sig_none ; nop = nop(r0, r0) ; r1 = v8min.always(r4, r4) ;"
 
-	/// prepare 1 - sAAAA to r2
-	/// prepare sRGBA * sAAAA to r0
-	//"sig_none ; r2 = not.always(r1, r1) ; r0 = v8muld.always(r0, r1) ;"
 
-	/// prepare (1 - sAAAA) * dRGBA
-	//"sig_none ; nop = nop(r0, r0) ; r2 = v8muld.always(r2, r4) ;"
 
-	/// output sRGBA * sAAAA + dRGBA * (1 - sAAAA)
-	//"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8adds.always(r2, r0) ;"
+	/// if Sfactor is ZERO
+	//"sig_small_imm ; r2 = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;"
 
-	///VK_BLEND_FACTOR_ZERO
-	//"sig_small_imm ; r1 = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;"
+	/// if Sfactor is ONE
+	//"sig_small_imm ; r2 = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
 
-	///VK_BLEND_FACTOR_ONE
-	//"sig_small_imm ; r1 = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
+	/// if Sfactor is sCOLOR
+	//"sig_none ; r2 = or.always(r0, r0) ; nop = nop(r0, r0) ;"
 
-	///VK_BLEND_FACTOR_SRC_COLOR
-	//"sig_none ; r1 = or.always(r0, r0) ; r0 = v8muld.always(r0, r1) ;"
+	/// if Sfactor is 1-sCOLOR
+	//"sig_none ; r2 = not.always(r0, r0) ; nop = nop(r0, r0) ;"
 
-	//TODO
+	/// if Sfactor is dCOLOR
+	//"sig_none ; r2 = or.always(r1, r1) ; nop = nop(r0, r0) ;"
+
+	/// if Sfactor is 1-dCOLOR
+	//"sig_none ; r2 = not.always(r1, r1) ; nop = nop(r0, r0) ;"
+
+	/// if Sfactor is sALPHA
+	//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;"
+
+	/// if Sfactor is 1-sALPHA
+	//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;"
+	//"sig_none ; r2 = not.always(r2, r2) ; nop = nop(r0, r0) ;"
+
+	/// if Sfactor is dALPHA
+	//"sig_none ; r2.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;"
+
+	/// if Sfactor is 1-dALPHA
+	//"sig_none ; r2.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;"
+	//"sig_none ; r2 = not.always(r2, r2) ; nop = nop(r0, r0) ;"
+
+	/// if Sfactor is cCOLOR, 1-cCOLOR, cALPHA, 1-cALPHA = 0xffffffff
+	//"sig_load_imm ; r2 = load32.always(0xffffffff) ; nop = load32() ;"
+
+	/// if Sfactor is sALPHASat
+	//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;" //sAAAA
+	//"sig_none ; r3.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;" //dAAAA
+	//"sig_none ; r3 = not.always(r3, r3) ; nop = nop(r0, r0) ;" //1-dAAAA
+	//"sig_none ; nop = nop(r0, r0) ; r2 = v8min.always(r2, r3) ;" //min(sAAAA, 1-dAAAA)
+	//"sig_load_imm ; r3 = load32.always(0xff000000) ; nop = load32() ;" //load alpha = 1
+	//"sig_small_imm ; r2 = or.always(r2, r3) ; nop = nop(r0, r0) ;" //set alpha to 1
+
+	/// Multiply sRGBA and source factor
+	//"sig_none ; nop = nop(r0, r0) ; r0 = v8muld.always(r0, r2) ;"
+
+
+
+	/// if Dfactor is ZERO
+	//"sig_small_imm ; r2 = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;"
+
+	/// if Dfactor is ONE
+	//"sig_small_imm ; r2 = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
+
+	/// if Dfactor is sCOLOR
+	//"sig_none ; r2 = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+
+	/// if Dfactor is 1-sCOLOR
+	//"sig_none ; r2 = not.always(r0, r0) ; nop = nop(r0, r0) ;"
+
+	/// if Dfactor is dCOLOR
+	//"sig_none ; r2 = or.always(r1, r1) ; nop = nop(r0, r0) ;"
+
+	/// if Dfactor is 1-dCOLOR
+	//"sig_none ; r2 = not.always(r1, r1) ; nop = nop(r0, r0) ;"
+
+	/// if Dfactor is sALPHA
+	//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;"
+
+	/// if Dfactor is 1-sALPHA
+	//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;"
+	//"sig_none ; r2 = not.always(r2, r2) ; nop = nop(r0, r0) ;"
+
+	/// if Dfactor is dALPHA
+	//"sig_none ; r2.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;"
+
+	/// if Dfactor is 1-dALPHA
+	//"sig_none ; r2.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;"
+	//"sig_none ; r2 = not.always(r2, r2) ; nop = nop(r0, r0) ;"
+
+	/// if Dfactor is cCOLOR, 1-cCOLOR, cALPHA, 1-cALPHA = 0xffffffff
+	//"sig_load_imm ; r2 = load32.always(0xffffffff) ; nop = load32() ;"
+
+	/// if Dfactor is sALPHASat
+	//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;" //sAAAA
+	//"sig_none ; r3.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;" //dAAAA
+	//"sig_none ; r3 = not.always(r3, r3) ; nop = nop(r0, r0) ;" //1-dAAAA
+	//"sig_none ; nop = nop(r0, r0) ; r2 = v8min.always(r2, r3) ;" //min(sAAAA, 1-dAAAA)
+	//"sig_load_imm ; r3 = load32.always(0xff000000) ; nop = load32() ;" //load alpha = 1
+	//"sig_small_imm ; r2 = or.always(r2, r3) ; nop = nop(r0, r0) ;" //set alpha to 1
+
+	/// Multiply dRGBA and destination factor
+	//"sig_none ; nop = nop(r0, r0) ; r1 = v8muld.always(r1, r2) ;"
+
+
+
+	/// If Equation is ADD:
+	//"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8adds.always(r0, r1) ;"
+
+	/// If Equation is SUB:
+	//"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8subs.always(r0, r1) ;"
+
+	/// If Equation is rSUB:
+	//"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8subs.always(r1, r0) ;"
+
+	/// retain nops etc.
+	//"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+	//"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+	//"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 
 
 	//replace instructions pointer
