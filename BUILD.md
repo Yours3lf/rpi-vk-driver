@@ -12,7 +12,7 @@ scp -r [user]@[ipaddress]:/usr/include sysroot/usr/include
 scp -r [user]@[ipaddress]:/usr/lib sysroot/usr/lib  
 scp -r [user]@[ipaddress]:/usr/local/include sysroot/usr/local/include  
 scp -r [user]@[ipaddress]:/usr/local/lib sysroot/usr/local/lib  
-mv -r sysroot tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot
+mv sysroot tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot
 
 ### Clone RPi VK Driver
 git clone https://github.com/Yours3lf/rpi-vk-driver.git  
