@@ -4,11 +4,7 @@
 git clone https://github.com/raspberrypi/tools.git
 
 ### Establish sysroot
-rsync -avz [user]@[ipaddress]:/lib tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/lib  
-rsync -avz [user]@[ipaddress]:/usr/include tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/usr/include  
-rsync -avz [user]@[ipaddress]:/usr/lib tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/usr/lib  
-rsync -avz [user]@[ipaddress]:/usr/local/include tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/usr/local/include  
-rsync -avz [user]@[ipaddress]:/usr/local/lib tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot/usr/local/lib  
+rsync -az --delete-after --safe-links [user]@[ipaddress]:/{lib,usr} tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/arm-linux-gnueabihf/sysroot
 
 ### Clone RPi VK Driver
 git clone https://github.com/Yours3lf/rpi-vk-driver.git  
