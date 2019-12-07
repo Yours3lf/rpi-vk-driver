@@ -21,6 +21,14 @@
   - [x] Push constant support
 - [x] Platform features
   - [x] Layer support
+- [ ] Shader patching
+  - [x] Stencil state
+  - [x] Depth writes
+  - [ ] Blending mode
+  - [ ] Vertex attrib format
+- [ ] Emulated features
+  - [ ] Clear command support
+  - [ ] Copy command support
 - [ ] Render to texture features
   - [ ] VkRenderPass support
   - [ ] Subpass support
@@ -32,14 +40,6 @@
   - [ ] Performance counters
   - [ ] Queries
   - [ ] Shader performance info
-- [ ] Emulated features
-  - [ ] Clear command support
-  - [ ] Copy command support
-- [ ] Shader patching
-  - [x] Stencil state
-  - [x] Depth writes
-  - [ ] Blending mode
-  - [ ] Vertex attrib format
 - [ ] WSI
   - [ ] Direct to display support
 - [ ] Secondary command buffers
