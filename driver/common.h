@@ -494,6 +494,12 @@ void encodeTextureUniform(uint32_t* params,
 						  uint8_t wrapS,
 						  uint8_t noAutoLod);
 void encodeStencilValue(uint32_t* values, uint32_t* numValues, VkStencilOpState front, VkStencilOpState back, uint8_t stencilTestEnable);
+uint32_t encodeVPMSetup(uint8_t stride,
+						uint8_t direction,
+						uint8_t isLaned,
+						uint8_t size,
+						uint8_t address,
+						uint8_t vectorComponentsToRead);
 uint8_t getTextureDataType(VkFormat format);
 uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter, float maxLod);
 uint8_t getWrapMode(VkSamplerAddressMode mode);

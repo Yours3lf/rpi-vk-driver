@@ -47,13 +47,13 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
 	for(uint32_t c = 0; c < numValues; ++c)
 	{
 		tmp[c] = encode_load_imm(0, 0, 1, 0, 0, 0, 32 + c, 39, values[c]); //r0 = load32.always(values[c])
-		tmp[numValues + c] = encode_alu(1, 0, 0, 0, 1, 0, 0, 0, 43, 39, 0, 21, 0, 0, c, c, 0, 0); //tlb_stencil_setup = or.always(r0, r0)
+		tmp[numValues + c] = encode_alu(1, 0, 0, 0, 1, 0, 0, 0, 43, 39, 21, 0, 0, 0, c, c, 0, 0); //tlb_stencil_setup = or.always(r0, r0)
 	}
 
 	///"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
 	if(dsi->depthWriteEnable || dsi->stencilTestEnable)
 	{
-		tmp[numValues*2] = encode_alu(1, 0, 0, 0, 1, 0, 0, 0, 44, 39, 0, 21, 0, 15, 7, 7, 0, 0);
+		tmp[numValues*2] = encode_alu(1, 0, 0, 0, 1, 0, 0, 0, 44, 39, 21, 0, 0, 15, 7, 7, 0, 0);
 	}
 
 
@@ -63,14 +63,18 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
 
 	if(bas->blendEnable)
 	{
+		/// find last instruction that wrote to tlb_color_all
+
 		/// patch shader so that r0 will contain whatever would be written to tlb_color_all
 		/// r0 contains sRGBA
 		//"sig_none ; r0 = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
 
+		uint64_t instruction;
+
 		/// load dRGBA to r1
 		/// load tbl color dRGBA to r4
-		//"sig_color_load ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-		//"sig_none ; nop = nop(r0, r0) ; r1 = v8min.always(r4, r4) ;"
+		assemble_qpu_asm("sig_color_load ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;", &instruction);
+		assemble_qpu_asm("sig_none ; r1 = or.always(r4, r4) ; nop = nop(r0, r0) ;", &instruction);
 
 		//if factors are not separate
 		if(bas->srcAlphaBlendFactor == bas->srcColorBlendFactor &&
@@ -79,132 +83,60 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
 			switch(bas->srcAlphaBlendFactor)
 			{
 			case VK_BLEND_FACTOR_ZERO:
-				/// if Sfactor is ZERO
-				//"sig_small_imm ; r2 = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;"
+				assemble_qpu_asm("sig_small_imm ; r2 = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;", &instruction);
 				break;
 			case VK_BLEND_FACTOR_ONE:
-				/// if Sfactor is ONE
-				//"sig_small_imm ; r2 = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
+				assemble_qpu_asm("sig_small_imm ; r2 = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;", &instruction);
 				break;
 			case VK_BLEND_FACTOR_SRC_COLOR:
-				/// if Sfactor is sCOLOR
-				//"sig_none ; r2 = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+				assemble_qpu_asm("sig_none ; r2 = or.always(r0, r0) ; nop = nop(r0, r0) ;", &instruction);
 				break;
 			case VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR:
-				/// if Sfactor is 1-sCOLOR
-				//"sig_none ; r2 = not.always(r0, r0) ; nop = nop(r0, r0) ;"
+				assemble_qpu_asm("sig_none ; r2 = not.always(r0, r0) ; nop = nop(r0, r0) ;", &instruction);
 				break;
 			case VK_BLEND_FACTOR_DST_COLOR:
-				/// if Sfactor is dCOLOR
-				//"sig_none ; r2 = or.always(r1, r1) ; nop = nop(r0, r0) ;"
+				assemble_qpu_asm("sig_none ; r2 = or.always(r1, r1) ; nop = nop(r0, r0) ;", &instruction);
 				break;
 			case VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR:
-				/// if Sfactor is 1-dCOLOR
-				//"sig_none ; r2 = not.always(r1, r1) ; nop = nop(r0, r0) ;"
+				assemble_qpu_asm("sig_none ; r2 = not.always(r1, r1) ; nop = nop(r0, r0) ;", &instruction);
 				break;
 			case VK_BLEND_FACTOR_SRC_ALPHA:
-				/// if Sfactor is sALPHA
-				//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;"
+				assemble_qpu_asm("sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;", &instruction);
 				break;
 			case VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA:
-				/// if Sfactor is 1-sALPHA
-				//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;"
-				//"sig_none ; r2 = not.always(r2, r2) ; nop = nop(r0, r0) ;"
+				assemble_qpu_asm("sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;", &instruction);
+				assemble_qpu_asm("sig_none ; r2 = not.always(r2, r2) ; nop = nop(r0, r0) ;", &instruction);
 			case VK_BLEND_FACTOR_DST_ALPHA:
-				/// if Sfactor is dALPHA
-				//"sig_none ; r2.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;"
+				assemble_qpu_asm("sig_none ; r2.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;", &instruction);
 				break;
 			case VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA:
-				/// if Sfactor is 1-dALPHA
-				//"sig_none ; r2.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;"
-				//"sig_none ; r2 = not.always(r2, r2) ; nop = nop(r0, r0) ;"
+				assemble_qpu_asm("sig_none ; r2.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;", &instruction);
+				assemble_qpu_asm("sig_none ; r2 = not.always(r2, r2) ; nop = nop(r0, r0) ;", &instruction);
 				break;
 			case VK_BLEND_FACTOR_CONSTANT_COLOR:
 			case VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR:
 			case VK_BLEND_FACTOR_CONSTANT_ALPHA:
 			case VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA:
-				/// if Sfactor is cCOLOR, 1-cCOLOR, cALPHA, 1-cALPHA = 0xffffffff
-				//"sig_load_imm ; r2 = load32.always(0xffffffff) ; nop = load32() ;"
+				assemble_qpu_asm("sig_load_imm ; r2 = load32.always(0xffffffff) ; nop = load32() ;", &instruction);
 				break;
 			case VK_BLEND_FACTOR_SRC_ALPHA_SATURATE:
-				/// if Sfactor is sALPHASat
-				//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;" //sAAAA
-				//"sig_none ; r3.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;" //dAAAA
-				//"sig_none ; r3 = not.always(r3, r3) ; nop = nop(r0, r0) ;" //1-dAAAA
-				//"sig_none ; nop = nop(r0, r0) ; r2 = v8min.always(r2, r3) ;" //min(sAAAA, 1-dAAAA)
-				//"sig_load_imm ; r3 = load32.always(0xff000000) ; nop = load32() ;" //load alpha = 1
-				//"sig_small_imm ; r2 = or.always(r2, r3) ; nop = nop(r0, r0) ;" //set alpha to 1
+				assemble_qpu_asm("sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;", &instruction); //sAAAA
+				assemble_qpu_asm("sig_none ; r3.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;", &instruction); //dAAAA
+				assemble_qpu_asm("sig_none ; r3 = not.always(r3, r3) ; nop = nop(r0, r0) ;", &instruction); //1-dAAAA
+				assemble_qpu_asm("sig_none ; nop = nop(r0, r0) ; r2 = v8min.always(r2, r3) ;", &instruction); //min(sAAAA, 1-dAAAA)
+				assemble_qpu_asm("sig_load_imm ; r3 = load32.always(0xff000000) ; nop = load32() ;", &instruction); //load alpha = 1
+				assemble_qpu_asm("sig_small_imm ; r2 = or.always(r2, r3) ; nop = nop(r0, r0) ;", &instruction); //set alpha to 1
 				break;
 			}
 
 			/// Multiply sRGBA and source factor
-			//"sig_none ; nop = nop(r0, r0) ; r0 = v8muld.always(r0, r2) ;"
+			assemble_qpu_asm("sig_none ; nop = nop(r0, r0) ; r0 = v8muld.always(r0, r2) ;", &instruction);
 
-
-
-			switch(bas->dstAlphaBlendFactor)
-			{
-			case VK_BLEND_FACTOR_ZERO:
-				/// if Dfactor is ZERO
-				//"sig_small_imm ; r2 = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;"
-				break;
-			case VK_BLEND_FACTOR_ONE:
-				/// if Dfactor is ONE
-				//"sig_small_imm ; r2 = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
-				break;
-			case VK_BLEND_FACTOR_SRC_COLOR:
-				/// if Dfactor is sCOLOR
-				//"sig_none ; r2 = or.always(r0, r0) ; nop = nop(r0, r0) ;"
-				break;
-			case VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR:
-				/// if Dfactor is 1-sCOLOR
-				//"sig_none ; r2 = not.always(r0, r0) ; nop = nop(r0, r0) ;"
-				break;
-			case VK_BLEND_FACTOR_DST_COLOR:
-				/// if Dfactor is dCOLOR
-				//"sig_none ; r2 = or.always(r1, r1) ; nop = nop(r0, r0) ;"
-				break;
-			case VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR:
-				/// if Dfactor is 1-dCOLOR
-				//"sig_none ; r2 = not.always(r1, r1) ; nop = nop(r0, r0) ;"
-				break;
-			case VK_BLEND_FACTOR_SRC_ALPHA:
-				/// if Dfactor is sALPHA
-				//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;"
-				break;
-			case VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA:
-				/// if Dfactor is 1-sALPHA
-				//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;"
-				//"sig_none ; r2 = not.always(r2, r2) ; nop = nop(r0, r0) ;"
-			case VK_BLEND_FACTOR_DST_ALPHA:
-				/// if Dfactor is dALPHA
-				//"sig_none ; r2.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;"
-				break;
-			case VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA:
-				/// if Dfactor is 1-dALPHA
-				//"sig_none ; r2.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;"
-				//"sig_none ; r2 = not.always(r2, r2) ; nop = nop(r0, r0) ;"
-				break;
-			case VK_BLEND_FACTOR_CONSTANT_COLOR:
-			case VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR:
-			case VK_BLEND_FACTOR_CONSTANT_ALPHA:
-			case VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA:
-				/// if Dfactor is cCOLOR, 1-cCOLOR, cALPHA, 1-cALPHA = 0xffffffff
-				//"sig_load_imm ; r2 = load32.always(0xffffffff) ; nop = load32() ;"
-				break;
-			case VK_BLEND_FACTOR_SRC_ALPHA_SATURATE:
-				/// if Dfactor is sALPHASat
-				//"sig_none ; r2.8888 = or.always.8d(r0, r0) ; nop = nop(r0, r0) ;" //sAAAA
-				//"sig_none ; r3.8888 = or.always.8d(r1, r1) ; nop = nop(r0, r0) ;" //dAAAA
-				//"sig_none ; r3 = not.always(r3, r3) ; nop = nop(r0, r0) ;" //1-dAAAA
-				//"sig_none ; nop = nop(r0, r0) ; r2 = v8min.always(r2, r3) ;" //min(sAAAA, 1-dAAAA)
-				//"sig_load_imm ; r3 = load32.always(0xff000000) ; nop = load32() ;" //load alpha = 1
-				//"sig_small_imm ; r2 = or.always(r2, r3) ; nop = nop(r0, r0) ;" //set alpha to 1
-				break;
-			}
+			///repeat for
+			//bas->dstAlphaBlendFactor
 
 			/// Multiply dRGBA and destination factor
-			//"sig_none ; nop = nop(r0, r0) ; r1 = v8muld.always(r1, r2) ;"
+			assemble_qpu_asm("sig_none ; nop = nop(r0, r0) ; r1 = v8muld.always(r1, r2) ;", &instruction);
 		}
 		else //separate factors
 		{
@@ -214,31 +146,21 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
 		switch(bas->alphaBlendOp)
 		{
 		case VK_BLEND_OP_ADD:
-			/// If Equation is ADD:
-			//"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8adds.always(r0, r1) ;"
+			assemble_qpu_asm("sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8adds.always(r0, r1) ;", &instruction);
 			break;
 		case VK_BLEND_OP_SUBTRACT:
-			/// If Equation is SUB:
-			//"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8subs.always(r0, r1) ;"
+			assemble_qpu_asm("sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8subs.always(r0, r1) ;", &instruction);
 			break;
 		case VK_BLEND_OP_REVERSE_SUBTRACT:
-			/// If Equation is rSUB:
-			//"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8subs.always(r1, r0) ;"
+			assemble_qpu_asm("sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8subs.always(r1, r0) ;", &instruction);
 			break;
 		case VK_BLEND_OP_MIN:
-			/// If Equation is MIN:
-			//"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8min.always(r0, r1) ;"
+			assemble_qpu_asm("sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8min.always(r0, r1) ;", &instruction);
 			break;
 		case VK_BLEND_OP_MAX:
-			/// If Equation is MAX:
-			//"sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8max.always(r0, r1) ;"
+			assemble_qpu_asm("sig_none ; nop = nop(r0, r0) ; tlb_color_all = v8max.always(r0, r1) ;", &instruction);
 			break;
 		}
-
-		/// retain nops etc.
-		//"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-		//"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
-		//"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 	}
 
 	//replace instructions pointer
@@ -294,7 +216,9 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 			//patch fragment shader
 			if(pCreateInfos[c].pStages[d].stage & VK_SHADER_STAGE_FRAGMENT_BIT)
 			{
-				patchShaderDepthStencilBlending(&s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT], &s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT], pCreateInfos[c].pDepthStencilState, pCreateInfos[c].pColorBlendState->pAttachments, pAllocator);
+				//TODO we could patch the fragment shader, but it would have a lot of edge cases
+				//since the user is writing assembly we can just let them have full control
+				//patchShaderDepthStencilBlending(&s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT], &s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT], pCreateInfos[c].pDepthStencilState, pCreateInfos[c].pColorBlendState->pAttachments, pAllocator);
 
 				//TODO if debug...
 				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT] / 8; ++e)

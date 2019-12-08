@@ -148,8 +148,8 @@ uint64_t encode_alu(qpu_sig_bits sig_bits,
 					uint8_t write_swap_flag, //0: add writes to A, mul to B, 1: add writes to B, mul to A
 					qpu_waddr waddr_add,
 					qpu_waddr waddr_mul,
-					qpu_op_mul op_mul,
 					qpu_op_add op_add,
+					qpu_op_mul op_mul,
 					qpu_raddr raddr_a,
 					qpu_raddr raddr_b,
 					qpu_mux add_a,
@@ -227,8 +227,8 @@ uint64_t encode_alu_small_imm(qpu_unpack unpack_mode,
 							  uint8_t write_swap_flag, //0: add writes to A, mul to B, 1: add writes to B, mul to A
 							  qpu_waddr waddr_add,
 							  qpu_waddr waddr_mul,
-							  qpu_op_mul op_mul,
 							  qpu_op_add op_add,
+							  qpu_op_mul op_mul,
 							  qpu_raddr raddr_a,
 							  uint8_t small_imm,
 							  qpu_mux add_a,
@@ -247,8 +247,8 @@ uint64_t encode_alu_small_imm(qpu_unpack unpack_mode,
 					  write_swap_flag,
 					  waddr_add,
 					  waddr_mul,
-					  op_mul,
 					  op_add,
+					  op_mul,
 					  raddr_a,
 					  small_imm,
 					  add_a,
@@ -1067,11 +1067,11 @@ void assemble_qpu_asm(char* str, uint64_t* instructions)
 		{
 			if(sig_bit == QPU_SIG_SMALL_IMM)
 			{
-				instructions[instruction_counter] = encode_alu_small_imm(unpack_mode, pack_unpack_select, pack_mode, cond_add, cond_mul, sf, ws, waddr_add, waddr_mul, op_mul, op_add, raddr_a, raddr_b, add_a, add_b, mul_a, mul_b);
+				instructions[instruction_counter] = encode_alu_small_imm(unpack_mode, pack_unpack_select, pack_mode, cond_add, cond_mul, sf, ws, waddr_add, waddr_mul, op_add, op_mul, raddr_a, raddr_b, add_a, add_b, mul_a, mul_b);
 			}
 			else
 			{
-				instructions[instruction_counter] = encode_alu(sig_bit, unpack_mode, pack_unpack_select, pack_mode, cond_add, cond_mul, sf, ws, waddr_add, waddr_mul, op_mul, op_add, raddr_a, raddr_b, add_a, add_b, mul_a, mul_b);
+				instructions[instruction_counter] = encode_alu(sig_bit, unpack_mode, pack_unpack_select, pack_mode, cond_add, cond_mul, sf, ws, waddr_add, waddr_mul, op_add, op_mul, raddr_a, raddr_b, add_a, add_b, mul_a, mul_b);
 			}
 		}
 		else if(type == QPU_SEM)

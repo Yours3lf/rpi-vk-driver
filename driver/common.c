@@ -782,6 +782,25 @@ void encodeStencilValue(uint32_t *values, uint32_t* numValues, VkStencilOpState 
 	}
 }
 
+uint32_t encodeVPMSetup(uint8_t stride,
+						uint8_t direction, //0 vertical, 1 horizontal
+						uint8_t isLaned, //0 packed, 1 laned
+						uint8_t size, //0 8bit, 1 16bit, 2 32bit
+						uint8_t address, //see doc
+						uint8_t vectorComponentsToRead //only used for VPM read setup
+							 )
+{
+	uint32_t res = 0;
+	res |= ((uint32_t)(vectorComponentsToRead) & 0xf) << 20;
+	res |= ((uint32_t)(stride) & 0x3f) << 12;
+	res |= ((uint32_t)(direction) & 0x1) << 11;
+	res |= ((uint32_t)(isLaned) & 0x1) << 10;
+	res |= ((uint32_t)(size) & 0x3) << 8;
+	res |= (uint32_t)(address) & 0xff;
+
+	return res;
+}
+
 uint8_t getTextureDataType(VkFormat format)
 {
 	switch(format)
