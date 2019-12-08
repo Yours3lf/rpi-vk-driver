@@ -21,11 +21,6 @@
   - [x] Push constant support
 - [x] Platform features
   - [x] Layer support
-- [ ] Shader patching
-  - [x] Stencil state
-  - [x] Depth writes
-  - [ ] Blending mode
-  - [ ] Vertex attrib format
 - [ ] Emulated features
   - [ ] Clear command support
   - [ ] Copy command support
@@ -99,3 +94,24 @@ CPU performance (eg. number of draw calls) should be enough on the quad-core PIs
   - a4: 4 bit alpha
   - a1: 1 bit alpha
 - vector graphics support?
+
+### Shader patching
+The Broadcom Videocore IV needs a couple of operations to happen in shader code that might have fixed function hardware on other platforms.  
+These are: 
+- writing stencil state setup register
+- writing depth value to depth buffer
+- performing blending in software
+- writing vertex parameter memory read and write setup registers
+
+Since the project will not include a compiler, but rather works with an assembly based shader setup, I decided not to patch shaders based on the state provided to the driver, but rather let the developer have full control.
+This means that regardless of what  
+- depth write state
+- blending state
+- stencil state
+- vertex attribute state  
+
+is passed to the driver, this will not be reflected in the final behaviour unless the developer adds it to the assembly shaders.
+Helper functionality will be provided to aid with encoding register values. Additionally, general documentation will be provided on how to perform these operations.
+
+This will enable developers to take full control and optimise shaders to the last cycle.
+
