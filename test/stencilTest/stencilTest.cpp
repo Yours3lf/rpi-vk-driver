@@ -1105,6 +1105,9 @@ void CreateShaders()
 	//display a color
 	char fs_asm_code[] =
 			///omit color write
+			"sig_load_imm ; r0 = load32.always(0xF497EEFF‬) ; nop = load32() ;"
+			"sig_none ; tlb_stencil_setup = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
 			"sig_none ; r0 = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -1115,6 +1118,9 @@ void CreateShaders()
 	/**/
 	//display a color
 	char fs_asm_code2[] =
+			"sig_load_imm ; r0 = load32.always(0xF24DEEFF) ; nop = load32() ;"
+			"sig_none ; tlb_stencil_setup = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
 			"sig_none ; tlb_color_all = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"

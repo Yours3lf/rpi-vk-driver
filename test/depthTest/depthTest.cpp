@@ -909,7 +909,7 @@ void CreateRenderPass()
 	attachDesc[1].format = depthFormat;
 	attachDesc[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachDesc[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachDesc[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachDesc[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachDesc[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachDesc[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	attachDesc[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -1103,6 +1103,9 @@ void CreateShaders()
 	/**/
 	//display a color
 	char fs_asm_code[] =
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; tlb_z = or.always(b, b, nop, rb15) ; nop = nop(r0, r0) ;"
 			"sig_none ; tlb_color_all = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
