@@ -41,8 +41,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 		}
 	}
 
-	//TODO VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT
-
 	dp->freeAble = pCreateInfo->flags & VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 	void* dsmem = ALLOCATE(sizeof(_descriptorSet)*pCreateInfo->maxSets, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
