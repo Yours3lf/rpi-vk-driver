@@ -38,6 +38,12 @@
 - [ ] WSI
   - [ ] Direct to display support
 - [ ] Secondary command buffers
+- [ ] Fixes
+  - [ ] Hardware bug workarounds
+  - [ ] Handle offsets wherever required
+  - [ ] Handle subresource ranges properly
+  - [ ] Handle allocation scopes properly
+  - [ ] Shader module creation might not be thread safe
 - [ ] Try to pass as much of the VK CTS as possible with existing feature set
 
 
