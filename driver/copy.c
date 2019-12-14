@@ -72,14 +72,14 @@ void createFullscreenQuad(VkDevice device, VkBuffer* fsqVertexBuffer, VkDeviceMe
 void createDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool, VkDescriptorSetLayout* blitDsl)
 {
 	VkDescriptorPoolSize descriptorPoolSizes[1];
-	descriptorPoolSizes[0].descriptorCount = 1;
+	descriptorPoolSizes[0].descriptorCount = 100;
 	descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
 
 	VkDescriptorPoolCreateInfo descriptorPoolCI = {};
 	descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	descriptorPoolCI.poolSizeCount = 1;
 	descriptorPoolCI.pPoolSizes = descriptorPoolSizes;
-	descriptorPoolCI.maxSets = 1;
+	descriptorPoolCI.maxSets = 100;
 	descriptorPoolCI.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 	rpi_vkCreateDescriptorPool(device, &descriptorPoolCI, 0, descriptorPool);
@@ -606,8 +606,6 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 	_buffer* buf = srcBuffer;
 	_image* img = dstImage;
 
-	setupEmulationResources(device);
-
 	for(uint32_t c = 0; c < regionCount; ++c)
 	{
 		//TODO support this
@@ -710,6 +708,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 		rpi_vkDestroyRenderPass(device, offscreenRenderPass, 0);
 		rpi_vkDestroyFramebuffer(device, offscreenFramebuffer, 0);
 	}
+
+	img->layout = dstImageLayout;
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
