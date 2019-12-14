@@ -1,3 +1,21 @@
+# How to compile on a Raspberry Pi
+
+### Clone RPi VK Driver
+git clone https://github.com/Yours3lf/rpi-vk-driver.git  
+cd rpi-vk-driver  
+mkdir build  
+cd build  
+
+### Run CMake
+cmake .. -DCMAKE_BUILD_TYPE=Release  
+
+### Build project
+cmake --build . --target all  
+
+### Run install.sh
+
+
+
 # How to cross compile the RPi VK Driver 
 
 ### Clone compiler
