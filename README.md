@@ -13,6 +13,7 @@
   - [x] Stencil buffers
   - [x] Indexed draw calls
   - [x] blending
+  - [ ] mipmapping
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
 - [x] Resources
