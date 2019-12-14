@@ -46,7 +46,10 @@
   - [ ] Handle allocation scopes properly
   - [ ] Shader module creation might not be thread safe
 - [ ] Try to pass as much of the VK CTS as possible with existing feature set
-
+- [ ] Github pages
+- [ ] Wiki
+  - [ ] Performance recommendations
+  - [ ] How to do blending, depth/stencil testing, attributes
 
 ## VK CTS progress
 - Passed:        7894/67979 (11.6%) 
