@@ -277,6 +277,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 		}
 	}
 
+	setupEmulationResources(*pDevice);
+
 	return VK_SUCCESS;
 }
 

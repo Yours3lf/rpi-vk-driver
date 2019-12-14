@@ -3,6 +3,8 @@
 #include "declarations.h"
 #include "vkExtFunctions.h"
 
+//TODO change allocations to pool allocator
+
 uint32_t getMemoryTypeIndex(VkPhysicalDeviceMemoryProperties deviceMemoryProperties, uint32_t typeBits, VkMemoryPropertyFlags properties)
 {
 	// Iterate over all memory types available for the device used in this example
@@ -67,8 +69,21 @@ void createFullscreenQuad(VkDevice device, VkBuffer* fsqVertexBuffer, VkDeviceMe
 	}
 }
 
-void createDescriptorSet(VkDevice device, VkDescriptorPool* descriptorPool, VkDescriptorSet* blitDescriptorSet, VkDescriptorSetLayout* blitDsl, VkBufferView texelBufferView)
+void createDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool, VkDescriptorSetLayout* blitDsl)
 {
+	VkDescriptorPoolSize descriptorPoolSizes[1];
+	descriptorPoolSizes[0].descriptorCount = 1;
+	descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+
+	VkDescriptorPoolCreateInfo descriptorPoolCI = {};
+	descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	descriptorPoolCI.poolSizeCount = 1;
+	descriptorPoolCI.pPoolSizes = descriptorPoolSizes;
+	descriptorPoolCI.maxSets = 1;
+	descriptorPoolCI.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+	rpi_vkCreateDescriptorPool(device, &descriptorPoolCI, 0, descriptorPool);
+
 	//create blit dsl
 	VkDescriptorSetLayoutBinding setLayoutBinding = {};
 	setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
@@ -82,23 +97,14 @@ void createDescriptorSet(VkDevice device, VkDescriptorPool* descriptorPool, VkDe
 	descriptorLayoutCI.pBindings = &setLayoutBinding;
 
 	rpi_vkCreateDescriptorSetLayout(device, &descriptorLayoutCI, 0, blitDsl);
+}
 
-	VkDescriptorPoolSize descriptorPoolSizes[1];
-	descriptorPoolSizes[0].descriptorCount = 1;
-	descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-
-	VkDescriptorPoolCreateInfo descriptorPoolCI = {};
-	descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	descriptorPoolCI.poolSizeCount = 1;
-	descriptorPoolCI.pPoolSizes = descriptorPoolSizes;
-	descriptorPoolCI.maxSets = 1;
-
-	rpi_vkCreateDescriptorPool(device, &descriptorPoolCI, 0, descriptorPool);
-
+void createDescriptorSet(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSet* blitDescriptorSet, VkDescriptorSetLayout* blitDsl, VkBufferView texelBufferView)
+{
 	//create blit descriptor set
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = *descriptorPool;
+	allocInfo.descriptorPool = descriptorPool;
 	allocInfo.descriptorSetCount = 1;
 	allocInfo.pSetLayouts = blitDsl;
 
@@ -115,7 +121,25 @@ void createDescriptorSet(VkDevice device, VkDescriptorPool* descriptorPool, VkDe
 	rpi_vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);
 }
 
-void createRendertarget(VkDevice device, uint32_t width, uint32_t height, VkImage textureImage, VkImageView* textureView, VkSampler* textureSampler, VkRenderPass* offscreenRenderPass, VkFramebuffer* offscreenFramebuffer)
+void createSampler(VkDevice device, VkSampler* textureSampler)
+{
+	VkSamplerCreateInfo sampler = {};
+	sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	sampler.magFilter = VK_FILTER_NEAREST;
+	sampler.minFilter = VK_FILTER_NEAREST;
+	sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler.mipLodBias = 0.0f;
+	sampler.compareOp = VK_COMPARE_OP_NEVER;
+	sampler.minLod = 0.0f;
+	sampler.maxLod = 0.0f;
+	sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+	rpi_vkCreateSampler(device, &sampler, 0, textureSampler);
+}
+
+void createRendertarget(VkDevice device, uint32_t width, uint32_t height, VkImage textureImage, VkImageView* textureView, VkRenderPass* offscreenRenderPass, VkFramebuffer* offscreenFramebuffer)
 {
 	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
@@ -134,21 +158,6 @@ void createRendertarget(VkDevice device, uint32_t width, uint32_t height, VkImag
 	view.subresourceRange.levelCount = 1;
 	view.image = textureImage;
 	rpi_vkCreateImageView(device, &view, 0, textureView);
-
-	VkSamplerCreateInfo sampler = {};
-	sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	sampler.magFilter = VK_FILTER_NEAREST;
-	sampler.minFilter = VK_FILTER_NEAREST;
-	sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-	sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	sampler.mipLodBias = 0.0f;
-	sampler.compareOp = VK_COMPARE_OP_NEVER;
-	sampler.minLod = 0.0f;
-	sampler.maxLod = 0.0f;
-	sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
-	rpi_vkCreateSampler(device, &sampler, 0, textureSampler);
 
 	VkAttachmentDescription attachmentDescription = {};
 	attachmentDescription.format = format;
@@ -266,7 +275,7 @@ void createPipeline(VkDevice device, VkShaderModule blitShaderModule, VkDescript
 	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 	pushConstantRanges[1].offset = 0;
-	pushConstantRanges[1].size = 3 * 4; //3 * 32bits
+	pushConstantRanges[1].size = 5 * 4; //5 * 32bits
 	pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfo[2] = {};
@@ -433,11 +442,12 @@ void createShaderModule(VkDevice device, VkShaderModule* blitShaderModule)
 
 	//blit buffer to texture (generic buffer read)
 	char blit_fs_asm_code[] =
-			"sig_load_imm ; r2 = load32.always(0x44f00000) ; nop = load32() ;" //width = 1920.0
+			///"sig_load_imm ; r2 = load32.always(0x44f00000) ; nop = load32() ;" //width = 1920.0
+			"sig_none ; r2 = or.always(b, b, nop, uni) ; nop = nop(r0, r0) ;" //width
 			"sig_none ; r1 = itof.always(b, b, x_pix, y_pix) ; nop = nop(r0, r0) ;" //FragCoord Y
 			"sig_none ; r0 = itof.always(a, a, x_pix, y_pix) ; r1 = fmul.always(r1, r2) ;" //FragCoord X, r1 = Y * width
 			"sig_none ; r0 = fadd.always(r0, r1) ; r0 = nop(r0, r0) ;" //r0 = Y * width + X
-			"sig_small_imm ; r0 = nop(r0, r0, nop, 0x40800000) ; r0 = fmul.always(r0, b) ;" //r0 = (Y * width + X) * 4
+			"sig_none ; r0 = nop(r0, r0, nop, uni) ; r0 = fmul.always(r0, b) ;" //r0 = (Y * width + X) * pixelBytes
 			"sig_none ; r0 = ftoi.always(r0, r0) ; nop = nop(r0, r0) ;" //convert to integer
 			///write general mem access address
 			///first argument must be clamped to [0...bufsize-4]
@@ -445,8 +455,8 @@ void createShaderModule(VkDevice device, VkShaderModule* blitShaderModule)
 			///second argument must be a uniform (containing base address, which is 0)
 			///writing tmu0_s signals that all coordinates are written
 			"sig_small_imm ; r0 = max.always(r0, b, nop, 0) ; nop = nop(r0, r0) ;" //clamp general access
-			"sig_none ; r0 = min.always(r0, b, nop, uni) ; nop = nop(r0, r0) ;" //uni = 1920 * 1080 * 4 - 4
-			"sig_none ; tmu0_s = add.always(r0, b, nop, uni) ; nop = nop(r0, r0) ;"
+			"sig_none ; r0 = min.always(r0, b, nop, uni) ; nop = nop(r0, r0) ;" //uni = width * height * pixelBytes - pixelBytes
+			"sig_none ; tmu0_s = add.always(r0, b, nop, uni) ; nop = nop(r0, r0) ;" //uni = 0
 			///suspend thread (after 2 nops) to wait for TMU request to finish
 			"sig_thread_switch ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -508,6 +518,18 @@ void createShaderModule(VkDevice device, VkShaderModule* blitShaderModule)
 			12, //resource offset
 			VK_SHADER_STAGE_VERTEX_BIT
 		},
+
+
+		//fragment shader uniforms
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
+			VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			0, //resource offset
+			VK_SHADER_STAGE_FRAGMENT_BIT
+		},
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
 			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
@@ -526,14 +548,22 @@ void createShaderModule(VkDevice device, VkShaderModule* blitShaderModule)
 			4, //resource offset
 			VK_SHADER_STAGE_FRAGMENT_BIT
 		},
-		//fragment shader uniforms
 		{
-			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
-			VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, //descriptor type
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
 			0, //descriptor set #
 			0, //descriptor binding #
 			0, //descriptor array element #
-			0, //resource offset
+			8, //resource offset
+			VK_SHADER_STAGE_FRAGMENT_BIT
+		},
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			12, //resource offset
 			VK_SHADER_STAGE_FRAGMENT_BIT
 		}
 	};
@@ -552,6 +582,17 @@ void createShaderModule(VkDevice device, VkShaderModule* blitShaderModule)
 	assert(blitShaderModule);
 }
 
+void setupEmulationResources(VkDevice device)
+{
+	//create resources that won't change
+	_device* dev = device;
+
+	createFullscreenQuad(device, &dev->emulFsqVertexBuffer, &dev->emulFsqVertexBufferMemory);
+	createDescriptorPool(device, &dev->emulDescriptorPool, &dev->emulBlitDsl);
+	createSampler(device, &dev->emulTextureSampler);
+	createShaderModule(device, &dev->emulBlitShaderModule);
+}
+
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    srcBuffer,
@@ -564,6 +605,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 	_device* device = cmdBuf->dev;
 	_buffer* buf = srcBuffer;
 	_image* img = dstImage;
+
+	setupEmulationResources(device);
 
 	for(uint32_t c = 0; c < regionCount; ++c)
 	{
@@ -579,27 +622,20 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 		bvci.buffer = buf;
 		bvci.format = img->format;
 		bvci.offset = pRegions[c].bufferOffset;
-		bvci.range = width * height * getFormatBpp(img->format) * 0.25f;
+		bvci.range = width * height * getFormatBpp(img->format) / 8;
 		rpi_vkCreateBufferView(device, &bvci, 0, &texelBufferView);
 
-		VkBuffer fsqVertexBuffer;
-		VkDeviceMemory fsqVertexBufferMemory;
-		VkDescriptorPool descriptorPool;
+
 		VkDescriptorSet blitDescriptorSet;
-		VkDescriptorSetLayout blitDsl;
-		VkImage textureImage = img;
 		VkImageView textureView;
-		VkSampler textureSampler;
 		VkRenderPass offscreenRenderPass;
 		VkFramebuffer offscreenFramebuffer;
-		VkShaderModule blitShaderModule;
 		VkPipeline blitPipeline;
 		VkPipelineLayout blitPipelineLayout;
-		createFullscreenQuad(device, &fsqVertexBuffer, &fsqVertexBufferMemory);
-		createDescriptorSet(device, &descriptorPool, &blitDescriptorSet, &blitDsl, texelBufferView);
-		createRendertarget(device, width, height, textureImage, &textureView, &textureSampler, &offscreenRenderPass, &offscreenFramebuffer);
-		createShaderModule(device, &blitShaderModule);
-		createPipeline(device, blitShaderModule, blitDsl, &blitPipelineLayout, offscreenRenderPass, &blitPipeline);
+
+		createDescriptorSet(device, device->emulDescriptorPool, &blitDescriptorSet, &device->emulBlitDsl, texelBufferView);
+		createRendertarget(device, width, height, img, &textureView, &offscreenRenderPass, &offscreenFramebuffer);
+		createPipeline(device, device->emulBlitShaderModule, device->emulBlitDsl, &blitPipelineLayout, offscreenRenderPass, &blitPipeline);
 
 		//offscreen rendering
 		VkClearValue offscreenClearValues =
@@ -633,7 +669,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 		rpi_vkCmdSetViewport(commandBuffer, 0, 1, &vp);
 
 		VkDeviceSize offsets = 0;
-		rpi_vkCmdBindVertexBuffers(commandBuffer, 0, 1, &fsqVertexBuffer, &offsets );
+		rpi_vkCmdBindVertexBuffers(commandBuffer, 0, 1, &device->emulFsqVertexBuffer, &offsets );
 
 		rpi_vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipelineLayout, 0, 1, &blitDescriptorSet, 0, 0);
 
@@ -650,16 +686,29 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 
 		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vertConstants), &vertConstants);
 
-		uint32_t size = width * height * 4 - 4;//swapChainExtent.width * swapChainExtent.height * 4;
-		uint32_t fragConstants[2];
-		fragConstants[0] = size;
-		fragConstants[1] = 0;
+		uint32_t pixelBytes = getFormatBpp(img->format) / 8;
+		float w = width;
+		float pbfloat = pixelBytes;
+		uint32_t size = width * height * pixelBytes - pixelBytes;
+		uint32_t fragConstants[4];
+		fragConstants[0] = *(uint32_t*)&w;
+		fragConstants[1] = *(uint32_t*)&pbfloat;
+		fragConstants[2] = size;
+		fragConstants[3] = 0;
 
 		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragConstants), &fragConstants);
 
 		rpi_vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
 		rpi_vkCmdEndRenderPass(commandBuffer);
+
+		//free up resources
+		rpi_vkDestroyPipelineLayout(device, blitPipelineLayout, 0);
+		rpi_vkDestroyPipeline(device, blitPipeline, 0);
+		rpi_vkFreeDescriptorSets(device, device->emulDescriptorPool, 1, &blitDescriptorSet);
+		rpi_vkDestroyImageView(device, textureView, 0);
+		rpi_vkDestroyRenderPass(device, offscreenRenderPass, 0);
+		rpi_vkDestroyFramebuffer(device, offscreenFramebuffer, 0);
 	}
 }
 

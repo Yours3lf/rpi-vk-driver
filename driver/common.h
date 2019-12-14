@@ -116,6 +116,14 @@ typedef struct VkDevice_T
 	_physicalDevice* dev;
 	_queue* queues[numQueueFamilies];
 	int numQueues[numQueueFamilies];
+
+	//emulation resources
+	VkBuffer emulFsqVertexBuffer;
+	VkDeviceMemory emulFsqVertexBufferMemory;
+	VkDescriptorPool emulDescriptorPool;
+	VkDescriptorSetLayout emulBlitDsl;
+	VkSampler emulTextureSampler;
+	VkShaderModule emulBlitShaderModule;
 } _device;
 
 typedef struct VkRenderPass_T
@@ -506,3 +514,4 @@ uint8_t getWrapMode(VkSamplerAddressMode mode);
 uint32_t getRenderTargetFormatVC4(VkFormat format);
 void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize);
 void clDump(void* cl, uint32_t size);
+void setupEmulationResources(VkDevice device);
