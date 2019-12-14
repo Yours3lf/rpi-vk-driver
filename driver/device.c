@@ -452,8 +452,16 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties(
 	assert(physicalDevice);
 	assert(pFormatProperties);
 
-	//TODO what specific depth/stencil formats can we support?
-	if(isDepthStencilFormat(format) && format != VK_FORMAT_S8_UINT)
+	switch(format)
+	{
+	//TODO what formats could we pull off
+	//case VK_FORMAT_D16_UNORM:
+	case VK_FORMAT_X8_D24_UNORM_PACK32:
+	//case VK_FORMAT_D32_SFLOAT:
+	//case VK_FORMAT_S8_UINT:
+	//case VK_FORMAT_D16_UNORM_S8_UINT:
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+	//case VK_FORMAT_D32_SFLOAT_S8_UINT:
 	{
 		pFormatProperties->linearTilingFeatures = 0
 												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
@@ -481,67 +489,82 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties(
 												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
 												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
 												;
+		break;
 	}
-	else
+	//supported texture formats
+	case VK_FORMAT_R8G8B8_UNORM:
+	case VK_FORMAT_R5G5B5A1_UNORM_PACK16:
+	case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
+	case VK_FORMAT_R8G8_UNORM:
+	case VK_FORMAT_R16_SFLOAT:
+	case VK_FORMAT_R16_SINT:
+	case VK_FORMAT_R8_UNORM:
+	case VK_FORMAT_R8_SINT:
+	case VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK:
+	case VK_FORMAT_G8B8G8R8_422_UNORM:
 	{
-		switch(format)
-		{
-		//supported texture formats
-		case VK_FORMAT_R16G16B16A16_SFLOAT:
-		case VK_FORMAT_R8G8B8_UNORM:
-		case VK_FORMAT_R8G8B8A8_UNORM:
-		case VK_FORMAT_R5G5B5A1_UNORM_PACK16:
-		case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
-		case VK_FORMAT_B5G6R5_UNORM_PACK16:
-		case VK_FORMAT_R8G8_UNORM:
-		case VK_FORMAT_R16_SFLOAT:
-		case VK_FORMAT_R16_SINT:
-		case VK_FORMAT_R8_UNORM:
-		case VK_FORMAT_R8_SINT:
-		case VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK:
-		case VK_FORMAT_G8B8G8R8_422_UNORM:
-		{
-			pFormatProperties->linearTilingFeatures = 0
-													| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
-													| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
-													| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
-													| VK_FORMAT_FEATURE_BLIT_SRC_BIT
-													| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
-													;
-			pFormatProperties->optimalTilingFeatures = 0
-													| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
-													| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
-													| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-													| VK_FORMAT_FEATURE_BLIT_SRC_BIT
-													| VK_FORMAT_FEATURE_BLIT_DST_BIT
-													| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
-													| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
-													;
-			pFormatProperties->bufferFeatures = 0
-													| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
-													| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
-													| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
-													| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
-													| VK_FORMAT_FEATURE_BLIT_SRC_BIT
-													;
-		}
-		//supported render target formats
-		case VK_FORMAT_R16G16B16A16_SFLOAT:
-		case VK_FORMAT_R8G8B8A8_UNORM:
-		case VK_FORMAT_B5G6R5_UNORM_PACK16:
-		{
-			pFormatProperties->optimalTilingFeatures = pFormatProperties->optimalTilingFeatures
-													| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
-													| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
-													;
-			break;
-		}
-		default:
-			pFormatProperties->linearTilingFeatures = 0;
-			pFormatProperties->optimalTilingFeatures = 0;
-			pFormatProperties->bufferFeatures = 0;
-			break;
-		}
+		pFormatProperties->linearTilingFeatures = 0
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												;
+		pFormatProperties->optimalTilingFeatures = 0
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_DST_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												;
+		pFormatProperties->bufferFeatures = 0
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												;
+		break;
+	}
+	//supported render target formats
+	case VK_FORMAT_R16G16B16A16_SFLOAT:
+	case VK_FORMAT_R8G8B8A8_UNORM:
+	case VK_FORMAT_B5G6R5_UNORM_PACK16:
+	{
+		pFormatProperties->linearTilingFeatures = 0
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												;
+		pFormatProperties->optimalTilingFeatures = 0
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+												| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+												| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_DST_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
+												| VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
+												;
+		pFormatProperties->bufferFeatures = 0
+												| VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT
+												| VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
+												| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+												| VK_FORMAT_FEATURE_BLIT_SRC_BIT
+												;
+		break;
+	}
+	default:
+		pFormatProperties->linearTilingFeatures = 0;
+		pFormatProperties->optimalTilingFeatures = 0;
+		pFormatProperties->bufferFeatures = 0;
+		break;
 	}
 }
 
