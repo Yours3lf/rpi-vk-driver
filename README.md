@@ -15,6 +15,7 @@
   - [x] blending
   - [ ] mipmapping
   - [ ] cube mapping
+  - [ ] shadow mapping / depth texture sampling
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
 - [x] Resources
