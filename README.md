@@ -14,6 +14,7 @@
   - [x] Indexed draw calls
   - [x] blending
   - [ ] mipmapping
+  - [ ] cube mapping
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
 - [x] Resources
