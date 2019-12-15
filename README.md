@@ -30,7 +30,6 @@
 - [ ] Render to texture features
   - [ ] VkRenderPass support
   - [ ] Subpass support
-  - [ ] Multiple attachments
   - [ ] MSAA support
 - [ ] Synchronization
   - [ ] vkCmdPipelineBarrier support
