@@ -41,20 +41,20 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 
 	cb->currentSubpass = 0;
 
-	//TODO handle multiple attachments
 	_image* i = 0;
 	_image* dsI = 0;
 
-	for(uint32_t c = 0; c < cb->fbo->numAttachmentViews; ++c)
+	_renderpass* rp = pRenderPassBegin->renderPass;
+
+	for(uint32_t c = 0; c < rp->subpasses[cb->currentSubpass].colorAttachmentCount; ++c)
 	{
-		if(!isDepthStencilFormat(cb->fbo->attachmentViews[c].image->format))
-		{
-			i = cb->fbo->attachmentViews[c].image;
-		}
-		else
-		{
-			dsI = cb->fbo->attachmentViews[c].image;
-		}
+		i = cb->fbo->attachmentViews[rp->subpasses[cb->currentSubpass].pColorAttachments[c].attachment].image;
+		break; //TODO handle multiple attachments
+	}
+
+	if(rp->subpasses[cb->currentSubpass].pDepthStencilAttachment)
+	{
+		dsI = cb->fbo->attachmentViews[rp->subpasses[cb->currentSubpass].pDepthStencilAttachment->attachment].image;
 	}
 
 	clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));

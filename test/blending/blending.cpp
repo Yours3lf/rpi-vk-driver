@@ -767,7 +767,7 @@ void CreateRenderPass()
 	subpassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpassDesc.colorAttachmentCount = 1;
 	subpassDesc.pColorAttachments = &attachRef;
-	subpassDesc.pDepthStencilAttachment = &depthAttachmentRef;
+	//subpassDesc.pDepthStencilAttachment = &depthAttachmentRef;
 
 	VkAttachmentDescription attachDesc[2];
 	attachDesc[0] = {};

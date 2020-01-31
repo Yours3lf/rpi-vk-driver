@@ -839,6 +839,9 @@ uint8_t getTextureDataType(VkFormat format)
 		return 8; //etc1
 	case VK_FORMAT_G8B8G8R8_422_UNORM:
 		return 17; //yuyv422r (raster format = not in T format, yuyv)
+	case VK_FORMAT_X8_D24_UNORM_PACK32:
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+		return 0; //rgba8
 	case VK_FORMAT_UNDEFINED: //TODO
 		return -1;
 	default://
@@ -917,8 +920,17 @@ uint32_t getRenderTargetFormatVC4(VkFormat format)
 	{
 		case VK_FORMAT_R16G16B16A16_SFLOAT: //HDR mode set in tile binning config mode, so just return a valid format
 		case VK_FORMAT_R8G8B8A8_UNORM:
+		//only here so we can do emulated buffer copies to depth textures
+		case VK_FORMAT_X8_D24_UNORM_PACK32:
+		case VK_FORMAT_D24_UNORM_S8_UINT:
 			return VC4_RENDER_CONFIG_FORMAT_RGBA8888;
 		case VK_FORMAT_B5G6R5_UNORM_PACK16:
+		//TODO
+		//case VK_FORMAT_R5G5B5A1_UNORM_PACK16:
+		//case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
+		//case VK_FORMAT_R8G8_UNORM:
+		//case VK_FORMAT_R16_SFLOAT:
+		//case VK_FORMAT_R16_SINT:
 			return VC4_RENDER_CONFIG_FORMAT_BGR565;
 		default:
 			fprintf(stderr, "rendertarget format: %i\n", format);
