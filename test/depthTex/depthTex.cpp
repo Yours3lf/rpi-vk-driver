@@ -745,6 +745,11 @@ void recordCommandBuffers()
 
 			vkCmdPushConstants(presentCommandBuffers[i], samplePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
 
+			uint32_t fragPushConstants[1];
+			fragPushConstants[0] = 0x33800001; //1/(2^24-1)
+
+			vkCmdPushConstants(presentCommandBuffers[i], samplePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragPushConstants), &fragPushConstants);
+
 			vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
 
 			vkCmdEndRenderPass(presentCommandBuffers[i]);
@@ -1009,11 +1014,15 @@ void CreateShaders()
 			///read TMU0 request result to R4
 			"sig_load_tmu0 ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			///when thread has been awakened, MOV from R4 to R0
-			"sig_none ; r0 = fmax.pm.always.8a(r4, r4) ; nop = nop(r0, r0) ;"
-			"sig_none ; r1 = fmax.pm.always.8b(r4, r4) ; r0.8a = v8min.always(r0, r0) ;"
-			"sig_none ; r2 = fmax.pm.always.8c(r4, r4) ; r0.8b = v8min.always(r1, r1) ;"
-			"sig_none ; r3 = fmax.pm.always.8d(r4, r4) ; r0.8c = v8min.always(r2, r2) ;"
-			"sig_none ; nop = nop.pm(r0, r0) ; r0.8d = v8min.always(r3, r3) ;"
+			///shift 8 bits to right as the 24 bit depth is stored in the 24 msb bits
+			"sig_small_imm ; r0 = shr.always(r4, b, nop, 0x8) ; nop = nop(r0, r0) ;"
+			"sig_none ; r0 = itof.always(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop.pm(r0, r0, uni, nop) ; r0.8c = fmul.always(r0, a) ;" //uni = 1/(2^24-1)
+			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0) ; r0.8a = v8min.always(b, b) ;"
+			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0) ; r0.8b = v8min.always(b, b) ;"
+			"sig_small_imm ; nop = nop.pm(r0, r0, nop, 0) ; r0.8d = v8min.always(b, b) ;"
+			///"sig_load_imm ; r3 = load32.always(0x4affffff) ; nop = load32() ;" //2^24-1 / 2
+			///"sig_none ; nop = nop.pm(r0, r0, uni, nop) ; r0.8c = fmul.always(r3, a) ;" //uni = 1/(2^24-1)
 			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -1067,6 +1076,15 @@ void CreateShaders()
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			0, //resource offset
+			VK_SHADER_STAGE_FRAGMENT_BIT
+		},
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
 			0, //descriptor set #
 			0, //descriptor binding #
 			0, //descriptor array element #
@@ -1168,7 +1186,7 @@ void CreatePipeline()
 		pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 		pushConstantRanges[1].offset = 0;
-		pushConstantRanges[1].size = 1 * 4; //1 * 32bits
+		pushConstantRanges[1].size = 2 * 4; //2 * 32bits
 		pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		VkPipelineShaderStageCreateInfo shaderStageCreateInfo[2] = {};
@@ -1236,7 +1254,21 @@ void CreateTexture()
 	uint32_t width = 1081, height = 1081;
 	uint32_t mipLevels = 1;
 
-	char* texData = readPPM("heightmap.ppm");
+	//char* texData = readPPM("heightmap.ppm");
+
+	//convert to BGRA (A=1)
+	char* texData = (char*)malloc(width * height * 4);
+
+	for(int y = 0; y < height; ++y)
+		{
+			for(int x = 0; x < width; ++x)
+			{
+				float value = (float)x / (float)width * 16777215.0f;
+				uint32_t val32 = value;
+				uint32_t* texData32 = (uint32_t*)texData;
+				texData32[y*width+x] = (val32 << 8) | 0xff;
+			}
+		}
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingMemory;
