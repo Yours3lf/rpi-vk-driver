@@ -17,6 +17,7 @@
   - [ ] cube mapping
   - [x] shadow mapping / depth texture sampling
   - [ ] HDR rendering
+  - [ ] Multi threaded cmdbuf generation test
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
 - [x] Resources
