@@ -406,7 +406,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkMergePipelineCaches(
 	const VkPipelineCache*                      pSrcCaches)
 {
 	UNSUPPORTED(rpi_vkMergePipelineCaches);
-	return VK_SUCCESS;
+	return UNSUPPORTED_RETURN;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPipelineCacheData(
@@ -416,7 +416,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPipelineCacheData(
 	void*                                       pData)
 {
 	UNSUPPORTED(rpi_vkGetPipelineCacheData);
-	return VK_SUCCESS;
+	return UNSUPPORTED_RETURN;
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyPipelineCache(
@@ -491,5 +491,5 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineCache(
 	VkPipelineCache*                            pPipelineCache)
 {
 	UNSUPPORTED(rpi_vkCreatePipelineCache);
-	return VK_SUCCESS;
+	return UNSUPPORTED_RETURN;
 }

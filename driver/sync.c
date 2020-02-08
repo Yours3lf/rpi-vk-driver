@@ -444,7 +444,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetEventStatus(
 	VkEvent                                     event)
 {
 	UNSUPPORTED(rpi_vkGetEventStatus);
-	return VK_SUCCESS;
+	return UNSUPPORTED_RETURN;
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyEvent(
@@ -470,7 +470,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateEvent(
 	VkEvent*                                    pEvent)
 {
 	UNSUPPORTED(rpi_vkCreateEvent);
-	return VK_SUCCESS;
+	return UNSUPPORTED_RETURN;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetEvent(
@@ -478,7 +478,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetEvent(
 	VkEvent                                     event)
 {
 	UNSUPPORTED(rpi_vkResetEvent);
-	return VK_SUCCESS;
+	return UNSUPPORTED_RETURN;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkSetEvent(
@@ -486,7 +486,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkSetEvent(
 	VkEvent                                     event)
 {
 	UNSUPPORTED(rpi_vkSetEvent);
-	return VK_SUCCESS;
+	return UNSUPPORTED_RETURN;
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetEvent(

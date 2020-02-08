@@ -12,7 +12,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateComputePipelines(
 	VkPipeline*                                 pPipelines)
 {
 	UNSUPPORTED(rpi_vkCreateComputePipelines);
-	return VK_SUCCESS;
+	return UNSUPPORTED_RETURN;
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDispatchIndirect(

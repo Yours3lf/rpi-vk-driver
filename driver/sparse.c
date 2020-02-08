@@ -29,7 +29,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueBindSparse(
 	VkFence                                     fence)
 {
 	UNSUPPORTED(rpi_vkQueueBindSparse);
-	return VK_SUCCESS;
+	return UNSUPPORTED_RETURN;
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceSparseImageFormatProperties2(
