@@ -142,6 +142,7 @@ uint32_t getFormatBpp(VkFormat f)
 	case VK_FORMAT_R8_UINT:
 	case VK_FORMAT_R8_SRGB:
 	case VK_FORMAT_UNDEFINED: //TODO
+	case VK_FORMAT_G8B8G8R8_422_UNORM: //TODO
 		return 8;
 	case VK_FORMAT_D32_SFLOAT_S8_UINT:
 		return 64; //TODO ???
@@ -153,6 +154,8 @@ uint32_t getFormatBpp(VkFormat f)
 		return 32;
 	case VK_FORMAT_D16_UNORM:
 		return 16;
+	case VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK: //TODO
+		return 4;
 	default://
 		fprintf(stderr, "format %i\n", f);
 		assert(!"Unknown format.");
@@ -255,6 +258,7 @@ void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, 
 		break;
 	}
 	case 32:
+	case 24: //TODO
 	{
 		tileW = 32;
 		tileH = 32;
