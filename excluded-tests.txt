@@ -93,6 +93,16 @@ dEQP-VK.api.pipeline.pipeline_layout.lifetime.compute
 dEQP-VK.api.invariance.random
 dEQP-VK.memory.pipeline_barrier.*
 dEQP-VK.memory.requirements.core.image.regular_tiling_optimal
+dEQP-VK.memory.binding.regular.suballocated.*
+dEQP-VK.memory.binding.regular.dedicated.*
+dEQP-VK.memory.binding.aliasing.suballocated.*
+dEQP-VK.pipeline.dynamic_offset.*
+dEQP-VK.pipeline.image.*
+dEQP-VK.pipeline.sampler.*
+dEQP-VK.pipeline.image_view.*
+dEQP-VK.pipeline.stencil.*
+dEQP-VK.pipeline.framebuffer_attachment.unused_attachment
+
 
 
 
