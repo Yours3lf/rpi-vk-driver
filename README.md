@@ -33,7 +33,7 @@
 - [ ] Render to texture features
   - [ ] VkRenderPass support
   - [ ] Subpass support
-  - [ ] MSAA support
+  - [x] MSAA support
 - [ ] Synchronization
   - [ ] vkCmdPipelineBarrier support
 - [ ] Performance
