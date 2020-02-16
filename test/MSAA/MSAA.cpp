@@ -40,7 +40,6 @@ void CreateRenderPass();
 void CreateFramebuffer();
 void CreateShaders();
 void CreatePipeline();
-void CreateUniformBuffer();
 void CreateDescriptorSet();
 void CreateVertexBuffer();
 void CreateTexture();
@@ -72,6 +71,10 @@ std::vector<VkImageView> views; //?
 VkSurfaceFormatKHR swapchainFormat;
 VkExtent2D swapChainExtent;
 VkPipelineLayout pipelineLayout;
+
+VkImage MSAAResolveImage;
+VkDeviceMemory MSAAResolveImageMemory;
+VkImageView MSAAResolveImageView;
 
 uint32_t graphicsQueueFamily;
 uint32_t presentQueueFamily;
@@ -137,10 +140,10 @@ void setupVulkan() {
 	createSemaphores();
 	createSwapChain();
 	createCommandQueues();
+	CreateTexture();
 	CreateRenderPass();
 	CreateFramebuffer();
 	CreateVertexBuffer();
-	//CreateUniformBuffer();
 	CreateShaders();
 	CreatePipeline();
 	recordCommandBuffers();
@@ -614,8 +617,9 @@ void recordCommandBuffers()
 	VkClearColorValue clearColor = {
 		{ 0.4f, 0.6f, 0.9f, 1.0f } // R, G, B, A
 	};
-	VkClearValue clearValue = {};
-	clearValue.color = clearColor;
+	VkClearValue clearValue[2];
+	clearValue[0].color = clearColor;
+	clearValue[1].color = clearColor;
 
 	VkImageSubresourceRange subResourceRange = {};
 	subResourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -631,8 +635,8 @@ void recordCommandBuffers()
 	renderPassInfo.renderArea.offset.y = 0;
 	renderPassInfo.renderArea.extent.width = swapChainExtent.width;
 	renderPassInfo.renderArea.extent.height = swapChainExtent.height;
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearValue;
+	renderPassInfo.clearValueCount = 2;
+	renderPassInfo.pClearValues = clearValue;
 
 	VkViewport viewport = { 0 };
 	viewport.height = (float)swapChainExtent.width;
@@ -746,31 +750,71 @@ void draw() {
 
 void CreateRenderPass()
 {
+	VkAttachmentDescription attachDesc[2];
+	// Multisampled attachment that we render to
+	attachDesc[0].format = swapchainFormat.format;
+	attachDesc[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	attachDesc[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attachDesc[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachDesc[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attachDesc[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	attachDesc[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	attachDesc[0].samples = VK_SAMPLE_COUNT_4_BIT;
+	attachDesc[0].flags = 0;
+
+	// This is the frame buffer attachment to where the multisampled image
+	// will be resolved to and which will be presented to the swapchain
+	attachDesc[1].format = swapchainFormat.format;
+	attachDesc[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachDesc[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attachDesc[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachDesc[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attachDesc[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	attachDesc[1].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	attachDesc[1].samples = VK_SAMPLE_COUNT_1_BIT;
+	attachDesc[1].flags = 0;
+
 	VkAttachmentReference attachRef = {};
 	attachRef.attachment = 0;
 	attachRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	// Resolve attachment reference for the color attachment
+	VkAttachmentReference resolveReference = {};
+	resolveReference.attachment = 1;
+	resolveReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkSubpassDescription subpassDesc = {};
 	subpassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpassDesc.colorAttachmentCount = 1;
 	subpassDesc.pColorAttachments = &attachRef;
+	// Pass our resolve attachments to the sub pass
+	subpassDesc.pResolveAttachments = &resolveReference;
 
-	VkAttachmentDescription attachDesc = {};
-	attachDesc.format = swapchainFormat.format; //Todo
-	attachDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	attachDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	attachDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	attachDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachDesc.initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	attachDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	attachDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+	VkSubpassDependency dependencies[2];
+	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass = 0;
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	dependencies[1].srcSubpass = 0;
+	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
 	VkRenderPassCreateInfo renderPassCreateInfo = {};
 	renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassCreateInfo.attachmentCount = 1;
-	renderPassCreateInfo.pAttachments = &attachDesc;
+	renderPassCreateInfo.attachmentCount = 2;
+	renderPassCreateInfo.pAttachments = attachDesc;
 	renderPassCreateInfo.subpassCount = 1;
 	renderPassCreateInfo.pSubpasses = &subpassDesc;
+	renderPassCreateInfo.dependencyCount = 2;
+	renderPassCreateInfo.pDependencies = dependencies;
 
 	VkResult res = vkCreateRenderPass(device, &renderPassCreateInfo, NULL, &renderPass);
 
@@ -802,11 +846,15 @@ void CreateFramebuffer()
 
 		res = vkCreateImageView(device, &ViewCreateInfo, NULL, &views[i]);
 
+		VkImageView fbAttachments[2];
+		fbAttachments[0] = MSAAResolveImageView;
+		fbAttachments[1] = views[i];
+
 		VkFramebufferCreateInfo fbCreateInfo = {};
 		fbCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		fbCreateInfo.renderPass = renderPass;
-		fbCreateInfo.attachmentCount = 1;
-		fbCreateInfo.pAttachments = &views[i];
+		fbCreateInfo.attachmentCount = 2;
+		fbCreateInfo.pAttachments = fbAttachments;
 		fbCreateInfo.width = swapChainExtent.width;
 		fbCreateInfo.height = swapChainExtent.height;
 		fbCreateInfo.layers = 1;
@@ -1093,6 +1141,7 @@ void CreatePipeline()
 
 	VkPipelineMultisampleStateCreateInfo pipelineMSCreateInfo = {};
 	pipelineMSCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	pipelineMSCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_4_BIT;
 
 	VkPipelineColorBlendAttachmentState blendAttachState = {};
 	blendAttachState.colorWriteMask = 0xf;
@@ -1142,7 +1191,7 @@ uint32_t getMemoryTypeIndex(VkPhysicalDeviceMemoryProperties deviceMemoryPropert
 		typeBits >>= 1;
 	}
 
-	assert(0);
+	return 0;
 }
 
 void CreateVertexBuffer()
@@ -1184,6 +1233,59 @@ void CreateVertexBuffer()
 	}
 
 	printf("Vertex buffer created\n");
+}
+
+void CreateTexture()
+{
+	VkImageCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	info.imageType = VK_IMAGE_TYPE_2D;
+	info.format = swapchainFormat.format;
+	info.extent.width = swapChainExtent.width;
+	info.extent.height = swapChainExtent.height;
+	info.extent.depth = 1;
+	info.mipLevels = 1;
+	info.arrayLayers = 1;
+	info.tiling = VK_IMAGE_TILING_OPTIMAL;
+	info.samples = VK_SAMPLE_COUNT_4_BIT;
+	// Image will only be used as a transient target
+	info.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+	vkCreateImage(device, &info, 0, &MSAAResolveImage);
+
+	VkMemoryRequirements memReqs;
+	vkGetImageMemoryRequirements(device, MSAAResolveImage, &memReqs);
+
+	VkMemoryAllocateInfo memAlloc = {};
+	memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	memAlloc.allocationSize = memReqs.size;
+	// We prefer a lazily allocated memory type
+	// This means that the memory gets allocated when the implementation sees fit, e.g. when first using the images
+	memAlloc.memoryTypeIndex = getMemoryTypeIndex(pdmp, memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT);
+	if (!memAlloc.memoryTypeIndex)
+	{
+		// If this is not available, fall back to device local memory
+		memAlloc.memoryTypeIndex = getMemoryTypeIndex(pdmp, memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	}
+
+	vkAllocateMemory(device, &memAlloc, 0, &MSAAResolveImageMemory);
+	vkBindImageMemory(device, MSAAResolveImage, MSAAResolveImageMemory, 0);
+
+	VkImageViewCreateInfo viewInfo = {};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = MSAAResolveImage;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = swapchainFormat.format;
+	viewInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+	viewInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+	viewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+	viewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	vkCreateImageView(device, &viewInfo, 0, &MSAAResolveImageView);
 }
 
 int main() {
