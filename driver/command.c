@@ -351,6 +351,17 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 				submitCl.clear_s = 0;
 			}
 
+			if(i->samples > 1)
+			{
+				// This bit controls how many pixels the general
+				// (i.e. subsampled) loads/stores are iterating over
+				// (multisample loads replicate out to the other samples).
+				submitCl.color_write.bits |= VC4_RENDER_CONFIG_MS_MODE_4X;
+				// Controls whether color_write's
+				// VC4_PACKET_STORE_MS_TILE_BUFFER does 4x decimation
+				submitCl.color_write.bits |= VC4_RENDER_CONFIG_DECIMATE_MODE_4X;
+			}
+
 			submitCl.min_x_tile = 0;
 			submitCl.min_y_tile = 0;
 

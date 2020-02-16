@@ -1236,7 +1236,8 @@ void CreateTexture()
 	uint32_t width = swapChainExtent.width, height = swapChainExtent.height;
 	uint32_t mipLevels = 1;
 
-	char* texData = readPPM("image.ppm");
+	//char* texData = readPPM("image.ppm");
+	char* texData = readPPM("triangle.ppm");
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingMemory;

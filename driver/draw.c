@@ -91,7 +91,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 								  0, //coverage pipe select
 								  0, //coverage update mode
 								  0, //coverage read type
-								  0, //rasterizer oversample mode
+								  cb->graphicsPipeline->rasterizationSamples > 1, //rasterizer oversample mode
 								  cb->graphicsPipeline->depthBiasEnable, //depth offset enable
 								  cb->graphicsPipeline->frontFace == VK_FRONT_FACE_CLOCKWISE, //clockwise
 								  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_BACK_BIT), //enable back facing primitives
