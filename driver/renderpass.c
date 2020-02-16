@@ -42,14 +42,33 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	cb->currentSubpass = 0;
 
 	_image* i = 0;
+	_image* MSAAimage = 0;
 	_image* dsI = 0;
 
 	_renderpass* rp = pRenderPassBegin->renderPass;
 
-	for(uint32_t c = 0; c < rp->subpasses[cb->currentSubpass].colorAttachmentCount; ++c)
+	//TODO handle MSAA properly
+	if(!rp->subpasses[cb->currentSubpass].pResolveAttachments)
 	{
-		i = cb->fbo->attachmentViews[rp->subpasses[cb->currentSubpass].pColorAttachments[c].attachment].image;
-		break; //TODO handle multiple attachments
+		for(uint32_t c = 0; c < rp->subpasses[cb->currentSubpass].colorAttachmentCount; ++c)
+		{
+			i = cb->fbo->attachmentViews[rp->subpasses[cb->currentSubpass].pColorAttachments[c].attachment].image;
+			break; //TODO handle multiple attachments
+		}
+	}
+	else
+	{
+		for(uint32_t c = 0; c < rp->subpasses[cb->currentSubpass].colorAttachmentCount; ++c)
+		{
+			i = cb->fbo->attachmentViews[rp->subpasses[cb->currentSubpass].pResolveAttachments[c].attachment].image;
+			break; //TODO handle multiple attachments
+		}
+
+		for(uint32_t c = 0; c < rp->subpasses[cb->currentSubpass].colorAttachmentCount; ++c)
+		{
+			MSAAimage = cb->fbo->attachmentViews[rp->subpasses[cb->currentSubpass].pColorAttachments[c].attachment].image;
+			break; //TODO handle multiple attachments
+		}
 	}
 
 	if(rp->subpasses[cb->currentSubpass].pDepthStencilAttachment)
@@ -58,7 +77,7 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	}
 
 	clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
-	clInsertNewCLMarker(&commandBuffer->binCl, &cb->handlesCl, &cb->shaderRecCl, cb->shaderRecCount, &cb->uniformsCl, i, dsI);
+	clInsertNewCLMarker(&commandBuffer->binCl, &cb->handlesCl, &cb->shaderRecCl, cb->shaderRecCount, &cb->uniformsCl, i, MSAAimage, dsI);
 
 	//insert reloc for render target
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
@@ -74,7 +93,7 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	//TODO handle multiple attachments
 	for(uint32_t c = 0; c < cb->renderpass->numAttachments; ++c)
 	{
-		if(cb->renderpass->attachments[c].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR)
+		if(cb->renderpass->attachments[c].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
 		{
 			//TODO separate clear for color / depth / stencil?
 			cb->binCl.currMarker->flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
@@ -88,7 +107,7 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 										 0, //tile allocation initial block size
 										 0, //auto initialize tile state data array
 										 getFormatBpp(i->format) == 64, //64 bit color mode
-										 i->samples > 1, //msaa
+										 MSAAimage ? 1 : 0, //TODO msaa
 										 i->width, i->height,
 										 0, //tile state data array address
 										 0, //tile allocation memory size
@@ -309,7 +328,7 @@ VkResult rpi_vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo*
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
-	for(int c = 0; c < fb->numAttachmentViews; ++c)
+	for(uint32_t c = 0; c < fb->numAttachmentViews; ++c)
 	{
 		memcpy(&fb->attachmentViews[c], pCreateInfo->pAttachments[c], sizeof(_imageView));
 	}

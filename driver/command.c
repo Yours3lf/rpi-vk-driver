@@ -313,10 +313,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			};
 
 			_image* i = marker->image;
+			_image* MSAAimage = marker->MSAAimage;
 			_image* dsI = marker->depthStencilImage;
 
 			//This should not result in an insertion!
 			uint32_t imageIdx = clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, i->boundMem->bo);
+			//uint32_t MSAAimageIdx = MSAAimage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, MSAAimage->boundMem->bo) : 0;
 			uint32_t depthStencilImageIdx = dsI ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, dsI->boundMem->bo) : 0;
 
 			//TODO msaa, read fields
@@ -351,7 +353,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 				submitCl.clear_s = 0;
 			}
 
-			if(i->samples > 1)
+			//TODO handle this properly
+			if(MSAAimage)
 			{
 				// This bit controls how many pixels the general
 				// (i.e. subsampled) loads/stores are iterating over
@@ -368,7 +371,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			uint32_t tileSizeW = 64;
 			uint32_t tileSizeH = 64;
 
-			if(i->samples > 1)
+			if(MSAAimage)
 			{
 				tileSizeW >>= 1;
 				tileSizeH >>= 1;

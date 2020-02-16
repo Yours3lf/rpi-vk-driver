@@ -765,7 +765,7 @@ void CreateRenderPass()
 	// This is the frame buffer attachment to where the multisampled image
 	// will be resolved to and which will be presented to the swapchain
 	attachDesc[1].format = swapchainFormat.format;
-	attachDesc[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachDesc[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachDesc[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	attachDesc[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachDesc[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;

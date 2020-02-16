@@ -39,7 +39,7 @@ void clInit(ControlList* cl, void* buffer)
 	cl->currMarker = 0;
 }
 
-void clInsertNewCLMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, uint32_t shaderRecCount, ControlList* uniformsCL, void* imagePtr, void* depthStencilImagePtr)
+void clInsertNewCLMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, uint32_t shaderRecCount, ControlList* uniformsCL, void* imagePtr, void* MSAAimagePtr, void* depthStencilImagePtr)
 {
 	//to be inserted when you'd insert tile binning mode config
 	assert(cl);
@@ -52,6 +52,7 @@ void clInsertNewCLMarker(ControlList* cl, ControlList* handlesCL, ControlList* s
 	marker.nextMarker = 0;
 	marker.size = 0;
 	marker.image = imagePtr;
+	marker.MSAAimage = MSAAimagePtr;
 	marker.depthStencilImage = depthStencilImagePtr;
 	marker.handlesSize = 0;
 	marker.shaderRecSize = 0;
