@@ -17,9 +17,12 @@ typedef struct CLMarker
 	//current binning cl buf position is this struct in the CL plus sizeof(this struct)
 	struct CLMarker* nextMarker;
 	uint32_t size; //in bytes
-	void* image; //_image* to render to
-	void* MSAAimage; //_image* to render to
-	void* depthStencilImage; //_image* to render depth/stencil to
+	void* writeImage; //_image* to render to
+	void* readImage;
+	void* writeDepthStencilImage; //_image* to render depth/stencil to
+	void* readDepthStencilImage;
+	void* writeMSAAimage;
+	void* writeMSAAdepthStencilImage;
 	uint32_t flags; //used to store clear flag etc.
 
 	//pointers that point to where all the other CL data is
@@ -59,7 +62,17 @@ uint32_t divRoundUp(uint32_t n, uint32_t d);
 uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset);
 uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size);
 void clInit(ControlList* cl, void* buffer);
-void clInsertNewCLMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, uint32_t shaderRecCount, ControlList* uniformsCL, void* imagePtr, void* MSAAimagePtr, void* depthStencilImagePtr);
+void clInsertNewCLMarker(ControlList* cl,
+						 ControlList* handlesCL,
+						 ControlList* shaderRecCL,
+						 uint32_t shaderRecCount,
+						 ControlList* uniformsCL,
+						 void* writeImagePtr,
+						 void* readImagePtr,
+						 void* writeDepthStencilImagePtr,
+						 void* readDepthStencilImagePtr,
+						 void* writeMSAAimagePtr,
+						 void* writeMSAAdepthStencilImagePtr);
 void clCloseCurrentMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, uint32_t shaderRecCount, ControlList* uniformsCL);
 void clInsertData(ControlList* cl, uint32_t size, uint8_t* data);
 void clInsertUniformConstant(ControlList* cl, uint32_t data);
