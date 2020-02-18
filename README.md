@@ -31,8 +31,8 @@
   - [ ] Clear command support
   - [ ] Copy command support
 - [ ] Render to texture features
-  - [ ] VkRenderPass support
-  - [ ] Subpass support
+  - [x] VkRenderPass support
+  - [x] Subpass support
   - [x] MSAA support
 - [ ] Synchronization
   - [ ] vkCmdPipelineBarrier support
