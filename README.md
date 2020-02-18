@@ -30,7 +30,7 @@
 - [ ] Emulated features
   - [ ] Clear command support
   - [ ] Copy command support
-- [ ] Render to texture features
+- [x] Render to texture features
   - [x] VkRenderPass support
   - [x] Subpass support
   - [x] MSAA support
