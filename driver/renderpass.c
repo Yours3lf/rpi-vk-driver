@@ -10,94 +10,199 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	assert(commandBuffer);
 	assert(pRenderPassBegin);
 
-
-	//TODO subpass contents ignored
+//	typedef struct VkRenderPassBeginInfo {
+//		VkStructureType        sType;
+//		const void*            pNext;
+//		VkRenderPass           renderPass;
+//		VkFramebuffer          framebuffer;
+//		VkRect2D               renderArea;
+//		uint32_t               clearValueCount;
+//		const VkClearValue*    pClearValues;
+//	} VkRenderPassBeginInfo;
 
 	_commandBuffer* cb = commandBuffer;
-	cb->fbo = pRenderPassBegin->framebuffer;
-	cb->renderpass = pRenderPassBegin->renderPass;
-	cb->renderArea = pRenderPassBegin->renderArea;
+	_renderpass* rp = pRenderPassBegin->renderPass;
+	_framebuffer* fb = pRenderPassBegin->framebuffer;
 
-	for(int c = 0; c < pRenderPassBegin->clearValueCount; ++c)
+	_image* writeImage = 0;
+	_image* readImage = 0;
+	_image* writeDepthStencilImage = 0;
+	_image* readDepthStencilImage = 0;
+	_image* writeMSAAimage = 0;
+	_image* writeMSAAdepthStencilImage = 0;
+	uint32_t performResolve = 0;
+	uint32_t readMSAAimage = 0;
+	uint32_t readMSAAdepthStencilImage = 0;
+	uint32_t flags = 0;
+
+	//TODO handle multiple subpasses
+	//TODO subpass contents ignored
+	//TODO input attachments ignored
+	//TODO preserve attachments ignored
+
+	//TODO handle lazily allocated memory
+
+	if(rp->subpasses[0].colorAttachmentCount > 0)
 	{
-		if(cb->renderpass->attachments[c].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+		if(rp->subpasses[0].pColorAttachments)
 		{
-			if(!isDepthStencilFormat(cb->renderpass->attachments[c].format))
+			if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].storeOp == VK_ATTACHMENT_STORE_OP_STORE)
 			{
-				cb->fbo->attachmentViews[c].image->clearColor[0] = cb->fbo->attachmentViews[c].image->clearColor[1] = packVec4IntoABGR8(pRenderPassBegin->pClearValues[c].color.float32);
+				if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].samples > 1)
+				{
+					writeMSAAimage = fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image;
+				}
+				else
+				{
+					writeImage = fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image;
+				}
+			}
+
+			if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].loadOp == VK_ATTACHMENT_LOAD_OP_LOAD)
+			{
+				readImage = fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image;
+
+				if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].samples > 1)
+				{
+					readMSAAimage = 1;
+				}
+			}
+
+			if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+			{
+				flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+
+				if(!rp->subpasses[0].pResolveAttachments)
+				{
+					fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image->clearColor[0] =
+					fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image->clearColor[1] =
+							packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
+				}
+				else
+				{
+					fb->attachmentViews[rp->subpasses[0].pResolveAttachments[0].attachment].image->clearColor[0] =
+					fb->attachmentViews[rp->subpasses[0].pResolveAttachments[0].attachment].image->clearColor[1] =
+							packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
+				}
+			}
+		}
+
+		if(rp->subpasses[0].pResolveAttachments &&
+		   rp->attachments[rp->subpasses[0].pResolveAttachments[0].attachment].storeOp == VK_ATTACHMENT_STORE_OP_STORE)
+		{
+			writeImage = fb->attachmentViews[rp->subpasses[0].pResolveAttachments[0].attachment].image;
+			performResolve = 1;
+		}
+	}
+
+	if(rp->subpasses[0].pDepthStencilAttachment)
+	{
+		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].storeOp == VK_ATTACHMENT_STORE_OP_STORE ||
+		   rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].stencilStoreOp == VK_ATTACHMENT_STORE_OP_STORE)
+		{
+			if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].samples > 1)
+			{
+				writeMSAAdepthStencilImage = fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image;
 			}
 			else
 			{
-				//for combined depth/stencil images clearColor 0 is depth and 1 is stencil
-				cb->fbo->attachmentViews[c].image->clearColor[0] = (uint32_t)(pRenderPassBegin->pClearValues[c].depthStencil.depth * 0xffffff) & 0xffffff;
+				writeDepthStencilImage = fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image;
 			}
 		}
 
-		if(isDepthStencilFormat(cb->renderpass->attachments[c].format) && cb->renderpass->attachments[c].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].loadOp == VK_ATTACHMENT_LOAD_OP_LOAD ||
+		   rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_LOAD)
 		{
-			cb->fbo->attachmentViews[c].image->clearColor[1] = pRenderPassBegin->pClearValues[c].depthStencil.stencil & 0xff;
+			readDepthStencilImage = fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image;
+
+			if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].samples > 1)
+			{
+				readMSAAdepthStencilImage = 1;
+			}
+		}
+
+		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+		{
+			fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image->clearColor[0] =
+					(uint32_t)(pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.depth * 0xffffff) & 0xffffff;
+		}
+
+		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+		{
+			fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image->clearColor[1] =
+					pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.stencil & 0xff;
 		}
 	}
 
-	cb->currentSubpass = 0;
-
-	_image* i = 0;
-	_image* MSAAimage = 0;
-	_image* dsI = 0;
-
-	_renderpass* rp = pRenderPassBegin->renderPass;
-
-	//TODO handle MSAA properly
-	if(!rp->subpasses[cb->currentSubpass].pResolveAttachments)
-	{
-		for(uint32_t c = 0; c < rp->subpasses[cb->currentSubpass].colorAttachmentCount; ++c)
-		{
-			i = cb->fbo->attachmentViews[rp->subpasses[cb->currentSubpass].pColorAttachments[c].attachment].image;
-			break; //TODO handle multiple attachments
-		}
-	}
-	else
-	{
-		for(uint32_t c = 0; c < rp->subpasses[cb->currentSubpass].colorAttachmentCount; ++c)
-		{
-			i = cb->fbo->attachmentViews[rp->subpasses[cb->currentSubpass].pResolveAttachments[c].attachment].image;
-			break; //TODO handle multiple attachments
-		}
-
-		for(uint32_t c = 0; c < rp->subpasses[cb->currentSubpass].colorAttachmentCount; ++c)
-		{
-			MSAAimage = cb->fbo->attachmentViews[rp->subpasses[cb->currentSubpass].pColorAttachments[c].attachment].image;
-			break; //TODO handle multiple attachments
-		}
-	}
-
-	if(rp->subpasses[cb->currentSubpass].pDepthStencilAttachment)
-	{
-		dsI = cb->fbo->attachmentViews[rp->subpasses[cb->currentSubpass].pDepthStencilAttachment->attachment].image;
-	}
 
 	clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
-	clInsertNewCLMarker(&commandBuffer->binCl, &cb->handlesCl, &cb->shaderRecCl, cb->shaderRecCount, &cb->uniformsCl, i, MSAAimage, dsI);
+	clInsertNewCLMarker(&commandBuffer->binCl, &cb->handlesCl, &cb->shaderRecCl, cb->shaderRecCount, &cb->uniformsCl,
+						writeImage, readImage, writeDepthStencilImage, readDepthStencilImage, writeMSAAimage, writeMSAAdepthStencilImage,
+						performResolve, readMSAAimage, readMSAAdepthStencilImage);
 
-	//insert reloc for render target
-	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, i->boundMem->bo);
+	cb->binCl.currMarker->flags = flags;
 
-	//insert reloc for depth/stencil image
-	if(dsI)
+	//insert relocs
+
+	if(writeImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, dsI->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, writeImage->boundMem->bo);
 	}
 
-	//TODO handle multiple attachments
-	for(uint32_t c = 0; c < cb->renderpass->numAttachments; ++c)
+	if(readImage)
 	{
-		if(cb->renderpass->attachments[c].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
-		{
-			//TODO separate clear for color / depth / stencil?
-			cb->binCl.currMarker->flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
-		}
+		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, readImage->boundMem->bo);
+	}
+
+	if(writeDepthStencilImage)
+	{
+		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, writeDepthStencilImage->boundMem->bo);
+	}
+
+	if(readDepthStencilImage)
+	{
+		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, readDepthStencilImage->boundMem->bo);
+	}
+
+	if(writeMSAAimage)
+	{
+		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, writeMSAAimage->boundMem->bo);
+	}
+
+	if(writeMSAAdepthStencilImage)
+	{
+		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo);
+	}
+
+	uint32_t width = 0, height = 0, bpp = 0;
+
+	if(writeImage)
+	{
+		width = writeImage->width;
+		height = writeImage->height;
+		bpp = getFormatBpp(writeImage->format);
+	}
+	else if(writeMSAAimage)
+	{
+		width = writeMSAAimage->width;
+		height = writeMSAAimage->height;
+		bpp = getFormatBpp(writeMSAAimage->format);
+	}
+	else if(writeDepthStencilImage)
+	{
+		width = writeDepthStencilImage->width;
+		height = writeDepthStencilImage->height;
+	}
+	else if(writeMSAAdepthStencilImage)
+	{
+		width = writeMSAAdepthStencilImage->width;
+		height = writeMSAAdepthStencilImage->height;
 	}
 
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
@@ -106,9 +211,9 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 										 0, //tile allocation block size
 										 0, //tile allocation initial block size
 										 0, //auto initialize tile state data array
-										 getFormatBpp(i->format) == 64, //64 bit color mode
-										 MSAAimage ? 1 : 0, //TODO msaa
-										 i->width, i->height,
+										 bpp == 64, //64 bit color mode
+										 writeMSAAimage || writeMSAAdepthStencilImage || performResolve ? 1 : 0, //msaa
+										 width, height,
 										 0, //tile state data array address
 										 0, //tile allocation memory size
 										 0); //tile allocation memory address
@@ -366,7 +471,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdNextSubpass(
 	//TODO contents, everything else...
 
 	_commandBuffer* cb = commandBuffer;
-	cb->currentSubpass++; //TODO check max subpass?
+	//cb->currentSubpass++; //TODO check max subpass?
 }
 
 /*

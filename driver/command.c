@@ -123,9 +123,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateCommandBuffers(
 			clInit(&pCommandBuffers[c]->shaderRecCl, consecutivePoolAllocate(&cp->cpa, 1));
 			clInit(&pCommandBuffers[c]->uniformsCl, consecutivePoolAllocate(&cp->cpa, 1));
 
-			pCommandBuffers[c]->renderpass = 0;
-			pCommandBuffers[c]->fbo = 0;
-			pCommandBuffers[c]->currentSubpass = 0;
 			pCommandBuffers[c]->graphicsPipeline = 0;
 			pCommandBuffers[c]->computePipeline = 0;
 			pCommandBuffers[c]->numDrawCallsSubmitted = 0;
@@ -318,9 +315,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			_image* readDepthStencilImage = marker->readDepthStencilImage;
 			_image* writeMSAAimage = marker->writeMSAAimage;
 			_image* writeMSAAdepthStencilImage = marker->writeMSAAdepthStencilImage;
+			uint32_t performResolve = marker->performResolve;
+			uint32_t readMSAAimage = marker->readMSAAimage;
+			uint32_t readMSAAdepthStencilImage = marker->readMSAAdepthStencilImage;
 
 			//This should not result in an insertion!
-
 			uint32_t writeImageIdx = writeImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, writeImage->boundMem->bo) : 0;
 			uint32_t readImageIdx = readImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, readImage->boundMem->bo) : 0;
 			uint32_t writeDepthStencilImageIdx = writeDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, writeDepthStencilImage->boundMem->bo) : 0;
@@ -328,12 +327,29 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			uint32_t writeMSAAimageIdx = writeMSAAimage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, writeMSAAimage->boundMem->bo) : 0;
 			uint32_t writeMSAAdepthStencilImageIdx = writeMSAAdepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo) : 0;
 
-			uint32_t msaa = writeMSAAimageIdx != 0;
+//			fprintf(stderr, "writeImage: %u\n", writeImage);
+//			fprintf(stderr, "readImage: %u\n", readImage);
+//			fprintf(stderr, "writeDepthStencilImage: %u\n", writeDepthStencilImage);
+//			fprintf(stderr, "readDepthStencilImage: %u\n", readDepthStencilImage);
+//			fprintf(stderr, "writeMSAAimage: %u\n", writeMSAAimage);
+//			fprintf(stderr, "writeMSAAdepthStencilImage: %u\n", writeMSAAdepthStencilImage);
+//			fprintf(stderr, "performResolve: %u\n", performResolve);
+//			fprintf(stderr, "readMSAAimage: %u\n", readMSAAimage);
+//			fprintf(stderr, "readMSAAdepthStencilImage: %u\n", readMSAAdepthStencilImage);
+//			fprintf(stderr, "writeImageIdx: %u\n", writeImageIdx);
+//			fprintf(stderr, "readImageIdx: %u\n", readImageIdx);
+//			fprintf(stderr, "writeDepthStencilImageIdx: %u\n", writeDepthStencilImageIdx);
+//			fprintf(stderr, "readDepthStencilImageIdx: %u\n", readDepthStencilImageIdx);
+//			fprintf(stderr, "writeMSAAimageIdx: %u\n", writeMSAAimageIdx);
+//			fprintf(stderr, "writeMSAAdepthStencilImageIdx: %u\n", writeMSAAdepthStencilImageIdx);
 
-			//TODO handle don't care store bit
+			submitCl.clear_color[0] = 0;
+			submitCl.clear_color[1] = 0;
+			submitCl.clear_z = 0;
+			submitCl.clear_s = 0;
 
 			//fill out submit cl fields
-			if(writeImageIdx)
+			if(writeImage)
 			{
 				submitCl.color_write.hindex = writeImageIdx;
 				submitCl.color_write.offset = 0;
@@ -342,25 +358,36 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 						VC4_SET_FIELD(getRenderTargetFormatVC4(writeImage->format), VC4_RENDER_CONFIG_FORMAT) |
 						VC4_SET_FIELD(writeImage->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
 
-				//TODO which image should the clear color come from?
+				if(performResolve)
+				{
+					submitCl.color_write.bits |= VC4_RENDER_CONFIG_MS_MODE_4X | VC4_RENDER_CONFIG_DECIMATE_MODE_4X;
+				}
+
 				submitCl.clear_color[0] = writeImage->clearColor[0];
 				submitCl.clear_color[1] = writeImage->clearColor[1];
 			}
-			else
+
+			if(writeMSAAimage)
 			{
-				submitCl.clear_color[0] = 0;
-				submitCl.clear_color[1] = 0;
+				submitCl.msaa_color_write.hindex = writeMSAAimageIdx;
+				submitCl.msaa_color_write.offset = 0;
+				submitCl.msaa_color_write.flags = 0;
+				submitCl.msaa_color_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X;
+
+				submitCl.clear_color[0] = writeMSAAimage->clearColor[0];
+				submitCl.clear_color[1] = writeMSAAimage->clearColor[1];
 			}
 
-			if(readImageIdx)
+			if(readImage)
 			{
 				submitCl.color_read.hindex = readImageIdx;
 				submitCl.color_read.offset = 0;
-				submitCl.color_read.flags = readImage->samples > 1 ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0;
-				submitCl.color_read.bits = 0; //TODO
+				submitCl.color_read.flags = readMSAAimage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0;
+				submitCl.color_read.bits = VC4_SET_FIELD(getRenderTargetFormatVC4(readImage->format), VC4_RENDER_CONFIG_FORMAT) |
+						VC4_SET_FIELD(readImage->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
 			}
 
-			if(writeDepthStencilImageIdx)
+			if(writeDepthStencilImage)
 			{
 				submitCl.zs_write.hindex = writeDepthStencilImageIdx;
 				submitCl.zs_write.offset = 0;
@@ -371,31 +398,31 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 				submitCl.clear_z = writeDepthStencilImage->clearColor[0]; //0...1 -> 0...0xffffff
 				submitCl.clear_s = writeDepthStencilImage->clearColor[1]; //0...0xff
 			}
-			else
+
+			if(writeMSAAdepthStencilImage)
 			{
-				submitCl.clear_z = 0;
-				submitCl.clear_s = 0;
+				submitCl.msaa_zs_write.hindex = writeMSAAdepthStencilImageIdx;
+				submitCl.msaa_zs_write.offset = 0;
+				submitCl.msaa_zs_write.flags = 0;
+				submitCl.msaa_zs_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X;
+
+				submitCl.clear_z = writeMSAAdepthStencilImage->clearColor[0]; //0...1 -> 0...0xffffff
+				submitCl.clear_s = writeMSAAdepthStencilImage->clearColor[1]; //0...0xff
 			}
 
-			if(readDepthStencilImageIdx)
+			if(readDepthStencilImage)
 			{
 				submitCl.zs_read.hindex = readDepthStencilImageIdx;
 				submitCl.zs_read.offset = 0;
-				submitCl.zs_read.flags = 0;
-				submitCl.zs_read.bits = 0; //TODO
+				submitCl.zs_read.flags = readMSAAdepthStencilImage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0; //TODO is this valid?
+				submitCl.zs_read.bits = VC4_SET_FIELD(getRenderTargetFormatVC4(readDepthStencilImage->format), VC4_RENDER_CONFIG_FORMAT) |
+						VC4_SET_FIELD(readDepthStencilImage->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
 			}
 
-			//TODO handle this properly
-			if(msaa)
-			{
-				// This bit controls how many pixels the general
-				// (i.e. subsampled) loads/stores are iterating over
-				// (multisample loads replicate out to the other samples).
-				submitCl.color_write.bits |= VC4_RENDER_CONFIG_MS_MODE_4X;
-				// Controls whether color_write's
-				// VC4_PACKET_STORE_MS_TILE_BUFFER does 4x decimation
-				submitCl.color_write.bits |= VC4_RENDER_CONFIG_DECIMATE_MODE_4X;
-			}
+//			fprintf(stderr, "submitCl.clear_color[0]: %u\n", submitCl.clear_color[0]);
+//			fprintf(stderr, "submitCl.clear_color[1]: %u\n", submitCl.clear_color[1]);
+//			fprintf(stderr, "submitCl.clear_z: %u\n", submitCl.clear_z);
+//			fprintf(stderr, "submitCl.clear_s: %u\n", submitCl.clear_s);
 
 			submitCl.min_x_tile = 0;
 			submitCl.min_y_tile = 0;
@@ -403,33 +430,41 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			uint32_t tileSizeW = 64;
 			uint32_t tileSizeH = 64;
 
-			if(msaa)
+			uint32_t widthInTiles = 0, heightInTiles = 0;
+			uint32_t width = 0, height = 0, bpp = 0;
+
+			if(writeImage)
 			{
-				tileSizeW >>= 1;
+				width = writeImage->width;
+				height = writeImage->height;
+				bpp = getFormatBpp(writeImage->format);
+			}
+			else if(writeMSAAimage)
+			{
+				width = writeMSAAimage->width;
+				height = writeMSAAimage->height;
+				bpp = getFormatBpp(writeMSAAimage->format);
+			}
+			else if(writeDepthStencilImage)
+			{
+				width = writeDepthStencilImage->width;
+				height = writeDepthStencilImage->height;
+			}
+			else if(writeMSAAdepthStencilImage)
+			{
+				width = writeMSAAdepthStencilImage->width;
+				height = writeMSAAdepthStencilImage->height;
+			}
+
+			if(bpp == 64)
+			{
 				tileSizeH >>= 1;
 			}
 
-			uint32_t widthInTiles, heightInTiles, width, height;
-
-			if(writeImageIdx)
+			if(performResolve || writeMSAAimage || writeMSAAdepthStencilImage)
 			{
-				if(getFormatBpp(writeImage->format) == 64)
-				{
-					tileSizeH >>= 1;
-				}
-
-				width = writeImage->width;
-				height = writeImage->height;
-			}
-			else if(writeMSAAimageIdx)
-			{
-				if(getFormatBpp(writeMSAAimage->format) == 64)
-				{
-					tileSizeH >>= 1;
-				}
-
-				width = writeMSAAimage->width;
-				height = writeMSAAimage->height;
+				tileSizeW >>= 1;
+				tileSizeH >>= 1;
 			}
 
 			widthInTiles = divRoundUp(width, tileSizeW);

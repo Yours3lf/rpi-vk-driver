@@ -49,7 +49,10 @@ void clInsertNewCLMarker(ControlList* cl,
 						 void* writeDepthStencilImagePtr,
 						 void* readDepthStencilImagePtr,
 						 void* writeMSAAimagePtr,
-						 void* writeMSAAdepthStencilImagePtr)
+						 void* writeMSAAdepthStencilImagePtr,
+						 uint32_t performResolve,
+						 uint32_t readMSAAimage,
+						 uint32_t readMSAAdepthStencilImage)
 {
 	//to be inserted when you'd insert tile binning mode config
 	assert(cl);
@@ -66,6 +69,9 @@ void clInsertNewCLMarker(ControlList* cl,
 	marker.readDepthStencilImage = readDepthStencilImagePtr;
 	marker.writeMSAAimage = writeMSAAimagePtr;
 	marker.writeMSAAdepthStencilImage = writeMSAAdepthStencilImagePtr;
+	marker.performResolve = performResolve;
+	marker.readMSAAimage = readMSAAimage;
+	marker.readMSAAdepthStencilImage = readMSAAdepthStencilImage;
 	marker.handlesSize = 0;
 	marker.shaderRecSize = 0;
 	marker.uniformsSize = 0;

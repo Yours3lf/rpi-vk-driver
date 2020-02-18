@@ -335,31 +335,11 @@ typedef struct VkCommandBuffer_T
 	VkCommandBufferUsageFlags usageFlags;
 	_commandPool* cp;
 
-	VkRect2D renderArea;
-	_renderpass* renderpass;
-	_framebuffer* fbo;
-	uint32_t currentSubpass;
+	//State data
 	_pipeline* graphicsPipeline;
 	_pipeline* computePipeline;
 
 	uint32_t numDrawCallsSubmitted;
-
-	uint32_t vertexBufferDirty;
-	uint32_t indexBufferDirty;
-	uint32_t viewportDirty;
-	uint32_t lineWidthDirty;
-	uint32_t depthBiasDirty;
-	uint32_t graphicsPipelineDirty;
-	uint32_t computePipelineDirty;
-	uint32_t subpassDirty;
-	uint32_t blendConstantsDirty;
-	uint32_t scissorDirty;
-	uint32_t depthBoundsDirty;
-	uint32_t stencilCompareMaskDirty;
-	uint32_t stencilWriteMaskDirty;
-	uint32_t stencilReferenceDirty;
-	uint32_t descriptorSetDirty;
-	uint32_t pushConstantDirty;
 
 	VkViewport viewport;
 	VkRect2D scissor;
@@ -379,6 +359,24 @@ typedef struct VkCommandBuffer_T
 
 	uint32_t indexBufferOffset;
 	_buffer* indexBuffer;
+
+	//dirty flags used to reduce command stream clutter
+	uint32_t vertexBufferDirty;
+	uint32_t indexBufferDirty;
+	uint32_t viewportDirty;
+	uint32_t lineWidthDirty;
+	uint32_t depthBiasDirty;
+	uint32_t graphicsPipelineDirty;
+	uint32_t computePipelineDirty;
+	uint32_t subpassDirty;
+	uint32_t blendConstantsDirty;
+	uint32_t scissorDirty;
+	uint32_t depthBoundsDirty;
+	uint32_t stencilCompareMaskDirty;
+	uint32_t stencilWriteMaskDirty;
+	uint32_t stencilReferenceDirty;
+	uint32_t descriptorSetDirty;
+	uint32_t pushConstantDirty;
 } _commandBuffer;
 
 typedef struct VkFence_T

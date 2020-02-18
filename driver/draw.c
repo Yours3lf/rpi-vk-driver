@@ -8,8 +8,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
-	_renderpass* rp = cb->renderpass;
-	_framebuffer* fb = cb->fbo;
 
 	//TODO handle cases when submitting >65k vertices in a VBO
 	//TODO HW-2116 workaround

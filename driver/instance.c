@@ -164,6 +164,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 	(*pInstance)->hasThreadedFs = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_THREADED_FS);
 	(*pInstance)->hasMadvise = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_MADVISE);
 
+	assert((*pInstance)->hasTiling);
+	assert((*pInstance)->hasControlFlow);
+	assert((*pInstance)->hasEtc1);
+	assert((*pInstance)->hasThreadedFs);
+
 	return VK_SUCCESS;
 }
 

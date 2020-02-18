@@ -96,7 +96,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearColorImage(
 
 	{ //Simplest case: just submit a job to clear the image
 		clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
-		clInsertNewCLMarker(&commandBuffer->binCl, &commandBuffer->handlesCl, &commandBuffer->shaderRecCl, commandBuffer->shaderRecCount, &commandBuffer->uniformsCl, i, 0, 0);
+		clInsertNewCLMarker(&commandBuffer->binCl, &commandBuffer->handlesCl, &commandBuffer->shaderRecCl, commandBuffer->shaderRecCount, &commandBuffer->uniformsCl, i, 0, 0, 0, 0, 0, 0, 0, 0);
 
 		//insert reloc for render target
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);

@@ -24,6 +24,9 @@ typedef struct CLMarker
 	void* writeMSAAimage;
 	void* writeMSAAdepthStencilImage;
 	uint32_t flags; //used to store clear flag etc.
+	uint32_t performResolve;
+	uint32_t readMSAAimage;
+	uint32_t readMSAAdepthStencilImage;
 
 	//pointers that point to where all the other CL data is
 	//plus sizes
@@ -72,7 +75,10 @@ void clInsertNewCLMarker(ControlList* cl,
 						 void* writeDepthStencilImagePtr,
 						 void* readDepthStencilImagePtr,
 						 void* writeMSAAimagePtr,
-						 void* writeMSAAdepthStencilImagePtr);
+						 void* writeMSAAdepthStencilImagePtr,
+						 uint32_t performResolve,
+						 uint32_t readMSAAimage,
+						 uint32_t readMSAAdepthStencilImage);
 void clCloseCurrentMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, uint32_t shaderRecCount, ControlList* uniformsCL);
 void clInsertData(ControlList* cl, uint32_t size, uint8_t* data);
 void clInsertUniformConstant(ControlList* cl, uint32_t data);
