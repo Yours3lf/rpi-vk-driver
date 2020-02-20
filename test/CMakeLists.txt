@@ -8,4 +8,5 @@ add_subdirectory(indexedTriangle)
 add_subdirectory(blending)
 add_subdirectory(depthTex)
 add_subdirectory(MSAA)
+add_subdirectory(HDR)
 

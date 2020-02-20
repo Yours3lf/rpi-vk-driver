@@ -5,6 +5,18 @@
 
 //TODO change allocations to pool allocator
 
+//TODO
+// ETC1 is arranged as 64-bit blocks, where each block
+// is 4x4 pixels.  Texture tiling operates on the
+// 64-bit block the way it would an uncompressed
+// pixels.
+
+//TODO
+// Cube map faces appear as whole miptrees at a page-aligned offset
+// from the first face's miptree.
+
+
+
 uint32_t getMemoryTypeIndex(VkPhysicalDeviceMemoryProperties deviceMemoryProperties, uint32_t typeBits, VkMemoryPropertyFlags properties)
 {
 	// Iterate over all memory types available for the device used in this example

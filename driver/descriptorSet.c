@@ -26,17 +26,17 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-			imageDescriptorCount++;
+			imageDescriptorCount += pCreateInfo->pPoolSizes[c].descriptorCount;
 			break;
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-			bufferDescriptorCount++;
+			bufferDescriptorCount += pCreateInfo->pPoolSizes[c].descriptorCount;
 			break;
 		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-			texelBufferDescriptorCount++;
+			texelBufferDescriptorCount += pCreateInfo->pPoolSizes[c].descriptorCount;
 			break;
 		}
 	}
@@ -54,7 +54,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 	dp->bufferDescriptorCPA = 0;
 	dp->texelBufferDescriptorCPA = 0;
 
-	void* memem = ALLOCATE(sizeof(mapElem)*imageDescriptorCount + bufferDescriptorCount + texelBufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+	void* memem = ALLOCATE(sizeof(mapElem)*(imageDescriptorCount + bufferDescriptorCount + texelBufferDescriptorCount), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!memem)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -142,17 +142,17 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateDescriptorSets(
 			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 			case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 			case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-				imageDescriptorCount++;
+				imageDescriptorCount += dsl->bindings[d].descriptorCount;
 				break;
 			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
 			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-				bufferDescriptorCount++;
+				bufferDescriptorCount += dsl->bindings[d].descriptorCount;
 				break;
 			case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 			case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-				texelBufferDescriptorCount++;
+				texelBufferDescriptorCount += dsl->bindings[d].descriptorCount;
 				break;
 			}
 		}
