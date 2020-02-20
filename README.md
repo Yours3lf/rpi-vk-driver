@@ -16,7 +16,6 @@
   - [ ] mipmapping
   - [ ] cube mapping
   - [x] shadow mapping / depth texture sampling
-  - [ ] HDR rendering
   - [ ] ETC compressed texture
   - [ ] Multi threaded cmdbuf generation test
 - [x] Shader compiler chain
@@ -98,6 +97,8 @@ CPU performance (eg. number of draw calls) should be enough on the quad-core PIs
 - instancing
 - some vertex buffer formats
 - pipeline caches (doesn't make sense with assembly shaders)
+- multiple color attachments
+- HDR render targets and textures (lack of kernel support)
 
 ### What additional features will this driver support?
 - I already added support (to be polished) to load shader assembly. This will enable devs to optimise shaders to the last cycle.
