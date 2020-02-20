@@ -926,6 +926,8 @@ uint32_t getRenderTargetFormatVC4(VkFormat format)
 		case VK_FORMAT_R8G8B8A8_UNORM:
 		//only here so we can do emulated buffer copies to depth textures
 		case VK_FORMAT_X8_D24_UNORM_PACK32:
+		//only here so we can copy ETC1 textures to optimal format
+		case VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK:
 		case VK_FORMAT_D24_UNORM_S8_UINT:
 			return VC4_RENDER_CONFIG_FORMAT_RGBA8888;
 		case VK_FORMAT_B5G6R5_UNORM_PACK16:

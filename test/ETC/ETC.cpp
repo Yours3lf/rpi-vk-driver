@@ -1313,15 +1313,12 @@ uint32_t getMemoryTypeIndex(VkPhysicalDeviceMemoryProperties deviceMemoryPropert
 
 void CreateTexture()
 {
-	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+	VkFormat format = VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK;
 
-	uint32_t width = swapChainExtent.width, height = swapChainExtent.height;
+	uint32_t width = 128, height = 128;
 	uint32_t mipLevels = 1;
 
-	//char* texData = readPPM("image.ppm");
-	//char* texData = readPPM("triangle.ppm");
 	char* texData = readPKM("elina.pkm");
-	exit(0);
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingMemory;
@@ -1329,7 +1326,7 @@ void CreateTexture()
 	{ //create storage texel buffer for generic mem address TMU ops test
 		VkBufferCreateInfo bufferCreateInfo = {};
 		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferCreateInfo.size = width * height * 4;
+		bufferCreateInfo.size = (width * height * 4) >> 3;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		vkCreateBuffer(device, &bufferCreateInfo, 0, &stagingBuffer);
@@ -1346,7 +1343,7 @@ void CreateTexture()
 
 		void* data;
 		vkMapMemory(device, stagingMemory, 0, mr.size, 0, &data);
-		memcpy(data, texData, width * height * 4);
+		memcpy(data, texData, bufferCreateInfo.size);
 		vkUnmapMemory(device, stagingMemory);
 
 		free(texData);

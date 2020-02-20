@@ -153,7 +153,14 @@ void createSampler(VkDevice device, VkSampler* textureSampler)
 
 void createRendertarget(VkDevice device, uint32_t width, uint32_t height, VkImage textureImage, VkImageView* textureView, VkRenderPass* offscreenRenderPass, VkFramebuffer* offscreenFramebuffer)
 {
-	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+	_image* img = textureImage;
+	VkFormat format = img->format;
+
+	//we can't render to an ETC1 texture, so we'll just stick with RGBA8 for now
+	if(img->format == VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK)
+	{
+		format = VK_FORMAT_R8G8B8A8_UNORM;
+	}
 
 	VkImageViewCreateInfo view = {};
 	view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -459,7 +466,8 @@ void createShaderModule(VkDevice device, VkShaderModule* blitShaderModule)
 			"sig_none ; r1 = itof.always(b, b, x_pix, y_pix) ; nop = nop(r0, r0) ;" //FragCoord Y
 			"sig_none ; r0 = itof.always(a, a, x_pix, y_pix) ; r1 = fmul.always(r1, r2) ;" //FragCoord X, r1 = Y * width
 			"sig_none ; r0 = fadd.always(r0, r1) ; r0 = nop(r0, r0) ;" //r0 = Y * width + X
-			"sig_none ; r0 = nop(r0, r0, nop, uni) ; r0 = fmul.always(r0, b) ;" //r0 = (Y * width + X) * pixelBytes
+			"sig_none ; r0 = nop(r0, r0, nop, uni) ; r0 = fmul.always(r0, b) ;" //r0 = (Y * width + X) * pixelBpp
+			"sig_small_imm ; nop = nop(r0, r0, nop, 0x3e000000) ; r0 = fmul.always(r0, b) ;" //r0 = ((Y * width + X) * pixelBpp) / 8
 			"sig_none ; r0 = ftoi.always(r0, r0) ; nop = nop(r0, r0) ;" //convert to integer
 			///write general mem access address
 			///first argument must be clamped to [0...bufsize-4]
@@ -626,13 +634,15 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 
 		uint32_t width = pRegions[c].imageExtent.width, height = pRegions[c].imageExtent.height;
 
+		uint32_t pixelBpp = getFormatBpp(img->format);
+
 		VkBufferView texelBufferView;
 		VkBufferViewCreateInfo bvci = {};
 		bvci.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
 		bvci.buffer = buf;
 		bvci.format = img->format;
 		bvci.offset = pRegions[c].bufferOffset;
-		bvci.range = width * height * getFormatBpp(img->format) / 8;
+		bvci.range = (width * height * pixelBpp) >> 3;
 		rpi_vkCreateBufferView(device, &bvci, 0, &texelBufferView);
 
 
@@ -696,13 +706,12 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 
 		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vertConstants), &vertConstants);
 
-		uint32_t pixelBytes = getFormatBpp(img->format) / 8;
 		float w = width;
-		float pbfloat = pixelBytes;
-		uint32_t size = width * height * pixelBytes - pixelBytes;
+		float bppfloat = pixelBpp;
+		uint32_t size = ((width * height * pixelBpp) >> 3) - ((pixelBpp > 32 ? pixelBpp : 32) >> 3);
 		uint32_t fragConstants[4];
 		fragConstants[0] = *(uint32_t*)&w;
-		fragConstants[1] = *(uint32_t*)&pbfloat;
+		fragConstants[1] = *(uint32_t*)&bppfloat;
 		fragConstants[2] = size;
 		fragConstants[3] = 0;
 

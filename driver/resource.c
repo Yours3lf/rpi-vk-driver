@@ -278,8 +278,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 	_image* i = image;
 
 	uint32_t bpp = getFormatBpp(i->format);
-	uint32_t pixelSizeBytes = bpp / 8;
-	uint32_t nonPaddedSize = i->width * i->height * pixelSizeBytes;
+	uint32_t nonPaddedSize = (i->width * i->height * bpp) >> 3;
 	i->paddedWidth = i->width;
 	i->paddedHeight = i->height;
 
@@ -292,8 +291,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 	}
 
 	//TODO does this need to be aligned?
-	i->size = getBOAlignedSize(i->paddedWidth * i->paddedHeight * pixelSizeBytes, ARM_PAGE_SIZE);
-	i->stride = i->paddedWidth * pixelSizeBytes;
+	i->size = getBOAlignedSize((i->paddedWidth * i->paddedHeight * bpp) >> 3, ARM_PAGE_SIZE);
+	i->stride = (i->paddedWidth * bpp) >> 3;
 
 	pMemoryRequirements->alignment = ARM_PAGE_SIZE;
 	pMemoryRequirements->memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; //TODO
