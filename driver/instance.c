@@ -156,18 +156,63 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 
 	int ret = openIoctl(); assert(ret != -1);
 
-	(*pInstance)->chipVersion = vc4_get_chip_info(controlFd);
+	assert(vc4_get_chip_info(controlFd,
+					  &(*pInstance)->technologyVersion,
+					  &(*pInstance)->IDstrUINT,
+					  &(*pInstance)->vpmMemorySize,
+					  &(*pInstance)->hdrSupported,
+					  &(*pInstance)->numSemaphores,
+					  &(*pInstance)->numTMUperSlice,
+					  &(*pInstance)->numQPUperSlice,
+					  &(*pInstance)->numSlices,
+					  &(*pInstance)->v3dRevision,
+					  &(*pInstance)-> tileBufferDoubleBufferModeSupported,
+					  &(*pInstance)->tileBufferSize,
+					  &(*pInstance)->vriMemorySize));
+
 	(*pInstance)->hasTiling = vc4_test_tiling(controlFd);
 
 	(*pInstance)->hasControlFlow = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_BRANCHES);
 	(*pInstance)->hasEtc1 = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_ETC1);
 	(*pInstance)->hasThreadedFs = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_THREADED_FS);
 	(*pInstance)->hasMadvise = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_MADVISE);
+	(*pInstance)->hasPerfmon = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_PERFMON);
+	(*pInstance)->hasFixedRCLorder = vc4_has_feature(controlFd, DRM_VC4_PARAM_SUPPORTS_FIXED_RCL_ORDER);
+
+	char IDstring[] = { 0, 0, 0, 0 };
+	memcpy(IDstring, &(*pInstance)->IDstrUINT, 3);
+
+	printf("------------------------------------------\n");
+	printf("------------------------------------------\n");
+	printf("V3D chip info: \n");
+	printf("IDstring %s\n", IDstring);
+	printf("technologyVersion: %u\n", (*pInstance)->technologyVersion);
+	printf("v3dRevision %u\n", (*pInstance)->v3dRevision);
+	printf("vpmMemorySize %u\n", (*pInstance)->vpmMemorySize);
+	printf("numSemaphores %u\n", (*pInstance)->numSemaphores);
+	printf("numTMUperSlice %u\n", (*pInstance)->numTMUperSlice);
+	printf("numQPUperSlice %u\n", (*pInstance)->numQPUperSlice);
+	printf("numSlices %u\n", (*pInstance)->numSlices);
+	printf("tileBufferSize %s\n", (*pInstance)->tileBufferSize > 0 ?
+			   (*pInstance)->tileBufferSize > 1 ? "full" : "half" : "quarter");
+	printf("vriMemorySize %s\n", (*pInstance)->vriMemorySize ? "full" : "half");
+	printf("hdrSupported %u\n", (*pInstance)->hdrSupported);
+	printf("tileBufferDoubleBufferModeSupported %u\n", (*pInstance)-> tileBufferDoubleBufferModeSupported);
+	printf("hasTiling %u\n", (*pInstance)->hasTiling);
+	printf("hasControlFlow %u\n", (*pInstance)->hasControlFlow);
+	printf("hasEtc1 %u\n", (*pInstance)->hasEtc1);
+	printf("hasThreadedFs %u\n", (*pInstance)->hasThreadedFs);
+	printf("hasMadvise %u\n", (*pInstance)->hasMadvise);
+	printf("hasPerfmon %u\n", (*pInstance)->hasPerfmon);
+	printf("hasFixedRCLorder %u\n", (*pInstance)->hasFixedRCLorder);
+	printf("------------------------------------------\n");
+	printf("------------------------------------------\n");
 
 	assert((*pInstance)->hasTiling);
 	assert((*pInstance)->hasControlFlow);
 	assert((*pInstance)->hasEtc1);
 	assert((*pInstance)->hasThreadedFs);
+	assert((*pInstance)->hasPerfmon);
 
 	return VK_SUCCESS;
 }

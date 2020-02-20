@@ -52,15 +52,42 @@ static uint32_t align(uint32_t num, uint32_t alignment)
 	}
 }
 
-int vc4_get_chip_info(int fd)
+int vc4_get_chip_info(int fd,
+					  uint32_t* technologyVersion,
+					  uint32_t* IDstrUINT,
+					  uint32_t* vpmMemorySize,
+					  uint32_t* hdrSupported,
+					  uint32_t* numSemaphores,
+					  uint32_t* numTMUperSlice,
+					  uint32_t* numQPUperSlice,
+					  uint32_t* numSlices,
+					  uint32_t* v3dRevision,
+					  uint32_t* tileBufferDoubleBufferModeSupported,
+					  uint32_t* tileBufferSize,
+					  uint32_t* vriMemorySize)
 {
 	assert(fd);
+	assert(technologyVersion);
+	assert(IDstrUINT);
+	assert(vpmMemorySize);
+	assert(hdrSupported);
+	assert(numSemaphores);
+	assert(numTMUperSlice);
+	assert(numQPUperSlice);
+	assert(numSlices);
+	assert(v3dRevision);
+	assert(tileBufferDoubleBufferModeSupported);
+	assert(tileBufferSize);
+	assert(vriMemorySize);
 
 	struct drm_vc4_get_param ident0 = {
 		.param = DRM_VC4_PARAM_V3D_IDENT0,
 	};
 	struct drm_vc4_get_param ident1 = {
 		.param = DRM_VC4_PARAM_V3D_IDENT1,
+	};
+	struct drm_vc4_get_param ident2 = {
+		.param = DRM_VC4_PARAM_V3D_IDENT2,
 	};
 	int ret;
 
@@ -70,7 +97,7 @@ int vc4_get_chip_info(int fd)
 			/* Backwards compatibility with 2835 kernels which
 						 * only do V3D 2.1.
 						 */
-			return 21;
+			return 0; //21
 		} else {
 			fprintf(stderr, "Couldn't get V3D IDENT0: %s\n",
 				   strerror(errno));
@@ -83,19 +110,37 @@ int vc4_get_chip_info(int fd)
 			   strerror(errno));
 		return 0;
 	}
-
-	uint32_t major = (ident0.value >> 24) & 0xff;
-	uint32_t minor = (ident1.value >> 0) & 0xf;
-	uint32_t v3d_ver = major * 10 + minor;
-
-	if (v3d_ver != 21 && v3d_ver != 26) {
-		fprintf(stderr, "V3D %d.%d not supported.\n",
-			   v3d_ver / 10,
-			   v3d_ver % 10);
+	ret = drmIoctl(fd, DRM_IOCTL_VC4_GET_PARAM, &ident2);
+	if (ret != 0) {
+		fprintf(stderr, "Couldn't get V3D IDENT2: %s\n",
+			   strerror(errno));
 		return 0;
 	}
 
-	return v3d_ver;
+	*technologyVersion = (ident0.value >> 24) & 0xff;
+	*IDstrUINT = (ident0.value >> 0) & 0x00ffffff;
+
+	*vpmMemorySize = ((ident1.value >> 28) & 0xf) * 1024; //multiples of 1K
+	*hdrSupported = (ident1.value >> 24) & 0xf;
+	*numSemaphores = (ident1.value >> 16) & 0xff;
+	*numTMUperSlice = (ident1.value >> 12) & 0xf;
+	*numQPUperSlice = (ident1.value >> 8) & 0xf;
+	*numSlices = (ident1.value >> 4) & 0xf;
+	*v3dRevision = (ident1.value >> 0) & 0xf;
+
+	*tileBufferDoubleBufferModeSupported = (ident2.value >> 8) & 0xf;
+	*tileBufferSize = (ident2.value >> 4) & 0xf;
+	*vriMemorySize = (ident2.value >> 0) & 0xf;
+
+	uint32_t v3d_ver = (*technologyVersion) * 10 + (*v3dRevision);
+
+	if(v3d_ver != 21 && v3d_ver != 26)
+	{
+		printf("v3d_ver unsupported: %u\n", v3d_ver);
+		return 0;
+	}
+
+	return 1;
 }
 
 int vc4_has_feature(int fd, uint32_t feature)

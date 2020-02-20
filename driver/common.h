@@ -100,12 +100,25 @@ typedef struct VkInstance_T
 	//supposedly this should contain all the enabled layers?
 	int enabledExtensions[numInstanceExtensions];
 	int numEnabledExtensions;
-	int chipVersion;
-	int hasTiling;
-	int hasControlFlow;
-	int hasEtc1;
-	int hasThreadedFs;
-	int hasMadvise;
+	uint32_t technologyVersion;
+	uint32_t IDstrUINT;
+	uint32_t vpmMemorySize;
+	uint32_t hdrSupported;
+	uint32_t numSemaphores;
+	uint32_t numTMUperSlice;
+	uint32_t numQPUperSlice;
+	uint32_t numSlices;
+	uint32_t v3dRevision;
+	uint32_t tileBufferDoubleBufferModeSupported;
+	uint32_t tileBufferSize;
+	uint32_t vriMemorySize;
+	uint32_t hasTiling;
+	uint32_t hasControlFlow;
+	uint32_t hasEtc1;
+	uint32_t hasThreadedFs;
+	uint32_t hasMadvise;
+	uint32_t hasPerfmon;
+	uint32_t hasFixedRCLorder;
 } _instance;
 
 typedef struct VkDevice_T

@@ -40,7 +40,19 @@ extern int controlFd;
 int openIoctl();
 void closeIoctl();
 
-int vc4_get_chip_info(int fd);
+int vc4_get_chip_info(int fd,
+					  uint32_t* technologyVersion,
+					  uint32_t* IDstrUINT,
+					  uint32_t* vpmMemorySize,
+					  uint32_t* hdrSupported,
+					  uint32_t* numSemaphores,
+					  uint32_t* numTMUperSlice,
+					  uint32_t* numQPUperSlice,
+					  uint32_t* numSlices,
+					  uint32_t* v3dRevision,
+					  uint32_t* tileBufferDoubleBufferModeSupported,
+					  uint32_t* tileBufferSize,
+					  uint32_t* vriMemorySize);
 int vc4_has_feature(int fd, uint32_t feature);
 int vc4_test_tiling(int fd);
 uint64_t vc4_bo_get_tiling(int fd, uint32_t bo, uint64_t mod);
