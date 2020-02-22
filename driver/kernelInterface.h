@@ -68,13 +68,16 @@ uint32_t vc4_bo_alloc_shader(int fd, const void *data, uint32_t* size);
 uint32_t vc4_bo_open_name(int fd, uint32_t name);
 uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name);
 void vc4_bo_free(int fd, uint32_t bo, void* mappedAddr, uint32_t size);
-int vc4_bo_unpurgeable(int fd, uint32_t bo, int hasMadvise);
-void vc4_bo_purgeable(int fd, uint32_t bo, int hasMadvise);
+uint32_t vc4_set_madvise(int fd, uint32_t bo, uint32_t needed, int hasMadvise);
+uint32_t vc4_create_perfmon(int fd, uint32_t* counters, uint32_t num_counters);
+void vc4_destroy_perfmon(int fd, uint32_t id);
+void vc4_perfmon_get_values(int fd, uint32_t id, void* ptr);
 void vc4_bo_label(int fd, uint32_t bo, const char* name);
 int vc4_bo_get_dmabuf(int fd, uint32_t bo);
 void* vc4_bo_map(int fd, uint32_t bo, uint32_t offset, uint32_t size);
 void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmittedSeqno, uint64_t* lastFinishedSeqno);
 uint32_t getBOAlignedSize(uint32_t size, uint32_t alignment);
+void vc4_print_hang_state(int fd);
 
 //TODO perfmon
 

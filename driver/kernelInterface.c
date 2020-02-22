@@ -227,6 +227,31 @@ int vc4_bo_set_tiling(int fd, uint32_t bo, uint64_t mod)
 	return 1;
 }
 
+uint32_t vc4_set_madvise(int fd, uint32_t bo, uint32_t needed, int hasMadvise)
+{
+	assert(fd);
+	assert(bo);
+
+	//VC4_MADV_WILLNEED			0
+	//VC4_MADV_DONTNEED			1
+	struct drm_vc4_gem_madvise arg = {
+		.handle = bo,
+		.madv = !needed,
+	};
+
+	if (!hasMadvise)
+		return 1;
+
+	if (drmIoctl(fd, DRM_IOCTL_VC4_GEM_MADVISE, &arg))
+	{
+		fprintf(stderr, "BO madvise failed: %s\n",
+			   strerror(errno));
+		return 0;
+	}
+
+	return arg.retained;
+}
+
 void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t offset, uint32_t size)
 {
 	assert(fd);
@@ -474,50 +499,6 @@ void vc4_bo_free(int fd, uint32_t bo, void* mappedAddr, uint32_t size)
 	}
 }
 
-int vc4_bo_unpurgeable(int fd, uint32_t bo, int hasMadvise)
-{
-	assert(fd);
-	assert(bo);
-
-	struct drm_vc4_gem_madvise arg = {
-		.handle = bo,
-				.madv = VC4_MADV_WILLNEED,
-	};
-
-	if (!hasMadvise)
-		return 1;
-
-	if (drmIoctl(fd, DRM_IOCTL_VC4_GEM_MADVISE, &arg))
-	{
-		fprintf(stderr, "Unpurgable BO madvise failed: %s\n",
-			   strerror(errno));
-		return 0;
-	}
-
-	return arg.retained;
-}
-
-void vc4_bo_purgeable(int fd, uint32_t bo, int hasMadvise)
-{
-	assert(fd);
-	assert(bo);
-
-	struct drm_vc4_gem_madvise arg = {
-		.handle = bo,
-				.madv = VC4_MADV_DONTNEED,
-	};
-
-	if (hasMadvise)
-	{
-		int ret = drmIoctl(fd, DRM_IOCTL_VC4_GEM_MADVISE, &arg);
-		if(ret)
-		{
-			fprintf(stderr, "Purgable BO madvise failed: %s\n",
-				   strerror(errno));
-		}
-	}
-}
-
 void vc4_bo_label(int fd, uint32_t bo, const char* name)
 {
 	assert(fd);
@@ -603,5 +584,127 @@ void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmitt
 		{
 			fprintf(stderr, "Job throttling failed\n");
 		}
+	}
+}
+
+uint32_t vc4_create_perfmon(int fd, uint32_t* counters, uint32_t num_counters)
+{
+	assert(fd);
+	assert(counters);
+	assert(num_counters > 0);
+	assert(num_counters <= DRM_VC4_MAX_PERF_COUNTERS);
+
+	struct drm_vc4_perfmon_create arg =
+	{
+		.ncounters = 30,
+	};
+
+	for(uint32_t c = 0; c < num_counters; ++c)
+	{
+		arg.events[c] = counters[c];
+	}
+
+	if (drmIoctl(fd, DRM_IOCTL_VC4_PERFMON_CREATE, &arg))
+	{
+		fprintf(stderr, "Perfmon create failed: %s\n",
+			   strerror(errno));
+		return 0;
+	}
+
+	return arg.id;
+}
+
+void vc4_destroy_perfmon(int fd, uint32_t id)
+{
+	assert(fd);
+	assert(id);
+
+	struct drm_vc4_perfmon_destroy arg =
+	{
+		.id = id
+	};
+
+	if (drmIoctl(fd, DRM_IOCTL_VC4_PERFMON_DESTROY, &arg))
+	{
+		fprintf(stderr, "Perfmon destroy failed: %s\n",
+			   strerror(errno));
+	}
+}
+
+/*
+ * Returns the values of the performance counters tracked by this
+ * perfmon (as an array of ncounters * u64 values).
+ *
+ * No implicit synchronization is performed, so the user has to
+ * guarantee that any jobs using this perfmon have already been
+ * completed  (probably by blocking on the seqno returned by the
+ * last exec that used the perfmon).
+ */
+void vc4_perfmon_get_values(int fd, uint32_t id, void* ptr)
+{
+	assert(fd);
+	assert(id);
+	assert(ptr);
+
+	struct drm_vc4_perfmon_get_values arg =
+	{
+		.id = id,
+		.values_ptr = ptr
+	};
+
+	if (drmIoctl(fd, DRM_IOCTL_VC4_PERFMON_GET_VALUES, &arg))
+	{
+		fprintf(stderr, "Perfmon get values failed: %s\n",
+			   strerror(errno));
+	}
+}
+
+void vc4_print_hang_state(int fd)
+{
+	assert(fd);
+
+	struct drm_vc4_get_hang_state_bo bo_states[128];
+
+	struct drm_vc4_get_hang_state arg =
+	{
+		/** Pointer to array of struct drm_vc4_get_hang_state_bo. */
+		.bo = bo_states,
+		/**
+		 * On input, the size of the bo array.  Output is the number
+		 * of bos to be returned.
+		 */
+		.bo_count = 128
+	};
+
+	if (drmIoctl(fd, DRM_IOCTL_VC4_GET_HANG_STATE, &arg))
+	{
+		fprintf(stderr, "Perfmon get values failed: %s\n",
+			   strerror(errno));
+	}
+	else
+	{
+		fprintf(stderr, "--------------\n");
+		fprintf(stderr, "--------------\n");
+		fprintf(stderr, "GPU hang state\n");
+		for(uint32_t c = 0; c < arg.bo_count; ++c)
+		{
+			struct drm_vc4_get_hang_state_bo* bos = arg.bo;
+			fprintf(stderr, "BO: %u, Addr: %u, Size: %u\n", bos[c].handle, bos[c].paddr, bos[c].size);
+		}
+
+		fprintf(stderr, "Start bin: %u, Start render: %u\n", arg.start_bin, arg.start_render);
+		fprintf(stderr, "ct0ca: %u, ct0ea: %u\n", arg.ct0ca, arg.ct0ea);
+		fprintf(stderr, "ct1ca: %u, ct1ea: %u\n", arg.ct1ca, arg.ct1ea);
+		fprintf(stderr, "ct0cs: %u, ct1cs: %u\n", arg.ct0cs, arg.ct1cs);
+		fprintf(stderr, "ct0ra0: %u, ct1ra0: %u\n", arg.ct0ra0, arg.ct1ra0);
+		fprintf(stderr, "bpca: %u, bpcs: %u\n", arg.bpca, arg.bpcs);
+		fprintf(stderr, "bpoa: %u, bpos: %u\n", arg.bpoa, arg.bpos);
+		fprintf(stderr, "vpmbase: %u: %u\n", arg.vpmbase);
+		fprintf(stderr, "dbge: %u: %u\n", arg.dbge);
+		fprintf(stderr, "fdbgo: %u: %u\n", arg.fdbgo);
+		fprintf(stderr, "fdbgb: %u: %u\n", arg.fdbgb);
+		fprintf(stderr, "fdbgr: %u: %u\n", arg.fdbgr);
+		fprintf(stderr, "fdbgs: %u: %u\n", arg.fdbgs);
+		fprintf(stderr, "errstat: %u: %u\n", arg.errstat);
 	}
 }
