@@ -487,6 +487,21 @@ typedef struct VkDescriptorPool_T
 	uint32_t freeAble;
 } _descriptorPool;
 
+typedef struct VkQuery_T
+{
+	uint32_t enabledCounters[VC4_PERFCNT_NUM_EVENTS];
+	uint64_t counterValues[DRM_VC4_MAX_PERF_COUNTERS];
+	uint32_t numEnabledCounters;
+	uint32_t perfmonIDs[2];
+} _query;
+
+typedef struct VkQueryPool_T
+{
+	VkQueryType type;
+	uint32_t queryCount;
+	_query* queryPool;
+} _queryPool;
+
 uint32_t getFormatBpp(VkFormat f);
 uint32_t packVec4IntoABGR8(const float rgba[4]);
 void createImageBO(_image* i);

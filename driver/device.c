@@ -159,6 +159,53 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties(
 	*pQueueFamilyPropertyCount = elementsWritten;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t                                    queueFamilyIndex,
+	uint32_t*                                   pCounterCount,
+	VkPerformanceCounterKHR*                    pCounters,
+	VkPerformanceCounterDescriptionKHR*         pCounterDescriptions)
+{
+	assert(physicalDevice);
+	assert(pCounterCount);
+
+	if(!pCounters && !pCounterDescriptions)
+	{
+		*pCounterCount = numPerformanceCounterTypes;
+		return VK_SUCCESS;
+	}
+
+	int arraySize = *pCounterCount;
+	int elementsWritten = min(numPerformanceCounterTypes, arraySize);
+
+	for(int c = 0; c < elementsWritten; ++c)
+	{
+		pCounters[c] = performanceCounterTypes[c];
+		pCounterDescriptions[c] = performanceCounterDescriptions[c];
+	}
+
+	*pCounterCount = elementsWritten;
+
+	if(arraySize < numPerformanceCounterTypes)
+	{
+		return VK_INCOMPLETE;
+	}
+
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(
+	VkPhysicalDevice                            physicalDevice,
+	const VkQueryPoolPerformanceCreateInfoKHR*  pPerformanceQueryCreateInfo,
+	uint32_t*                                   pNumPasses)
+{
+	assert(physicalDevice);
+	assert(pPerformanceQueryCreateInfo);
+	assert(pNumPasses);
+
+	*pNumPasses = pPerformanceQueryCreateInfo->counterIndexCount / DRM_VC4_MAX_PERF_COUNTERS;
+}
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateDevice
  * vkCreateDevice verifies that extensions and features requested in the ppEnabledExtensionNames and pEnabledFeatures
