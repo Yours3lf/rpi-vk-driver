@@ -1,8 +1,9 @@
 #include "common.h"
 
 //TODO VkPerformanceQuerySubmitInfoKHR
+//TODO query test
 
-VKAPI_ATTR VkResult VKAPI_CALL vkAcquireProfilingLockKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireProfilingLockKHR(
 	VkDevice                                    device,
 	const VkAcquireProfilingLockInfoKHR*        pInfo)
 {
@@ -10,7 +11,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkAcquireProfilingLockKHR(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkReleaseProfilingLockKHR(
+VKAPI_ATTR void VKAPI_CALL rpi_vkReleaseProfilingLockKHR(
 	VkDevice                                    device)
 {
 	//TODO

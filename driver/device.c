@@ -159,7 +159,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties(
 	*pQueueFamilyPropertyCount = elementsWritten;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(
 	VkPhysicalDevice                            physicalDevice,
 	uint32_t                                    queueFamilyIndex,
 	uint32_t*                                   pCounterCount,
@@ -194,7 +194,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDeviceQueueFamilyPerformanceQu
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(
 	VkPhysicalDevice                            physicalDevice,
 	const VkQueryPoolPerformanceCreateInfoKHR*  pPerformanceQueryCreateInfo,
 	uint32_t*                                   pNumPasses)

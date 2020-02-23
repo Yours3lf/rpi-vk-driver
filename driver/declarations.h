@@ -1001,6 +1001,25 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueuePresentKHR(
 		VkQueue                                     queue,
 		const VkPresentInfoKHR*                     pPresentInfo);
 
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t                                    queueFamilyIndex,
+	uint32_t*                                   pCounterCount,
+	VkPerformanceCounterKHR*                    pCounters,
+	VkPerformanceCounterDescriptionKHR*         pCounterDescriptions);
+
+VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(
+	VkPhysicalDevice                            physicalDevice,
+	const VkQueryPoolPerformanceCreateInfoKHR*  pPerformanceQueryCreateInfo,
+	uint32_t*                                   pNumPasses);
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireProfilingLockKHR(
+	VkDevice                                    device,
+	const VkAcquireProfilingLockInfoKHR*        pInfo);
+
+VKAPI_ATTR void VKAPI_CALL rpi_vkReleaseProfilingLockKHR(
+	VkDevice                                    device);
+
 #ifdef __cplusplus
 }
 #endif
