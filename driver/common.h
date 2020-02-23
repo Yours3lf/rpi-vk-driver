@@ -490,7 +490,7 @@ typedef struct VkDescriptorPool_T
 typedef struct VkQuery_T
 {
 	uint32_t enabledCounters[VC4_PERFCNT_NUM_EVENTS];
-	uint64_t counterValues[DRM_VC4_MAX_PERF_COUNTERS];
+	uint64_t counterValues[2][DRM_VC4_MAX_PERF_COUNTERS];
 	uint32_t numEnabledCounters;
 	uint32_t perfmonIDs[2];
 } _query;

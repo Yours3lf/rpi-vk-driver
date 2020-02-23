@@ -84,6 +84,30 @@ uint32_t* enabledCounters = 0;
 uint32_t numQueryPasses = 0;
 VkQueryPool queryPool;
 
+typedef VkResult (VKAPI_PTR *PFN_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR)(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t                                    queueFamilyIndex,
+	uint32_t*                                   pCounterCount,
+	VkPerformanceCounterKHR*                    pCounters,
+	VkPerformanceCounterDescriptionKHR*         pCounterDescriptions);
+
+typedef void (VKAPI_ATTR *PFN_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR)(
+	VkPhysicalDevice                            physicalDevice,
+	const VkQueryPoolPerformanceCreateInfoKHR*  pPerformanceQueryCreateInfo,
+	uint32_t*                                   pNumPasses);
+
+typedef VkResult (VKAPI_ATTR *PFN_vkAcquireProfilingLockKHR)(
+	VkDevice                                    device,
+	const VkAcquireProfilingLockInfoKHR*        pInfo);
+
+typedef void (VKAPI_ATTR *PFN_vkReleaseProfilingLockKHR)(
+	VkDevice                                    device);
+
+PFN_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR my_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR;
+PFN_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR my_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR;
+PFN_vkAcquireProfilingLockKHR my_vkAcquireProfilingLockKHR;
+PFN_vkReleaseProfilingLockKHR my_vkReleaseProfilingLockKHR;
+
 void cleanup() {
 	vkDeviceWaitIdle(device);
 
@@ -151,6 +175,7 @@ void setupVulkan() {
 	//CreateUniformBuffer();
 	CreateShaders();
 	CreatePipeline();
+	CreateQueryPool();
 	recordCommandBuffers();
 }
 
@@ -659,7 +684,7 @@ void recordCommandBuffers()
 		lockInfo.sType = VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR;
 		lockInfo.timeout = UINT64_MAX;
 
-		vkAcquireProfilingLockKHR(device, &lockInfo);
+		my_vkAcquireProfilingLockKHR(device, &lockInfo);
 
 		// Record command buffer
 		vkBeginCommandBuffer(presentCommandBuffers[i], &beginInfo);
@@ -749,7 +774,7 @@ void draw() {
 
 	std::cout << "submitted draw command buffer" << std::endl;
 
-	vkReleaseProfilingLockKHR(device);
+	my_vkReleaseProfilingLockKHR(device);
 
 	{ //Get query results
 		VkPerformanceCounterResultKHR* recordedCounters = (VkPerformanceCounterResultKHR*)malloc(sizeof(VkPerformanceCounterResultKHR) * counterCount);
@@ -761,7 +786,7 @@ void draw() {
 			{
 			case VK_PERFORMANCE_COUNTER_UNIT_GENERIC_KHR:
 			case VK_PERFORMANCE_COUNTER_UNIT_CYCLES_KHR:
-				printf("%s %ull\n", counterDescriptions[enabledCounters[c]].name, recordedCounters[c].uint64);
+				printf("%s %llu\n", counterDescriptions[enabledCounters[c]].name, recordedCounters[c].uint64);
 				break;
 			}
 		}
@@ -1232,11 +1257,16 @@ void CreateVertexBuffer()
 
 void CreateQueryPool()
 {
-	vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, graphicsQueueFamily, &counterCount, 0, 0);
+	my_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR = (PFN_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR)vkGetInstanceProcAddr(instance, "vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR");
+	my_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR = (PFN_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR");
+	my_vkAcquireProfilingLockKHR = (PFN_vkAcquireProfilingLockKHR)vkGetInstanceProcAddr(instance, "vkAcquireProfilingLockKHR");
+	my_vkReleaseProfilingLockKHR = (PFN_vkReleaseProfilingLockKHR)vkGetInstanceProcAddr(instance, "vkReleaseProfilingLockKHR");
+
+	my_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, graphicsQueueFamily, &counterCount, 0, 0);
 
 	counters = (VkPerformanceCounterKHR*)malloc(sizeof(VkPerformanceCounterKHR) * counterCount);
 	counterDescriptions = (VkPerformanceCounterDescriptionKHR*)malloc(sizeof(VkPerformanceCounterDescriptionKHR) * counterCount);
-	vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, graphicsQueueFamily, &counterCount, counters, counterDescriptions);
+	my_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(physicalDevice, graphicsQueueFamily, &counterCount, counters, counterDescriptions);
 
 	enabledCounters = (uint32_t*)malloc(sizeof(uint32_t) * counterCount);
 	for(uint32_t c = 0; c < counterCount; ++c)
@@ -1250,7 +1280,7 @@ void CreateQueryPool()
 	performanceQueryCreateInfo.counterIndexCount = counterCount;
 	performanceQueryCreateInfo.pCounterIndices = enabledCounters;
 
-	vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(physicalDevice, &performanceQueryCreateInfo, &numQueryPasses);
+	my_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(physicalDevice, &performanceQueryCreateInfo, &numQueryPasses);
 
 	VkQueryPoolCreateInfo queryPoolCreateInfo = {};
 	queryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;

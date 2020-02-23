@@ -557,6 +557,6 @@ static VkPerformanceCounterDescriptionKHR performanceCounterDescriptions[] =
 	}
 };
 
-#define numPerformanceCounterTypes (sizeof(performanceCounterTypes)/sizeof(uint32_t))
+#define numPerformanceCounterTypes (sizeof(performanceCounterTypes)/sizeof(VkPerformanceCounterKHR))
 
 #define VK_DRIVER_VERSION VK_MAKE_VERSION(1, 1, 0)

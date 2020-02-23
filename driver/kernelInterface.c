@@ -596,7 +596,7 @@ uint32_t vc4_create_perfmon(int fd, uint32_t* counters, uint32_t num_counters)
 
 	struct drm_vc4_perfmon_create arg =
 	{
-		.ncounters = 30,
+		.ncounters = num_counters,
 	};
 
 	for(uint32_t c = 0; c < num_counters; ++c)

@@ -51,6 +51,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateQueryPool(
 			for(uint32_t d = 0; d < ci.counterIndexCount; d += DRM_VC4_MAX_PERF_COUNTERS)
 			{
 				qp->queryPool[c].perfmonIDs[d] = vc4_create_perfmon(controlFd, &qp->queryPool[c].enabledCounters[d], qp->queryPool[c].numEnabledCounters > DRM_VC4_MAX_PERF_COUNTERS ? DRM_VC4_MAX_PERF_COUNTERS : qp->queryPool[c].numEnabledCounters);
+				memset(&qp->queryPool[c].counterValues[d][0], 0, sizeof(uint64_t) * DRM_VC4_MAX_PERF_COUNTERS);
 			}
 		}
 
@@ -81,7 +82,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyQueryPool(
 
 	for(uint32_t c = 0; c < qp->queryCount; ++c)
 	{
-		for(uint32_t d = 0; d < qp->queryPool[c].enabledCounters; d += DRM_VC4_MAX_PERF_COUNTERS)
+		for(uint32_t d = 0; d < qp->queryPool[c].numEnabledCounters; d += DRM_VC4_MAX_PERF_COUNTERS)
 		{
 			vc4_destroy_perfmon(controlFd, qp->queryPool[c].perfmonIDs[d]);
 		}
@@ -140,11 +141,17 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetQueryPoolResults(
 	assert(queryPool);
 
 	//TODO flags
+	//TODO return values etc.
 
 	_queryPool* qp = queryPool;
 
 	for(uint32_t c = firstQuery; c < queryCount; ++c)
 	{
+		for(uint32_t d = 0; d < qp->queryPool[c].numEnabledCounters; d += DRM_VC4_MAX_PERF_COUNTERS)
+		{
+			vc4_perfmon_get_values(controlFd, qp->queryPool[c].perfmonIDs[d], &qp->queryPool[c].counterValues[d][0]);
+		}
+
 		uint32_t counter = 0;
 		for(uint32_t d = 0; d < dataSize; d += stride, ++counter)
 		{

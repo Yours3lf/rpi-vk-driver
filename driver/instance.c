@@ -441,6 +441,11 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	RETFUNC(vkAcquireNextImageKHR);
 	RETFUNC(vkQueuePresentKHR);
 
+	RETFUNC(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR);
+	RETFUNC(vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR);
+	RETFUNC(vkAcquireProfilingLockKHR);
+	RETFUNC(vkReleaseProfilingLockKHR);
+
 	return 0;
 }
 
