@@ -27,6 +27,7 @@ typedef struct CLMarker
 	uint32_t performResolve;
 	uint32_t readMSAAimage;
 	uint32_t readMSAAdepthStencilImage;
+	void* perfmonID;
 
 	//pointers that point to where all the other CL data is
 	//plus sizes

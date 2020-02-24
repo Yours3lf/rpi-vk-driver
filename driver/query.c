@@ -51,7 +51,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateQueryPool(
 			for(uint32_t d = 0; d < ci.counterIndexCount; d += DRM_VC4_MAX_PERF_COUNTERS)
 			{
 				qp->queryPool[c].perfmonIDs[d / DRM_VC4_MAX_PERF_COUNTERS] = vc4_create_perfmon(controlFd, &qp->queryPool[c].enabledCounters[d], qp->queryPool[c].numEnabledCounters > DRM_VC4_MAX_PERF_COUNTERS ? DRM_VC4_MAX_PERF_COUNTERS : qp->queryPool[c].numEnabledCounters);
-				memset(&qp->queryPool[c].counterValues[d][0], 0, sizeof(uint64_t) * DRM_VC4_MAX_PERF_COUNTERS);
+				memset(&qp->queryPool[c].counterValues[d / DRM_VC4_MAX_PERF_COUNTERS][0], 0, sizeof(uint64_t) * DRM_VC4_MAX_PERF_COUNTERS);
 			}
 		}
 
@@ -99,7 +99,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdEndQuery(
 	assert(commandBuffer);
 	assert(queryPool);
 
-	//TODO
+	_commandBuffer* cmdBuf = commandBuffer;
+
+	cmdBuf->perfmonID = 0;
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBeginQuery(
@@ -111,7 +113,14 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBeginQuery(
 	assert(commandBuffer);
 	assert(queryPool);
 
-	//TODO
+	//TODO flags
+
+	_commandBuffer* cmdBuf = commandBuffer;
+	_queryPool* qp = queryPool;
+
+
+	//pass id will select the perfmon at submit
+	cmdBuf->perfmonID = qp->queryPool[query].perfmonIDs;
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyQueryPoolResults(
@@ -149,14 +158,14 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetQueryPoolResults(
 	{
 		for(uint32_t d = 0; d < qp->queryPool[c].numEnabledCounters; d += DRM_VC4_MAX_PERF_COUNTERS)
 		{
-			vc4_perfmon_get_values(controlFd, qp->queryPool[c].perfmonIDs[d / DRM_VC4_MAX_PERF_COUNTERS], &qp->queryPool[c].counterValues[d][0]);
+			vc4_perfmon_get_values(controlFd, qp->queryPool[c].perfmonIDs[d / DRM_VC4_MAX_PERF_COUNTERS], &qp->queryPool[c].counterValues[d / DRM_VC4_MAX_PERF_COUNTERS][0]);
 		}
 
 		uint32_t counter = 0;
 		for(uint32_t d = 0; d < dataSize; d += stride, ++counter)
 		{
 			VkPerformanceCounterResultKHR* result = ((char*)pData) + d;
-			result->uint64 = qp->queryPool[c].counterValues[counter];
+			result->uint64 = qp->queryPool[c].counterValues[counter / DRM_VC4_MAX_PERF_COUNTERS][counter % DRM_VC4_MAX_PERF_COUNTERS];
 		}
 	}
 

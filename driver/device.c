@@ -203,7 +203,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPas
 	assert(pPerformanceQueryCreateInfo);
 	assert(pNumPasses);
 
-	*pNumPasses = pPerformanceQueryCreateInfo->counterIndexCount / DRM_VC4_MAX_PERF_COUNTERS;
+	*pNumPasses = pPerformanceQueryCreateInfo->counterIndexCount / DRM_VC4_MAX_PERF_COUNTERS + 1;
 }
 
 /*

@@ -735,19 +735,19 @@ void recordCommandBuffers()
 }
 
 void draw() {
-	// Acquire image
-	uint32_t imageIndex;
-	VkResult res = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-
-	if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR) {
-		std::cerr << "failed to acquire image" << std::endl;
-		assert(0);
-	}
-
-	std::cout << "acquired image" << std::endl;
-
 	for(uint32_t c = 0; c < numQueryPasses; ++c)
 	{
+		// Acquire image
+		uint32_t imageIndex;
+		VkResult res = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+		if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR) {
+			std::cerr << "failed to acquire image" << std::endl;
+			assert(0);
+		}
+
+		std::cout << "acquired image" << std::endl;
+
 		VkPerformanceQuerySubmitInfoKHR performanceQuerySubmitInfo = {};
 		performanceQuerySubmitInfo.sType = VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR;
 		performanceQuerySubmitInfo.counterPassIndex = c;
@@ -770,13 +770,33 @@ void draw() {
 			std::cerr << "failed to submit draw command buffer" << std::endl;
 			assert(0);
 		}
+
+		std::cout << "submitted draw command buffer" << std::endl;
+
+		my_vkReleaseProfilingLockKHR(device);
+
+		// Present drawn image
+		// Note: semaphore here is not strictly necessary, because commands are processed in submission order within a single queue
+		VkPresentInfoKHR presentInfo = {};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &renderingFinishedSemaphore;
+
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &swapChain;
+		presentInfo.pImageIndices = &imageIndex;
+
+		res = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+		if (res != VK_SUCCESS) {
+			std::cerr << "failed to submit present command buffer" << std::endl;
+			assert(0);
+		}
 	}
 
-	std::cout << "submitted draw command buffer" << std::endl;
-
-	my_vkReleaseProfilingLockKHR(device);
-
 	{ //Get query results
+		vkQueueWaitIdle(graphicsQueue);
+
 		VkPerformanceCounterResultKHR* recordedCounters = (VkPerformanceCounterResultKHR*)malloc(sizeof(VkPerformanceCounterResultKHR) * counterCount);
 		vkGetQueryPoolResults(device, queryPool, 0, 1, sizeof(VkPerformanceCounterResultKHR) * counterCount, recordedCounters, sizeof(VkPerformanceCounterResultKHR), 0);
 
@@ -790,24 +810,6 @@ void draw() {
 				break;
 			}
 		}
-	}
-
-	// Present drawn image
-	// Note: semaphore here is not strictly necessary, because commands are processed in submission order within a single queue
-	VkPresentInfoKHR presentInfo = {};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &renderingFinishedSemaphore;
-
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &swapChain;
-	presentInfo.pImageIndices = &imageIndex;
-
-	res = vkQueuePresentKHR(presentQueue, &presentInfo);
-
-	if (res != VK_SUCCESS) {
-		std::cerr << "failed to submit present command buffer" << std::endl;
-		assert(0);
 	}
 
 	std::cout << "submitted presentation command buffer" << std::endl;

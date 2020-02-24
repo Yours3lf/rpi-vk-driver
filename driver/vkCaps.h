@@ -467,93 +467,123 @@ static VkPerformanceCounterDescriptionKHR performanceCounterDescriptions[] =
 {
 	{
 		.name = "FRONT_END_PIPELINE_VALID_PRIMS_NO_RENDER",
+		.description = "FEP Valid primitives that result in no rendered pixels, for all rendered tiles"
 	},
 	{
 		.name = "FRONT_END_PIPELINE_VALID_PRIMS_RENDER",
+		.description = "FEP Valid primitives for all rendered tiles. (primitives may be counted in more than one tile)"
 	},
 	{
 		.name = "FRONT_END_PIPELINE_CLIPPED_QUADS",
+		.description = "FEP Early-Z/Near/Far clipped quads"
 	},
 	{
 		.name = "FRONT_END_PIPELINE_VALID_QUADS",
+		.description = "FEP Valid quads"
 	},
 	{
 		.name = "TILE_BUFFER_QUADS_NOT_PASSING_STENCIL",
+		.description = "TLB Quads with no pixels passing the stencil test"
 	},
 	{
 		.name = "TILE_BUFFER_QUADS_NOT_PASSING_Z_AND_STENCIL",
+		.description = "TLB Quads with no pixels passing the Z and stencil tests"
 	},
 	{
 		.name = "TILE_BUFFER_QUADS_PASSING_Z_AND_STENCIL",
+		.description = "TLB Quads with any pixels passing the Z and stencil tests"
 	},
 	{
 		.name = "TILE_BUFFER_QUADS_ZERO_COVERAGE",
+		.description = "TLB Quads with all pixels having zero coverage"
 	},
 	{
 		.name = "TILE_BUFFER_QUADS_NON_ZERO_COVERAGE",
+		.description = "TLB Quads with any pixels having non-zero coverage"
 	},
 	{
 		.name = "TILE_BUFFER_QUADS_WRITTEN_TO_COLOR_BUF",
+		.description = "TLB Quads with valid pixels written to color buffer"
 	},
 	{
 		.name = "PLB_PRIMS_OUTSIDE_VIEWPORT",
+		.description = "PTB Primitives discarded by being outside the viewport"
 	},
 	{
 		.name = "PLB_PRIMS_NEED_CLIPPING",
+		.description = "PTB Primitives that need clipping"
 	},
 	{
 		.name = "PRIMITIVE_SETUP_ENGINE_PRIMS_REVERSED",
+		.description = "PSE Primitives that are discarded because they are reversed"
 	},
 	{
 		.name = "QUAD_PROCESSOR_UNIT_TOTAL_IDLE_CYCLES",
+		.description = "QPU Total idle clock cycles for all QPUs"
 	},
 	{
 		.name = "QUAD_PROCESSOR_UNIT_TOTAL_CLK_CYCLES_VERTEX_COORD_SHADING",
+		.description = "QPU Total clock cycles for all QPUs doing vertex/coordinate shading"
 	},
 	{
 		.name = "QUAD_PROCESSOR_UNIT_TOTAL_CLK_CYCLES_FRAGMENT_SHADING",
+		.description = "QPU Total clock cycles for all QPUs doing fragment shading"
 	},
 	{
 		.name = "QUAD_PROCESSOR_UNIT_TOTAL_CLK_CYCLES_EXEC_VALID_INST",
+		.description = "QPU Total clock cycles for all QPUs executing valid instructions"
 	},
 	{
 		.name = "QUAD_PROCESSOR_UNIT_TOTAL_CLK_CYCLES_WAITING_TMUS",
+		.description = "QPU Total clock cycles for all QPUs stalled waiting for TMUs"
 	},
 	{
 		.name = "QUAD_PROCESSOR_UNIT_TOTAL_CLK_CYCLES_WAITING_SCOREBOARD",
+		.description = "QPU Total clock cycles for all QPUs stalled waiting for Scoreboard"
 	},
 	{
 		.name = "QUAD_PROCESSOR_UNIT_TOTAL_CLK_CYCLES_WAITING_VARYINGS",
+		.description = "QPU Total clock cycles for all QPUs stalled waiting for Varyings"
 	},
 	{
 		.name = "QUAD_PROCESSOR_UNIT_TOTAL_INST_CACHE_HIT",
+		.description = "QPU Total instruction cache hits for all slices"
 	},
 	{
 		.name = "QUAD_PROCESSOR_UNIT_TOTAL_INST_CACHE_MISS",
+		.description = "QPU Total instruction cache misses for all slices"
 	},
 	{
 		.name = "QUAD_PROCESSOR_UNIT_TOTAL_UNIFORM_CACHE_HIT",
+		.description = "QPU Total uniforms cache hits for all slices"
 	},
 	{
 		.name = "QUAD_PROCESSOR_UNIT_TOTAL_UNIFORM_CACHE_MISS",
+		.description = "QPU Total uniforms cache misses for all slices"
 	},
 	{
 		.name = "TEXTURE_MEMORY_LOOKUP_UNIT_TOTAL_TEXT_QUADS_PROCESSED",
+		.description = "TMU Total texture quads processed"
 	},
 	{
 		.name = "TEXTURE_MEMORY_LOOKUP_UNIT_TOTAL_TEXT_CACHE_MISS",
+		.description  = "TMU Total texture cache misses (number of fetches from memory/L2cache)"
 	},
 	{
 		.name = "VERTEX_PIPE_MEMORY_TOTAL_CLK_CYCLES_VERTEX_DMA_WRITE_STALLED",
+		.description = "VPM Total clock cycles VDW is stalled waiting for VPM access"
 	},
 	{
 		.name = "VERTEX_PIPE_MEMORY_TOTAL_CLK_CYCLES_VERTEX_DMA_STALLED",
+		.description = "VPM Total clock cycles VCD is stalled waiting for VPM access"
 	},
 	{
 		.name = "L2C_TOTAL_L2_CACHE_HIT",
+		.description = "L2C Total Level 2 cache hits"
 	},
 	{
 		.name = "L2C_TOTAL_L2_CACHE_MISS",
+		.description = "L2C Total Level 2 cache misses"
 	}
 };
 

@@ -145,6 +145,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateCommandBuffers(
 			pCommandBuffers[c]->descriptorSetDirty = 1;
 			pCommandBuffers[c]->pushConstantDirty = 1;
 
+			pCommandBuffers[c]->perfmonID = 0;
+
 			if(!pCommandBuffers[c]->binCl.buffer)
 			{
 				res = VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -481,6 +483,20 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			submitCl.shader_rec = marker->shaderRecBuf;
 			submitCl.uniforms = marker->uniformsBuf;
 
+			if(marker->perfmonID)
+			{
+				uint32_t perfmonSelector = 0;
+				uint32_t* perfmonIDptr = (uint32_t*)marker->perfmonID;
+
+				if(pSubmits->pNext)
+				{
+					VkPerformanceQuerySubmitInfoKHR* perfQuerySubmitInfo = pSubmits->pNext;
+					perfmonSelector = perfQuerySubmitInfo->counterPassIndex;
+				}
+
+				submitCl.perfmonid = *(perfmonIDptr + perfmonSelector);
+			}
+
 			//marker not closed yet
 			//close here
 			if(!marker->size)
@@ -589,6 +605,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			printf("clear z %u\n", submitCl.clear_z);
 			printf("clear s %u\n", submitCl.clear_s);
 			printf("flags %u\n", submitCl.flags);
+			printf("perfmonID %u\n", submitCl.perfmonid);
 			/**/
 
 

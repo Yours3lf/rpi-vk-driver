@@ -342,10 +342,12 @@ int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t
 		if (ret != -ETIME) {
 			fprintf(stderr, "Seqno wait failed: %s\n",
 				   strerror(errno));
+			vc4_print_hang_state(controlFd);
 		}
 		else
 		{
 			//Timeout happened
+			vc4_print_hang_state(controlFd);
 			*timeout_ns = -1;
 			return -1;
 		}
@@ -577,6 +579,7 @@ void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmitt
 
 	if (*lastEmittedSeqno - *lastFinishedSeqno > 5) {
 		uint64_t timeout = WAIT_TIMEOUT_INFINITE;
+		//uint64_t timeout = 1000ull * 1000ull * 1000ull; //TODO waits too long...
 		if (!vc4_seqno_wait(fd,
 							lastFinishedSeqno,
 							*lastFinishedSeqno > 0 ? *lastEmittedSeqno - 5 : *lastEmittedSeqno,
@@ -686,7 +689,7 @@ void vc4_print_hang_state(int fd)
 
 	if (drmIoctl(fd, DRM_IOCTL_VC4_GET_HANG_STATE, &arg))
 	{
-		fprintf(stderr, "Perfmon get values failed: %s\n",
+		fprintf(stderr, "vc4 get hang state failed: %s\n",
 			   strerror(errno));
 	}
 	else

@@ -224,6 +224,8 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	//command list.
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
 	clInsertStartTileBinning(&commandBuffer->binCl);
+
+	cb->binCl.currMarker->perfmonID = cb->perfmonID;
 }
 
 /*

@@ -373,6 +373,12 @@ typedef struct VkCommandBuffer_T
 	uint32_t indexBufferOffset;
 	_buffer* indexBuffer;
 
+	//Renderpass scope query must begin outside renderpass
+	//so there won't be any current marker...
+	//therefore store perfmonID here, and copy on beginrenderpass
+	//into marker
+	void* perfmonID;
+
 	//dirty flags used to reduce command stream clutter
 	uint32_t vertexBufferDirty;
 	uint32_t indexBufferDirty;
