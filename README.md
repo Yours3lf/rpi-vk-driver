@@ -35,8 +35,7 @@
 - [ ] Synchronization
   - [ ] vkCmdPipelineBarrier support
 - [ ] Performance
-  - [ ] Performance counters
-  - [ ] Queries
+  - [x] Performance counters
   - [ ] Shader performance info
 - [ ] WSI
   - [ ] Direct to display support
