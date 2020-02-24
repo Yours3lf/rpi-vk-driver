@@ -82,9 +82,9 @@ CPU performance (eg. number of draw calls) should be enough on the quad-core PIs
 - 3D textures
 - sparse textures
 - compute shaders (though could be supported to some extent if the kernel side would support it)
-- some texture formats
-- some render target texture formats
 - occlusion queries (https://github.com/anholt/mesa/wiki/VC4-OpenGL-support)
+- pipeline statistics
+- timestamp queries (maybe with kernel support?)
 - indirect draws
 - spirv shaders
 - events
@@ -93,7 +93,6 @@ CPU performance (eg. number of draw calls) should be enough on the quad-core PIs
 - geometry shaders
 - 32 bit indices
 - instancing
-- some vertex buffer formats
 - pipeline caches (doesn't make sense with assembly shaders)
 - multiple color attachments
 - HDR render targets and textures (lack of kernel support for 64bpp render target)
