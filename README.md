@@ -96,7 +96,7 @@ CPU performance (eg. number of draw calls) should be enough on the quad-core PIs
 - multiple color attachments
 - HDR render targets and textures (lack of kernel support for 64bpp render target)
 - ETC textures (lack of kernel support for 64bpp render target)
-- timing blocks for profiling (kernel supports interrupts, but data needs to be routed to userspace)
+- timing blocks for profiling (kernel supports interrupts, but data needs to be routed to userspace ie. add tiler/renderer start/end timing to seqnos)
 
 ### What additional features will this driver support?
 - I already added support (to be polished) to load shader assembly. This will enable devs to optimise shaders to the last cycle.
