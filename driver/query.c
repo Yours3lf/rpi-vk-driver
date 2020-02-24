@@ -28,11 +28,17 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateQueryPool(
 
 	_queryPool* qp = ALLOCATE(sizeof(_queryPool), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
-	if(pCreateInfo->queryType == VK_QUERY_TYPE_OCCLUSION ||
-	   pCreateInfo->queryType == VK_QUERY_TYPE_PIPELINE_STATISTICS ||
-	   pCreateInfo->queryType == VK_QUERY_TYPE_TIMESTAMP)
+	if(pCreateInfo->queryType == VK_QUERY_TYPE_OCCLUSION)
 	{
 		UNSUPPORTED(VK_QUERY_TYPE_OCCLUSION);
+	}
+	else if(pCreateInfo->queryType == VK_QUERY_TYPE_PIPELINE_STATISTICS)
+	{
+		UNSUPPORTED(VK_QUERY_TYPE_PIPELINE_STATISTICS);
+	}
+	else if(pCreateInfo->queryType == VK_QUERY_TYPE_TIMESTAMP)
+	{
+		UNSUPPORTED(VK_QUERY_TYPE_TIMESTAMP);
 	}
 	else if(pCreateInfo->queryType == VK_QUERY_TYPE_PERFORMANCE_QUERY_KHR)
 	{
@@ -178,5 +184,5 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdWriteTimestamp(
 	VkQueryPool                                 queryPool,
 	uint32_t                                    query)
 {
-	//TODO
+	UNSUPPORTED(VK_QUERY_TYPE_TIMESTAMP);
 }
