@@ -32,14 +32,13 @@
   - [x] VkRenderPass support
   - [x] Subpass support
   - [x] MSAA support
+- [x] Performance
+  - [x] Performance counters
 - [ ] Synchronization
   - [ ] vkCmdPipelineBarrier support
-- [ ] Performance
-  - [x] Performance counters
-  - [ ] Shader performance info
+- [ ] Secondary command buffers
 - [ ] WSI
   - [ ] Direct to display support
-- [ ] Secondary command buffers
 - [ ] Fixes
   - [ ] Hardware bug workarounds
   - [ ] Handle offsets wherever required
