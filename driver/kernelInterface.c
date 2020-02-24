@@ -596,6 +596,7 @@ uint32_t vc4_create_perfmon(int fd, uint32_t* counters, uint32_t num_counters)
 
 	struct drm_vc4_perfmon_create arg =
 	{
+		.id = 0,
 		.ncounters = num_counters,
 	};
 
@@ -607,6 +608,13 @@ uint32_t vc4_create_perfmon(int fd, uint32_t* counters, uint32_t num_counters)
 	if (drmIoctl(fd, DRM_IOCTL_VC4_PERFMON_CREATE, &arg))
 	{
 		fprintf(stderr, "Perfmon create failed: %s\n",
+			   strerror(errno));
+		return 0;
+	}
+
+	if(!arg.id)
+	{
+		fprintf(stderr, "Perfmon create failed (invalid ID): %s\n",
 			   strerror(errno));
 		return 0;
 	}
