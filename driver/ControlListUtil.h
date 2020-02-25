@@ -28,6 +28,8 @@ typedef struct CLMarker
 	uint32_t readMSAAimage;
 	uint32_t readMSAAdepthStencilImage;
 	void* perfmonID;
+	uint32_t clearColor[2];
+	uint32_t clearDepth, clearStencil;
 
 	//pointers that point to where all the other CL data is
 	//plus sizes

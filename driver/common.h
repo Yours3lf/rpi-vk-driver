@@ -196,8 +196,6 @@ typedef struct VkImage_T
 	uint32_t format;
 	uint32_t imageSpace;
 	uint32_t tiling; //T or LT
-	uint32_t needToClear;
-	uint32_t clearColor[2];
 	uint32_t layout;
 	_deviceMemory* boundMem;
 	uint32_t boundOffset;

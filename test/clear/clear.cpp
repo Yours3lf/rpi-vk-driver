@@ -88,7 +88,7 @@ void setupVulkan() {
 
 void mainLoop() {
 	//while (!glfwWindowShouldClose(window)) {
-	for(int c = 0; c < 2; ++c){
+	for(int c = 0; c < 300; ++c){
 	//for(int c = 0; c < 1; ++c){
 		draw();
 

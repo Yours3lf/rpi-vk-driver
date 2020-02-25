@@ -186,10 +186,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdPipelineBarrier(
 		_image* i = pImageMemoryBarriers[c].image;
 
 		if(srcStageMask & VK_PIPELINE_STAGE_TRANSFER_BIT &&
-		   pImageMemoryBarriers[c].srcAccessMask & VK_ACCESS_TRANSFER_WRITE_BIT &&
-		   i->needToClear)
+		   pImageMemoryBarriers[c].srcAccessMask & VK_ACCESS_TRANSFER_WRITE_BIT)
 		{
-			assert(i->layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			assert(i->layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		}
 
 		//transition to new layout

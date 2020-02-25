@@ -212,8 +212,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	i->format = pCreateInfo->format;
 	i->imageSpace = 0;
 	i->tiling = pCreateInfo->tiling == VK_IMAGE_TILING_LINEAR ? VC4_TILING_FORMAT_LT : VC4_TILING_FORMAT_T;
-	i->needToClear = 0;
-	i->clearColor[0] = i->clearColor[1] = 0;
 	i->layout = pCreateInfo->initialLayout;
 	i->boundMem = 0;
 	i->boundOffset = 0;

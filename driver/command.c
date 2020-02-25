@@ -364,9 +364,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 				{
 					submitCl.color_write.bits |= VC4_RENDER_CONFIG_MS_MODE_4X | VC4_RENDER_CONFIG_DECIMATE_MODE_4X;
 				}
-
-				submitCl.clear_color[0] = writeImage->clearColor[0];
-				submitCl.clear_color[1] = writeImage->clearColor[1];
 			}
 
 			if(writeMSAAimage)
@@ -375,9 +372,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 				submitCl.msaa_color_write.offset = 0;
 				submitCl.msaa_color_write.flags = 0;
 				submitCl.msaa_color_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X;
-
-				submitCl.clear_color[0] = writeMSAAimage->clearColor[0];
-				submitCl.clear_color[1] = writeMSAAimage->clearColor[1];
 			}
 
 			if(readImage)
@@ -395,10 +389,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 				submitCl.zs_write.offset = 0;
 				submitCl.zs_write.flags = 0;
 				submitCl.zs_write.bits = VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
-										 VC4_SET_FIELD(writeDepthStencilImage->tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
-
-				submitCl.clear_z = writeDepthStencilImage->clearColor[0]; //0...1 -> 0...0xffffff
-				submitCl.clear_s = writeDepthStencilImage->clearColor[1]; //0...0xff
+										 VC4_SET_FIELD(writeDepthStencilImage->tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);	
 			}
 
 			if(writeMSAAdepthStencilImage)
@@ -407,9 +398,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 				submitCl.msaa_zs_write.offset = 0;
 				submitCl.msaa_zs_write.flags = 0;
 				submitCl.msaa_zs_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X;
-
-				submitCl.clear_z = writeMSAAdepthStencilImage->clearColor[0]; //0...1 -> 0...0xffffff
-				submitCl.clear_s = writeMSAAdepthStencilImage->clearColor[1]; //0...0xff
 			}
 
 			if(readDepthStencilImage)
@@ -420,6 +408,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 				submitCl.zs_read.bits = VC4_SET_FIELD(getRenderTargetFormatVC4(readDepthStencilImage->format), VC4_RENDER_CONFIG_FORMAT) |
 						VC4_SET_FIELD(readDepthStencilImage->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
 			}
+
+			submitCl.clear_color[0] = marker->clearColor[0];
+			submitCl.clear_color[1] = marker->clearColor[1];
+
+			submitCl.clear_z = marker->clearDepth; //0...1 -> 0...0xffffff
+			submitCl.clear_s = marker->clearStencil; //0...0xff
+
 
 //			fprintf(stderr, "submitCl.clear_color[0]: %u\n", submitCl.clear_color[0]);
 //			fprintf(stderr, "submitCl.clear_color[1]: %u\n", submitCl.clear_color[1]);

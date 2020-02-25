@@ -73,6 +73,10 @@ void clInsertNewCLMarker(ControlList* cl,
 	marker.readMSAAimage = readMSAAimage;
 	marker.readMSAAdepthStencilImage = readMSAAdepthStencilImage;
 	marker.perfmonID = 0;
+	marker.clearColor[0] = 0;
+	marker.clearColor[1] = 0;
+	marker.clearDepth = 0;
+	marker.clearStencil = 0;
 	marker.handlesSize = 0;
 	marker.shaderRecSize = 0;
 	marker.uniformsSize = 0;

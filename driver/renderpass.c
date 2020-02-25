@@ -67,24 +67,6 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 					readMSAAimage = 1;
 				}
 			}
-
-			if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
-			{
-				flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
-
-				if(!rp->subpasses[0].pResolveAttachments)
-				{
-					fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image->clearColor[0] =
-					fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image->clearColor[1] =
-							packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
-				}
-				else
-				{
-					fb->attachmentViews[rp->subpasses[0].pResolveAttachments[0].attachment].image->clearColor[0] =
-					fb->attachmentViews[rp->subpasses[0].pResolveAttachments[0].attachment].image->clearColor[1] =
-							packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
-				}
-			}
 		}
 
 		if(rp->subpasses[0].pResolveAttachments &&
@@ -120,18 +102,6 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 				readMSAAdepthStencilImage = 1;
 			}
 		}
-
-		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
-		{
-			fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image->clearColor[0] =
-					(uint32_t)(pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.depth * 0xffffff) & 0xffffff;
-		}
-
-		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
-		{
-			fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image->clearColor[1] =
-					pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.stencil & 0xff;
-		}
 	}
 
 
@@ -140,7 +110,46 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 						writeImage, readImage, writeDepthStencilImage, readDepthStencilImage, writeMSAAimage, writeMSAAdepthStencilImage,
 						performResolve, readMSAAimage, readMSAAdepthStencilImage);
 
+	if(rp->subpasses[0].colorAttachmentCount > 0)
+	{
+		if(rp->subpasses[0].pColorAttachments)
+		{
+			if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+			{
+				flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+
+				if(!rp->subpasses[0].pResolveAttachments)
+				{
+					cb->binCl.currMarker->clearColor[0] =
+					cb->binCl.currMarker->clearColor[1] =
+							packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
+				}
+				else
+				{
+					cb->binCl.currMarker->clearColor[0] =
+					cb->binCl.currMarker->clearColor[1] =
+							packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
+				}
+			}
+		}
+	}
+
 	cb->binCl.currMarker->flags = flags;
+
+	if(rp->subpasses[0].pDepthStencilAttachment)
+	{
+		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+		{
+			cb->binCl.currMarker->clearDepth =
+					(uint32_t)(pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.depth * 0xffffff) & 0xffffff;
+		}
+
+		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+		{
+			cb->binCl.currMarker->clearStencil =
+					pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.stencil & 0xff;
+		}
+	}
 
 	//insert relocs
 
