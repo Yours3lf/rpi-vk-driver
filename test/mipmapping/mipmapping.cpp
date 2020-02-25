@@ -82,6 +82,8 @@ VkImageView textureView;
 uint32_t graphicsQueueFamily;
 uint32_t presentQueueFamily;
 
+uint32_t tris = 0;
+
 char* readPPM(const char* fileName)
 {
 	uint16_t ppm_magic;
@@ -747,7 +749,7 @@ void recordCommandBuffers()
 
 			vkCmdPushConstants(presentCommandBuffers[i], samplePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
 
-			vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
+			vkCmdDraw(presentCommandBuffers[i], tris, 1, 0, 0);
 
 			vkCmdEndRenderPass(presentCommandBuffers[i]);
 		}
@@ -1494,7 +1496,75 @@ void CreateVertexBuffer()
 	VkMemoryRequirements mr;
 
 	{ //create triangle vertex buffer
-		unsigned vboSize = sizeof(float) * 1 * 3 * 3; //1 * 3 x vec3
+		float vertices[] =
+		{
+			-0.5, 1, -1,
+			0.5, 1, -1,
+			-0.125, 0.25, 1,
+
+			-0.125, 0.25, 1,
+			0.125, 0.25, 1,
+			0.5, 1, -1,
+
+			0.5, 1, -1,
+			0.125, 0.25, 1,
+			0.25, 0.125, 1,
+
+			0.25, 0.125, 1,
+			0.5, 1, -1,
+			1, 0.5, -1,
+
+			1, 0.5, -1,
+			0.25, 0.125, 1,
+			0.25, -0.125, 1,
+
+			0.25, -0.125, 1,
+			1, 0.5, -1,
+			1, -0.5, -1,
+
+			1, -0.5, -1,
+			0.25, -0.125, 1,
+			0.5, -1, -1,
+
+			0.5, -1, -1,
+			0.25, -0.125, 1,
+			0.125, -0.25, 1,
+
+			0.125, -0.25, 1,
+			0.5, -1, -1,
+			-0.5, -1, -1,
+
+			-0.5, -1, -1,
+			0.125, -0.25, 1,
+			-0.125, -0.25, 1,
+
+			-0.5, -1, -1,
+			-0.125, -0.25, 1,
+			-0.25, -0.125, 1,
+
+			-0.25, -0.125, 1,
+			-0.5, -1, -1,
+			-1, -0.5, -1,
+
+			-1, -0.5, -1,
+			-0.25, -0.125, 1,
+			-0.25, 0.125, 1,
+
+			-0.25, 0.125, 1,
+			-1, -0.5, -1,
+			-1, 0.5, -1,
+
+			-1, 0.5, -1,
+			-0.5, 1, -1,
+			-0.25, 0.125, 1,
+
+			-0.25, 0.125, 1,
+			-0.125, 0.25, 1,
+			-0.5, 1, -1,
+		};
+
+		unsigned vboSize = sizeof(vertices);
+		tris = vboSize / sizeof(float) / 3;
 
 		VkBufferCreateInfo ci = {};
 		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1511,13 +1581,6 @@ void CreateVertexBuffer()
 		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 		res = vkAllocateMemory(device, &mai, 0, &triangleVertexBufferMemory);
-
-		float vertices[] =
-		{
-			-1, 1, 0,
-			1, 1, 0,
-			0, -1, 0
-		};
 
 		void* data;
 		res = vkMapMemory(device, triangleVertexBufferMemory, 0, mr.size, 0, &data);
