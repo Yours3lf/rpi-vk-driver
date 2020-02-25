@@ -184,7 +184,7 @@ void createInstance() {
 	};
 
 	char *instance_validation_layers[] = {
-		"VK_LAYER_LUNARG_standard_validation"
+		"VK_LAYER_KHRONOS_validation"
 	};
 
 	const VkApplicationInfo app = {
@@ -203,12 +203,13 @@ void createInstance() {
 	createInfo.pApplicationInfo = &appInfo;
 	createInfo.enabledExtensionCount = sizeof(enabledExtensions) / sizeof(const char*);
 	createInfo.ppEnabledExtensionNames = enabledExtensions;
-	createInfo.enabledLayerCount = 1;
-	createInfo.ppEnabledLayerNames = (const char *const *)instance_validation_layers;
+	//createInfo.enabledLayerCount = 1;
+	//createInfo.ppEnabledLayerNames = (const char *const *)instance_validation_layers;
 
 	// Initialize Vulkan instance
-	if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-		std::cerr << "failed to create instance!" << std::endl;
+	VkResult res;
+	if ((res = vkCreateInstance(&createInfo, nullptr, &instance)) != VK_SUCCESS) {
+		std::cerr << "failed to create instance! " << res << std::endl;
 		assert(0);
 	}
 	else {
