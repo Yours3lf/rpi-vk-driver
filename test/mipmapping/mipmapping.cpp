@@ -736,12 +736,14 @@ void recordCommandBuffers()
 			float viewportScaleX = (float)(swapChainExtent.width) * 0.5f * 16.0f;
 			float viewportScaleY = -1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
 			float Zs = 0.5f;
+			float Zo = 0.5f;
 
-			uint32_t pushConstants[4];
+			uint32_t pushConstants[5];
 			pushConstants[0] = *(uint32_t*)&Wcoeff;
 			pushConstants[1] = *(uint32_t*)&viewportScaleX;
 			pushConstants[2] = *(uint32_t*)&viewportScaleY;
 			pushConstants[3] = *(uint32_t*)&Zs;
+			pushConstants[4] = *(uint32_t*)&Zo;
 
 			vkCmdPushConstants(presentCommandBuffers[i], samplePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
 
@@ -900,8 +902,8 @@ void CreateShaders()
 			///packed
 			///horizontal
 			///stride=1
-			///vectors to read = 2 (how many components)
-			"sig_load_imm ; vr_setup = load32.always(0x00201a00) ; nop = load32.always() ;\n"
+			///vectors to read = 3 (how many components)
+			"sig_load_imm ; vr_setup = load32.always(0x00301a00) ; nop = load32.always() ;\n"
 			///uni = viewportXScale
 			///r0 = vpm * uni
 			"sig_none ; nop = nop(r0, r0, vpm_read, uni) ; r0 = fmul.always(a, b) ;\n"
@@ -911,9 +913,11 @@ void CreateShaders()
 			///ra0.16a = int(r1), r2 = vpm * uni
 			"sig_none ; rx0.16a = ftoi.always(r1, r1, vpm_read, uni) ; r2 = fmul.always(a, b) ;\n"
 			///r3 = r2 * rb0
-			"sig_none ; nop = nop(r0, r0, nop, rb0) ; r3 = fmul.always(r2, b) ;\n"
+			///r0 = vpm
+			"sig_none ; r0 = or.always(a, a, vpm_read, rb0) ; r3 = fmul.always(r2, b) ;\n"
 			///ra0.16b = int(r3)
-			"sig_none ; rx0.16b = ftoi.always(r3, r3) ; nop = nop(r0, r0) ;\n"
+			///r0 = r0 * 0.5
+			"sig_none ; rx0.16b = ftoi.always(r3, r3, uni, nop) ; r0 = fmul.always(r0, a) ;\n"
 			///set up VPM write for subsequent writes
 			///0x00001a00: 0000 0000 0000 0000 0001 1010 0000 0000
 			///addr: 0
@@ -928,7 +932,7 @@ void CreateShaders()
 			/// Zs
 			///uni = 0.5
 			///vpm = uni
-			"sig_none ; vpm = or.always(a, a, uni, nop) ; nop = nop(r0, r0);\n"
+			"sig_none ; vpm = fadd.always(r0, a, uni, nop) ; nop = nop(r0, r0);\n"
 			/// 1.0 / Wc
 			///vpm = rb0 (1)
 			"sig_none ; vpm = or.always(b, b, nop, rb0) ; nop = nop(r0, r0);\n"
@@ -942,7 +946,7 @@ void CreateShaders()
 			///uni = 1.0
 			///r3 = 2.0 - uni
 			"sig_small_imm ; r3 = fsub.always(b, a, uni, 0x40000000) ; nop = nop(r0, r0);\n"
-			"sig_load_imm ; vr_setup = load32.always(0x00201a00) ; nop = load32.always() ;\n"
+			"sig_load_imm ; vr_setup = load32.always(0x00301a00) ; nop = load32.always() ;\n"
 			///r2 = vpm
 			"sig_none ; r2 = or.always(a, a, vpm_read, nop) ; nop = nop(r0, r0);\n"
 			"sig_load_imm ; vw_setup = load32.always.ws(0x00001a00) ; nop = load32.always() ;\n"
@@ -958,24 +962,24 @@ void CreateShaders()
 			///r1 = r1 * uni
 			"sig_none ; nop = nop(r0, r0, uni, nop) ; r1 = fmul.always(r1, a);\n"
 			///r0 = r2 * r3
-			"sig_none ; nop = nop(r0, r0) ; r0 = fmul.always(r2, r3);\n"
+			///r2 = vpm
+			"sig_none ; r2 = or.always(a, a, vpm_read, nop) ; r0 = fmul.always(r2, r3);\n"
 			///ra0.16a = r0, r1 = r1 * r3
 			"sig_none ; rx0.16a = ftoi.always(r0, r0) ; r1 = fmul.always(r1, r3) ;\n"
 			///ra0.16b = r1
-			"sig_none ; rx0.16b = ftoi.always(r1, r1) ; nop = nop(r0, r0) ;\n"
 			///write Zc
-			///vpm = 0
-			"sig_small_imm ; vpm = or.always(b, b, nop, 0) ; nop = nop(r0, r0) ;\n"
+			"sig_none ; rx0.16b = ftoi.always(r1, r1) ; vpm = v8min.always(r2, r2) ;\n"
 			///write Wc
 			///vpm = 1.0
-			"sig_small_imm ; vpm = or.always(b, b, nop, 0x3f800000) ; nop = nop(r0, r0) ;\n"
+			///r2 = r2 * uni (0.5)
+			"sig_small_imm ; vpm = or.always(b, b, uni, 0x3f800000) ; r2 = fmul.always(r2, a) ;\n"
 			///write Ys and Xs
 			///vpm = ra0
 			"sig_none ; vpm = or.always(a, a, ra0, nop) ; nop = nop(r0, r0) ;\n"
 			///write Zs
 			///uni = 0.5
-			///vpm = uni
-			"sig_none ; vpm = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;\n"
+			///vpm = r2
+			"sig_none ; vpm = fadd.always(r2, a, uni, nop) ; nop = nop(r0, r0) ;\n"
 			///write 1/Wc
 			///vpm = r3
 			"sig_none ; vpm = or.always(r3, r3) ; nop = nop(r0, r0) ;\n"
@@ -1063,6 +1067,15 @@ void CreateShaders()
 			12, //resource offset
 			VK_SHADER_STAGE_VERTEX_BIT
 		},
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			16, //resource offset
+			VK_SHADER_STAGE_VERTEX_BIT
+		},
 		//fragment shader uniforms
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
@@ -1102,7 +1115,7 @@ void CreatePipeline()
 	VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
 		0,
-		sizeof(float) * 2,
+		sizeof(float) * 3,
 		VK_VERTEX_INPUT_RATE_VERTEX
 	};
 
@@ -1110,7 +1123,7 @@ void CreatePipeline()
 	{
 		0,
 		0,
-		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32_SFLOAT,
 		0
 	};
 
@@ -1164,7 +1177,7 @@ void CreatePipeline()
 	{ //create sample pipeline
 		VkPushConstantRange pushConstantRanges[2];
 		pushConstantRanges[0].offset = 0;
-		pushConstantRanges[0].size = 4 * 4; //4 * 32bits
+		pushConstantRanges[0].size = 5 * 4; //5 * 32bits
 		pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 		pushConstantRanges[1].offset = 0;
@@ -1481,7 +1494,7 @@ void CreateVertexBuffer()
 	VkMemoryRequirements mr;
 
 	{ //create triangle vertex buffer
-		unsigned vboSize = sizeof(float) * 1 * 3 * 2; //1 * 3 x vec2
+		unsigned vboSize = sizeof(float) * 1 * 3 * 3; //1 * 3 x vec3
 
 		VkBufferCreateInfo ci = {};
 		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1501,9 +1514,9 @@ void CreateVertexBuffer()
 
 		float vertices[] =
 		{
-			-1, 1,
-			1, 1,
-			0, -1
+			-1, 1, 0,
+			1, 1, 0,
+			0, -1, 0
 		};
 
 		void* data;
