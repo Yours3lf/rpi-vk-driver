@@ -904,8 +904,8 @@ void CreateShaders()
 			///packed
 			///horizontal
 			///stride=1
-			///vectors to read = 3 (how many components)
-			"sig_load_imm ; vr_setup = load32.always(0x00301a00) ; nop = load32.always() ;\n"
+			///vectors to read = 5 (how many components)
+			"sig_load_imm ; vr_setup = load32.always(0x00501a00) ; nop = load32.always() ;\n"
 			///uni = viewportXScale
 			///r0 = vpm * uni
 			"sig_none ; nop = nop(r0, r0, vpm_read, uni) ; r0 = fmul.always(a, b) ;\n"
@@ -920,6 +920,10 @@ void CreateShaders()
 			///ra0.16b = int(r3)
 			///r0 = r0 * 0.5
 			"sig_none ; rx0.16b = ftoi.always(r3, r3, uni, nop) ; r0 = fmul.always(r0, a) ;\n"
+			///r1 = vpm
+			"sig_none ; r1 = or.always(a, a, vpm_read, nop) ; nop = nop(r0, r0) ;\n"
+			///r2 = vpm
+			"sig_none ; r2 = or.always(a, a, vpm_read, nop) ; nop = nop(r0, r0) ;\n"
 			///set up VPM write for subsequent writes
 			///0x00001a00: 0000 0000 0000 0000 0001 1010 0000 0000
 			///addr: 0
@@ -938,6 +942,10 @@ void CreateShaders()
 			/// 1.0 / Wc
 			///vpm = rb0 (1)
 			"sig_none ; vpm = or.always(b, b, nop, rb0) ; nop = nop(r0, r0);\n"
+			///vpm = r1
+			"sig_none ; vpm = or.always(r1, r1) ; nop = nop(r0, r0);\n"
+			///vpm = r2
+			"sig_none ; vpm = or.always(r2, r2) ; nop = nop(r0, r0);\n"
 			///END
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
@@ -1000,14 +1008,17 @@ void CreateShaders()
 
 	//sample texture
 	char sample_fs_asm_code[] =
-			"sig_none ; r0 = itof.always(b, b, x_pix, y_pix) ; nop = nop(r0, r0) ;"
-			"sig_load_imm ; r2 = load32.always(0x3a72b9d6) ; nop = load32() ;" //1/1080
-			"sig_none ; r0 = itof.always(a, a, x_pix, y_pix) ; r1 = fmul.always(r2, r0); ;" //r1 contains tex coord y
-			"sig_load_imm ; r2 = load32.always(0x3a088888) ; nop = load32() ;" //1/1920
+			///r0 = varyingX * W
+			"sig_none ; nop = nop(r0, r0, pay_zw, vary) ; r0 = fmul.always(a, b) ;"
+			///r2 = r0 + r5 (C)
+			///r0 = varyingY * W
+			"sig_none ; r2 = fadd.always(r0, r5, pay_zw, vary) ; r0 = fmul.always(a, b) ;"
+			///r3 = r0 + r5 (C)
+			"sig_none ; r3 = fadd.pm.always(r0, r5) ; nop = nop(r0, r0) ;"
 			///write texture addresses (x, y)
 			///writing tmu0_s signals that all coordinates are written
-			"sig_none ; tmu0_t = or.always(r1, r1) ; r0 = fmul.always(r2, r0) ;" //r0 contains tex coord x
-			"sig_none ; tmu0_s = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; tmu0_t = or.always(r3, r3) ; nop = nop(r0, r0) ;"
+			"sig_none ; tmu0_s = or.always(r2, r2) ; nop = nop(r0, r0) ;"
 			///suspend thread (after 2 nops) to wait for TMU request to finish
 			"sig_thread_switch ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -1117,22 +1128,30 @@ void CreatePipeline()
 	VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
 		0,
-		sizeof(float) * 3,
+		sizeof(float) * (3 + 2),
 		VK_VERTEX_INPUT_RATE_VERTEX
 	};
 
-	VkVertexInputAttributeDescription vertexInputAttributeDescription =
+	VkVertexInputAttributeDescription vertexInputAttributeDescription[2] =
 	{
-		0,
-		0,
-		VK_FORMAT_R32G32B32_SFLOAT,
-		0
+		{
+			0,
+			0,
+			VK_FORMAT_R32G32B32_SFLOAT,
+			0
+		},
+		{
+			1,
+			0,
+			VK_FORMAT_R32G32_SFLOAT,
+			sizeof(float) * 3
+		}
 	};
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexAttributeDescriptionCount = 1;
-	vertexInputInfo.pVertexAttributeDescriptions = &vertexInputAttributeDescription;
+	vertexInputInfo.vertexAttributeDescriptionCount = 2;
+	vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttributeDescription;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
 
@@ -1498,73 +1517,73 @@ void CreateVertexBuffer()
 	{ //create triangle vertex buffer
 		float vertices[] =
 		{
-			-0.5, 1, -1,
-			0.5, 1, -1,
-			-0.125, 0.25, 1,
+			-0.5, 1, -1,			0.0, 1.0,
+			0.5, 1, -1,				1.0, 1.0,
+			-0.125, 0.25, 1,		0.0, 0.0,
 
-			-0.125, 0.25, 1,
-			0.125, 0.25, 1,
-			0.5, 1, -1,
+			-0.125, 0.25, 1,		0.0, 0.0,
+			0.125, 0.25, 1,			1.0, 0.0,
+			0.5, 1, -1,				1.0, 1.0,
 
-			0.5, 1, -1,
-			0.125, 0.25, 1,
-			0.25, 0.125, 1,
+			0.5, 1, -1,				1.0, 1.0,
+			0.125, 0.25, 1,			1.0, 0.0,
+			0.25, 0.125, 1,			0.0, 0.0,
 
-			0.25, 0.125, 1,
-			0.5, 1, -1,
-			1, 0.5, -1,
+			0.25, 0.125, 1,			0.0, 0.0,
+			0.5, 1, -1,				1.0, 1.0,
+			1, 0.5, -1,				0.0, 1.0,
 
-			1, 0.5, -1,
-			0.25, 0.125, 1,
-			0.25, -0.125, 1,
+			1, 0.5, -1,				0.0, 1.0,
+			0.25, 0.125, 1,			0.0, 0.0,
+			0.25, -0.125, 1,		1.0, 0.0,
 
-			0.25, -0.125, 1,
-			1, 0.5, -1,
-			1, -0.5, -1,
+			0.25, -0.125, 1,		1.0, 0.0,
+			1, 0.5, -1,				0.0, 1.0,
+			1, -0.5, -1,			1.0, 1.0,
 
-			1, -0.5, -1,
-			0.25, -0.125, 1,
-			0.5, -1, -1,
+			1, -0.5, -1,			1.0, 1.0,
+			0.25, -0.125, 1,		1.0, 0.0,
+			0.5, -1, -1,			0.0, 1.0,
 
-			0.5, -1, -1,
-			0.25, -0.125, 1,
-			0.125, -0.25, 1,
+			0.5, -1, -1,			0.0, 1.0,
+			0.25, -0.125, 1,		1.0, 0.0,
+			0.125, -0.25, 1,		0.0, 0.0,
 
-			0.125, -0.25, 1,
-			0.5, -1, -1,
-			-0.5, -1, -1,
+			0.125, -0.25, 1,		0.0, 0.0,
+			0.5, -1, -1,			0.0, 1.0,
+			-0.5, -1, -1,			1.0, 1.0,
 
-			-0.5, -1, -1,
-			0.125, -0.25, 1,
-			-0.125, -0.25, 1,
+			-0.5, -1, -1,			1.0, 1.0,
+			0.125, -0.25, 1,		0.0, 0.0,
+			-0.125, -0.25, 1,		1.0, 0.0,
 
-			-0.5, -1, -1,
-			-0.125, -0.25, 1,
-			-0.25, -0.125, 1,
+			-0.5, -1, -1,			1.0, 1.0,
+			-0.125, -0.25, 1,		1.0, 0.0,
+			-0.25, -0.125, 1,		0.0, 0.0,
 
-			-0.25, -0.125, 1,
-			-0.5, -1, -1,
-			-1, -0.5, -1,
+			-0.25, -0.125, 1,		0.0, 0.0,
+			-0.5, -1, -1,			1.0, 1.0,
+			-1, -0.5, -1,			0.0, 1.0,
 
-			-1, -0.5, -1,
-			-0.25, -0.125, 1,
-			-0.25, 0.125, 1,
+			-1, -0.5, -1,			0.0, 1.0,
+			-0.25, -0.125, 1,		0.0, 0.0,
+			-0.25, 0.125, 1,		1.0, 0.0,
 
-			-0.25, 0.125, 1,
-			-1, -0.5, -1,
-			-1, 0.5, -1,
+			-0.25, 0.125, 1,		1.0, 0.0,
+			-1, -0.5, -1,			0.0, 1.0,
+			-1, 0.5, -1,			1.0, 1.0,
 
-			-1, 0.5, -1,
-			-0.5, 1, -1,
-			-0.25, 0.125, 1,
+			-1, 0.5, -1,			1.0, 1.0,
+			-0.5, 1, -1,			0.0, 1.0,
+			-0.25, 0.125, 1,		1.0, 0.0,
 
-			-0.25, 0.125, 1,
-			-0.125, 0.25, 1,
-			-0.5, 1, -1,
+			-0.25, 0.125, 1,		1.0, 0.0,
+			-0.125, 0.25, 1,		0.0, 0.0,
+			-0.5, 1, -1,			0.0, 1.0,
 		};
 
 		unsigned vboSize = sizeof(vertices);
-		tris = vboSize / sizeof(float) / 3;
+		tris = vboSize / sizeof(float) / (3+2);
 
 		VkBufferCreateInfo ci = {};
 		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
