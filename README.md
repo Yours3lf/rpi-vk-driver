@@ -15,6 +15,7 @@
   - [x] blending
   - [ ] mipmapping
   - [ ] cube mapping
+  - [ ] linear RGBA8 and YUYV texture support
   - [x] shadow mapping / depth texture sampling
   - [ ] Multi threaded cmdbuf generation test
 - [x] Shader compiler chain
