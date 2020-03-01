@@ -196,7 +196,7 @@ typedef struct VkImage_T
 	uint32_t usageBits;
 	uint32_t format;
 	uint32_t imageSpace;
-	uint32_t tiling; //T or LT
+	uint32_t tiling; //Linear or T or LT
 	uint32_t layout;
 	_deviceMemory* boundMem;
 	uint32_t boundOffset;
@@ -512,7 +512,8 @@ uint32_t packVec4IntoABGR8(const float rgba[4]);
 void createImageBO(_image* i);
 int findInstanceExtension(char* name);
 int findDeviceExtension(char* name);
-void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, uint32_t* paddedWidth, uint32_t* paddedHeight);
+void getUTileDimensions(uint32_t bpp, uint32_t* tileW, uint32_t* tileH);
+uint32_t roundUp(uint32_t numToRound, uint32_t multiple);
 int isDepthStencilFormat(VkFormat format);
 uint32_t getCompareOp(VkCompareOp op);
 uint32_t getStencilOp(VkStencilOp op);

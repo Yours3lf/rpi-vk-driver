@@ -202,39 +202,37 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 
 	for(int c = 0; c < pCreateInfo->minImageCount; ++c)
 	{
-		s->images[c].boundMem = 0;
-		s->images[c].boundOffset = 0;
-		s->images[c].width = pCreateInfo->imageExtent.width;
-		s->images[c].height = pCreateInfo->imageExtent.height;
-		s->images[c].depth = 1;
-		s->images[c].layers = pCreateInfo->imageArrayLayers;
-		s->images[c].miplevels = 1;
-		s->images[c].samples = 1; //TODO
-		s->images[c].usageBits = pCreateInfo->imageUsage;
-		s->images[c].format = pCreateInfo->imageFormat;
+		VkImageCreateInfo imageCreateInfo = {};
+		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.format = pCreateInfo->imageFormat;
+		imageCreateInfo.mipLevels = 1;
+		imageCreateInfo.arrayLayers = pCreateInfo->imageArrayLayers;
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCreateInfo.usage = pCreateInfo->imageUsage;
+		imageCreateInfo.sharingMode = pCreateInfo->imageSharingMode;
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageCreateInfo.queueFamilyIndexCount = pCreateInfo->queueFamilyIndexCount;
+		imageCreateInfo.pQueueFamilyIndices = pCreateInfo->pQueueFamilyIndices;
+		imageCreateInfo.extent.width = pCreateInfo->imageExtent.width;
+		imageCreateInfo.extent.height = pCreateInfo->imageExtent.height;
+		imageCreateInfo.extent.depth = 1;
+
+		VkImage img;
+		rpi_vkCreateImage(device, &imageCreateInfo, pAllocator, &img);
+
+		s->images[c] = *(_image*)img;
+
 		s->images[c].imageSpace = pCreateInfo->imageColorSpace;
-		s->images[c].concurrentAccess = pCreateInfo->imageSharingMode;
-		s->images[c].numQueueFamiliesWithAccess = pCreateInfo->queueFamilyIndexCount;
-		if(s->images[c].concurrentAccess)
-		{
-			s->images[c].queueFamiliesWithAccess = ALLOCATE(sizeof(uint32_t)*s->images[c].numQueueFamiliesWithAccess, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
-			if(!s->images[c].queueFamiliesWithAccess)
-			{
-				return VK_ERROR_OUT_OF_HOST_MEMORY;
-			}
-			memcpy(s->images[c].queueFamiliesWithAccess, pCreateInfo->pQueueFamilyIndices, sizeof(uint32_t)*s->images[c].numQueueFamiliesWithAccess);
-		}
 		s->images[c].preTransformMode = pCreateInfo->preTransform;
 		s->images[c].compositeAlpha = pCreateInfo->compositeAlpha;
 		s->images[c].presentMode = pCreateInfo->presentMode;
 		s->images[c].clipped = pCreateInfo->clipped;
 
-
 		VkMemoryRequirements mr;
 		rpi_vkGetImageMemoryRequirements(device, &s->images[c], &mr);
 
-		//TODO is this the right place to do this?
-		s->images[c].tiling = VC4_TILING_FORMAT_T;
 		s->images[c].alignment = mr.alignment;
 
 		VkMemoryAllocateInfo ai;
@@ -250,19 +248,9 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 		}
 
 		VkDeviceMemory mem;
-		rpi_vkAllocateMemory(device, &ai, 0, &mem);
+		rpi_vkAllocateMemory(device, &ai, pAllocator, &mem);
 
 		rpi_vkBindImageMemory(device, &s->images[c], mem, 0);
-
-		//set tiling to T if size > 4KB
-		if(s->images[c].tiling == VC4_TILING_FORMAT_T)
-		{
-			int ret = vc4_bo_set_tiling(controlFd, s->images[c].boundMem->bo, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
-		}
-		else
-		{
-			int ret = vc4_bo_set_tiling(controlFd, s->images[c].boundMem->bo, DRM_FORMAT_MOD_LINEAR); assert(ret);
-		}
 
 		int res = modeset_create_fb(controlFd, &s->images[c]); assert(res == 0);
 	}

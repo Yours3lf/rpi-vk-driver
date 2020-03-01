@@ -209,6 +209,7 @@ int findDeviceExtension(char* name)
 //Textures in T format:
 //formed out of 4KB tiles, which have 1KB subtiles (see page 105 in VC4 arch guide)
 //1KB subtiles have 512b microtiles.
+//Textures in LT format consist of 512b microtiles linearly laid out
 //Width/height of the 512b microtiles is the following:
 // 64bpp: 2x4
 // 32bpp: 4x4
@@ -230,62 +231,60 @@ int findDeviceExtension(char* name)
 // 8bpp:  64x64
 // 4bpp:  128x64
 // 1bpp:  256x128
-void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, uint32_t* paddedWidth, uint32_t* paddedHeight)
+void getUTileDimensions(uint32_t bpp, uint32_t* tileW, uint32_t* tileH)
 {
-	assert(paddedWidth);
-	assert(paddedHeight);
-	uint32_t tileW = 0;
-	uint32_t tileH = 0;
+	assert(tileW);
+	assert(tileH)
 
 	switch(bpp)
 	{
 	case 256:
 	{
-		tileW = 8;
-		tileH = 16;
+		*tileW = 1;
+		*tileH = 2;
 		break;
 	}
 	case 128:
 	{
-		tileW = 16;
-		tileH = 16;
+		*tileW = 2;
+		*tileH = 2;
 		break;
 	}
 	case 64:
 	{
-		tileW = 16;
-		tileH = 32;
+		*tileW = 2;
+		*tileH = 4;
 		break;
 	}
 	case 32:
 	case 24: //TODO
 	{
-		tileW = 32;
-		tileH = 32;
+		*tileW = 4;
+		*tileH = 4;
 		break;
 	}
 	case 16:
 	{
-		tileW = 64;
-		tileH = 32;
+		*tileW = 8;
+		*tileH = 4;
 		break;
 	}
 	case 8:
 	{
-		tileW = 64;
-		tileH = 64;
+		*tileW = 8;
+		*tileH = 8;
 		break;
 	}
 	case 4:
 	{
-		tileW = 128;
-		tileH = 64;
+		*tileW = 16;
+		*tileH = 8;
 		break;
 	}
 	case 1:
 	{
-		tileW = 256;
-		tileH = 128;
+		*tileW = 32;
+		*tileH = 16;
 		break;
 	}
 	default:
@@ -294,9 +293,23 @@ void getPaddedTextureDimensionsT(uint32_t width, uint32_t height, uint32_t bpp, 
 		assert(!"Unsupported texture bpp.");
 	}
 	}
+}
 
-	*paddedWidth = ((tileW - (width % tileW)) % tileW) + width;
-	*paddedHeight = ((tileH - (height % tileH)) % tileH) + height;
+uint32_t roundUp(uint32_t numToRound, uint32_t multiple)
+{
+	if(!multiple)
+	{
+		return numToRound;
+	}
+
+	uint32_t remainder = numToRound % multiple;
+
+	if(!remainder)
+	{
+		return numToRound;
+	}
+
+	return numToRound + multiple - remainder;
 }
 
 /*static inline void util_pack_color(const float rgba[4], enum pipe_format format, union util_color *uc)

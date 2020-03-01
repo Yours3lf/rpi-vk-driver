@@ -212,7 +212,23 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	i->usageBits = pCreateInfo->usage;
 	i->format = pCreateInfo->format;
 	i->imageSpace = 0;
-	i->tiling = pCreateInfo->tiling == VK_IMAGE_TILING_LINEAR ? VC4_TILING_FORMAT_LT : VC4_TILING_FORMAT_T;
+	uint32_t nonPaddedSize = (i->width * i->height * getFormatBpp(i->format)) >> 3;
+	i->tiling = 0;
+	if(pCreateInfo->tiling == VK_IMAGE_TILING_LINEAR)
+	{
+		i->tiling = VC4_TILING_FORMAT_LINEAR;
+	}
+	else
+	{
+		if(nonPaddedSize > 4096)
+		{
+			 i->tiling = VC4_TILING_FORMAT_T;
+		}
+		else
+		{
+			i->tiling = VC4_TILING_FORMAT_LT;
+		}
+	}
 	i->layout = pCreateInfo->initialLayout;
 	i->boundMem = 0;
 	i->boundOffset = 0;
@@ -277,59 +293,110 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 	_image* i = image;
 
 	uint32_t bpp = getFormatBpp(i->format);
-	uint32_t nonPaddedSize = (i->width * i->height * bpp) >> 3;
+	uint32_t utileW, utileH;
+	getUTileDimensions(bpp, &utileW, &utileH);
 
-	if(nonPaddedSize > 4096)
+	switch(i->tiling)
 	{
-		//need to pad to T format, as HW automatically chooses that
-		getPaddedTextureDimensionsT(i->width, i->height, bpp, &i->paddedWidth, &i->paddedHeight);
+	case VC4_TILING_FORMAT_T:
+		{
+			//need to pad to T format, as HW automatically chooses that
+			i->paddedWidth = roundUp(i->width, utileW * 8);
+			i->paddedHeight = roundUp(i->height, utileH * 8);
+			break;
+		}
+	case VC4_TILING_FORMAT_LT:
+		{
+			//LT format
+			i->paddedWidth = roundUp(i->width, utileW);
+			i->paddedHeight = roundUp(i->height, utileH);
+			break;
+		}
+	case VC4_TILING_FORMAT_LINEAR:
+		{
+			//linear format
+			i->paddedWidth = roundUp(i->width, utileW);
+			i->paddedHeight = i->height;
+			break;
+		}
 	}
-	else
-	{
-		//LT format
-		i->paddedWidth = i->width;
-		i->paddedHeight = i->height;
-	}
+
+	i->stride = (i->paddedWidth * bpp) >> 3;
 
 	uint32_t mipSize = 0;
 
-	//TODO make sure this works properly
-	for(uint32_t c = 1; c < i->miplevels; ++c)
+	//mip levels are laid out in memory the following way:
+	//0x0.................................................0xffffff
+	//smallest mip level ... largest mip level - 1, base mip level
+	//base mip level offset must be a multiple of 4KB
+	//mip levels other than the base must be aligned to power of two sizes
+	//mip levels must be padded to either T or LT format depending on size
+
+	uint32_t prevMipPaddedSize = 0;
+
+	for(uint32_t c = i->miplevels - 1; c >= 1; --c)
 	{
 		uint32_t mipWidth = max(i->width >> c, 1);
 		uint32_t mipHeight = max(i->height >> c, 1);
-		uint32_t mipNonPaddedSize = (mipWidth * mipHeight * bpp) >> 3;
+		uint32_t nonPaddedSize = (mipWidth * mipHeight * bpp) >> 3;
 		uint32_t mipPaddedWidth, mipPaddedHeight;
 
-		if(mipNonPaddedSize > 4096)
+		uint32_t tiling = i->tiling;
+
+		if(i->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
 		{
-			//T format
-			getPaddedTextureDimensionsT(mipWidth, mipHeight, bpp, &mipPaddedWidth, &mipPaddedHeight);
-		}
-		else
-		{
-			//LT format
-			mipPaddedWidth = mipWidth;
-			mipPaddedHeight = mipHeight;
+			tiling = VC4_TILING_FORMAT_LT;
 		}
 
-		mipPaddedWidth= getPow2Pad(mipPaddedWidth);
-		mipPaddedHeight = getPow2Pad(mipPaddedHeight);
+		switch(tiling)
+		{
+		case VC4_TILING_FORMAT_T:
+			{
+				//T format
+				mipPaddedWidth = roundUp(mipWidth, utileW * 8);
+				mipPaddedHeight = roundUp(mipHeight, utileH * 8);
+				break;
+			}
+		case VC4_TILING_FORMAT_LT:
+			{
+				//LT format
+				mipPaddedWidth = roundUp(mipWidth, utileW);
+				mipPaddedHeight = roundUp(mipHeight, utileH);
+				break;
+			}
+		case VC4_TILING_FORMAT_LINEAR:
+			{
+				//linear format
+				mipPaddedWidth = roundUp(mipWidth, utileW);
+				mipPaddedHeight = mipHeight;
+				break;
+			}
+		}
 
-		//TODO
-		//i->levelOffsets[c] = ??
+//		mipPaddedWidth = getPow2Pad(mipPaddedWidth);
+//		mipPaddedHeight = getPow2Pad(mipPaddedHeight);
+
+		uint32_t mipPaddedSize = (mipPaddedWidth * mipPaddedHeight * bpp) >> 3;
+
+		i->levelOffsets[c] = prevMipPaddedSize;
+//		fprintf(stderr, "mipPaddedWidth: %u\n", mipPaddedWidth);
+//		fprintf(stderr, "mipPaddedHeight: %u\n", mipPaddedHeight);
+//		fprintf(stderr, "i->levelOffsets[%u]: %u\n", c, i->levelOffsets[c]);
+		prevMipPaddedSize += mipPaddedSize;
 
 		mipSize += mipPaddedWidth * mipPaddedHeight;
 	}
 
-	i->levelOffsets[0] = (mipSize * bpp) >> 3;
+	//must be a multiple of 4096 bytes
+	i->levelOffsets[0] = getBOAlignedSize((mipSize * bpp) >> 3, 4096);
 
-	//TODO does this need to be aligned?
-	i->size = getBOAlignedSize(((i->paddedWidth * i->paddedHeight + mipSize) * bpp) >> 3, ARM_PAGE_SIZE);
-	i->stride = (i->paddedWidth * bpp) >> 3;
+	i->size = getBOAlignedSize(((i->paddedWidth * i->paddedHeight * bpp) >> 3) + i->levelOffsets[0], ARM_PAGE_SIZE);
 
+//	fprintf(stderr, "i->tiling %u\n", i->tiling);
 //	fprintf(stderr, "i->levelOffsets[0] %u\n", i->levelOffsets[0]);
 //	fprintf(stderr, "i->size %u\n", i->size);
+//	fprintf(stderr, "i->paddedWidth %u\n", i->paddedWidth);
+//	fprintf(stderr, "i->paddedHeight %u\n", i->paddedHeight);
 //	fprintf(stderr, "mipSize %u\n", mipSize);
 //	fprintf(stderr, "bpp %u\n", bpp);
 
@@ -361,6 +428,16 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory(
 
 	i->boundMem = m;
 	i->boundOffset = memoryOffset;
+
+	//TODO not sure if this is necessary
+	if(i->tiling == VC4_TILING_FORMAT_LINEAR)
+	{
+		int ret = vc4_bo_set_tiling(controlFd, i->boundMem->bo, DRM_FORMAT_MOD_LINEAR); assert(ret);
+	}
+	else if(i->tiling == VC4_TILING_FORMAT_T)
+	{
+		int ret = vc4_bo_set_tiling(controlFd, i->boundMem->bo, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
+	}
 
 	return VK_SUCCESS;
 }
