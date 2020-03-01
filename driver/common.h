@@ -189,6 +189,7 @@ typedef struct VkImage_T
 	uint32_t width, height, depth;
 	uint32_t paddedWidth, paddedHeight;
 	uint32_t miplevels, samples;
+	uint32_t levelOffsets[11]; //max 11 mip levels
 	uint32_t layers; //number of views for multiview/stereo
 	uint32_t size; //overall size including padding and alignment
 	uint32_t stride; //the number of bytes from one row of pixels in memory to the next row of pixels in memory (aka pitch)
@@ -546,3 +547,4 @@ uint32_t getRenderTargetFormatVC4(VkFormat format);
 void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize);
 void clDump(void* cl, uint32_t size);
 void setupEmulationResources(VkDevice device);
+uint32_t getPow2Pad(uint32_t n);

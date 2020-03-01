@@ -204,6 +204,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	i->paddedWidth = 0; //when format is T
 	i->paddedHeight = 0;
 	i->miplevels = pCreateInfo->mipLevels;
+	memset(i->levelOffsets, 0, sizeof(uint32_t) * 11);
 	i->samples = pCreateInfo->samples;
 	i->layers = pCreateInfo->arrayLayers;
 	i->size = 0;
@@ -277,23 +278,63 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 
 	uint32_t bpp = getFormatBpp(i->format);
 	uint32_t nonPaddedSize = (i->width * i->height * bpp) >> 3;
-	i->paddedWidth = i->width;
-	i->paddedHeight = i->height;
 
-	//TODO take into account tiling etc.
-
-	//need to pad to T format, as HW automatically chooses that
 	if(nonPaddedSize > 4096)
 	{
+		//need to pad to T format, as HW automatically chooses that
 		getPaddedTextureDimensionsT(i->width, i->height, bpp, &i->paddedWidth, &i->paddedHeight);
 	}
+	else
+	{
+		//LT format
+		i->paddedWidth = i->width;
+		i->paddedHeight = i->height;
+	}
+
+	uint32_t mipSize = 0;
+
+	//TODO make sure this works properly
+	for(uint32_t c = 1; c < i->miplevels; ++c)
+	{
+		uint32_t mipWidth = max(i->width >> c, 1);
+		uint32_t mipHeight = max(i->height >> c, 1);
+		uint32_t mipNonPaddedSize = (mipWidth * mipHeight * bpp) >> 3;
+		uint32_t mipPaddedWidth, mipPaddedHeight;
+
+		if(mipNonPaddedSize > 4096)
+		{
+			//T format
+			getPaddedTextureDimensionsT(mipWidth, mipHeight, bpp, &mipPaddedWidth, &mipPaddedHeight);
+		}
+		else
+		{
+			//LT format
+			mipPaddedWidth = mipWidth;
+			mipPaddedHeight = mipHeight;
+		}
+
+		mipPaddedWidth= getPow2Pad(mipPaddedWidth);
+		mipPaddedHeight = getPow2Pad(mipPaddedHeight);
+
+		//TODO
+		//i->levelOffsets[c] = ??
+
+		mipSize += mipPaddedWidth * mipPaddedHeight;
+	}
+
+	i->levelOffsets[0] = (mipSize * bpp) >> 3;
 
 	//TODO does this need to be aligned?
-	i->size = getBOAlignedSize((i->paddedWidth * i->paddedHeight * bpp) >> 3, ARM_PAGE_SIZE);
+	i->size = getBOAlignedSize(((i->paddedWidth * i->paddedHeight + mipSize) * bpp) >> 3, ARM_PAGE_SIZE);
 	i->stride = (i->paddedWidth * bpp) >> 3;
 
+//	fprintf(stderr, "i->levelOffsets[0] %u\n", i->levelOffsets[0]);
+//	fprintf(stderr, "i->size %u\n", i->size);
+//	fprintf(stderr, "mipSize %u\n", mipSize);
+//	fprintf(stderr, "bpp %u\n", bpp);
+
 	pMemoryRequirements->alignment = ARM_PAGE_SIZE;
-	pMemoryRequirements->memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; //TODO
+	pMemoryRequirements->memoryTypeBits = memoryTypes[0].propertyFlags; //TODO
 	pMemoryRequirements->size = i->size;
 }
 

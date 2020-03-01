@@ -336,7 +336,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 										 getTextureDataType(di->imageView->interpretedFormat),
 										 di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE,
 										 0, //TODO cubemap stride
-										 0, //TODO texture base ptr
+										 di->imageView->image->levelOffsets[0] >> 12, //Image level 0 offset in multiples of 4KB
 										 di->imageView->image->height & 2047,
 										 di->imageView->image->width & 2047,
 										 getMinFilterType(di->sampler->minFilter, di->sampler->mipmapMode, di->sampler->maxLod),

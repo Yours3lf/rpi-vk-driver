@@ -34,6 +34,12 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	uint32_t readMSAAimage = 0;
 	uint32_t readMSAAdepthStencilImage = 0;
 	uint32_t flags = 0;
+	uint32_t writeImageOffset = 0;
+	uint32_t readImageOffset = 0;
+	uint32_t writeDepthStencilImageOffset = 0;
+	uint32_t readDepthStencilImageOffset = 0;
+	uint32_t writeMSAAimageOffset = 0;
+	uint32_t writeMSAAdepthStencilImageOffset = 0;
 
 	//TODO handle multiple subpasses
 	//TODO subpass contents ignored
@@ -51,16 +57,19 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 				if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].samples > 1)
 				{
 					writeMSAAimage = fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image;
+					writeMSAAimageOffset = fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image->levelOffsets[fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].subresourceRange.baseMipLevel];
 				}
 				else
 				{
 					writeImage = fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image;
+					writeImageOffset = fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image->levelOffsets[fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].subresourceRange.baseMipLevel];
 				}
 			}
 
 			if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].loadOp == VK_ATTACHMENT_LOAD_OP_LOAD)
 			{
 				readImage = fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image;
+				readImageOffset = fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].image->levelOffsets[fb->attachmentViews[rp->subpasses[0].pColorAttachments[0].attachment].subresourceRange.baseMipLevel];
 
 				if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].samples > 1)
 				{
@@ -73,6 +82,7 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 		   rp->attachments[rp->subpasses[0].pResolveAttachments[0].attachment].storeOp == VK_ATTACHMENT_STORE_OP_STORE)
 		{
 			writeImage = fb->attachmentViews[rp->subpasses[0].pResolveAttachments[0].attachment].image;
+			writeImageOffset = fb->attachmentViews[rp->subpasses[0].pResolveAttachments[0].attachment].image->levelOffsets[fb->attachmentViews[rp->subpasses[0].pResolveAttachments[0].attachment].subresourceRange.baseMipLevel];
 			performResolve = 1;
 		}
 	}
@@ -85,10 +95,12 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 			if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].samples > 1)
 			{
 				writeMSAAdepthStencilImage = fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image;
+				writeMSAAdepthStencilImageOffset = fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image->levelOffsets[fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].subresourceRange.baseMipLevel];
 			}
 			else
 			{
 				writeDepthStencilImage = fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image;
+				writeDepthStencilImageOffset = fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image->levelOffsets[fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].subresourceRange.baseMipLevel];
 			}
 		}
 
@@ -96,6 +108,7 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 		   rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_LOAD)
 		{
 			readDepthStencilImage = fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image;
+			readDepthStencilImageOffset = fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].image->levelOffsets[fb->attachmentViews[rp->subpasses[0].pDepthStencilAttachment->attachment].subresourceRange.baseMipLevel];
 
 			if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].samples > 1)
 			{
@@ -106,9 +119,22 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 
 
 	clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
-	clInsertNewCLMarker(&commandBuffer->binCl, &cb->handlesCl, &cb->shaderRecCl, cb->shaderRecCount, &cb->uniformsCl,
-						writeImage, readImage, writeDepthStencilImage, readDepthStencilImage, writeMSAAimage, writeMSAAdepthStencilImage,
-						performResolve, readMSAAimage, readMSAAdepthStencilImage);
+	clInsertNewCLMarker(&commandBuffer->binCl, &cb->handlesCl, &cb->shaderRecCl, cb->shaderRecCount, &cb->uniformsCl);
+	commandBuffer->binCl.currMarker->writeImage = writeImage;
+	commandBuffer->binCl.currMarker->writeImageOffset = writeImageOffset;
+	commandBuffer->binCl.currMarker->readImage = readImage;
+	commandBuffer->binCl.currMarker->readImageOffset = readImageOffset;
+	commandBuffer->binCl.currMarker->writeDepthStencilImage = writeDepthStencilImage;
+	commandBuffer->binCl.currMarker->writeDepthStencilImageOffset = writeDepthStencilImageOffset;
+	commandBuffer->binCl.currMarker->readDepthStencilImage = readDepthStencilImage;
+	commandBuffer->binCl.currMarker->readDepthStencilImageOffset = readDepthStencilImageOffset;
+	commandBuffer->binCl.currMarker->writeMSAAimage = writeMSAAimage;
+	commandBuffer->binCl.currMarker->writeMSAAimageOffset = writeMSAAimageOffset;
+	commandBuffer->binCl.currMarker->writeMSAAdepthStencilImage = writeMSAAdepthStencilImage;
+	commandBuffer->binCl.currMarker->writeMSAAdepthStencilImageOffset = writeMSAAdepthStencilImageOffset;
+	commandBuffer->binCl.currMarker->performResolve = performResolve;
+	commandBuffer->binCl.currMarker->readMSAAimage = readMSAAimage;
+	commandBuffer->binCl.currMarker->readMSAAdepthStencilImage = readMSAAdepthStencilImage;
 
 	if(rp->subpasses[0].colorAttachmentCount > 0)
 	{

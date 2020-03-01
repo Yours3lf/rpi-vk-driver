@@ -1530,7 +1530,6 @@ void CreateTexture()
 		vkFreeCommandBuffers(device, commandPool, 1, &mipgenCommandBuffer);
 	}
 
-
 	{ //create sampler for sampling texture
 		VkImageViewCreateInfo view = {};
 		view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;

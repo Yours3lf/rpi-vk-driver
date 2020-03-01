@@ -948,6 +948,18 @@ uint32_t getRenderTargetFormatVC4(VkFormat format)
 	}
 }
 
+//return closest power of 2 number greater or equal to n
+uint32_t getPow2Pad(uint32_t n)
+{
+	n--;
+	n |= n >> 1;
+	n |= n >> 2;
+	n |= n >> 4;
+	n |= n >> 8;
+	n |= n >> 16;
+	return ++n;
+}
+
 ////////////////////////////////////////////////////
 ////////////////////////////////////////////////////
 /// just so we can return a function pointer
