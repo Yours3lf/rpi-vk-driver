@@ -323,8 +323,6 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 
 	i->stride = (i->paddedWidth * bpp) >> 3;
 
-	uint32_t mipSize = 0;
-
 	//mip levels are laid out in memory the following way:
 	//0x0.................................................0xffffff
 	//smallest mip level ... largest mip level - 1, base mip level
@@ -383,12 +381,10 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 //		fprintf(stderr, "mipPaddedHeight: %u\n", mipPaddedHeight);
 //		fprintf(stderr, "i->levelOffsets[%u]: %u\n", c, i->levelOffsets[c]);
 		prevMipPaddedSize += mipPaddedSize;
-
-		mipSize += mipPaddedWidth * mipPaddedHeight;
 	}
 
 	//must be a multiple of 4096 bytes
-	i->levelOffsets[0] = getBOAlignedSize((mipSize * bpp) >> 3, 4096);
+	i->levelOffsets[0] = getBOAlignedSize(prevMipPaddedSize, 4096);
 
 	i->size = getBOAlignedSize(((i->paddedWidth * i->paddedHeight * bpp) >> 3) + i->levelOffsets[0], ARM_PAGE_SIZE);
 

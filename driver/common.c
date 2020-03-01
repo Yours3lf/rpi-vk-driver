@@ -661,13 +661,13 @@ void encodeTextureUniform(uint32_t* params, //array of 4 uint32_t
 	assert(params);
 
 	params[0] = 0
-			| numMipLevels & 0xf
+			| (numMipLevels & 0xf)
 			| (uint32_t)(textureDataType & 0xf) << 4
 			| (uint32_t)(isCubeMap ? 1 : 0) << 9
 			| (uint32_t)(textureBasePtr & 0xfffff) << 12;
 
 	params[1] = 0
-			| wrapS & 0x3
+			| (wrapS & 0x3)
 			| (uint32_t)(wrapT & 0x3) << 2
 			| (uint32_t)(minFilter & 0x7) << 4
 			| (uint32_t)(magFilter & 0x1) << 7
@@ -676,7 +676,7 @@ void encodeTextureUniform(uint32_t* params, //array of 4 uint32_t
 			| (uint32_t)((textureDataType & 0x10) >> 4) << 31;
 
 	params[2] = 0
-			| noAutoLod & 0x1
+			| (noAutoLod & 0x1)
 			| (uint32_t)(cubemapStride & 0x3ffff) << 12
 			| (uint32_t)(isCubeMap ? 1 : 0) << 30;
 
@@ -731,7 +731,7 @@ void encodeStencilValue(uint32_t *values, uint32_t* numValues, VkStencilOpState 
 			break;
 		default:
 			values[1] = 0
-					| front.writeMask & 0xff
+					| (front.writeMask & 0xff)
 					| (front.writeMask & 0xff) << 8;
 			*numValues = 2;
 			break;
@@ -803,7 +803,7 @@ void encodeStencilValue(uint32_t *values, uint32_t* numValues, VkStencilOpState 
 		else
 		{
 			values[2] = 0
-					| front.writeMask & 0xff
+					| (front.writeMask & 0xff)
 					| (back.writeMask & 0xff) << 8;
 			*numValues = 3;
 		}
@@ -905,6 +905,8 @@ uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter, floa
 			return 5;
 		}
 	}
+
+	return -1;
 }
 
 uint8_t getWrapMode(VkSamplerAddressMode mode)

@@ -1555,7 +1555,7 @@ void CreateTexture()
 		sampler.mipLodBias = 0.0f;
 		sampler.compareOp = VK_COMPARE_OP_NEVER;
 		sampler.minLod = 0.0f;
-		sampler.maxLod = 0.0f;
+		sampler.maxLod = 999.0f;
 		sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 		vkCreateSampler(device, &sampler, 0, &textureSampler);
 	}
