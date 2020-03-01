@@ -1528,9 +1528,6 @@ void CreateTexture()
 
 		vkDestroyFence(device, fence, 0);
 		vkFreeCommandBuffers(device, commandPool, 1, &mipgenCommandBuffer);
-
-		vkFreeMemory(device, stagingMemory, 0);
-		vkDestroyBuffer(device, stagingBuffer, 0);
 	}
 
 
