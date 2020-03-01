@@ -121,14 +121,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLAT_SHADE_FLAGS_length);
 	clInsertFlatShadeFlags(&commandBuffer->binCl, 0);
 
-
-
-
-
-
-
-
-
 	//GL Shader State
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
 	clInsertShaderState(&commandBuffer->binCl,
@@ -405,7 +397,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 			}
 		}
 	}
-
 
 	return maxIndex;
 }

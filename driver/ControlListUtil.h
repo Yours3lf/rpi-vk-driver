@@ -42,12 +42,11 @@ typedef struct CLMarker
 	uint32_t uniformsSize;
 } CLMarker;
 
-#define CONTROL_LIST_SIZE 4096
-
 typedef struct ControlList
 {
 	uint8_t* buffer;
 	uint32_t numBlocks;
+	uint32_t blockSize;
 	uint8_t* nextFreeByte; //pointer to the next available free byte
 	CLMarker* currMarker;
 } ControlList;
@@ -67,7 +66,7 @@ void clDummyRelocation(ControlList* relocCl, const ControlListAddress* address);
 uint32_t divRoundUp(uint32_t n, uint32_t d);
 uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset);
 uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size);
-void clInit(ControlList* cl, void* buffer);
+void clInit(ControlList* cl, void* buffer, uint32_t blockSize);
 void clInsertNewCLMarker(ControlList* cl,
 						 ControlList* handlesCL,
 						 ControlList* shaderRecCL,

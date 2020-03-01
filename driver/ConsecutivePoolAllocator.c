@@ -3,6 +3,7 @@
 #include "CustomAssert.h"
 
 #include <stdint.h>
+#include <string.h>
 
 ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, unsigned s)
 {
@@ -96,7 +97,8 @@ void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 		}
 	}
 
-	return ret;
+	//return a pointer pointing past the linked list ptr
+	return ret > 0 ? (char*)ret + 4 : ret;
 }
 
 //free numBlocks consecutive memory
@@ -104,6 +106,8 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 {
 	assert(pa->buf);
 	assert(p);
+
+	p = (char*)p - 4;
 
 	if((void*)pa->nextFreeBlock > p)
 	{
@@ -119,20 +123,9 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 		return;
 	}
 
-	int counter = 0;
-
 	//somewhere the linked list may point after the free block (or null), we need to correct this
 	for(uint32_t* nextFreeBlockCandidate = pa->nextFreeBlock; nextFreeBlockCandidate; nextFreeBlockCandidate = (uint32_t*)*nextFreeBlockCandidate)
 	{
-		//TODO infinite loop
-		counter++;
-
-		if(counter > 100)
-		{
-			fprintf(stderr, "--------------detected infinite loop nextFreeCandidate: %p, *nextfreecandidate: %p, p: %p\n", nextFreeBlockCandidate, *nextFreeBlockCandidate, p);
-			break;
-		}
-
 		if((void*)*nextFreeBlockCandidate > p || !*nextFreeBlockCandidate)
 		{
 			for(uint32_t c = 0; c < numBlocks - 1; ++c)
@@ -153,6 +146,8 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 //else it frees current block and allocates a new one
 void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks)
 {
+	currentMem = (char*)currentMem - 4;
+
 	if(pa->nextFreeBlock == (uint32_t*)((char*)currentMem + currNumBlocks * pa->blockSize))
 	{
 		//we have one more block after current one, so just expand current
@@ -162,7 +157,12 @@ void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, 
 	else
 	{
 		void* ret = consecutivePoolAllocate(pa, currNumBlocks + 1);
+		char* newContents = ret;
+		char* oldContents = currentMem;
+		newContents += 4;
+		oldContents += 4;
+		memcpy(newContents, oldContents, currNumBlocks * pa->blockSize - 4);
 		consecutivePoolFree(pa, currentMem, currNumBlocks);
-		return ret;
+		return newContents;
 	}
 }

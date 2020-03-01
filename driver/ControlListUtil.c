@@ -19,7 +19,7 @@ uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size)
 	assert(cl->buffer);
 	assert(cl->nextFreeByte);
 	uint32_t currSize = cl->nextFreeByte - cl->buffer;
-	if(currSize + size < CONTROL_LIST_SIZE)
+	if(currSize + size < cl->numBlocks * cl->blockSize - 4)
 	{
 		return 1; //fits!
 	}
@@ -29,12 +29,13 @@ uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size)
 	}
 }
 
-void clInit(ControlList* cl, void* buffer)
+void clInit(ControlList* cl, void* buffer, uint32_t blockSize)
 {
 	assert(cl);
 	assert(buffer);
 	cl->buffer = buffer;
 	cl->numBlocks = 1;
+	cl->blockSize = blockSize;
 	cl->nextFreeByte = &cl->buffer[0];
 	cl->currMarker = 0;
 }

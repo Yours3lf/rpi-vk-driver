@@ -539,8 +539,11 @@ void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize)
 	if(!clHasEnoughSpace(cl, commandSize))
 	{
 		uint32_t currSize = cl->nextFreeByte - cl->buffer;
+		uint32_t currMarkerOffset = (uint8_t*)cl->currMarker - cl->buffer;
 		cl->buffer = consecutivePoolReAllocate(&cb->cp->cpa, cl->buffer, cl->numBlocks); assert(cl->buffer);
 		cl->nextFreeByte = cl->buffer + currSize;
+		cl->numBlocks++;
+		cl->currMarker = cl->buffer + currMarkerOffset;
 	}
 }
 
