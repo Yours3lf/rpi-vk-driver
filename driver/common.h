@@ -135,9 +135,14 @@ typedef struct VkDevice_T
 	VkBuffer emulFsqVertexBuffer;
 	VkDeviceMemory emulFsqVertexBufferMemory;
 	VkDescriptorPool emulDescriptorPool;
-	VkDescriptorSetLayout emulBlitDsl;
-	VkSampler emulTextureSampler;
-	VkShaderModule emulBlitShaderModule;
+	VkDescriptorSetLayout emulBufferDsl;
+	VkDescriptorSetLayout emulTextureDsl;
+	VkSampler emulNearestTextureSampler;
+	VkSampler emulLinearTextureSampler;
+	VkShaderModule emulBufferToTextureShaderModule;
+	VkShaderModule emulTextureToTextureShaderModule;
+	VkShaderModule emulTextureToBufferShaderModule; //TODO
+	VkShaderModule emulBufferToBufferShaderModule; //TODO
 } _device;
 
 typedef struct VkRenderPass_T

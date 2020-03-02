@@ -48,6 +48,8 @@ void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 {
 	assert(pa->buf);
 
+//	fprintf(stderr, "pa->nextFreeBlock %u\n", pa->nextFreeBlock);
+
 	if(!pa->nextFreeBlock)
 	{
 		return 0; //no free blocks
