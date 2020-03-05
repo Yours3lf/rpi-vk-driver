@@ -21,7 +21,7 @@ void destroyConsecutivePoolAllocator(ConsecutivePoolAllocator* pa);
 void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks);
 void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBlocks);
 void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks);
-void debugPrint(ConsecutivePoolAllocator*, const char* text);
+void CPAdebugPrint(ConsecutivePoolAllocator* pa);
 
 #if defined (__cplusplus)
 }

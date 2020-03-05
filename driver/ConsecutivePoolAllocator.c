@@ -48,7 +48,7 @@ void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 {
 	assert(pa->buf);
 
-//	fprintf(stderr, "pa->nextFreeBlock %u\n", pa->nextFreeBlock);
+	CPAdebugPrint(pa);
 
 	if(!pa->nextFreeBlock)
 	{
@@ -148,6 +148,8 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 //else it frees current block and allocates a new one
 void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks)
 {
+	fprintf(stderr, "CPA realloc\n");
+
 	currentMem = (char*)currentMem - 4;
 
 	if(pa->nextFreeBlock == (uint32_t*)((char*)currentMem + currNumBlocks * pa->blockSize))
@@ -167,4 +169,24 @@ void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, 
 		consecutivePoolFree(pa, currentMem, currNumBlocks);
 		return newContents;
 	}
+}
+
+void CPAdebugPrint(ConsecutivePoolAllocator* pa)
+{
+	fprintf(stderr, "\nCPA Debug Print\n");
+	fprintf(stderr, "pa->buf %p\n", pa->buf);
+	fprintf(stderr, "pa->nextFreeBlock %p\n", pa->nextFreeBlock);
+
+	fprintf(stderr, "Linear walk:\n");
+	for(char* ptr = pa->buf; ptr != pa->buf + pa->size; ptr += pa->blockSize)
+	{
+		fprintf(stderr, "%p: %p, ", ptr, *(uint32_t*)ptr);
+	}
+
+	fprintf(stderr, "\nLinked List walk:\n");
+	for(uint32_t* ptr = pa->nextFreeBlock; ptr; ptr = *ptr)
+	{
+		fprintf(stderr, "%p: %p, ", ptr, *ptr);
+	}
+	fprintf(stderr, "\n");
 }

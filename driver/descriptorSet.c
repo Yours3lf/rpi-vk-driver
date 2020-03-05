@@ -54,12 +54,19 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 	dp->bufferDescriptorCPA = 0;
 	dp->texelBufferDescriptorCPA = 0;
 
-	void* memem = ALLOCATE(sizeof(mapElem)*(imageDescriptorCount + bufferDescriptorCount + texelBufferDescriptorCount), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+//	fprintf(stderr, "imageDescriptorCount %u\n", imageDescriptorCount);
+//	fprintf(stderr, "bufferDescriptorCount %u\n", bufferDescriptorCount);
+//	fprintf(stderr, "texelBufferDescriptorCount %u\n", texelBufferDescriptorCount);
+
+
+	uint32_t mapElemBlockSize = sizeof(mapElem);
+	uint32_t mapBufSize = mapElemBlockSize * (imageDescriptorCount + bufferDescriptorCount + texelBufferDescriptorCount);
+	void* memem = ALLOCATE(mapBufSize, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!memem)
 	{
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
-	dp->mapElementCPA = createConsecutivePoolAllocator(memem, sizeof(mapElem), sizeof(mapElem) * (imageDescriptorCount + bufferDescriptorCount + texelBufferDescriptorCount));
+	dp->mapElementCPA = createConsecutivePoolAllocator(memem, mapElemBlockSize, mapBufSize);
 
 	if(imageDescriptorCount > 0)
 	{
@@ -69,12 +76,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		void* mem = ALLOCATE(sizeof(_descriptorImage)*imageDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		uint32_t blockSize = sizeof(_descriptorImage);
+		void* mem = ALLOCATE(blockSize*imageDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
-		*dp->imageDescriptorCPA = createConsecutivePoolAllocator(mem, sizeof(_descriptorImage), sizeof(_descriptorImage) * imageDescriptorCount);
+		*dp->imageDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * imageDescriptorCount);
 	}
 
 	if(bufferDescriptorCount > 0)
@@ -85,12 +93,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		void* mem = ALLOCATE(sizeof(_descriptorBuffer)*bufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		uint32_t blockSize = sizeof(_descriptorBuffer);
+		void* mem = ALLOCATE(blockSize*bufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
-		*dp->bufferDescriptorCPA = createConsecutivePoolAllocator(mem, sizeof(_descriptorBuffer), sizeof(_descriptorBuffer) * bufferDescriptorCount);
+		*dp->bufferDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * bufferDescriptorCount);
 	}
 
 	if(texelBufferDescriptorCount > 0)
@@ -101,12 +110,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		void* mem = ALLOCATE(sizeof(_descriptorTexelBuffer)*texelBufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+		uint32_t blockSize = sizeof(_descriptorBuffer);
+		void* mem = ALLOCATE(blockSize*texelBufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
-		*dp->texelBufferDescriptorCPA = createConsecutivePoolAllocator(mem, sizeof(_descriptorTexelBuffer), sizeof(_descriptorTexelBuffer) * texelBufferDescriptorCount);
+		*dp->texelBufferDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * texelBufferDescriptorCount);
 	}
 
 	*pDescriptorPool = dp;
@@ -164,6 +174,10 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateDescriptorSets(
 		ds->imageDescriptors = 0;
 		ds->bufferDescriptors = 0;
 		ds->texelBufferDescriptors = 0;
+
+//		fprintf(stderr, "imageDescriptorCount %u\n", imageDescriptorCount);
+//		fprintf(stderr, "bufferDescriptorCount %u\n", bufferDescriptorCount);
+//		fprintf(stderr, "texelBufferDescriptorCount %u\n", texelBufferDescriptorCount);
 
 		if(imageDescriptorCount > 0)
 		{
