@@ -52,6 +52,9 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 	int numCommandBufs = 128;
 	int consecutiveBlockSize = ARM_PAGE_SIZE>>2;
 	int consecutiveBlockNumber = 64;
+	//int numCommandBufs = 30;
+	//int consecutiveBlockSize = getCPABlockSize(256);
+	//int consecutiveBlockNumber = 30;
 	int consecutivePoolSize = consecutiveBlockNumber * consecutiveBlockSize;
 
 	static int counter = 0;

@@ -48,59 +48,46 @@ void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 {
 	assert(pa->buf);
 
-	CPAdebugPrint(pa);
+	//CPAdebugPrint(pa);
 
-	if(!pa->nextFreeBlock)
+	uint32_t* ptr = pa->nextFreeBlock;
+
+	if(!ptr)
 	{
 		return 0; //no free blocks
 	}
 
-	void* ret = 0;
-	for(uint32_t* candidate = pa->nextFreeBlock; candidate; candidate = (uint32_t*)*candidate)
+	for(; ptr; ptr = *ptr)
 	{
 		uint32_t found = 1;
-		uint32_t* prevBlock = candidate;
-		uint32_t* blockAfterCandidate = (uint32_t*)*candidate;
-		//check if there are enough consecutive free blocks
-		for(uint32_t c = 0; c < numBlocks - 1; ++c)
+		char* nextBlock = (char*)ptr + pa->blockSize;
+		uint32_t* nextFree = *ptr;
+		for(uint32_t c = 1; c != numBlocks; ++c)
 		{
-			if(blockAfterCandidate - prevBlock != pa->blockSize)
+			if(nextBlock == nextFree)
 			{
-				//signal if not consecutive (ie. diff is greater than blocksize)
-				found = 0;
-				break;
-			}
-			prevBlock = blockAfterCandidate;
-			blockAfterCandidate = (uint32_t*)*blockAfterCandidate;
-		}
-
-		//numblocks consecutive blocks found
-		if(found)
-		{
-			ret = candidate;
-			if(pa->nextFreeBlock == candidate)
-			{
-				//candidate found immediately
-				pa->nextFreeBlock = blockAfterCandidate;
+				nextFree = *nextFree;
+				nextBlock += pa->blockSize;
 			}
 			else
 			{
-				//somewhere the linked list would point to candidate, we need to correct this
-				for(uint32_t* nextFreeBlockCandidate = pa->nextFreeBlock; nextFreeBlockCandidate; nextFreeBlockCandidate = (uint32_t*)*nextFreeBlockCandidate)
-				{
-					if((uint32_t*)*nextFreeBlockCandidate == candidate)
-					{
-						*nextFreeBlockCandidate = (uint32_t)blockAfterCandidate;
-						break;
-					}
-				}
+				found = 0;
+				break;
 			}
+		}
+
+		if(found)
+		{
+			//set the next free block to the one that the last block we allocated points to
+			pa->nextFreeBlock = *(uint32_t*)((char*)ptr + (numBlocks - 1) * pa->blockSize);
 			break;
 		}
 	}
 
-	//return a pointer pointing past the linked list ptr
-	return ret > 0 ? (char*)ret + 4 : ret;
+	//TODO debug stuff, not for release
+	memset(ptr, 0, numBlocks * pa->blockSize);
+
+	return ptr;
 }
 
 //free numBlocks consecutive memory
@@ -108,66 +95,114 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 {
 	assert(pa->buf);
 	assert(p);
+	assert(numBlocks);
 
-	p = (char*)p - 4;
+	//TODO debug stuff, not for release
+	memset(p, 0, numBlocks * pa->blockSize);
 
-	if((void*)pa->nextFreeBlock > p)
+	//if linked list of free entries is empty
+	if(!pa->nextFreeBlock)
 	{
+		//then restart linked list
+		pa->nextFreeBlock = p;
+		char* listPtr = pa->nextFreeBlock;
 		for(uint32_t c = 0; c < numBlocks - 1; ++c)
 		{
-			//set each allocated block to form a linked list
-			*(uint32_t*)((char*)p + c * pa->blockSize) = (uint32_t)((char*)p + (c + 1) * pa->blockSize);
+			*(uint32_t*)listPtr = listPtr + pa->blockSize;
+			listPtr += pa->blockSize;
 		}
-		//set last block to point to the next free
-		*(uint32_t*)((char*)p + (numBlocks - 1) * pa->blockSize) = (uint32_t)pa->nextFreeBlock;
-		//set next free to the newly freed block
-		pa->nextFreeBlock = p;
-		return;
-	}
 
-	//somewhere the linked list may point after the free block (or null), we need to correct this
-	for(uint32_t* nextFreeBlockCandidate = pa->nextFreeBlock; nextFreeBlockCandidate; nextFreeBlockCandidate = (uint32_t*)*nextFreeBlockCandidate)
+		//end list
+		*(uint32_t*)listPtr = 0;
+	}
+	else
 	{
-		if((void*)*nextFreeBlockCandidate > p || !*nextFreeBlockCandidate)
+		//if list is not empty, try to form consecutive parts
+
+		//search free list to see if the freed element fits anywhere
+		uint32_t found = 0;
+		for(uint32_t* listPtr = pa->nextFreeBlock; listPtr; listPtr = *listPtr)
 		{
+			//if the freed block fits in the list somewhere
+			if(((char*)listPtr + pa->blockSize) == p)
+			{
+				//add it into the list
+				uint32_t* tmp = *listPtr;
+				*listPtr = p;
+
+				//reconstruct linked list within the freed element
+				char* ptr = *listPtr;
+				for(uint32_t c = 0; c < numBlocks - 1; ++c)
+				{
+					*(uint32_t*)ptr = ptr + pa->blockSize;
+					ptr += pa->blockSize;
+				}
+
+				//set the last element to point to the one after
+				*(uint32_t*)ptr = tmp;
+
+				found = 1;
+			}
+		}
+
+		if(!found)
+		{
+			//if it doesn't fit anywhere, just simply add it to the linked list
+			uint32_t* tmp = pa->nextFreeBlock;
+
+			pa->nextFreeBlock = p;
+			char* listPtr = pa->nextFreeBlock;
 			for(uint32_t c = 0; c < numBlocks - 1; ++c)
 			{
-				//set each allocated block to form a linked list
-				*(uint32_t*)((char*)p + c * pa->blockSize) = (uint32_t)((char*)p + (c + 1) * pa->blockSize);
+				*(uint32_t*)listPtr = listPtr + pa->blockSize;
+				listPtr += pa->blockSize;
 			}
-			//set last block to point to the next free
-			*(uint32_t*)((char*)p + (numBlocks - 1) * pa->blockSize) = *nextFreeBlockCandidate;
 
-			*nextFreeBlockCandidate = (uint32_t)p;
-			break;
+			//set the last element to point to the one after
+			*(uint32_t*)listPtr = tmp;
 		}
 	}
 }
 
-//if there's a block free after the current block, it just allocates one more block
-//else it frees current block and allocates a new one
 void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks)
 {
 	fprintf(stderr, "CPA realloc\n");
 
-	currentMem = (char*)currentMem - 4;
+	uint32_t* nextCandidate = (char*)currentMem + pa->blockSize * currNumBlocks;
 
-	if(pa->nextFreeBlock == (uint32_t*)((char*)currentMem + currNumBlocks * pa->blockSize))
+	uint32_t* prevPtr = 0;
+	for(uint32_t* listPtr = pa->nextFreeBlock; listPtr; listPtr = *listPtr)
 	{
-		//we have one more block after current one, so just expand current
-		pa->nextFreeBlock = (uint32_t*)*pa->nextFreeBlock;
-		return currentMem;
+		if(listPtr == nextCandidate)
+		{
+			//if the free list contains an element that points right after our currentMem
+			//we can just use that one
+			*prevPtr = *listPtr;
+
+			//TODO debug stuff, not for release
+			memset(nextCandidate, 0, pa->blockSize);
+
+			return currentMem;
+		}
+
+		prevPtr = listPtr;
 	}
-	else
+
 	{
-		void* ret = consecutivePoolAllocate(pa, currNumBlocks + 1);
-		char* newContents = ret;
-		char* oldContents = currentMem;
-		newContents += 4;
-		oldContents += 4;
-		memcpy(newContents, oldContents, currNumBlocks * pa->blockSize - 4);
+		//try to allocate one more block
+		void* newMem = consecutivePoolAllocate(pa, currNumBlocks + 1);
+
+		if(!newMem)
+		{
+			return 0;
+		}
+
+		//copy over old content
+		memcpy(newMem, currentMem, currNumBlocks * pa->blockSize);
+		//free current element
 		consecutivePoolFree(pa, currentMem, currNumBlocks);
-		return newContents;
+
+		return newMem;
 	}
 }
 
