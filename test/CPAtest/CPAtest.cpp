@@ -52,8 +52,49 @@ void simpleTest()
 	CPAdebugPrint(&cpa);
 }
 
+void allocTest(uint32_t numToAlloc)
+{
+	uint32_t blocksize = 16;
+	uint32_t numblocks = 8;
+	uint32_t size = numblocks * blocksize;
+
+	ConsecutivePoolAllocator cpa = createConsecutivePoolAllocator((char*)malloc(size), blocksize, size);
+	//CPAdebugPrint(&cpa);
+
+	void* mem1 = consecutivePoolAllocate(&cpa, numToAlloc);
+	CPAdebugPrint(&cpa);
+
+	fprintf(stderr, "\nmem %p\n", mem1);
+}
+
+void freeOneTest(uint32_t which)
+{
+	uint32_t blocksize = 16;
+	uint32_t numblocks = 8;
+	uint32_t size = numblocks * blocksize;
+
+	ConsecutivePoolAllocator cpa = createConsecutivePoolAllocator((char*)malloc(size), blocksize, size);
+	//CPAdebugPrint(&cpa);
+
+	void* mem[8];
+	for(uint32_t c = 0; c < 8; ++c)
+	{
+		mem[c] = consecutivePoolAllocate(&cpa, 1);
+	}
+
+	consecutivePoolFree(&cpa, mem[which], 1);
+	CPAdebugPrint(&cpa);
+
+	//fprintf(stderr, "\nmem %p\n", mem);
+}
+
 int main() {
-	simpleTest();
+	//simpleTest();
+
+	allocTest(1);
+	allocTest(3);
+	allocTest(8);
+	allocTest(9);
 
 	return 0;
 }

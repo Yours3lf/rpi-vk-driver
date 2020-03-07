@@ -46,7 +46,9 @@ void destroyConsecutivePoolAllocator(ConsecutivePoolAllocator* pa)
 //allocate numBlocks consecutive memory
 void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 {
+	assert(pa);
 	assert(pa->buf);
+	assert(numBlocks);
 
 	//CPAdebugPrint(pa);
 
@@ -85,7 +87,7 @@ void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 	}
 
 	//TODO debug stuff, not for release
-	memset(ptr, 0, numBlocks * pa->blockSize);
+	if(ptr) memset(ptr, 0, numBlocks * pa->blockSize);
 
 	return ptr;
 }
@@ -93,6 +95,7 @@ void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 //free numBlocks consecutive memory
 void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBlocks)
 {
+	assert(pa);
 	assert(pa->buf);
 	assert(p);
 	assert(numBlocks);
@@ -166,6 +169,11 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 
 void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks)
 {
+	assert(pa);
+	assert(pa->buf);
+	assert(currentMem);
+	assert(currNumBlocks);
+
 	fprintf(stderr, "CPA realloc\n");
 
 	uint32_t* nextCandidate = (char*)currentMem + pa->blockSize * currNumBlocks;
