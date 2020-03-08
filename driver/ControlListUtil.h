@@ -15,7 +15,7 @@ typedef struct ControlListAddress
 typedef struct CLMarker
 {
 	//current binning cl buf position is this struct in the CL plus sizeof(this struct)
-	struct CLMarker* nextMarker;
+	struct CLMarker* nextMarker; //TODO change to offset, could be reallocated
 	uint32_t size; //in bytes
 	void* writeImage; //_image* to render to
 	void* readImage;
@@ -39,12 +39,12 @@ typedef struct CLMarker
 
 	//pointers that point to where all the other CL data is
 	//plus sizes
-	uint8_t* handlesBuf;
+	uint8_t* handlesBuf; //TODO change to offset, could be reallocated
 	uint32_t handlesSize;
-	uint8_t* shaderRecBuf;
+	uint8_t* shaderRecBuf; //TODO change to offset, could be reallocated
 	uint32_t shaderRecSize;
 	uint32_t shaderRecCount;
-	uint8_t* uniformsBuf;
+	uint8_t* uniformsBuf; //TODO change to offset, could be reallocated
 	uint32_t uniformsSize;
 } CLMarker;
 
@@ -54,7 +54,7 @@ typedef struct ControlList
 	uint32_t numBlocks;
 	uint32_t blockSize;
 	uint8_t* nextFreeByte; //pointer to the next available free byte
-	CLMarker* currMarker;
+	CLMarker* currMarker; //TODO change to offset, could be reallocated
 } ControlList;
 
 void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, uint8_t* handlesBuf, uint32_t handlesSize, const ControlListAddress* address);

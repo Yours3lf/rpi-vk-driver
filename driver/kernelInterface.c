@@ -477,6 +477,10 @@ uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
 
 	vc4_bo_label(fd, handle, name);
 
+	//TODO debug stuff, not for release
+	void* ptr = vc4_bo_map(fd, handle, 0, size);
+	memset(ptr, 0, size);
+
 	return handle;
 }
 

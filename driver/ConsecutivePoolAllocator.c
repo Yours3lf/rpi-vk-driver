@@ -174,6 +174,8 @@ void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, 
 	assert(currentMem);
 	assert(currNumBlocks);
 
+	assert(0);
+
 	fprintf(stderr, "CPA realloc\n");
 
 	uint32_t* nextCandidate = (char*)currentMem + pa->blockSize * currNumBlocks;

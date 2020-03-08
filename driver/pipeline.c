@@ -221,13 +221,12 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 				//patchShaderDepthStencilBlending(&s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT], &s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT], pCreateInfos[c].pDepthStencilState, pCreateInfos[c].pColorBlendState->pAttachments, pAllocator);
 
 				//TODO if debug...
-				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT] / 8; ++e)
-				{
-					printf("%#llx ", s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT][e]);
-					disassemble_qpu_asm(s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT][e]);
-				}
-
-				printf("\n");
+//				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT] / 8; ++e)
+//				{
+//					printf("%#llx ", s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT][e]);
+//					disassemble_qpu_asm(s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT][e]);
+//				}
+//				printf("\n");
 
 				s->bos[RPI_ASSEMBLY_TYPE_FRAGMENT] = vc4_bo_alloc_shader(controlFd, s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT], &s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT]);
 			}
@@ -235,21 +234,19 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 			if(pCreateInfos[c].pStages[d].stage & VK_SHADER_STAGE_VERTEX_BIT)
 			{
 				//TODO if debug...
-				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_VERTEX] / 8; ++e)
-				{
-					printf("%#llx ", s->instructions[RPI_ASSEMBLY_TYPE_VERTEX][e]);
-					disassemble_qpu_asm(s->instructions[RPI_ASSEMBLY_TYPE_VERTEX][e]);
-				}
+//				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_VERTEX] / 8; ++e)
+//				{
+//					printf("%#llx ", s->instructions[RPI_ASSEMBLY_TYPE_VERTEX][e]);
+//					disassemble_qpu_asm(s->instructions[RPI_ASSEMBLY_TYPE_VERTEX][e]);
+//				}
+//				printf("\n");
 
-				printf("\n");
-
-				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_COORDINATE] / 8; ++e)
-				{
-					printf("%#llx ", s->instructions[RPI_ASSEMBLY_TYPE_COORDINATE][e]);
-					disassemble_qpu_asm(s->instructions[RPI_ASSEMBLY_TYPE_COORDINATE][e]);
-				}
-
-				printf("\n");
+//				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_COORDINATE] / 8; ++e)
+//				{
+//					printf("%#llx ", s->instructions[RPI_ASSEMBLY_TYPE_COORDINATE][e]);
+//					disassemble_qpu_asm(s->instructions[RPI_ASSEMBLY_TYPE_COORDINATE][e]);
+//				}
+//				printf("\n");
 
 				s->bos[RPI_ASSEMBLY_TYPE_COORDINATE] = vc4_bo_alloc_shader(controlFd, s->instructions[RPI_ASSEMBLY_TYPE_COORDINATE], &s->sizes[RPI_ASSEMBLY_TYPE_COORDINATE]);
 				s->bos[RPI_ASSEMBLY_TYPE_VERTEX] = vc4_bo_alloc_shader(controlFd, s->instructions[RPI_ASSEMBLY_TYPE_VERTEX], &s->sizes[RPI_ASSEMBLY_TYPE_VERTEX]);
