@@ -1016,6 +1016,7 @@ void CreateShaders()
 			"sig_none ; r3 = fadd.pm.always(r0, r5) ; nop = nop(r0, r0) ;"
 			///write texture addresses (x, y)
 			///writing tmu0_s signals that all coordinates are written
+			///"sig_small_imm ; tmu0_b = or.always(b, b, nop, 0x3f800000) ; nop = nop(r0, r0) ;"
 			"sig_none ; tmu0_t = or.always(r3, r3) ; nop = nop(r0, r0) ;"
 			"sig_none ; tmu0_s = or.always(r2, r2) ; nop = nop(r0, r0) ;"
 			///suspend thread (after 2 nops) to wait for TMU request to finish
@@ -1549,10 +1550,11 @@ void CreateTexture()
 		sampler.magFilter = VK_FILTER_LINEAR;
 		sampler.minFilter = VK_FILTER_LINEAR;
 		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		//sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		sampler.mipLodBias = 0.0f;
+		//sampler.mipLodBias = 1.0f;
 		sampler.compareOp = VK_COMPARE_OP_NEVER;
 		sampler.minLod = 0.0f;
 		sampler.maxLod = 999.0f;

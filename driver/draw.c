@@ -364,6 +364,14 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 						assert(0); //unsupported
 					}
 
+					//TODO handle this properly
+					//TMU0_B requires an extra uniform written
+					//we need to signal that somehow from API side
+					if(di->sampler->mipLodBias > 0.0f)
+					{
+						size += 4;
+					}
+
 					//emit tex parameters
 					clFit(commandBuffer, &commandBuffer->uniformsCl, size);
 					clInsertData(&commandBuffer->uniformsCl, size, params);

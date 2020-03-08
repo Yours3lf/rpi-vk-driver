@@ -346,33 +346,33 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 			tiling = VC4_TILING_FORMAT_LT;
 		}
 
-		switch(tiling)
-		{
-		case VC4_TILING_FORMAT_T:
-			{
-				//T format
-				mipPaddedWidth = roundUp(mipWidth, utileW * 8);
-				mipPaddedHeight = roundUp(mipHeight, utileH * 8);
-				break;
-			}
-		case VC4_TILING_FORMAT_LT:
-			{
-				//LT format
-				mipPaddedWidth = roundUp(mipWidth, utileW);
-				mipPaddedHeight = roundUp(mipHeight, utileH);
-				break;
-			}
-		case VC4_TILING_FORMAT_LINEAR:
-			{
-				//linear format
-				mipPaddedWidth = roundUp(mipWidth, utileW);
-				mipPaddedHeight = mipHeight;
-				break;
-			}
-		}
+//		switch(tiling)
+//		{
+//		case VC4_TILING_FORMAT_T:
+//			{
+//				//T format
+//				mipPaddedWidth = roundUp(mipWidth, utileW * 8);
+//				mipPaddedHeight = roundUp(mipHeight, utileH * 8);
+//				break;
+//			}
+//		case VC4_TILING_FORMAT_LT:
+//			{
+//				//LT format
+//				mipPaddedWidth = roundUp(mipWidth, utileW);
+//				mipPaddedHeight = roundUp(mipHeight, utileH);
+//				break;
+//			}
+//		case VC4_TILING_FORMAT_LINEAR:
+//			{
+//				//linear format
+//				mipPaddedWidth = roundUp(mipWidth, utileW);
+//				mipPaddedHeight = mipHeight;
+//				break;
+//			}
+//		}
 
-//		mipPaddedWidth = getPow2Pad(mipPaddedWidth);
-//		mipPaddedHeight = getPow2Pad(mipPaddedHeight);
+		mipPaddedWidth = getPow2Pad(mipWidth);
+		mipPaddedHeight = getPow2Pad(mipHeight);
 
 		uint32_t mipPaddedSize = (mipPaddedWidth * mipPaddedHeight * bpp) >> 3;
 
