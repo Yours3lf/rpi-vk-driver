@@ -332,7 +332,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 					//TODO handle miplevels according to subresource rage?
 					uint32_t params[4];
 					encodeTextureUniform(params,
-										 di->imageView->image->miplevels - 1,
+										 di->imageView->subresourceRange.levelCount - 1,
 										 getTextureDataType(di->imageView->interpretedFormat),
 										 di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE,
 										 0, //TODO cubemap stride
@@ -343,7 +343,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 										 di->sampler->magFilter == VK_FILTER_NEAREST,
 										 getWrapMode(di->sampler->addressModeU),
 										 getWrapMode(di->sampler->addressModeV),
-										 0 //TODO no auto LOD
+										 di->sampler->disableAutoLod
 										 );
 
 					uint32_t size = 0;
@@ -367,7 +367,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 					//TODO handle this properly
 					//TMU0_B requires an extra uniform written
 					//we need to signal that somehow from API side
-					if(di->sampler->mipLodBias > 0.0f)
+					if(di->sampler->mipLodBias > 0.0f || di->sampler->disableAutoLod)
 					{
 						size += 4;
 					}

@@ -434,27 +434,16 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			uint32_t widthInTiles = 0, heightInTiles = 0;
 			uint32_t width = 0, height = 0, bpp = 0;
 
+			width = marker->width;
+			height = marker->height;
+
 			if(writeImage)
 			{
-				width = writeImage->width;
-				height = writeImage->height;
 				bpp = getFormatBpp(writeImage->format);
 			}
 			else if(writeMSAAimage)
 			{
-				width = writeMSAAimage->width;
-				height = writeMSAAimage->height;
 				bpp = getFormatBpp(writeMSAAimage->format);
-			}
-			else if(writeDepthStencilImage)
-			{
-				width = writeDepthStencilImage->width;
-				height = writeDepthStencilImage->height;
-			}
-			else if(writeMSAAdepthStencilImage)
-			{
-				width = writeMSAAdepthStencilImage->width;
-				height = writeMSAAdepthStencilImage->height;
 			}
 
 			if(bpp == 64)
@@ -509,7 +498,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			submitCl.shader_rec_count = marker->shaderRecCount;
 			submitCl.uniforms_size = marker->uniformsSize;
 
-			/**
+			/**/
 			printf("BCL:\n");
 			clDump(((uint8_t*)marker) + sizeof(CLMarker), marker->size);
 			printf("BO handles: ");

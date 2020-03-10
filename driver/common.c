@@ -678,7 +678,7 @@ void encodeTextureUniform(uint32_t* params, //array of 4 uint32_t
 	params[2] = 0
 			| (noAutoLod & 0x1)
 			| (uint32_t)(cubemapStride & 0x3ffff) << 12
-			| (uint32_t)(isCubeMap ? 1 : 0) << 30;
+			| (uint32_t)(isCubeMap || noAutoLod ? 1 : 0) << 30;
 
 	//TODO
 	//child images

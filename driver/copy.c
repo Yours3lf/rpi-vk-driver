@@ -136,19 +136,28 @@ void createSampler(VkDevice device, VkSampler* nearestTextureSampler, VkSampler*
 	sampler.mipLodBias = 0.0f;
 	sampler.compareOp = VK_COMPARE_OP_NEVER;
 	sampler.minLod = 0.0f;
-	sampler.maxLod = 999.0f;
+	sampler.maxLod = 0.0f;
 	sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 	rpi_vkCreateSampler(device, &sampler, 0, nearestTextureSampler);
+	_sampler* s = nearestTextureSampler;
+	s->disableAutoLod = 1;
 
 	sampler.magFilter = VK_FILTER_LINEAR;
 	sampler.minFilter = VK_FILTER_LINEAR;
 	rpi_vkCreateSampler(device, &sampler, 0, linearTextureSampler);
+	s = linearTextureSampler;
+	s->disableAutoLod = 1;
 }
 
 void createRendertarget(VkDevice device, uint32_t baseMip, uint32_t width, uint32_t height, VkImage textureImage, VkImageView* textureView, VkRenderPass* offscreenRenderPass, VkFramebuffer* offscreenFramebuffer)
 {
 	_image* img = textureImage;
 	VkFormat format = img->format;
+
+	printf("\nCopy Create RT\n");
+	printf("baseMip %u\n", baseMip);
+	printf("width %u\n", width);
+	printf("height %u\n", height);
 
 	//we can't render to an ETC1 texture, so we'll just stick with RGBA8 for now
 	if(img->format == VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK)
@@ -723,9 +732,10 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 			///r0 = varyingY * W
 			"sig_none ; r2 = fadd.always(r0, r5, pay_zw, vary) ; r0 = fmul.always(a, b) ;"
 			///r3 = r0 + r5 (C)
-			"sig_none ; r3 = fadd.pm.always(r0, r5) ; nop = nop(r0, r0) ;"
+			"sig_none ; r3 = fadd.pm.always(r0, r5, nop, uni) ; r0 = v8min.always(b, b) ;"
 			///write texture addresses (x, y)
 			///writing tmu0_s signals that all coordinates are written
+			"sig_none ; tmu0_b = or.always(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; tmu0_t = or.always(r3, r3) ; nop = nop(r0, r0) ;"
 			"sig_none ; tmu0_s = or.always(r2, r2) ; nop = nop(r0, r0) ;"
 			///suspend thread (after 2 nops) to wait for TMU request to finish
@@ -740,6 +750,7 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 			"sig_none ; r2 = fmax.pm.always.8c(r4, r4) ; r0.8b = v8min.always(r1, r1) ;"
 			"sig_none ; r3 = fmax.pm.always.8d(r4, r4) ; r0.8c = v8min.always(r2, r2) ;"
 			"sig_none ; nop = nop.pm(r0, r0) ; r0.8d = v8min.always(r3, r3) ;"
+			///"sig_small_imm; r0 = or.always(b, b, nop, -1) ; nop = nop(r0, r0) ;"
 			"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
@@ -793,6 +804,15 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 
 		//fragment shader uniforms
 		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			0, //resource offset
+			VK_SHADER_STAGE_FRAGMENT_BIT
+		},
+		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, //descriptor type
 			0, //descriptor set #
@@ -800,7 +820,8 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 			0, //descriptor array element #
 			0, //resource offset
 			VK_SHADER_STAGE_FRAGMENT_BIT
-		}
+		},
+
 	};
 
 	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {};
@@ -998,6 +1019,24 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		VkPipeline blitPipeline;
 		VkPipelineLayout blitPipelineLayout;
 
+		VkSampler mipSampler;
+		VkSamplerCreateInfo samplerCI = {};
+		samplerCI.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerCI.magFilter = filter == VK_FILTER_LINEAR ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+		samplerCI.minFilter = filter == VK_FILTER_LINEAR ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+		samplerCI.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		samplerCI.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCI.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCI.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerCI.mipLodBias = srcMipLevel;
+		samplerCI.compareOp = VK_COMPARE_OP_NEVER;
+		samplerCI.minLod = 0.0f;
+		samplerCI.maxLod = 0.0f;
+		samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+		rpi_vkCreateSampler(device, &samplerCI, 0, &mipSampler);
+		_sampler* s = mipSampler;
+		s->disableAutoLod = 1;
+
 		VkImageViewCreateInfo view = {};
 		view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		view.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -1010,7 +1049,6 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		view.image = srcImage;
 		rpi_vkCreateImageView(device, &view, 0, &srcTextureView);
 
-		//TODO this crashes somehow
 		//create blit descriptor set
 		VkDescriptorSetAllocateInfo allocInfo = {};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1022,7 +1060,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		VkDescriptorImageInfo imageInfo;
 		imageInfo.imageView = srcTextureView;
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.sampler = filter == VK_FILTER_LINEAR ? device->emulLinearTextureSampler : device->emulNearestTextureSampler;
+		imageInfo.sampler = mipSampler;
 
 		VkWriteDescriptorSet writeDescriptorSet = {};
 		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1034,7 +1072,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		rpi_vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);
 
 		createRendertarget(device, dstMipLevel, dstWidth, dstHeight, dstImage, &dstTextureView, &offscreenRenderPass, &offscreenFramebuffer);
-		createPipeline(device, 1, 4, 1, device->emulTextureToTextureShaderModule, device->emulTextureDsl, &blitPipelineLayout, offscreenRenderPass, &blitPipeline);
+		createPipeline(device, 1, 4, 2, device->emulTextureToTextureShaderModule, device->emulTextureDsl, &blitPipelineLayout, offscreenRenderPass, &blitPipeline);
 
 		//offscreen rendering
 		VkClearValue offscreenClearValues =
@@ -1084,6 +1122,11 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		vertConstants[3] = *(uint32_t*)&Zs;
 
 		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vertConstants), &vertConstants);
+
+		uint32_t fragConstants[1];
+		vertConstants[0] = *(uint32_t*)&samplerCI.mipLodBias;
+
+		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragConstants), &fragConstants);
 
 		rpi_vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 

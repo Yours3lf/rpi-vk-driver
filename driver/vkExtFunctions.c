@@ -112,6 +112,15 @@ VkResult rpi_vkCreateShaderModuleFromRpiAssemblyEXT(VkPhysicalDevice physicalDev
 			}
 
 			shader->sizes[c] = size;
+
+
+			for(uint64_t e = 0; e < shader->sizes[c] / 8; ++e)
+			{
+				printf("%#llx ", shader->instructions[c][e]);
+				disassemble_qpu_asm(shader->instructions[c][e]);
+			}
+			printf("\n");
+			shader->bos[c] = vc4_bo_alloc_shader(controlFd, shader->instructions[c], &shader->sizes[c]);
 		}
 		else
 		{

@@ -32,6 +32,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSampler(
 	s->maxLod = pCreateInfo->maxLod;
 	s->borderColor = pCreateInfo->borderColor;
 	s->unnormalizedCoordinates = pCreateInfo->unnormalizedCoordinates;
+	s->disableAutoLod = 0;
 
 	*pSampler = s;
 

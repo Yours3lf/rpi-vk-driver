@@ -215,29 +215,18 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo);
 	}
 
-	uint32_t width = 0, height = 0, bpp = 0;
+	uint32_t bpp = 0;
+
+	cb->binCl.currMarker->width = fb->width;
+	cb->binCl.currMarker->height = fb->height;
 
 	if(writeImage)
 	{
-		width = writeImage->width;
-		height = writeImage->height;
 		bpp = getFormatBpp(writeImage->format);
 	}
 	else if(writeMSAAimage)
 	{
-		width = writeMSAAimage->width;
-		height = writeMSAAimage->height;
 		bpp = getFormatBpp(writeMSAAimage->format);
-	}
-	else if(writeDepthStencilImage)
-	{
-		width = writeDepthStencilImage->width;
-		height = writeDepthStencilImage->height;
-	}
-	else if(writeMSAAdepthStencilImage)
-	{
-		width = writeMSAAdepthStencilImage->width;
-		height = writeMSAAdepthStencilImage->height;
 	}
 
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
@@ -248,7 +237,7 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 										 0, //auto initialize tile state data array
 										 bpp == 64, //64 bit color mode
 										 writeMSAAimage || writeMSAAdepthStencilImage || performResolve ? 1 : 0, //msaa
-										 width, height,
+										 cb->binCl.currMarker->width, cb->binCl.currMarker->height,
 										 0, //tile state data array address
 										 0, //tile allocation memory size
 										 0); //tile allocation memory address

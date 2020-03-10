@@ -1337,7 +1337,7 @@ void CreateTexture()
 
 		VkBufferImageCopy bufferCopyRegion = {};
 		bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		bufferCopyRegion.imageSubresource.mipLevel = 1;
+		bufferCopyRegion.imageSubresource.mipLevel = 0;
 		bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
 		bufferCopyRegion.imageSubresource.layerCount = 1;
 		bufferCopyRegion.imageExtent.width = width;

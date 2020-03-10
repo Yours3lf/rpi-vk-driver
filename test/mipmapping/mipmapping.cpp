@@ -1371,7 +1371,7 @@ void CreateTexture()
 
 		VkBufferImageCopy bufferCopyRegion = {};
 		bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		bufferCopyRegion.imageSubresource.mipLevel = 1;
+		bufferCopyRegion.imageSubresource.mipLevel = 0;
 		bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
 		bufferCopyRegion.imageSubresource.layerCount = 1;
 		bufferCopyRegion.imageExtent.width = width;
@@ -1433,6 +1433,7 @@ void CreateTexture()
 
 		vkAllocateCommandBuffers(device, &allocInfo, &mipgenCommandBuffer);
 
+		//for(uint32_t c = 1; c < 2; ++c)
 		for(uint32_t c = 1; c < mipLevels; ++c)
 		{
 			VkImageBlit imageBlit = {};
@@ -1561,6 +1562,8 @@ void CreateTexture()
 		sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 		vkCreateSampler(device, &sampler, 0, &textureSampler);
 	}
+
+	//exit(0);
 }
 
 void CreateDescriptorSet()

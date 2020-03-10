@@ -36,6 +36,7 @@ typedef struct CLMarker
 	void* perfmonID;
 	uint32_t clearColor[2];
 	uint32_t clearDepth, clearStencil;
+	uint32_t width, height; //render w/h
 
 	//pointers that point to where all the other CL data is
 	//plus sizes

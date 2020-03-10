@@ -422,6 +422,7 @@ typedef struct VkSampler_T
 	VkSamplerMipmapMode mipmapMode;
 	VkSamplerAddressMode addressModeU, addressModeV, addressModeW;
 	float mipLodBias;
+	uint32_t disableAutoLod;
 	VkBool32 anisotropyEnable;
 	float maxAnisotropy;
 	VkBool32 compareEnable;
