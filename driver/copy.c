@@ -1124,7 +1124,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vertConstants), &vertConstants);
 
 		uint32_t fragConstants[1];
-		vertConstants[0] = *(uint32_t*)&samplerCI.mipLodBias;
+		fragConstants[0] = *(uint32_t*)&samplerCI.mipLodBias;
 
 		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragConstants), &fragConstants);
 
