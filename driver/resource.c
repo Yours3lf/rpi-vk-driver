@@ -331,6 +331,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 	//mip levels must be padded to either T or LT format depending on size
 
 	uint32_t prevMipPaddedSize = 0;
+	uint32_t mipSizes[11];
 
 	for(uint32_t c = i->miplevels - 1; c >= 1; --c)
 	{
@@ -339,12 +340,12 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 		uint32_t nonPaddedSize = (mipWidth * mipHeight * bpp) >> 3;
 		uint32_t mipPaddedWidth, mipPaddedHeight;
 
-		uint32_t tiling = i->tiling;
+//		uint32_t tiling = i->tiling;
 
-		if(i->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
-		{
-			tiling = VC4_TILING_FORMAT_LT;
-		}
+//		if(i->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
+//		{
+//			tiling = VC4_TILING_FORMAT_LT;
+//		}
 
 //		switch(tiling)
 //		{
@@ -373,18 +374,28 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 
 		mipPaddedWidth = getPow2Pad(mipWidth);
 		mipPaddedHeight = getPow2Pad(mipHeight);
+		uint32_t greater = mipPaddedWidth > mipPaddedHeight ? mipPaddedWidth : mipPaddedHeight;
+		greater = greater < 4 ? 4 : greater;
+		mipPaddedWidth = mipPaddedHeight = greater;
 
 		uint32_t mipPaddedSize = (mipPaddedWidth * mipPaddedHeight * bpp) >> 3;
 
+		mipSizes[c] = mipPaddedSize;
 		i->levelOffsets[c] = prevMipPaddedSize;
+		prevMipPaddedSize += mipPaddedSize;
+
 //		fprintf(stderr, "mipPaddedWidth: %u\n", mipPaddedWidth);
 //		fprintf(stderr, "mipPaddedHeight: %u\n", mipPaddedHeight);
 //		fprintf(stderr, "i->levelOffsets[%u]: %u\n", c, i->levelOffsets[c]);
-		prevMipPaddedSize += mipPaddedSize;
 	}
 
 	//must be a multiple of 4096 bytes
 	i->levelOffsets[0] = getBOAlignedSize(prevMipPaddedSize, 4096);
+
+	for(uint32_t c = 1; c < i->miplevels; c++)
+	{
+		i->levelOffsets[c] = i->levelOffsets[c - 1] - mipSizes[c];
+	}
 
 	i->size = getBOAlignedSize(((i->paddedWidth * i->paddedHeight * bpp) >> 3) + i->levelOffsets[0], ARM_PAGE_SIZE);
 

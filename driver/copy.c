@@ -1031,7 +1031,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		samplerCI.mipLodBias = srcMipLevel;
 		samplerCI.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCI.minLod = 0.0f;
-		samplerCI.maxLod = 0.0f;
+		samplerCI.maxLod = 999.0f;
 		samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 		rpi_vkCreateSampler(device, &samplerCI, 0, &mipSampler);
 		_sampler* s = mipSampler;
@@ -1045,7 +1045,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		view.subresourceRange.baseMipLevel = srcMipLevel;
 		view.subresourceRange.baseArrayLayer = 0;
 		view.subresourceRange.layerCount = 1;
-		view.subresourceRange.levelCount = 1;
+		view.subresourceRange.levelCount = srcMipLevel + 1;
 		view.image = srcImage;
 		rpi_vkCreateImageView(device, &view, 0, &srcTextureView);
 
