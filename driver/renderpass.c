@@ -229,6 +229,23 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 		bpp = getFormatBpp(writeMSAAimage->format);
 	}
 
+	uint32_t biggestMip = 0;
+	for(uint32_t c = 0; c < fb->numAttachmentViews; ++c)
+	{
+		biggestMip = max(biggestMip, fb->attachmentViews[c].subresourceRange.baseMipLevel);
+	}
+
+	//pad render size if we are rendering to a mip level
+	cb->binCl.currMarker->renderToMip = biggestMip > 0;
+
+	uint32_t width = cb->binCl.currMarker->width;
+
+	if(cb->binCl.currMarker->renderToMip)
+	{
+		width = getPow2Pad(width);
+		width = width < 4 ? 4 : width;
+	}
+
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
 	clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
 										 0, //double buffer in non ms mode
@@ -237,7 +254,7 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 										 0, //auto initialize tile state data array
 										 bpp == 64, //64 bit color mode
 										 writeMSAAimage || writeMSAAdepthStencilImage || performResolve ? 1 : 0, //msaa
-										 cb->binCl.currMarker->width, cb->binCl.currMarker->height,
+										 width, cb->binCl.currMarker->height,
 										 0, //tile state data array address
 										 0, //tile allocation memory size
 										 0); //tile allocation memory address

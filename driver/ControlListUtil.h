@@ -37,6 +37,7 @@ typedef struct CLMarker
 	uint32_t clearColor[2];
 	uint32_t clearDepth, clearStencil;
 	uint32_t width, height; //render w/h
+	uint32_t renderToMip;
 
 	//pointers that point to where all the other CL data is
 	//plus sizes
@@ -144,8 +145,8 @@ void clInsertClipWindow(ControlList* cl,
 						uint32_t bottomPixelCoord, //uint16
 						uint32_t leftPixelCoord);  //uint16
 void clInsertViewPortOffset(ControlList* cl,
-						int16_t x, //sint16
-						int16_t y //sint16
+						float x,
+						float y
 						);
 void clInsertZMinMaxClippingPlanes(ControlList* cl,
 						float minZw,

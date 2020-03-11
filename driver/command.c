@@ -357,12 +357,21 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			//fill out submit cl fields
 			if(writeImage)
 			{
+				uint32_t nonPaddedSize = (marker->width * marker->height * getFormatBpp(writeImage->format)) >> 3;
+
+				uint32_t tiling = writeImage->tiling;
+
+				if(writeImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
+				{
+					tiling = VC4_TILING_FORMAT_LT;
+				}
+
 				submitCl.color_write.hindex = writeImageIdx;
 				submitCl.color_write.offset = marker->writeImageOffset;
 				submitCl.color_write.flags = 0;
 				submitCl.color_write.bits =
 						VC4_SET_FIELD(getRenderTargetFormatVC4(writeImage->format), VC4_RENDER_CONFIG_FORMAT) |
-						VC4_SET_FIELD(writeImage->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
+						VC4_SET_FIELD(tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
 
 				if(performResolve)
 				{
@@ -380,20 +389,38 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 			if(readImage)
 			{
+				uint32_t nonPaddedSize = (marker->width * marker->height * getFormatBpp(readImage->format)) >> 3;
+
+				uint32_t tiling = readImage->tiling;
+
+				if(readImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
+				{
+					tiling = VC4_TILING_FORMAT_LT;
+				}
+
 				submitCl.color_read.hindex = readImageIdx;
 				submitCl.color_read.offset = marker->readImageOffset;
 				submitCl.color_read.flags = readMSAAimage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0;
 				submitCl.color_read.bits = VC4_SET_FIELD(getRenderTargetFormatVC4(readImage->format), VC4_RENDER_CONFIG_FORMAT) |
-						VC4_SET_FIELD(readImage->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
+						VC4_SET_FIELD(tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
 			}
 
 			if(writeDepthStencilImage)
 			{
+				uint32_t nonPaddedSize = (marker->width * marker->height * getFormatBpp(writeDepthStencilImage->format)) >> 3;
+
+				uint32_t tiling = writeDepthStencilImage->tiling;
+
+				if(writeDepthStencilImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
+				{
+					tiling = VC4_TILING_FORMAT_LT;
+				}
+
 				submitCl.zs_write.hindex = writeDepthStencilImageIdx;
 				submitCl.zs_write.offset = marker->writeDepthStencilImageOffset;
 				submitCl.zs_write.flags = 0;
 				submitCl.zs_write.bits = VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
-										 VC4_SET_FIELD(writeDepthStencilImage->tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);	
+										 VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
 			}
 
 			if(writeMSAAdepthStencilImage)
@@ -406,11 +433,20 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 			if(readDepthStencilImage)
 			{
+				uint32_t nonPaddedSize = (marker->width * marker->height * getFormatBpp(readDepthStencilImage->format)) >> 3;
+
+				uint32_t tiling = readDepthStencilImage->tiling;
+
+				if(readDepthStencilImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
+				{
+					tiling = VC4_TILING_FORMAT_LT;
+				}
+
 				submitCl.zs_read.hindex = readDepthStencilImageIdx;
 				submitCl.zs_read.offset = marker->readDepthStencilImageOffset;
 				submitCl.zs_read.flags = readMSAAdepthStencilImage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0; //TODO is this valid?
 				submitCl.zs_read.bits = VC4_SET_FIELD(getRenderTargetFormatVC4(readDepthStencilImage->format), VC4_RENDER_CONFIG_FORMAT) |
-						VC4_SET_FIELD(readDepthStencilImage->tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
+						VC4_SET_FIELD(tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
 			}
 
 			submitCl.clear_color[0] = marker->clearColor[0];
@@ -459,6 +495,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 			widthInTiles = divRoundUp(width, tileSizeW);
 			heightInTiles = divRoundUp(height, tileSizeH);
+
+			//pad width if rendering to miplevel
+			if(marker->renderToMip)
+			{
+				width = getPow2Pad(width);
+				width = width < 4 ? 4 : width;
+			}
 
 			submitCl.max_x_tile = widthInTiles - 1;
 			submitCl.max_y_tile = heightInTiles - 1;

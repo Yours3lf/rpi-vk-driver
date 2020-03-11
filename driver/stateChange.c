@@ -135,6 +135,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearColorImage(
 
 		commandBuffer->binCl.currMarker->clearColor[0] = commandBuffer->binCl.currMarker->clearColor[1] = packVec4IntoABGR8(pColor->float32);
 		commandBuffer->binCl.currMarker->flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+
+		commandBuffer->binCl.currMarker->width = i->width;
+		commandBuffer->binCl.currMarker->height = i->height;
 	}
 }
 

@@ -530,18 +530,25 @@ void clInsertClipWindow(ControlList* cl,
 	*(uint32_t*)cl->nextFreeByte = moveBits(width, 16, 0) | moveBits(height, 16, 16); cl->nextFreeByte += 4;
 }
 
+uint16_t get16bitSignedFixedNumber(float x)
+{
+	int32_t integerPart = roundf(x * 16.0f);
+	return integerPart & 0xffff;
+}
+
 //viewport centre x/y coordinate
 void clInsertViewPortOffset(ControlList* cl,
-						int16_t x, //sint16
-						int16_t y //sint16
+						float x,
+						float y
 						)
 {
 	assert(cl);
 	assert(cl->buffer);
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_VIEWPORT_OFFSET_opcode; cl->nextFreeByte++;
-	*(int16_t*)cl->nextFreeByte = x * 16; cl->nextFreeByte += 2;
-	*(int16_t*)cl->nextFreeByte = y * 16; cl->nextFreeByte += 2;
+	//expects 16 bit signed fixed point number with 4 fractional bits
+	*(uint16_t*)cl->nextFreeByte = get16bitSignedFixedNumber(x); cl->nextFreeByte += 2;
+	*(uint16_t*)cl->nextFreeByte = get16bitSignedFixedNumber(y); cl->nextFreeByte += 2;
 }
 
 void clInsertZMinMaxClippingPlanes(ControlList* cl,

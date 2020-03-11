@@ -71,7 +71,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 
 		//Viewport Offset
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
-		clInsertViewPortOffset(&commandBuffer->binCl, ((int16_t)vp.width) >> 1, ((int16_t)vp.height) >> 1);
+		clInsertViewPortOffset(&commandBuffer->binCl, vp.width * 0.5f, vp.height * 0.5f);
 
 		cb->viewportDirty = 0;
 	}
