@@ -13,7 +13,7 @@
   - [x] Stencil buffers
   - [x] Indexed draw calls
   - [x] blending
-  - [ ] mipmapping
+  - [x] mipmapping
   - [ ] cube mapping
   - [ ] linear RGBA8 texture support
   - [ ] linear YUYV texture support https://www.linuxtv.org/downloads/v4l-dvb-apis-old/V4L2-PIX-FMT-YUYV.html
