@@ -63,13 +63,13 @@ void createFullscreenQuad(VkDevice device, VkBuffer* fsqVertexBuffer, VkDeviceMe
 
 		float vertices[] =
 		{
-			-1, -1,		0, 0,
-			1, -1,		1, 0,
-			1, 1,		1, 1,
+			-1, -1,		0, 1,
+			1, -1,		1, 1,
+			1, 1,		1, 0,
 
-			1, 1,		1, 1,
-			-1, 1,		0, 1,
-			-1, -1,		0, 0
+			1, 1,		1, 0,
+			-1, 1,		0, 0,
+			-1, -1,		0, 1
 		};
 
 		void* data;
@@ -259,7 +259,7 @@ void createPipeline(VkDevice device, uint32_t needTexcoords, uint32_t numVertUni
 		vertexInputAttributeDescription[0].format = VK_FORMAT_R32G32_SFLOAT;
 
 		vertexInputAttributeDescription[1].binding = 0;
-		vertexInputAttributeDescription[1].location = 0;
+		vertexInputAttributeDescription[1].location = 1;
 		vertexInputAttributeDescription[1].offset = sizeof(float) * 2;
 		vertexInputAttributeDescription[1].format = VK_FORMAT_R32G32_SFLOAT;
 	}

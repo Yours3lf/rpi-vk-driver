@@ -748,11 +748,11 @@ void recordCommandBuffers()
 
 			vkCmdPushConstants(presentCommandBuffers[i], samplePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
 
-			float mipBias = 1.0f;
-			uint32_t fragPushConstants[1];
-			fragPushConstants[0] = *(uint32_t*)&mipBias;
+//			float mipBias = 3.0f;
+//			uint32_t fragPushConstants[1];
+//			fragPushConstants[0] = *(uint32_t*)&mipBias;
 
-			vkCmdPushConstants(presentCommandBuffers[i], samplePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragPushConstants), &fragPushConstants);
+//			vkCmdPushConstants(presentCommandBuffers[i], samplePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragPushConstants), &fragPushConstants);
 
 			vkCmdDraw(presentCommandBuffers[i], tris, 1, 0, 0);
 
@@ -1019,11 +1019,12 @@ void CreateShaders()
 			///r0 = varyingY * W
 			"sig_none ; r2 = fadd.always(r0, r5, pay_zw, vary) ; r0 = fmul.always(a, b) ;"
 			///r3 = r0 + r5 (C)
-			"sig_none ; r3 = fadd.pm.always(r0, r5, nop, uni) ; r0 = v8min.always(b, b) ;"
+			///"sig_none ; r3 = fadd.pm.always(r0, r5, nop, uni) ; r0 = v8min.always(b, b) ;"
+			"sig_none ; r3 = fadd.pm.always(r0, r5) ; nop = nop(r0, r0) ;"
 			///write texture addresses (x, y)
 			///writing tmu0_s signals that all coordinates are written
 			///"sig_small_imm ; tmu0_b = or.always(b, b, nop, 0x3f800000) ; nop = nop(r0, r0) ;"
-			"sig_none ; tmu0_b = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			///"sig_none ; tmu0_b = or.always(r0, r0) ; nop = nop(r0, r0) ;"
 			"sig_none ; tmu0_t = or.always(r3, r3) ; nop = nop(r0, r0) ;"
 			"sig_none ; tmu0_s = or.always(r2, r2) ; nop = nop(r0, r0) ;"
 			///suspend thread (after 2 nops) to wait for TMU request to finish
@@ -1097,15 +1098,15 @@ void CreateShaders()
 			VK_SHADER_STAGE_VERTEX_BIT
 		},
 		//fragment shader uniforms
-		{
-			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
-			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
-			0, //descriptor set #
-			0, //descriptor binding #
-			0, //descriptor array element #
-			0, //resource offset
-			VK_SHADER_STAGE_FRAGMENT_BIT
-		},
+//		{
+//			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+//			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+//			0, //descriptor set #
+//			0, //descriptor binding #
+//			0, //descriptor array element #
+//			0, //resource offset
+//			VK_SHADER_STAGE_FRAGMENT_BIT
+//		},
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, //descriptor type
@@ -1218,7 +1219,8 @@ void CreatePipeline()
 		pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 		pushConstantRanges[1].offset = 0;
-		pushConstantRanges[1].size = 2 * 4; //1 * 32bits
+		//pushConstantRanges[1].size = 2 * 4; //1 * 32bits
+		pushConstantRanges[1].size = 1 * 4; //1 * 32bits
 		pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		VkPipelineShaderStageCreateInfo shaderStageCreateInfo[2] = {};
@@ -1564,15 +1566,16 @@ void CreateTexture()
 
 		VkSamplerCreateInfo sampler = {};
 		sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		sampler.magFilter = VK_FILTER_NEAREST;
-		sampler.minFilter = VK_FILTER_NEAREST;
-		//sampler.minFilter = VK_FILTER_LINEAR;
-		//sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+		//sampler.magFilter = VK_FILTER_NEAREST;
+		sampler.magFilter = VK_FILTER_LINEAR;
+//		sampler.minFilter = VK_FILTER_NEAREST;
+		sampler.minFilter = VK_FILTER_LINEAR;
+		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		//sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		sampler.mipLodBias = 1.0f; //disable auto lod
+		//sampler.mipLodBias = 1.0f; //disable auto lod
 		sampler.compareOp = VK_COMPARE_OP_NEVER;
 		sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 		vkCreateSampler(device, &sampler, 0, &textureSampler);
