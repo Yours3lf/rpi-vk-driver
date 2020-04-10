@@ -548,7 +548,7 @@ uint32_t encodeVPMSetup(uint8_t stride,
 						uint8_t address,
 						uint8_t vectorComponentsToRead);
 uint8_t getTextureDataType(VkFormat format);
-uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter, float maxLod);
+uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter);//, float maxLod);
 uint8_t getWrapMode(VkSamplerAddressMode mode);
 uint32_t getRenderTargetFormatVC4(VkFormat format);
 void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize);

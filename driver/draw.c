@@ -339,7 +339,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 										 di->imageView->image->levelOffsets[0] >> 12, //Image level 0 offset in multiples of 4KB
 										 di->imageView->image->height & 2047,
 										 di->imageView->image->width & 2047,
-										 getMinFilterType(di->sampler->minFilter, di->sampler->mipmapMode, di->sampler->maxLod),
+										 getMinFilterType(di->sampler->minFilter, di->sampler->mipmapMode),// di->sampler->maxLod),
 										 di->sampler->magFilter == VK_FILTER_NEAREST,
 										 getWrapMode(di->sampler->addressModeU),
 										 getWrapMode(di->sampler->addressModeV),
@@ -367,7 +367,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 					//TODO handle this properly
 					//TMU0_B requires an extra uniform written
 					//we need to signal that somehow from API side
-					if(di->sampler->mipLodBias > 0.0f || di->sampler->disableAutoLod)
+					if(di->sampler->disableAutoLod)
 					{
 						size += 4;
 					}

@@ -871,14 +871,14 @@ uint8_t getTextureDataType(VkFormat format)
 	}
 }
 
-uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter, float maxLod)
+uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter)//, float maxLod)
 {
 	if(minFilter == VK_FILTER_NEAREST)
 	{
-		if(maxLod < 0.0001f)
-		{
-			return 1; //no mip filtering
-		}
+//		if(maxLod < 0.0001f)
+//		{
+//			return 1; //no mip filtering
+//		}
 
 		if(mipFilter == VK_SAMPLER_MIPMAP_MODE_NEAREST)
 		{
@@ -891,10 +891,10 @@ uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter, floa
 	}
 	else if(minFilter == VK_FILTER_LINEAR)
 	{
-		if(maxLod < 0.0001f)
-		{
-			return 0; //no mip filtering
-		}
+//		if(maxLod < 0.0001f)
+//		{
+//			return 0; //no mip filtering
+//		}
 
 		if(mipFilter == VK_SAMPLER_MIPMAP_MODE_NEAREST)
 		{

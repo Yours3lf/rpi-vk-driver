@@ -135,8 +135,6 @@ void createSampler(VkDevice device, VkSampler* nearestTextureSampler, VkSampler*
 	sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	sampler.mipLodBias = 0.0f;
 	sampler.compareOp = VK_COMPARE_OP_NEVER;
-	sampler.minLod = 1.0f; //disable auto LOD
-	sampler.maxLod = 0.0f;
 	sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 	rpi_vkCreateSampler(device, &sampler, 0, nearestTextureSampler);
 	_sampler* s = nearestTextureSampler;
@@ -1026,10 +1024,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		samplerCI.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerCI.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerCI.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCI.mipLodBias = srcMipLevel;
+		samplerCI.mipLodBias = 1.0f;
 		samplerCI.compareOp = VK_COMPARE_OP_NEVER;
-		samplerCI.minLod = 1.0f; //disable auto LOD
-		samplerCI.maxLod = 999.0f;
 		samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 		rpi_vkCreateSampler(device, &samplerCI, 0, &mipSampler);
 		_sampler* s = mipSampler;
@@ -1042,7 +1038,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		view.subresourceRange.baseMipLevel = srcMipLevel;
 		view.subresourceRange.baseArrayLayer = 0;
 		view.subresourceRange.layerCount = 1;
-		view.subresourceRange.levelCount = srcMipLevel + 1;
+		view.subresourceRange.levelCount = srcImg->miplevels;
 		view.image = srcImage;
 		rpi_vkCreateImageView(device, &view, 0, &srcTextureView);
 
@@ -1120,8 +1116,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 
 		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vertConstants), &vertConstants);
 
+		float mipBias = srcMipLevel;
 		uint32_t fragConstants[1];
-		fragConstants[0] = *(uint32_t*)&samplerCI.mipLodBias;
+		fragConstants[0] = *(uint32_t*)&mipBias;
 
 		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragConstants), &fragConstants);
 
