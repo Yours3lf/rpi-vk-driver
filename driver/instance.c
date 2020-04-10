@@ -156,19 +156,22 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 
 		char* str = malloc(4096);
 		int n = fread(str, 1, 4096, f);
+		fclose(f);
 		str[n] = '\0';
 
-		str = strstr(str, "Hardware");
-		str = strstr(str, "BCM");
+		char* hw = strstr(str, "Hardware");
+		hw = strstr(hw, "BCM");
 
-		str[7] = '\0';
+		hw[7] = '\0';
 
-		if(strcmp(str, "BCM2835") &&
-		   strcmp(str, "BCM2836") &&
-		   strcmp(str, "BCM2837"))
+		if(strcmp(hw, "BCM2835") &&
+		   strcmp(hw, "BCM2836") &&
+		   strcmp(hw, "BCM2837"))
 		{
 			return VK_ERROR_INITIALIZATION_FAILED;
 		}
+
+		free(str);
 	}
 
 
