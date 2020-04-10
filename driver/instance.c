@@ -146,6 +146,32 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 	//TODO ignored for now
 	//pCreateInfo->pApplicationInfo
 
+	{ //Simple check to make sure we only support RPi 0, 1, 2, 3
+		FILE* f = fopen("/proc/cpuinfo", "r");
+
+		if(!f)
+		{
+			return VK_ERROR_INITIALIZATION_FAILED;
+		}
+
+		char* str = malloc(4096);
+		int n = fread(str, 1, 4096, f);
+		str[n] = '\0';
+
+		str = strstr(str, "Hardware");
+		str = strstr(str, "BCM");
+
+		str[7] = '\0';
+
+		if(strcmp(str, "BCM2835") &&
+		   strcmp(str, "BCM2836") &&
+		   strcmp(str, "BCM2837"))
+		{
+			return VK_ERROR_INITIALIZATION_FAILED;
+		}
+	}
+
+
 	//we assume we are on the RPi and the GPU exists...
 	int gpuExists = access( "/dev/dri/card0", F_OK ) != -1; assert(gpuExists);
 
