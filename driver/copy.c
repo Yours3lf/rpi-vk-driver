@@ -137,12 +137,10 @@ void createSampler(VkDevice device, VkSampler* nearestTextureSampler, VkSampler*
 	sampler.compareOp = VK_COMPARE_OP_NEVER;
 	sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 	rpi_vkCreateSampler(device, &sampler, 0, nearestTextureSampler);
-	_sampler* s = nearestTextureSampler;
 
 	sampler.magFilter = VK_FILTER_LINEAR;
 	sampler.minFilter = VK_FILTER_LINEAR;
 	rpi_vkCreateSampler(device, &sampler, 0, linearTextureSampler);
-	s = linearTextureSampler;
 }
 
 void createRendertarget(VkDevice device, uint32_t baseMip, uint32_t width, uint32_t height, VkImage textureImage, VkImageView* textureView, VkRenderPass* offscreenRenderPass, VkFramebuffer* offscreenFramebuffer)
@@ -1021,10 +1019,10 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		samplerCI.magFilter = filter == VK_FILTER_LINEAR ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
 		samplerCI.minFilter = filter == VK_FILTER_LINEAR ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
 		samplerCI.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-		samplerCI.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCI.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCI.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerCI.mipLodBias = 1.0f;
+		samplerCI.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerCI.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerCI.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerCI.mipLodBias = 1.0f; //disable auto lod
 		samplerCI.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 		rpi_vkCreateSampler(device, &samplerCI, 0, &mipSampler);
