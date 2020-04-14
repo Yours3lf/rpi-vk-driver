@@ -108,7 +108,6 @@ CPU performance (eg. number of draw calls) should be enough on the quad-core PIs
   - bw1: 1 bit black and white
   - a4: 4 bit alpha
   - a1: 1 bit alpha
-- vector graphics support?
 
 ### Shader patching
 The Broadcom Videocore IV needs a couple of operations to happen in shader code that might have fixed function hardware on other platforms.  
