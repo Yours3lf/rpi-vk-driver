@@ -959,7 +959,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 		fragConstants[0] = *(uint32_t*)&w;
 		fragConstants[1] = *(uint32_t*)&bppfloat;
 		fragConstants[2] = size;
-		fragConstants[3] = 0;
+		fragConstants[3] = pRegions[c].bufferOffset;
 
 		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragConstants), &fragConstants);
 
