@@ -15,8 +15,6 @@
   - [x] blending
   - [x] mipmapping
   - [x] cube mapping
-  - [ ] linear RGBA8 texture support
-  - [ ] linear YUYV texture support https://www.linuxtv.org/downloads/v4l-dvb-apis-old/V4L2-PIX-FMT-YUYV.html
   - [x] shadow mapping / depth texture sampling
   - [ ] Multi threaded cmdbuf generation test
 - [x] Shader compiler chain
@@ -98,6 +96,8 @@ CPU performance (eg. number of draw calls) should be enough on the quad-core PIs
 - multiple color attachments
 - HDR render targets and textures (lack of kernel support for 64bpp render target)
 - ETC textures (lack of kernel support for 64bpp render target)
+- linear RGBA8 textures (lack of kernel support)
+- linear YUYV textures https://www.linuxtv.org/downloads/v4l-dvb-apis-old/V4L2-PIX-FMT-YUYV.html (lack of kernel support)
 - timing blocks for profiling (kernel supports interrupts, but data needs to be routed to userspace ie. add tiler/renderer start/end timing to seqnos)
 
 ### What additional features will this driver support?
