@@ -195,7 +195,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
-	//TODO flags?
+	i->flags = pCreateInfo->flags;
 	i->type = pCreateInfo->imageType;
 	i->fb = 0; //needed for modeset
 	i->width = pCreateInfo->extent.width;
@@ -397,7 +397,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 		i->levelOffsets[c] = i->levelOffsets[c - 1] - mipSizes[c];
 	}
 
-	i->size = getBOAlignedSize(((i->paddedWidth * i->paddedHeight * bpp) >> 3) + i->levelOffsets[0], ARM_PAGE_SIZE);
+	i->size = getBOAlignedSize(((i->paddedWidth * i->paddedHeight * bpp) >> 3) + i->levelOffsets[0], ARM_PAGE_SIZE) * i->layers;
 
 //	fprintf(stderr, "i->tiling %u\n", i->tiling);
 //	fprintf(stderr, "i->levelOffsets[0] %u\n", i->levelOffsets[0]);

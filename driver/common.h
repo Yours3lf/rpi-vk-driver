@@ -214,6 +214,8 @@ typedef struct VkImage_T
 	uint32_t compositeAlpha;
 	uint32_t presentMode;
 	uint32_t clipped;
+
+	uint32_t flags;
 } _image;
 
 typedef struct VkImageView_T

@@ -143,12 +143,13 @@ void createSampler(VkDevice device, VkSampler* nearestTextureSampler, VkSampler*
 	rpi_vkCreateSampler(device, &sampler, 0, linearTextureSampler);
 }
 
-void createRendertarget(VkDevice device, uint32_t baseMip, uint32_t width, uint32_t height, VkImage textureImage, VkImageView* textureView, VkRenderPass* offscreenRenderPass, VkFramebuffer* offscreenFramebuffer)
+void createRendertarget(VkDevice device, uint32_t baseLayer, uint32_t baseMip, uint32_t width, uint32_t height, VkImage textureImage, VkImageView* textureView, VkRenderPass* offscreenRenderPass, VkFramebuffer* offscreenFramebuffer)
 {
 	_image* img = textureImage;
 	VkFormat format = img->format;
 
 	printf("\nCopy Create RT\n");
+	printf("baseLayer %u\n", baseLayer);
 	printf("baseMip %u\n", baseMip);
 	printf("width %u\n", width);
 	printf("height %u\n", height);
@@ -169,7 +170,7 @@ void createRendertarget(VkDevice device, uint32_t baseMip, uint32_t width, uint3
 	view.components.r = VK_COMPONENT_SWIZZLE_R;
 	view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	view.subresourceRange.baseMipLevel = baseMip;
-	view.subresourceRange.baseArrayLayer = 0;
+	view.subresourceRange.baseArrayLayer = baseLayer;
 	view.subresourceRange.layerCount = 1;
 	view.subresourceRange.levelCount = 1;
 	view.image = textureImage;
@@ -899,7 +900,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 		writeDescriptorSet.descriptorCount = 1;
 		rpi_vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);
 
-		createRendertarget(device, pRegions[c].imageSubresource.mipLevel, width, height, img, &textureView, &offscreenRenderPass, &offscreenFramebuffer);
+		createRendertarget(device, pRegions[c].imageSubresource.baseArrayLayer, pRegions[c].imageSubresource.mipLevel, width, height, img, &textureView, &offscreenRenderPass, &offscreenFramebuffer);
 		createPipeline(device, 0, 4, 5, device->emulBufferToTextureShaderModule, device->emulBufferDsl, &blitPipelineLayout, offscreenRenderPass, &blitPipeline);
 
 		//offscreen rendering
@@ -1062,7 +1063,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		writeDescriptorSet.descriptorCount = 1;
 		rpi_vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);
 
-		createRendertarget(device, dstMipLevel, dstWidth, dstHeight, dstImage, &dstTextureView, &offscreenRenderPass, &offscreenFramebuffer);
+		createRendertarget(device, 0, dstMipLevel, dstWidth, dstHeight, dstImage, &dstTextureView, &offscreenRenderPass, &offscreenFramebuffer);
 		createPipeline(device, 1, 4, 2, device->emulTextureToTextureShaderModule, device->emulTextureDsl, &blitPipelineLayout, offscreenRenderPass, &blitPipeline);
 
 		//offscreen rendering
