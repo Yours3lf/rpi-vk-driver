@@ -14,7 +14,7 @@
   - [x] Indexed draw calls
   - [x] blending
   - [x] mipmapping
-  - [ ] cube mapping
+  - [x] cube mapping
   - [ ] linear RGBA8 texture support
   - [ ] linear YUYV texture support https://www.linuxtv.org/downloads/v4l-dvb-apis-old/V4L2-PIX-FMT-YUYV.html
   - [x] shadow mapping / depth texture sampling
