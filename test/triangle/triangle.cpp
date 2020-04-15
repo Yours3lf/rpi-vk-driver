@@ -212,10 +212,10 @@ void createInstance() {
 }
 
 void createWindowSurface() {
-	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = 0;
-	vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
-
 	windowSurface = 0;
+
+	/*PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = 0;
+	vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
 
 	LoaderTrampoline* trampoline = (LoaderTrampoline*)physicalDevice;
 	VkRpiPhysicalDevice* realPhysicalDevice = trampoline->loaderTerminator->physicalDevice;
@@ -228,7 +228,31 @@ void createWindowSurface() {
 	if (vkCreateRpiSurfaceEXT(physicalDevice) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;
 		assert(0);
-	}
+	}*/
+
+	uint32_t displayCount;
+	vkGetPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &displayCount, 0);
+	VkDisplayPropertiesKHR* displayProperties = (VkDisplayPropertiesKHR*)malloc(sizeof(VkDisplayPropertiesKHR)*displayCount);
+	vkGetPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &displayCount, displayProperties);
+
+	uint32_t propertyCount;
+	vkGetDisplayModePropertiesKHR(physicalDevice, displayProperties[0].display, &propertyCount, 0);
+	VkDisplayModePropertiesKHR* displayModeProperties = (VkDisplayModePropertiesKHR*)malloc(sizeof(VkDisplayModePropertiesKHR)*propertyCount);
+	vkGetDisplayModePropertiesKHR(physicalDevice, displayProperties[0].display, &propertyCount, displayModeProperties);
+
+	VkDisplayModeCreateInfoKHR dmci = {};
+	dmci.sType = VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR;
+	dmci.parameters = displayModeProperties[0].parameters;
+	VkDisplayModeKHR displayMode;
+	vkCreateDisplayModeKHR(physicalDevice, displayProperties[0].display, &dmci, 0, &displayMode);
+
+	VkDisplaySurfaceCreateInfoKHR dsci = {};
+	dsci.sType = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR;
+	dsci.displayMode = displayMode;
+	dsci.transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+	dsci.alphaMode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
+	dsci.imageExtent = displayModeProperties[0].parameters.visibleRegion;
+	vkCreateDisplayPlaneSurfaceKHR(instance, &dsci, 0, &windowSurface);
 
 	std::cout << "created window surface" << std::endl;
 }

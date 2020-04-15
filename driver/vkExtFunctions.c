@@ -9,24 +9,6 @@
 extern "C" {
 #endif
 
-/*
- * Implementation of our RPI specific "extension"
- */
-VkResult rpi_vkCreateRpiSurfaceEXT(VkPhysicalDevice physicalDevice)
-{
-	assert(physicalDevice);
-
-	//TODO use allocator!
-
-	_physicalDevice* ptr = physicalDevice;
-	VkRpiSurfaceCreateInfoEXT* ci = ptr->customData;
-	VkSurfaceKHR surfRes = (VkSurfaceKHR)modeset_create(controlFd);
-
-	*ci->pSurface = surfRes;
-
-	return VK_SUCCESS;
-}
-
 //TODO collect shader performance data
 //eg number of texture samples etc.
 //TODO check if shader has flow control and make sure instance also has flow control

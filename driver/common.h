@@ -515,6 +515,12 @@ typedef struct VkQueryPool_T
 	_query* queryPool;
 } _queryPool;
 
+typedef struct VkDisplayModeKHR_T
+{
+	uint32_t connectorID;
+	uint32_t modeID;
+} _displayMode;
+
 uint32_t getFormatBpp(VkFormat f);
 uint32_t packVec4IntoABGR8(const float rgba[4]);
 void createImageBO(_image* i);

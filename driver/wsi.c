@@ -9,13 +9,133 @@
 extern "C" {
 #endif
 
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPropertiesKHR(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t*                                   pPropertyCount,
+	VkDisplayPropertiesKHR*                     pProperties)
+{
+	assert(physicalDevice);
+	assert(pPropertyCount);
+
+	uint32_t numDisplays;
+	modeset_display displays[16];
+	modeset_enum_displays(controlFd, &numDisplays, &displays);
+
+	if(!pProperties)
+	{
+		*pPropertyCount = numDisplays;
+		return VK_SUCCESS;
+	}
+
+	int arraySize = *pPropertyCount;
+	int elementsWritten = min(numDisplays, arraySize);
+
+	for(int c = 0; c < elementsWritten; ++c)
+	{
+		pProperties[c].display = displays[c].connectorID;
+		char* name = (char*)malloc(32);
+		memcpy(name, displays[c].name, 32);
+		pProperties[c].displayName = (const char*)name;
+		pProperties[c].physicalDimensions.width = displays[c].mmWidth;
+		pProperties[c].physicalDimensions.height = displays[c].mmHeight;
+		pProperties[c].physicalResolution.width = displays[c].resWidth;
+		pProperties[c].physicalResolution.height = displays[c].resHeight;
+	}
+
+	*pPropertyCount = elementsWritten;
+
+	if(arraySize < numDisplays)
+	{
+		return VK_INCOMPLETE;
+	}
+
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayModePropertiesKHR(
+	VkPhysicalDevice                            physicalDevice,
+	VkDisplayKHR                                display,
+	uint32_t*                                   pPropertyCount,
+	VkDisplayModePropertiesKHR*                 pProperties)
+{
+	assert(physicalDevice);
+	assert(display);
+	assert(pPropertyCount);
+
+	uint32_t numModes;
+	modeset_display_mode modes[1024];
+	modeset_enum_modes_for_display(controlFd, display, &numModes, &modes);
+
+	if(!pProperties)
+	{
+		*pPropertyCount = numModes;
+		return VK_SUCCESS;
+	}
+
+	int arraySize = *pPropertyCount;
+	int elementsWritten = min(numModes, arraySize);
+
+	for(int c = 0; c < elementsWritten; ++c)
+	{
+		_displayMode mode = { modes[c].connectorID, modes[c].modeID };
+		memcpy(&pProperties[c].displayMode, &mode, sizeof(_displayMode));
+		pProperties[c].parameters.visibleRegion.width = modes[c].resWidth;
+		pProperties[c].parameters.visibleRegion.height = modes[c].resHeight;
+		pProperties[c].parameters.refreshRate = modes[c].refreshRate;
+	}
+
+	*pPropertyCount = elementsWritten;
+
+	if(arraySize < numModes)
+	{
+		return VK_INCOMPLETE;
+	}
+
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayModeKHR(
+	VkPhysicalDevice                            physicalDevice,
+	VkDisplayKHR                                display,
+	const VkDisplayModeCreateInfoKHR*           pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkDisplayModeKHR*                           pMode)
+{
+	assert(physicalDevice);
+	assert(display);
+
+	uint32_t numModes;
+	modeset_display_mode modes[1024];
+	modeset_enum_modes_for_display(controlFd, display, &numModes, &modes);
+
+	for(uint32_t c = 0; c < numModes; ++c)
+	{
+		if(modes[c].refreshRate == pCreateInfo->parameters.refreshRate &&
+		   modes[c].resWidth == pCreateInfo->parameters.visibleRegion.width &&
+		   modes[c].resHeight == pCreateInfo->parameters.visibleRegion.height)
+		{
+			_displayMode mode = { modes[c].connectorID, modes[c].modeID };
+
+			memcpy(pMode, &mode, sizeof(_displayMode));
+		}
+	}
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayPlaneSurfaceKHR(
 	VkInstance                                  instance,
 	const VkDisplaySurfaceCreateInfoKHR*        pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
 	VkSurfaceKHR*                               pSurface)
 {
-	fprintf(stderr, "vkCreateDisplayPlaneSurfaceKHR\n");
+	assert(instance);
+	assert(pSurface);
+
+	_displayMode mode = pCreateInfo->displayMode;
+
+	modeset_display_surface* surface = ALLOCATE(sizeof(modeset_display_surface), 1, VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE);
+	modeset_create_surface_for_mode(controlFd, mode.connectorID, mode.modeID, surface);
+
+	*pSurface = surface;
 }
 
 /*
@@ -31,12 +151,12 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
 {
 	assert(instance);
 
-	//TODO use allocator
-
 	if(surface)
 	{
-		modeset_destroy(controlFd, (modeset_dev*)surface);
+		//modeset_destroy(controlFd, (modeset_dev*)surface);
 	}
+
+	FREE(surface);
 }
 
 /*

@@ -1,53 +1,4 @@
-/*
- * modeset - DRM Double-Buffered Modesetting Example
- *
- * Written 2012 by David Herrmann <dh.herrmann@googlemail.com>
- * Dedicated to the Public Domain.
- */
-
-/*
- * DRM Modesetting Howto
- * This document describes the DRM modesetting API. Before we can use the DRM
- * API, we have to include xf86drm.h and xf86drmMode.h. Both are provided by
- * libdrm which every major distribution ships by default. It has no other
- * dependencies and is pretty small.
- *
- * Please ignore all forward-declarations of functions which are used later. I
- * reordered the functions so you can read this document from top to bottom. If
- * you reimplement it, you would probably reorder the functions to avoid all the
- * nasty forward declarations.
- *
- * For easier reading, we ignore all memory-allocation errors of malloc() and
- * friends here. However, we try to correctly handle all other kinds of errors
- * that may occur.
- *
- * All functions and global variables are prefixed with "modeset_*" in this
- * file. So it should be clear whether a function is a local helper or if it is
- * provided by some external library.
- */
-
 #include "modeset.h"
-
-/*
- * Previously, we used the modeset_dev objects to hold buffer informations, too.
- * Technically, we could have split them but avoided this to make the
- * example simpler.
- * However, in this example we need 2 buffers. One back buffer and one front
- * buffer. So we introduce a new structure modeset_buf which contains everything
- * related to a single buffer. Each device now gets an array of two of these
- * buffers.
- * Each buffer consists of width, height, stride, size, handle, map and fb-id.
- * They have the same meaning as before.
- *
- * Each device also gets a new integer field: front_buf. This field contains the
- * index of the buffer that is currently used as front buffer / scanout buffer.
- * In our example it can be 0 or 1. We flip it by using XOR:
- *   dev->front_buf ^= dev->front_buf
- *
- * Everything else stays the same.
- */
-
-//static struct modeset_dev *modeset_list = NULL;
 
 static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 							 struct modeset_dev *dev);
@@ -87,13 +38,6 @@ modeset_dev* modeset_create(int fd)
 	drmModeConnector *conn;
 	struct modeset_dev *dev;
 	int ret;
-
-	//we'll use a buffer created by the vc4 kernel module instead
-	/*uint64_t has_dumb;
-	if (drmGetCap(fd, DRM_CAP_DUMB_BUFFER, &has_dumb) < 0 || !has_dumb) {
-		printf("drm device does not support dumb buffers\n");
-		return 0;
-	}*/
 
 	// retrieve resources
 	res = drmModeGetResources(fd);
@@ -204,30 +148,6 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 }
 
 
-/*static int modeset_create_swapchain(int fd, drmModeConnector *conn, struct modeset_dev *dev)
-{
-	int ret;
-
-	// create framebuffer #1 for this CRTC
-	ret = modeset_create_fb(fd, &dev->bufs[0]);
-	if (ret) {
-		printf("cannot create framebuffer for connector %u\n",
-			   conn->connector_id);
-		return ret;
-	}
-
-	// create framebuffer #2 for this CRTC
-	ret = modeset_create_fb(fd, &dev->bufs[1]);
-	if (ret) {
-		printf("cannot create framebuffer for connector %u\n",
-			   conn->connector_id);
-		modeset_destroy_fb(fd, &dev->bufs[0]);
-		return ret;
-	}
-
-	return 0;
-}*/
-
 /*
  * modeset_find_crtc() stays the same.
  */
@@ -318,26 +238,7 @@ static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 
 int modeset_create_fb(int fd, _image *buf)
 {
-	//struct drm_mode_create_dumb creq;
-	//struct drm_mode_destroy_dumb dreq;
-	//struct drm_mode_map_dumb mreq;
 	int ret;
-
-	//we'll use a buffer created by vc4 instead
-	// create dumb buffer
-	/*memset(&creq, 0, sizeof(creq));
-	creq.width = buf->width;
-	creq.height = buf->height;
-	creq.bpp = 32;
-	ret = drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &creq);
-	if (ret < 0) {
-		printf("cannot create dumb buffer (%d): %m\n",
-			   errno);
-		return -errno;
-	}
-	buf->stride = creq.pitch;
-	buf->size = creq.size;
-	buf->handle = creq.handle;*/
 
 	// create framebuffer object for the dumb-buffer
 	ret = drmModeAddFB(fd, buf->width, buf->height, 24, 32, buf->stride,
@@ -347,47 +248,8 @@ int modeset_create_fb(int fd, _image *buf)
 			   errno);
 		ret = -errno;
 
-		//memset(&dreq, 0, sizeof(dreq));
-		//dreq.handle = buf->handle;
-		//drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
 		return ret;
 	}
-
-	/**
-	// prepare buffer for memory mapping
-	memset(&mreq, 0, sizeof(mreq));
-	mreq.handle = buf->handle;
-	ret = drmIoctl(fd, DRM_IOCTL_MODE_MAP_DUMB, &mreq);
-	if (ret) {
-		printf("cannot map dumb buffer (%d): %m\n",
-			   errno);
-		ret = -errno;
-
-		drmModeRmFB(fd, buf->fb);
-		memset(&dreq, 0, sizeof(dreq));
-		dreq.handle = buf->handle;
-		drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
-		return ret;
-	}
-
-	// perform actual memory mapping
-	buf->map = mmap(0, buf->size, PROT_READ | PROT_WRITE, MAP_SHARED,
-					fd, mreq.offset);
-	if (buf->map == MAP_FAILED) {
-		printf("cannot mmap dumb buffer (%d): %m\n",
-			   errno);
-		ret = -errno;
-
-		drmModeRmFB(fd, buf->fb);
-		memset(&dreq, 0, sizeof(dreq));
-		dreq.handle = buf->handle;
-		drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
-		return ret;
-	}
-
-	// clear the framebuffer to 0
-	memset(buf->map, 0, buf->size);
-	/**/
 
 	return 0;
 }
@@ -401,53 +263,9 @@ int modeset_create_fb(int fd, _image *buf)
 
 void modeset_destroy_fb(int fd, _image* buf)
 {
-	//struct drm_mode_destroy_dumb dreq;
-
-	// unmap buffer
-	//munmap(buf->map, buf->size);
-
 	// delete framebuffer
 	drmModeRmFB(fd, buf->fb);
-
-	// delete dumb buffer
-	/*memset(&dreq, 0, sizeof(dreq));
-	dreq.handle = buf->handle;
-	drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);*/
 }
-
-/*
- * modeset_draw() is the place where things change. The render-logic is the same
- * and we still draw a solid-color on the whole screen. However, we now have two
- * buffers and need to flip between them.
- *
- * So before drawing into a framebuffer, we need to find the back-buffer.
- * Remember, dev->font_buf is the index of the front buffer, so
- * dev->front_buf ^ 1 is the index of the back buffer. We simply use
- * dev->bufs[dev->front_buf ^ 1] to get the back-buffer and draw into it.
- *
- * After we finished drawing, we need to flip the buffers. We do this with the
- * same call as we initially set the CRTC: drmModeSetCrtc(). However, we now
- * pass the back-buffer as new framebuffer as we want to flip them.
- * The only thing left to do is to change the dev->front_buf index to point to
- * the new back-buffer (which was previously the front buffer).
- * We then sleep for a short time period and start drawing again.
- *
- * If you run this example, you will notice that there is almost no flickering,
- * anymore. The buffers are now swapped as a whole so each new frame shows
- * always the whole new image. If you look carefully, you will notice that the
- * modeset.c example showed many screen corruptions during redraw-cycles.
- *
- * However, this example is still not perfect. Imagine the display-controller is
- * currently scanning out a new image and we call drmModeSetCrtc()
- * simultaneously. It will then have the same effect as if we used a single
- * buffer and we get some tearing. But, the chance that this happens is a lot
- * less likely as with a single-buffer. This is because there is a long period
- * between each frame called vertical-blank where the display-controller does
- * not perform a scanout. If we swap the buffers in this period, we have the
- * guarantee that there will be no tearing. See the modeset-vsync.c example if
- * you want to know how you can guarantee that the swap takes place at a
- * vertical-sync.
- */
 
 void modeset_present_buffer(int fd, modeset_dev* dev, _image* buffer)
 {
@@ -459,20 +277,15 @@ void modeset_present_buffer(int fd, modeset_dev* dev, _image* buffer)
 	}
 
 	struct modeset_dev *iter;
-	//struct modeset_buf *buf;
 	int ret;
 
 	for (iter = dev; iter; iter = iter->next)
 	{
-		//buf = &iter->bufs[iter->front_buf ^ 1];
-
 		ret = drmModeSetCrtc(fd, iter->crtc, buffer->fb, 0, 0,
 							 &iter->conn, 1, &iter->mode);
 		if (ret)
 			fprintf(stderr, "cannot flip CRTC for connector %u (%d): %m\n",
 				   iter->conn, errno);
-		//else
-		//	iter->front_buf ^= 1;
 	}
 }
 
@@ -501,36 +314,109 @@ void modeset_destroy(int fd, modeset_dev* dev)
 					   &iter->saved_crtc->mode);
 		drmModeFreeCrtc(iter->saved_crtc);
 
-		// destroy framebuffers
-		//modeset_destroy_fb(fd, &iter->bufs[1]);
-		//modeset_destroy_fb(fd, &iter->bufs[0]);
-
 		// free allocated memory
 		free(iter);
 	}
 }
 
-/*
- * This was a very short extension to the basic modesetting example that shows
- * how double-buffering is implemented. Double-buffering is the de-facto
- * standard in any graphics application so any other example will be based on
- * this. It is important to understand the ideas behind it as the code is pretty
- * easy and short compared to modeset.c.
- *
- * Double-buffering doesn't solve all problems. Vsync'ed page-flips solve most
- * of the problems that still occur, but has problems on it's own (see
- * modeset-vsync.c for a discussion).
- *
- * If you want more code, I can recommend reading the source-code of:
- *  - plymouth (which uses dumb-buffers like this example; very easy to understand)
- *  - kmscon (which uses libuterm to do this)
- *  - wayland (very sophisticated DRM renderer; hard to understand fully as it
- *             uses more complicated techniques like DRM planes)
- *  - xserver (very hard to understand as it is split across many files/projects)
- *
- * Any feedback is welcome. Feel free to use this code freely for your own
- * documentation or projects.
- *
- *  - Hosted on http://github.com/dvdhrm/docs
- *  - Written by David Herrmann <dh.herrmann@googlemail.com>
- */
+
+
+
+
+void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display** displays)
+{
+	 drmModeResPtr resPtr = drmModeGetResources(fd);
+
+	 uint32_t tmpNumDisplays = 0;
+	 modeset_display tmpDisplays[16];
+
+	 for(uint32_t c = 0; c < resPtr->count_connectors; ++c)
+	 {
+		 drmModeConnectorPtr connPtr = drmModeGetConnector(fd, resPtr->connectors[c]);
+
+		 if(connPtr->connection != DRM_MODE_CONNECTED)
+		 {
+			 continue; //skip unused connector
+		 }
+
+		 if(!connPtr->count_modes)
+		 {
+			 continue; //skip connectors with no valid modes
+		 }
+
+		 memcpy(tmpDisplays[tmpNumDisplays].name, connPtr->modes[0].name, 32);
+
+		 tmpDisplays[tmpNumDisplays].mmWidth = connPtr->mmWidth;
+		 tmpDisplays[tmpNumDisplays].mmHeight = connPtr->mmHeight;
+		 tmpDisplays[tmpNumDisplays].resWidth = connPtr->modes[0].hdisplay;
+		 tmpDisplays[tmpNumDisplays].resHeight = connPtr->modes[0].vdisplay;
+		 tmpDisplays[tmpNumDisplays].connectorID = connPtr->connector_id;
+
+		 tmpNumDisplays++;
+
+		 assert(tmpNumDisplays < 16);
+
+		 drmModeFreeConnector(connPtr);
+	 }
+
+	 drmModeFreeResources(resPtr);
+
+	 *numDisplays = tmpNumDisplays;
+
+	 memcpy(*displays, tmpDisplays, tmpNumDisplays * sizeof(modeset_display));
+}
+
+void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes, modeset_display_mode** modes)
+{
+	drmModeResPtr resPtr = drmModeGetResources(fd);
+
+	drmModeConnectorPtr connPtr = drmModeGetConnector(fd, display);
+
+	uint32_t tmpNumModes = 0;
+	modeset_display_mode tmpModes[1024];
+
+	for(uint32_t c = 0; c < connPtr->count_modes; ++c)
+	{
+		tmpModes[tmpNumModes].connectorID = display;
+		tmpModes[tmpNumModes].modeID = c;
+		tmpModes[tmpNumModes].refreshRate = connPtr->modes[c].vrefresh;
+		tmpModes[tmpNumModes].resWidth = connPtr->modes[c].hdisplay;
+		tmpModes[tmpNumModes].resHeight = connPtr->modes[c].vdisplay;
+
+		tmpNumModes++;
+
+		assert(tmpNumModes < 1024);
+	}
+
+	drmModeFreeConnector(connPtr);
+	drmModeFreeResources(resPtr);
+
+	*numModes = tmpNumModes;
+	memcpy(*modes, tmpModes, tmpNumModes * sizeof(modeset_display_mode));
+}
+
+void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, modeset_display_surface* surface)
+{
+	drmModeResPtr resPtr = drmModeGetResources(fd);
+
+	drmModeConnectorPtr connPtr = drmModeGetConnector(fd, display);
+
+	drmModeEncoderPtr encPtr = 0;
+
+	//if current encoder is valid, try to use that
+	if(connPtr->encoder_id)
+	{
+		encPtr = drmModeGetEncoder(fd, connPtr->encoder_id);
+	}
+
+	if(encPtr)
+	{
+		if(encPtr->crtc_id)
+		{
+			surface->connectorID = display;
+			surface->modeID = mode;
+			surface->encoderID = connPtr->encoder_id;
+			surface->crtcID = encPtr->crtc_id;
+		}
+	}
+}

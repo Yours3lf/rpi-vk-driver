@@ -216,22 +216,13 @@ static VkExtensionProperties instanceExtensions[] =
 		.specVersion = 21
 	},
 	{
-		.extensionName = "VK_EXT_direct_mode_display",
-		.specVersion = 1
-	},
-	{
 		.extensionName = "VK_EXT_debug_report",
 		.specVersion = 9
 	},
 	{
 		.extensionName = "VK_EXT_debug_utils",
 		.specVersion = 1
-	},
-	//TODO not an official extension, so can't expose it
-	//{
-	//	.extensionName = "VK_KHR_rpi_surface",
-	//	.specVersion = 1
-	//}
+	}
 };
 #define numInstanceExtensions (sizeof(instanceExtensions) / sizeof(VkExtensionProperties))
 

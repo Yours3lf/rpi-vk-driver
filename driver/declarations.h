@@ -1020,6 +1020,24 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireProfilingLockKHR(
 VKAPI_ATTR void VKAPI_CALL rpi_vkReleaseProfilingLockKHR(
 	VkDevice                                    device);
 
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPropertiesKHR(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t*                                   pPropertyCount,
+	VkDisplayPropertiesKHR*                     pProperties);
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayModePropertiesKHR(
+	VkPhysicalDevice                            physicalDevice,
+	VkDisplayKHR                                display,
+	uint32_t*                                   pPropertyCount,
+	VkDisplayModePropertiesKHR*                 pProperties);
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayModeKHR(
+	VkPhysicalDevice                            physicalDevice,
+	VkDisplayKHR                                display,
+	const VkDisplayModeCreateInfoKHR*           pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkDisplayModeKHR*                           pMode);
+
 #ifdef __cplusplus
 }
 #endif

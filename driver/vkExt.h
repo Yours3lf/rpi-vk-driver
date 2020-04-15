@@ -7,8 +7,6 @@
 extern "C" {
 #endif
 
-typedef VkResult (*PFN_vkCreateRpiSurfaceEXT)(
-			VkPhysicalDevice                            physicalDevice);
 typedef VkResult (*PFN_vkCreateShaderModuleFromRpiAssemblyEXT)(
 			VkPhysicalDevice                            physicalDevice);
 
@@ -65,11 +63,6 @@ typedef struct LoaderTrampoline
  *
  */
 
-typedef enum VkRpiSurfaceCreateFlagsEXT {
-	//reserved
-	VK_RPI_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
-} VkRpiSurfaceCreateFlagsEXT;
-
 
 typedef enum VkRpiAssemblyMappingTypeEXT {
 	VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR = 0,
@@ -87,18 +80,6 @@ typedef struct VkRpiAssemblyMappingEXT {
 	uint32_t					resourceOffset; //in bytes
 	VkShaderStageFlagBits		shaderStage;
 } VkRpiAssemblyMappingEXT;
-
-//we need something like the other platforms to create surfaces on the RPI
-//so I created this little "extension"
-//full spec in this file ;)
-
-typedef struct VkRpiSurfaceCreateInfoEXT {
-	VkStructureType               sType;
-	const void*                   pNext;
-	VkRpiSurfaceCreateFlagsEXT    flags; //reserved
-	const VkAllocationCallbacks*  pAllocator;
-	VkSurfaceKHR*				  pSurface;
-} VkRpiSurfaceCreateInfoEXT;
 
 typedef struct VkRpiShaderModuleAssemblyCreateInfoEXT {
 	VkStructureType               sType;

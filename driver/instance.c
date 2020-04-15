@@ -37,9 +37,6 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetPhysicalDeviceProcAddr(VkInsta
 {
 	void* ptr = 0;
 
-	if(!strcmp(pName, "vkCreateRpiSurfaceEXT"))
-		ptr = &rpi_vkCreateRpiSurfaceEXT;
-
 	if(!strcmp(pName, "vkCreateShaderModuleFromRpiAssemblyEXT"))
 		ptr = &rpi_vkCreateShaderModuleFromRpiAssemblyEXT;
 
@@ -474,6 +471,10 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	RETFUNC(vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR);
 	RETFUNC(vkAcquireProfilingLockKHR);
 	RETFUNC(vkReleaseProfilingLockKHR);
+
+	RETFUNC(vkGetPhysicalDeviceDisplayPropertiesKHR);
+	RETFUNC(vkGetDisplayModePropertiesKHR);
+	RETFUNC(vkCreateDisplayModeKHR);
 
 	return 0;
 }
