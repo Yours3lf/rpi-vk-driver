@@ -235,10 +235,29 @@ void createWindowSurface() {
 	VkDisplayPropertiesKHR* displayProperties = (VkDisplayPropertiesKHR*)malloc(sizeof(VkDisplayPropertiesKHR)*displayCount);
 	vkGetPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &displayCount, displayProperties);
 
-	uint32_t propertyCount;
-	vkGetDisplayModePropertiesKHR(physicalDevice, displayProperties[0].display, &propertyCount, 0);
-	VkDisplayModePropertiesKHR* displayModeProperties = (VkDisplayModePropertiesKHR*)malloc(sizeof(VkDisplayModePropertiesKHR)*propertyCount);
-	vkGetDisplayModePropertiesKHR(physicalDevice, displayProperties[0].display, &propertyCount, displayModeProperties);
+	printf("Enumerated displays\n");
+	for(uint32_t c = 0; c < displayCount; ++c)
+	{
+		printf("Display ID %i\n", displayProperties[c].display);
+		printf("Display name %s\n", displayProperties[c].displayName);
+		printf("Display width %i\n", displayProperties[c].physicalDimensions.width);
+		printf("Display height %i\n", displayProperties[c].physicalDimensions.height);
+		printf("Display horizontal resolution %i\n", displayProperties[c].physicalResolution.width);
+		printf("Display vertical resolution %i\n", displayProperties[c].physicalResolution.height);
+	}
+
+	uint32_t modeCount;
+	vkGetDisplayModePropertiesKHR(physicalDevice, displayProperties[0].display, &modeCount, 0);
+	VkDisplayModePropertiesKHR* displayModeProperties = (VkDisplayModePropertiesKHR*)malloc(sizeof(VkDisplayModePropertiesKHR)*modeCount);
+	vkGetDisplayModePropertiesKHR(physicalDevice, displayProperties[0].display, &modeCount, displayModeProperties);
+
+	printf("\nEnumerated modes\n");
+	for(uint32_t c = 0; c < modeCount; ++c)
+	{
+		printf("Mode refresh rate %i\n", displayModeProperties[c].parameters.refreshRate);
+		printf("Mode width %i\n", displayModeProperties[c].parameters.visibleRegion.width);
+		printf("Mode height %i\n\n", displayModeProperties[c].parameters.visibleRegion.height);
+	}
 
 	VkDisplayModeCreateInfoKHR dmci = {};
 	dmci.sType = VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR;
@@ -255,6 +274,8 @@ void createWindowSurface() {
 	vkCreateDisplayPlaneSurfaceKHR(instance, &dsci, 0, &windowSurface);
 
 	std::cout << "created window surface" << std::endl;
+
+	exit(0);
 }
 
 void findPhysicalDevice() {

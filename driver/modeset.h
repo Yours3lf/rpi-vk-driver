@@ -51,7 +51,7 @@ typedef struct modeset_display_surface {
 	uint32_t modeID;
 	uint32_t encoderID;
 	uint32_t crtcID;
-} modeset_display_mode;
+} modeset_display_surface;
 
 modeset_dev* modeset_create(int fd);
 void modeset_present_buffer(int fd, modeset_dev* dev, _image* buffer);
@@ -60,8 +60,8 @@ int modeset_create_fb(int fd, _image *buf);
 void modeset_destroy_fb(int fd, _image *buf);
 int modeset_fb_for_dev(int fd, modeset_dev* dev, _image* buffer);
 
-void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display** displays);
-void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes, modeset_display_mode** modes);
+void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display* displays);
+void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes, modeset_display_mode* modes);
 void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, modeset_display_surface* surface);
 
 #if defined (__cplusplus)

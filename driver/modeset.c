@@ -323,7 +323,7 @@ void modeset_destroy(int fd, modeset_dev* dev)
 
 
 
-void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display** displays)
+void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display* displays)
 {
 	 drmModeResPtr resPtr = drmModeGetResources(fd);
 
@@ -363,10 +363,10 @@ void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display** disp
 
 	 *numDisplays = tmpNumDisplays;
 
-	 memcpy(*displays, tmpDisplays, tmpNumDisplays * sizeof(modeset_display));
+	 memcpy(displays, tmpDisplays, tmpNumDisplays * sizeof(modeset_display));
 }
 
-void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes, modeset_display_mode** modes)
+void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes, modeset_display_mode* modes)
 {
 	drmModeResPtr resPtr = drmModeGetResources(fd);
 
@@ -392,7 +392,7 @@ void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes
 	drmModeFreeResources(resPtr);
 
 	*numModes = tmpNumModes;
-	memcpy(*modes, tmpModes, tmpNumModes * sizeof(modeset_display_mode));
+	memcpy(modes, tmpModes, tmpNumModes * sizeof(modeset_display_mode));
 }
 
 void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, modeset_display_surface* surface)

@@ -19,7 +19,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPropertiesKHR(
 
 	uint32_t numDisplays;
 	modeset_display displays[16];
-	modeset_enum_displays(controlFd, &numDisplays, &displays);
+	modeset_enum_displays(controlFd, &numDisplays, displays);
 
 	if(!pProperties)
 	{
@@ -130,7 +130,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayPlaneSurfaceKHR(
 	assert(instance);
 	assert(pSurface);
 
-	_displayMode mode = pCreateInfo->displayMode;
+	_displayMode mode;
+	memcpy(&mode, &pCreateInfo->displayMode, sizeof(_displayMode));
 
 	modeset_display_surface* surface = ALLOCATE(sizeof(modeset_display_surface), 1, VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE);
 	modeset_create_surface_for_mode(controlFd, mode.connectorID, mode.modeID, surface);
