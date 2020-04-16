@@ -37,8 +37,8 @@
 - [ ] Synchronization
   - [ ] vkCmdPipelineBarrier support
 - [ ] Secondary command buffers
-- [ ] WSI
-  - [ ] Direct to display support
+- [x] WSI
+  - [x] Direct to display support
 - [ ] Fixes
   - [ ] Hardware bug workarounds
   - [ ] Handle offsets wherever required
