@@ -117,6 +117,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayModeKHR(
 			_displayMode mode = { modes[c].connectorID, modes[c].modeID };
 
 			memcpy(pMode, &mode, sizeof(_displayMode));
+			break;
 		}
 	}
 }

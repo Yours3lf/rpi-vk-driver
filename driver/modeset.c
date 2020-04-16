@@ -83,9 +83,7 @@ void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes
 
 void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, modeset_display_surface* surface)
 {
-	fprintf(stderr, "modeset create surface\n");
-
-	modeset_debug_print(fd);
+//	modeset_debug_print(fd);
 
 	surface->savedState = 0;
 
@@ -115,16 +113,18 @@ void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, mo
 			surface->connector = connPtr;
 			surface->modeID = mode;
 			surface->crtc = drmModeGetCrtc(fd, encPtr->crtc_id);
+
+			//fprintf(stderr, "connector id %i, crtc id %i\n", connPtr->connector_id, encPtr->crtc_id);
 		}
 
 		drmModeFreeEncoder(encPtr);
 	}
+
+	drmModeFreeResources(resPtr);
 }
 
 void modeset_create_fb_for_surface(int fd, _image* buf, modeset_display_surface* surface)
 {
-	fprintf(stderr, "modeset create fb\n");
-
 	int ret = drmModeAddFB(fd, buf->width, buf->height, 24, 32, buf->stride, buf->boundMem->bo, &buf->fb);
 
 	if(ret)
@@ -142,8 +142,6 @@ void modeset_destroy_fb(int fd, _image* buf)
 
 void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
 {
-	fprintf(stderr, "modeset present\n");
-
 	if(!surface->savedState)
 	{
 		while(saved_state_guard);
@@ -166,6 +164,7 @@ void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
 		saved_state_guard = 0;
 	}
 
+	//fprintf(stderr, "present connector id %i, crtc id %i, fb %i\n", surface->connector->connector_id, surface->crtc->crtc_id, buf->fb);
 	int ret = drmModeSetCrtc(fd, surface->crtc->crtc_id, buf->fb, 0, 0, &surface->connector->connector_id, 1, &surface->connector->modes[surface->modeID]);
 	if(ret)
 	{

@@ -148,7 +148,7 @@ void setupVulkan() {
 
 void mainLoop() {
 	//while (!glfwWindowShouldClose(window)) {
-	for(int c = 0; c < 30; ++c){
+	for(int c = 0; c < 300; ++c){
 		draw();
 
 		//glfwPollEvents();
@@ -213,22 +213,6 @@ void createInstance() {
 
 void createWindowSurface() {
 	windowSurface = 0;
-
-	/*PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = 0;
-	vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
-
-	LoaderTrampoline* trampoline = (LoaderTrampoline*)physicalDevice;
-	VkRpiPhysicalDevice* realPhysicalDevice = trampoline->loaderTerminator->physicalDevice;
-
-	VkRpiSurfaceCreateInfoEXT ci = {};
-	ci.pSurface = &windowSurface;
-
-	realPhysicalDevice->customData = (uintptr_t)&ci;
-
-	if (vkCreateRpiSurfaceEXT(physicalDevice) != VK_SUCCESS) {
-		std::cerr << "failed to create window surface!" << std::endl;
-		assert(0);
-	}*/
 
 	uint32_t displayCount;
 	vkGetPhysicalDeviceDisplayPropertiesKHR(physicalDevice, &displayCount, 0);
