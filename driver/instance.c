@@ -475,6 +475,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	RETFUNC(vkGetPhysicalDeviceDisplayPropertiesKHR);
 	RETFUNC(vkGetDisplayModePropertiesKHR);
 	RETFUNC(vkCreateDisplayModeKHR);
+	RETFUNC(vkCreateDisplayPlaneSurfaceKHR);
 
 	return 0;
 }

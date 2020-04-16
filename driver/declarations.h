@@ -1038,6 +1038,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayModeKHR(
 	const VkAllocationCallbacks*                pAllocator,
 	VkDisplayModeKHR*                           pMode);
 
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayPlaneSurfaceKHR(
+	VkInstance                                  instance,
+	const VkDisplaySurfaceCreateInfoKHR*        pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkSurfaceKHR*                               pSurface);
+
 #ifdef __cplusplus
 }
 #endif

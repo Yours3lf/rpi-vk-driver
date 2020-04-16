@@ -154,7 +154,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
 
 	if(surface)
 	{
-		//modeset_destroy(controlFd, (modeset_dev*)surface);
+		modeset_destroy_surface(controlFd, surface);
 	}
 
 	FREE(surface);
@@ -179,15 +179,20 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
 	assert(surface);
 	assert(pSurfaceCapabilities);
 
-	pSurfaceCapabilities->minImageCount = 1; //min 1
+	modeset_display_surface* surf = surface;
+
+	uint32_t width = surf->connector->modes[surf->modeID].hdisplay;
+	uint32_t height = surf->connector->modes[surf->modeID].vdisplay;
+
+	pSurfaceCapabilities->minImageCount = 1;
 	pSurfaceCapabilities->maxImageCount = 2; //TODO max 2 for double buffering for now...
-	pSurfaceCapabilities->currentExtent.width = ((modeset_dev*)surface)->width;
-	pSurfaceCapabilities->currentExtent.height = ((modeset_dev*)surface)->height;
-	pSurfaceCapabilities->minImageExtent.width = ((modeset_dev*)surface)->width; //TODO
-	pSurfaceCapabilities->minImageExtent.height = ((modeset_dev*)surface)->height; //TODO
-	pSurfaceCapabilities->maxImageExtent.width = ((modeset_dev*)surface)->width; //TODO
-	pSurfaceCapabilities->maxImageExtent.height = ((modeset_dev*)surface)->height; //TODO
-	pSurfaceCapabilities->maxImageArrayLayers = 1; //TODO maybe more layers for cursor etc.
+	pSurfaceCapabilities->currentExtent.width = width;
+	pSurfaceCapabilities->currentExtent.height = height;
+	pSurfaceCapabilities->minImageExtent.width = width; //TODO
+	pSurfaceCapabilities->minImageExtent.height = height; //TODO
+	pSurfaceCapabilities->maxImageExtent.width = width; //TODO
+	pSurfaceCapabilities->maxImageExtent.height = height; //TODO
+	pSurfaceCapabilities->maxImageArrayLayers = 1;
 	pSurfaceCapabilities->supportedTransforms = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR; //TODO no rotation for now
 	pSurfaceCapabilities->currentTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR; //TODO get this from dev
 	pSurfaceCapabilities->supportedCompositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; //TODO no alpha compositing for now
@@ -373,11 +378,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 
 		rpi_vkBindImageMemory(device, &s->images[c], mem, 0);
 
-		int res = modeset_create_fb(controlFd, &s->images[c]); assert(res == 0);
+		modeset_create_fb_for_surface(controlFd, &s->images[c], pCreateInfo->surface); assert(s->images[c].fb);
 	}
-
-	//defer to first swapbuffer (or at least later, getting swapchain != presenting immediately)
-	//int res = modeset_fb_for_dev(controlFd, s->surface, &s->images[s->backbufferIdx]); assert(res == 0);
 
 	return VK_SUCCESS;
 }
@@ -489,7 +491,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueuePresentKHR(
 	for(int c = 0; c < pPresentInfo->swapchainCount; ++c)
 	{
 		_swapchain* s = pPresentInfo->pSwapchains[c];
-		modeset_present_buffer(controlFd, (modeset_dev*)s->surface, &s->images[s->backbufferIdx]);
+		modeset_present(controlFd, &s->images[s->backbufferIdx], s->surface);
 		s->backbufferIdx = (s->backbufferIdx + 1) % s->numImages;
 	}
 

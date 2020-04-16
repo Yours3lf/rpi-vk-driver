@@ -20,18 +20,6 @@ extern "C" {
 
 #include "common.h"
 
-typedef struct modeset_dev {
-	struct modeset_dev *next;
-
-	drmModeModeInfo mode;
-	uint32_t conn;
-	uint32_t crtc;
-	drmModeCrtc *saved_crtc;
-	uint32_t width;
-	uint32_t height;
-	uint32_t handle;
-} modeset_dev;
-
 typedef struct modeset_display {
 	char name[32];
 	uint32_t mmWidth, mmHeight;
@@ -47,22 +35,28 @@ typedef struct modeset_display_mode {
 } modeset_display_mode;
 
 typedef struct modeset_display_surface {
-	uint32_t connectorID;
+	drmModeConnectorPtr connector;
+	drmModeCrtcPtr crtc;
 	uint32_t modeID;
-	uint32_t encoderID;
-	uint32_t crtcID;
+	uint32_t savedState;
 } modeset_display_surface;
 
-modeset_dev* modeset_create(int fd);
-void modeset_present_buffer(int fd, modeset_dev* dev, _image* buffer);
-void modeset_destroy(int fd, modeset_dev* dev);
-int modeset_create_fb(int fd, _image *buf);
-void modeset_destroy_fb(int fd, _image *buf);
-int modeset_fb_for_dev(int fd, modeset_dev* dev, _image* buffer);
+typedef struct modeset_saved_state {
+	uint32_t used;
+	drmModeConnectorPtr conn;
+	drmModeCrtcPtr crtc;
+} modeset_saved_state;
+
+modeset_saved_state modeset_saved_states[32];
 
 void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display* displays);
 void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes, modeset_display_mode* modes);
 void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, modeset_display_surface* surface);
+void modeset_create_fb_for_surface(int fd, _image* buf, modeset_display_surface* surface);
+void modeset_destroy_fb(int fd, _image* buf);
+void modeset_present(int fd, _image* buf, modeset_display_surface* surface);
+void modeset_destroy_surface(int fd, modeset_display_surface* surface);
+void modeset_debug_print(int fd);
 
 #if defined (__cplusplus)
 }

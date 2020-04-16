@@ -223,7 +223,7 @@ void createInstance() {
 }
 
 void createWindowSurface() {
-	PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = 0;
+	/*PFN_vkCreateRpiSurfaceEXT vkCreateRpiSurfaceEXT = 0;
 	vkCreateRpiSurfaceEXT = (PFN_vkCreateRpiSurfaceEXT)vkGetInstanceProcAddr(instance, "vkCreateRpiSurfaceEXT");
 
 	windowSurface = 0;
@@ -239,7 +239,7 @@ void createWindowSurface() {
 	if (vkCreateRpiSurfaceEXT(physicalDevice) != VK_SUCCESS) {
 		std::cerr << "failed to create window surface!" << std::endl;
 		assert(0);
-	}
+	}*/
 
 	std::cout << "created window surface" << std::endl;
 }

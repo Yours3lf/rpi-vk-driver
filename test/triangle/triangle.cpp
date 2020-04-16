@@ -148,7 +148,7 @@ void setupVulkan() {
 
 void mainLoop() {
 	//while (!glfwWindowShouldClose(window)) {
-	for(int c = 0; c < 300; ++c){
+	for(int c = 0; c < 30; ++c){
 		draw();
 
 		//glfwPollEvents();
@@ -251,13 +251,13 @@ void createWindowSurface() {
 	VkDisplayModePropertiesKHR* displayModeProperties = (VkDisplayModePropertiesKHR*)malloc(sizeof(VkDisplayModePropertiesKHR)*modeCount);
 	vkGetDisplayModePropertiesKHR(physicalDevice, displayProperties[0].display, &modeCount, displayModeProperties);
 
-	printf("\nEnumerated modes\n");
-	for(uint32_t c = 0; c < modeCount; ++c)
-	{
-		printf("Mode refresh rate %i\n", displayModeProperties[c].parameters.refreshRate);
-		printf("Mode width %i\n", displayModeProperties[c].parameters.visibleRegion.width);
-		printf("Mode height %i\n\n", displayModeProperties[c].parameters.visibleRegion.height);
-	}
+//	printf("\nEnumerated modes\n");
+//	for(uint32_t c = 0; c < modeCount; ++c)
+//	{
+//		printf("Mode refresh rate %i\n", displayModeProperties[c].parameters.refreshRate);
+//		printf("Mode width %i\n", displayModeProperties[c].parameters.visibleRegion.width);
+//		printf("Mode height %i\n\n", displayModeProperties[c].parameters.visibleRegion.height);
+//	}
 
 	VkDisplayModeCreateInfoKHR dmci = {};
 	dmci.sType = VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR;
@@ -274,8 +274,6 @@ void createWindowSurface() {
 	vkCreateDisplayPlaneSurfaceKHR(instance, &dsci, 0, &windowSurface);
 
 	std::cout << "created window surface" << std::endl;
-
-	exit(0);
 }
 
 void findPhysicalDevice() {
