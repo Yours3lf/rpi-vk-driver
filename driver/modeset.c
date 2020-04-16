@@ -96,31 +96,62 @@ void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, mo
 		return;
 	}
 
-	drmModeEncoderPtr encPtr = 0;
-
-	//TODO
+	uint32_t found = 0;
 
 	//if current encoder is valid, try to use that
 	if(connPtr->encoder_id)
 	{
-		encPtr = drmModeGetEncoder(fd, connPtr->encoder_id);
-	}
+		drmModeEncoderPtr encPtr = drmModeGetEncoder(fd, connPtr->encoder_id);
 
-	if(encPtr)
-	{
-		if(encPtr->crtc_id)
+		if(encPtr && encPtr->crtc_id)
 		{
 			surface->connector = connPtr;
 			surface->modeID = mode;
 			surface->crtc = drmModeGetCrtc(fd, encPtr->crtc_id);
 
-			//fprintf(stderr, "connector id %i, crtc id %i\n", connPtr->connector_id, encPtr->crtc_id);
+			found = 1;
 		}
 
 		drmModeFreeEncoder(encPtr);
 	}
 
+	if(!found)
+	{
+//		To find a suitable CRTC, you need to iterate over the list of encoders that are available
+//		for each connector. Each encoder contains a list of CRTCs that it can work with and you
+//		simply select one of these CRTCs. If you later program the CRTC to control a connector,
+//		it automatically selects the best encoder
+
+//		TODO if we were to output to multiple displays, we'd need to make sure we don't use a CRTC
+//		that we'd be using to drive the other screen
+
+		for(uint32_t c = 0; c < connPtr->count_encoders; ++c)
+		{
+			drmModeEncoderPtr encPtr = drmModeGetEncoder(fd, connPtr->encoders[c]);
+
+			for(uint32_t d = 0; d < 32; ++d)
+			{
+				if(encPtr->possible_crtcs & (1 << d))
+				{
+					surface->connector = connPtr;
+					surface->modeID = mode;
+					surface->crtc = drmModeGetCrtc(fd, resPtr->crtcs[d]);
+
+					found = 1;
+					break;
+				}
+			}
+
+			if(found)
+			{
+				break;
+			}
+		}
+	}
+
 	drmModeFreeResources(resPtr);
+
+	//fprintf(stderr, "connector id %i, crtc id %i\n", connPtr->connector_id, encPtr->crtc_id);
 }
 
 void modeset_create_fb_for_surface(int fd, _image* buf, modeset_display_surface* surface)
