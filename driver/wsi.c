@@ -197,7 +197,10 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
 	pSurfaceCapabilities->supportedTransforms = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR; //TODO no rotation for now
 	pSurfaceCapabilities->currentTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR; //TODO get this from dev
 	pSurfaceCapabilities->supportedCompositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; //TODO no alpha compositing for now
-	pSurfaceCapabilities->supportedUsageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; //well we want to draw on the screen right
+	pSurfaceCapabilities->supportedUsageFlags =
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | //well we want to draw on the screen right
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT |  //for clears
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT;  //for screenshots
 
 	return VK_SUCCESS;
 }

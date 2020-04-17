@@ -477,6 +477,8 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	RETFUNC(vkCreateDisplayModeKHR);
 	RETFUNC(vkCreateDisplayPlaneSurfaceKHR);
 
+	RETFUNC(vkDestroySwapchainKHR);
+
 	return 0;
 }
 

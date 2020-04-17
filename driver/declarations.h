@@ -1044,6 +1044,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayPlaneSurfaceKHR(
 	const VkAllocationCallbacks*                pAllocator,
 	VkSurfaceKHR*                               pSurface);
 
+VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
+	VkDevice                                    device,
+	VkSwapchainKHR                              swapchain,
+	const VkAllocationCallbacks*                pAllocator);
+
 #ifdef __cplusplus
 }
 #endif
