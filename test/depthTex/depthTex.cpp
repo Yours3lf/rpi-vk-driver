@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.h>
 
 #include "driver/vkExt.h"
+#include "QPUassembler/qpu_assembler.h"
 
 //#define GLFW_INCLUDE_VULKAN
 //#define VK_USE_PLATFORM_WIN32_KHR
@@ -1114,23 +1115,59 @@ void CreateShaders()
 		}
 	};
 
+	uint32_t spirv[6];
+
+	uint64_t* asm_ptrs[4];
+	uint32_t asm_sizes[4];
+
 	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {};
-	shaderModuleCreateInfo.asmStrings = sample_asm_strings;
+	shaderModuleCreateInfo.instructions = asm_ptrs;
+	shaderModuleCreateInfo.numInstructions = asm_sizes;
 	shaderModuleCreateInfo.mappings = sample_mappings;
 	shaderModuleCreateInfo.numMappings = sizeof(sample_mappings) / sizeof(VkRpiAssemblyMappingEXT);
-	shaderModuleCreateInfo.pShaderModule = &sampleShaderModule;
 
-	LoaderTrampoline* trampoline = (LoaderTrampoline*)physicalDevice;
-	VkRpiPhysicalDevice* realPhysicalDevice = trampoline->loaderTerminator->physicalDevice;
+	{ //assemble cs code
+		asm_sizes[0] = get_num_instructions(cs_asm_code);
+		uint32_t size = sizeof(uint64_t)*asm_sizes[0];
+		asm_ptrs[0] = (uint64_t*)malloc(size);
+		assemble_qpu_asm(cs_asm_code, asm_ptrs[0]);
+	}
 
-	realPhysicalDevice->customData = (uintptr_t)&shaderModuleCreateInfo;
+	{ //assemble vs code
+		asm_sizes[1] = get_num_instructions(vs_asm_code);
+		uint32_t size = sizeof(uint64_t)*asm_sizes[1];
+		asm_ptrs[1] = (uint64_t*)malloc(size);
+		assemble_qpu_asm(vs_asm_code, asm_ptrs[1]);
+	}
 
-	PFN_vkCreateShaderModuleFromRpiAssemblyEXT vkCreateShaderModuleFromRpiAssemblyEXT = (PFN_vkCreateShaderModuleFromRpiAssemblyEXT)vkGetInstanceProcAddr(instance, "vkCreateShaderModuleFromRpiAssemblyEXT");
+	{ //assemble fs code
+		asm_sizes[2] = get_num_instructions(sample_fs_asm_code);
+		uint32_t size = sizeof(uint64_t)*asm_sizes[2];
+		asm_ptrs[2] = (uint64_t*)malloc(size);
+		assemble_qpu_asm(sample_fs_asm_code, asm_ptrs[2]);
+	}
 
-	VkResult res = vkCreateShaderModuleFromRpiAssemblyEXT(physicalDevice);
-	assert(sampleShaderModule);
+	asm_sizes[3] = 0;
+	asm_ptrs[3] = 0;
 
-	//exit(-1);
+	spirv[0] = 0x07230203;
+	spirv[1] = 0x00010000;
+	spirv[2] = 0x14E45250;
+	spirv[3] = 1;
+	spirv[4] = (uint32_t)&shaderModuleCreateInfo;
+	//words start here
+	spirv[5] = 1 << 16;
+
+	VkShaderModuleCreateInfo smci = {};
+	smci.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	smci.codeSize = sizeof(uint32_t)*6;
+	smci.pCode = spirv;
+	vkCreateShaderModule(device, &smci, 0, &sampleShaderModule);
+
+	for(uint32_t c = 0; c < 4; ++c)
+	{
+		free(asm_ptrs[c]);
+	}
 }
 
 

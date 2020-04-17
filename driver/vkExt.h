@@ -84,11 +84,10 @@ typedef struct VkRpiAssemblyMappingEXT {
 typedef struct VkRpiShaderModuleAssemblyCreateInfoEXT {
 	VkStructureType               sType;
 	const void*                   pNext;
-	char**						  asmStrings;
+	uint64_t**					  instructions;
+	uint32_t*					  numInstructions;
 	VkRpiAssemblyMappingEXT*	  mappings;
 	uint32_t					  numMappings;
-	const VkAllocationCallbacks*  pAllocator;
-	VkShaderModule*				  pShaderModule;
 } VkRpiShaderModuleAssemblyCreateInfoEXT;
 
 #ifdef __cplusplus

@@ -3,7 +3,6 @@
 #include <vulkan/vk_icd.h>
 
 #include "declarations.h"
-#include "vkExtFunctions.h"
 
 #define RETFUNC(f) if(!strcmp(pName, #f)) return &rpi_##f
 
@@ -37,8 +36,8 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetPhysicalDeviceProcAddr(VkInsta
 {
 	void* ptr = 0;
 
-	if(!strcmp(pName, "vkCreateShaderModuleFromRpiAssemblyEXT"))
-		ptr = &rpi_vkCreateShaderModuleFromRpiAssemblyEXT;
+//	if(!strcmp(pName, "vkCreateShaderModuleFromRpiAssemblyEXT"))
+//		ptr = &rpi_vkCreateShaderModuleFromRpiAssemblyEXT;
 
 	return ptr;
 }

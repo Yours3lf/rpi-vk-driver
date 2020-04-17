@@ -1,7 +1,8 @@
 #include "common.h"
 
 #include "declarations.h"
-#include "vkExtFunctions.h"
+
+#include "QPUassembler/qpu_assembler.h"
 
 //TODO change allocations to pool allocator
 
@@ -600,18 +601,68 @@ void createBufferToTextureShaderModule(VkDevice device, VkShaderModule* blitShad
 		}
 	};
 
+	uint32_t spirv[6];
+
+	uint64_t* asm_ptrs[4];
+	uint32_t asm_sizes[4];
+
 	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {};
-	shaderModuleCreateInfo.asmStrings = blit_asm_strings;
+	shaderModuleCreateInfo.instructions = asm_ptrs;
+	shaderModuleCreateInfo.numInstructions = asm_sizes;
 	shaderModuleCreateInfo.mappings = blit_mappings;
 	shaderModuleCreateInfo.numMappings = sizeof(blit_mappings) / sizeof(VkRpiAssemblyMappingEXT);
-	shaderModuleCreateInfo.pShaderModule = blitShaderModule;
 
-	((_device*)device)->dev->customData = (uintptr_t)&shaderModuleCreateInfo;
+	//TODO use allocator
 
-	//PFN_vkCreateShaderModuleFromRpiAssemblyEXT vkCreateShaderModuleFromRpiAssemblyEXT = (PFN_vkCreateShaderModuleFromRpiAssemblyEXT)vkGetInstanceProcAddr(instance, "vkCreateShaderModuleFromRpiAssemblyEXT");
+	{ //assemble cs code
+		asm_sizes[0] = get_num_instructions(cs_asm_code);
+		uint32_t size = sizeof(uint64_t)*asm_sizes[0];
+		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
+		//why not map kernel space mem to user space instead?
+		asm_ptrs[0] = (uint64_t*)malloc(size);
+		assemble_qpu_asm(cs_asm_code, asm_ptrs[0]);
+	}
 
-	VkResult res = rpi_vkCreateShaderModuleFromRpiAssemblyEXT(((_device*)device)->dev);
+	{ //assemble vs code
+		asm_sizes[1] = get_num_instructions(vs_asm_code);
+		uint32_t size = sizeof(uint64_t)*asm_sizes[1];
+		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
+		//why not map kernel space mem to user space instead?
+		asm_ptrs[1] = (uint64_t*)malloc(size);
+		assemble_qpu_asm(vs_asm_code, asm_ptrs[1]);
+	}
+
+	{ //assemble fs code
+		asm_sizes[2] = get_num_instructions(blit_fs_asm_code);
+		uint32_t size = sizeof(uint64_t)*asm_sizes[2];
+		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
+		//why not map kernel space mem to user space instead?
+		asm_ptrs[2] = (uint64_t*)malloc(size);
+		assemble_qpu_asm(blit_fs_asm_code, asm_ptrs[2]);
+	}
+
+	asm_sizes[3] = 0;
+	asm_ptrs[3] = 0;
+
+	spirv[0] = 0x07230203;
+	spirv[1] = 0x00010000;
+	spirv[2] = 0x14E45250;
+	spirv[3] = 1;
+	spirv[4] = (uint32_t)&shaderModuleCreateInfo;
+	//words start here
+	spirv[5] = 1 << 16;
+
+	VkShaderModuleCreateInfo smci = {};
+	smci.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	smci.codeSize = sizeof(uint32_t)*6;
+	smci.pCode = spirv;
+	rpi_vkCreateShaderModule(device, &smci, 0, blitShaderModule);
 	assert(blitShaderModule);
+
+	for(uint32_t c = 0; c < 4; ++c)
+	{
+		free(asm_ptrs[c]);
+	}
 }
 
 void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitShaderModule)
@@ -819,16 +870,68 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 
 	};
 
+	uint32_t spirv[6];
+
+	uint64_t* asm_ptrs[4];
+	uint32_t asm_sizes[4];
+
 	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {};
-	shaderModuleCreateInfo.asmStrings = blit_asm_strings;
+	shaderModuleCreateInfo.instructions = asm_ptrs;
+	shaderModuleCreateInfo.numInstructions = asm_sizes;
 	shaderModuleCreateInfo.mappings = blit_mappings;
 	shaderModuleCreateInfo.numMappings = sizeof(blit_mappings) / sizeof(VkRpiAssemblyMappingEXT);
-	shaderModuleCreateInfo.pShaderModule = blitShaderModule;
 
-	((_device*)device)->dev->customData = (uintptr_t)&shaderModuleCreateInfo;
+	//TODO use allocator
 
-	VkResult res = rpi_vkCreateShaderModuleFromRpiAssemblyEXT(((_device*)device)->dev);
+	{ //assemble cs code
+		asm_sizes[0] = get_num_instructions(cs_asm_code);
+		uint32_t size = sizeof(uint64_t)*asm_sizes[0];
+		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
+		//why not map kernel space mem to user space instead?
+		asm_ptrs[0] = (uint64_t*)malloc(size);
+		assemble_qpu_asm(cs_asm_code, asm_ptrs[0]);
+	}
+
+	{ //assemble vs code
+		asm_sizes[1] = get_num_instructions(vs_asm_code);
+		uint32_t size = sizeof(uint64_t)*asm_sizes[1];
+		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
+		//why not map kernel space mem to user space instead?
+		asm_ptrs[1] = (uint64_t*)malloc(size);
+		assemble_qpu_asm(vs_asm_code, asm_ptrs[1]);
+	}
+
+	{ //assemble fs code
+		asm_sizes[2] = get_num_instructions(sample_fs_asm_code);
+		uint32_t size = sizeof(uint64_t)*asm_sizes[2];
+		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
+		//why not map kernel space mem to user space instead?
+		asm_ptrs[2] = (uint64_t*)malloc(size);
+		assemble_qpu_asm(sample_fs_asm_code, asm_ptrs[2]);
+	}
+
+	asm_sizes[3] = 0;
+	asm_ptrs[3] = 0;
+
+	spirv[0] = 0x07230203;
+	spirv[1] = 0x00010000;
+	spirv[2] = 0x14E45250;
+	spirv[3] = 1;
+	spirv[4] = (uint32_t)&shaderModuleCreateInfo;
+	//words start here
+	spirv[5] = 1 << 16;
+
+	VkShaderModuleCreateInfo smci = {};
+	smci.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	smci.codeSize = sizeof(uint32_t)*6;
+	smci.pCode = spirv;
+	rpi_vkCreateShaderModule(device, &smci, 0, blitShaderModule);
 	assert(blitShaderModule);
+
+	for(uint32_t c = 0; c < 4; ++c)
+	{
+		free(asm_ptrs[c]);
+	}
 }
 
 void setupEmulationResources(VkDevice device)

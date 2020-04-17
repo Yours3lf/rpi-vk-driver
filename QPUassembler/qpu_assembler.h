@@ -1,11 +1,12 @@
 #pragma once
 
 #include <stdint.h>
-#include "vc4_qpu_defines.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "vc4_qpu_enums.h"
 
 uint64_t encode_alu(qpu_sig_bits sig_bits,
 					qpu_unpack unpack_mode,
