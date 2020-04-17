@@ -106,6 +106,9 @@ VkResult rpi_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize of
 	{
 		assert(size > 0);
 		assert(size <= ((_deviceMemory*)memory)->size - offset);
+	}else
+	{
+		size = ((_deviceMemory*)memory)->size;
 	}
 
 	//TODO check ppdata alignment

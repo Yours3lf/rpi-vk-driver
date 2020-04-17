@@ -402,7 +402,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkMergePipelineCaches(
 	uint32_t                                    srcCacheCount,
 	const VkPipelineCache*                      pSrcCaches)
 {
-	UNSUPPORTED(rpi_vkMergePipelineCaches);
+	UNSUPPORTED(vkMergePipelineCaches);
 	return UNSUPPORTED_RETURN;
 }
 
@@ -412,7 +412,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPipelineCacheData(
 	size_t*                                     pDataSize,
 	void*                                       pData)
 {
-	UNSUPPORTED(rpi_vkGetPipelineCacheData);
+	UNSUPPORTED(vkGetPipelineCacheData);
 	return UNSUPPORTED_RETURN;
 }
 
@@ -421,7 +421,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyPipelineCache(
 	VkPipelineCache                             pipelineCache,
 	const VkAllocationCallbacks*                pAllocator)
 {
-	UNSUPPORTED(rpi_vkDestroyPipelineCache);
+	UNSUPPORTED(vkDestroyPipelineCache);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineLayout(
@@ -487,6 +487,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineCache(
 	const VkAllocationCallbacks*                pAllocator,
 	VkPipelineCache*                            pPipelineCache)
 {
-	UNSUPPORTED(rpi_vkCreatePipelineCache);
+	UNSUPPORTED(vkCreatePipelineCache);
 	return UNSUPPORTED_RETURN;
 }

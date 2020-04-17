@@ -482,7 +482,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexedIndirect(
 	uint32_t                                    drawCount,
 	uint32_t                                    stride)
 {
-	UNSUPPORTED(rpi_vkCmdDrawIndexedIndirect);
+	UNSUPPORTED(vkCmdDrawIndexedIndirect);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndirect(
@@ -492,5 +492,5 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndirect(
 	uint32_t                                    drawCount,
 	uint32_t                                    stride)
 {
-	UNSUPPORTED(rpi_vkCmdDrawIndirect);
+	UNSUPPORTED(vkCmdDrawIndirect);
 }

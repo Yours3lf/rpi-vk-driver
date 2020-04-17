@@ -11,7 +11,7 @@
  */
 VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
 {
-	UNSUPPORTED(rpi_vkCreateShaderModule);
+	UNSUPPORTED(vkCreateShaderModule);
 	return UNSUPPORTED_RETURN;
 }
 

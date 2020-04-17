@@ -435,14 +435,14 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdWaitEvents(
 	uint32_t                                    imageMemoryBarrierCount,
 	const VkImageMemoryBarrier*                 pImageMemoryBarriers)
 {
-	UNSUPPORTED(rpi_vkCmdWaitEvents);
+	UNSUPPORTED(vkCmdWaitEvents);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetEventStatus(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
-	UNSUPPORTED(rpi_vkGetEventStatus);
+	UNSUPPORTED(vkGetEventStatus);
 	return UNSUPPORTED_RETURN;
 }
 
@@ -451,7 +451,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyEvent(
 	VkEvent                                     event,
 	const VkAllocationCallbacks*                pAllocator)
 {
-	UNSUPPORTED(rpi_vkDestroyEvent);
+	UNSUPPORTED(vkDestroyEvent);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdResetEvent(
@@ -459,7 +459,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdResetEvent(
 	VkEvent                                     event,
 	VkPipelineStageFlags                        stageMask)
 {
-	UNSUPPORTED(rpi_vkCmdResetEvent);
+	UNSUPPORTED(vkCmdResetEvent);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateEvent(
@@ -468,7 +468,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateEvent(
 	const VkAllocationCallbacks*                pAllocator,
 	VkEvent*                                    pEvent)
 {
-	UNSUPPORTED(rpi_vkCreateEvent);
+	UNSUPPORTED(vkCreateEvent);
 	return UNSUPPORTED_RETURN;
 }
 
@@ -476,7 +476,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetEvent(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
-	UNSUPPORTED(rpi_vkResetEvent);
+	UNSUPPORTED(vkResetEvent);
 	return UNSUPPORTED_RETURN;
 }
 
@@ -484,7 +484,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkSetEvent(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
-	UNSUPPORTED(rpi_vkSetEvent);
+	UNSUPPORTED(vkSetEvent);
 	return UNSUPPORTED_RETURN;
 }
 
@@ -493,5 +493,5 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetEvent(
 	VkEvent                                     event,
 	VkPipelineStageFlags                        stageMask)
 {
-	UNSUPPORTED(rpi_vkCmdSetEvent);
+	UNSUPPORTED(vkCmdSetEvent);
 }
