@@ -76,6 +76,8 @@ VkPipelineLayout pipelineLayout;
 uint32_t graphicsQueueFamily;
 uint32_t presentQueueFamily;
 
+VkDebugUtilsMessengerEXT debugMessenger;
+
 void cleanup() {
 	vkDeviceWaitIdle(device);
 
@@ -155,6 +157,17 @@ void mainLoop() {
 	}
 }
 
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	void* pUserData) {
+
+	std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+
+	return VK_FALSE;
+}
+
 void createInstance() {
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -187,10 +200,34 @@ void createInstance() {
 		std::cout << "\t" << extension.extensionName << std::endl;
 	}
 
+	uint32_t layerCount = 0;
+	vkEnumerateInstanceLayerProperties(&layerCount, 0);
+
+	if (layerCount == 0) {
+		std::cerr << "no layers supported!" << std::endl;
+		assert(0);
+	}
+
+	std::vector<VkLayerProperties> availableLayers(layerCount);
+	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+	std::cout << "supported layers:" << std::endl;
+
+	for (const auto& layer : availableLayers) {
+		std::cout << "\t" << layer.layerName << std::endl;
+	}
+
+
 	const char* enabledExtensions[] = {
 		"VK_KHR_surface",
-			"VK_KHR_display"
+		"VK_KHR_display",
+		"VK_EXT_debug_utils"
 	};
+
+	char *instance_validation_layers[] = {
+		"VK_LAYER_KHRONOS_validation"
+	};
+
 
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -198,8 +235,8 @@ void createInstance() {
 	createInfo.pApplicationInfo = &appInfo;
 	createInfo.enabledExtensionCount = sizeof(enabledExtensions) / sizeof(const char*);
 	createInfo.ppEnabledExtensionNames = enabledExtensions;
-	createInfo.enabledLayerCount = 0;
-	createInfo.ppEnabledLayerNames = 0;
+	//createInfo.enabledLayerCount = 1;
+	//createInfo.ppEnabledLayerNames = (const char *const *)instance_validation_layers;
 
 	// Initialize Vulkan instance
 	if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
@@ -209,6 +246,16 @@ void createInstance() {
 	else {
 		std::cout << "created vulkan instance" << std::endl;
 	}
+
+	VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {};
+	debugMessengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	debugMessengerCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	debugMessengerCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	debugMessengerCreateInfo.pfnUserCallback = debugCallback;
+	debugMessengerCreateInfo.pUserData = nullptr; // Optional
+
+	auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+	func(instance, &debugMessengerCreateInfo, 0, &debugMessenger);
 }
 
 void createWindowSurface() {
@@ -243,15 +290,9 @@ void createWindowSurface() {
 //		printf("Mode height %i\n\n", displayModeProperties[c].parameters.visibleRegion.height);
 //	}
 
-	VkDisplayModeCreateInfoKHR dmci = {};
-	dmci.sType = VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR;
-	dmci.parameters = displayModeProperties[0].parameters;
-	VkDisplayModeKHR displayMode;
-	vkCreateDisplayModeKHR(physicalDevice, displayProperties[0].display, &dmci, 0, &displayMode);
-
 	VkDisplaySurfaceCreateInfoKHR dsci = {};
 	dsci.sType = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR;
-	dsci.displayMode = displayMode;
+	dsci.displayMode = displayModeProperties[0].displayMode;
 	dsci.transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 	dsci.alphaMode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
 	dsci.imageExtent = displayModeProperties[0].parameters.visibleRegion;

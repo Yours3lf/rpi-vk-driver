@@ -9,6 +9,73 @@
 extern "C" {
 #endif
 
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t*                                   pPropertyCount,
+	VkDisplayPlanePropertiesKHR*                pProperties)
+{
+	assert(physicalDevice);
+	assert(pPropertyCount);
+
+	uint32_t numPlanes;
+	modeset_plane planes[32];
+	modeset_enum_planes(controlFd, &numPlanes, planes);
+
+	if(!pProperties)
+	{
+		*pPropertyCount = numPlanes;
+		return VK_SUCCESS;
+	}
+
+	int arraySize = *pPropertyCount;
+	int elementsWritten = min(numPlanes, arraySize);
+
+	for(uint32_t c = 0; c < elementsWritten; ++c)
+	{
+		pProperties[c].currentDisplay = planes[c].currentConnectorID;
+		pProperties[c].currentStackIndex = c; //TODO dunno?
+	}
+
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayPlaneSupportedDisplaysKHR(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t                                    planeIndex,
+	uint32_t*                                   pDisplayCount,
+	VkDisplayKHR*                               pDisplays)
+{
+	assert(physicalDevice);
+	assert(pDisplayCount);
+
+	uint32_t numPlanes;
+	modeset_plane planes[32];
+	modeset_enum_planes(controlFd, &numPlanes, planes);
+
+	if(!pDisplays)
+	{
+		*pDisplayCount = planes[planeIndex].numPossibleConnectors;
+		return VK_SUCCESS;
+	}
+
+	int arraySize = *pDisplayCount;
+	int elementsWritten = min(planes[planeIndex].numPossibleConnectors, arraySize);
+
+	for(int c = 0; c < elementsWritten; ++c)
+	{
+		pDisplays[c] = planes[planeIndex].possibleConnectors[c];
+	}
+
+	*pDisplayCount = elementsWritten;
+
+	if(arraySize < planes[planeIndex].numPossibleConnectors)
+	{
+		return VK_INCOMPLETE;
+	}
+
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPropertiesKHR(
 	VkPhysicalDevice                            physicalDevice,
 	uint32_t*                                   pPropertyCount,
@@ -33,6 +100,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPropertiesKHR(
 	for(int c = 0; c < elementsWritten; ++c)
 	{
 		pProperties[c].display = displays[c].connectorID;
+		//fprintf(stderr, "display id %i\n", pProperties[c].display );
 		char* name = (char*)malloc(32);
 		memcpy(name, displays[c].name, 32);
 		pProperties[c].displayName = (const char*)name;

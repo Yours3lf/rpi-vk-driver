@@ -252,15 +252,9 @@ void createWindowSurface() {
 //		printf("Mode height %i\n\n", displayModeProperties[c].parameters.visibleRegion.height);
 //	}
 
-	VkDisplayModeCreateInfoKHR dmci = {};
-	dmci.sType = VK_STRUCTURE_TYPE_DISPLAY_MODE_CREATE_INFO_KHR;
-	dmci.parameters = displayModeProperties[0].parameters;
-	VkDisplayModeKHR displayMode;
-	vkCreateDisplayModeKHR(physicalDevice, displayProperties[0].display, &dmci, 0, &displayMode);
-
 	VkDisplaySurfaceCreateInfoKHR dsci = {};
 	dsci.sType = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR;
-	dsci.displayMode = displayMode;
+	dsci.displayMode = displayModeProperties[0].displayMode;
 	dsci.transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 	dsci.alphaMode = VK_DISPLAY_PLANE_ALPHA_OPAQUE_BIT_KHR;
 	dsci.imageExtent = displayModeProperties[0].parameters.visibleRegion;

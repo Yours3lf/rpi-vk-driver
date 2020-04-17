@@ -20,6 +20,13 @@ extern "C" {
 
 #include "common.h"
 
+typedef struct modeset_plane {
+	drmModePlanePtr plane;
+	uint32_t currentConnectorID;
+	uint32_t possibleConnectors[16];
+	uint32_t numPossibleConnectors;
+} modeset_plane;
+
 typedef struct modeset_display {
 	char name[32];
 	uint32_t mmWidth, mmHeight;
@@ -49,6 +56,7 @@ typedef struct modeset_saved_state {
 
 modeset_saved_state modeset_saved_states[32];
 
+void modeset_enum_planes(int fd, uint32_t* numPlanes, modeset_plane* planes);
 void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display* displays);
 void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes, modeset_display_mode* modes);
 void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, modeset_display_surface* surface);

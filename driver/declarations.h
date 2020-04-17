@@ -1049,6 +1049,17 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
 	VkSwapchainKHR                              swapchain,
 	const VkAllocationCallbacks*                pAllocator);
 
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayPlaneSupportedDisplaysKHR(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t                                    planeIndex,
+	uint32_t*                                   pDisplayCount,
+	VkDisplayKHR*                               pDisplays);
+
+VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
+	VkPhysicalDevice                            physicalDevice,
+	uint32_t*                                   pPropertyCount,
+	VkDisplayPlanePropertiesKHR*                pProperties);
+
 #ifdef __cplusplus
 }
 #endif

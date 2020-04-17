@@ -3,6 +3,86 @@
 #include <stdatomic.h>
 atomic_int saved_state_guard = 0;
 
+void modeset_enum_planes(int fd, uint32_t* numPlanes, modeset_plane* planes)
+{
+	drmModePlaneResPtr planesPtr = drmModeGetPlaneResources(fd);
+
+	uint32_t numDisplays;
+	modeset_display displays[16];
+	modeset_enum_displays(controlFd, &numDisplays, displays);
+
+	uint32_t tmpNumPlanes = 0;
+	modeset_plane tmpPlanes[32];
+
+	for(uint32_t c = 0; c < planesPtr->count_planes; ++c)
+	{
+		tmpPlanes[tmpNumPlanes].plane = drmModeGetPlane(fd, planesPtr->planes[c]);
+		tmpPlanes[tmpNumPlanes].currentConnectorID = 0;
+
+		if(tmpPlanes[tmpNumPlanes].plane->crtc_id)
+		{
+			for(uint32_t d = 0; d < numDisplays; ++d)
+			{
+				drmModeConnectorPtr connPtr = drmModeGetConnector(fd, displays[d].connectorID);
+
+				drmModeEncoderPtr encPtr = drmModeGetEncoder(fd, connPtr->encoder_id);
+
+				uint32_t connID = connPtr->connector_id;
+				uint32_t crtcID = encPtr->crtc_id;
+
+				drmModeFreeConnector(connPtr);
+				drmModeFreeEncoder(encPtr);
+
+				if(crtcID == tmpPlanes[tmpNumPlanes].plane->crtc_id)
+				{
+					tmpPlanes[tmpNumPlanes].currentConnectorID = connID;
+					break;
+				}
+			}
+		}
+
+		tmpPlanes[tmpNumPlanes].numPossibleConnectors = 0;
+
+		for(uint32_t d = 0; d < numDisplays; ++d)
+		{
+			drmModeConnectorPtr connPtr = drmModeGetConnector(fd, displays[d].connectorID);
+
+			for(uint32_t e = 0; e < connPtr->count_encoders; ++e)
+			{
+				drmModeEncoderPtr encPtr = drmModeGetEncoder(fd, connPtr->encoders[e]);
+
+				uint32_t possibleCrtcs = encPtr->possible_crtcs;
+
+				drmModeFreeEncoder(encPtr);
+
+				if(possibleCrtcs & tmpPlanes[tmpNumPlanes].plane->possible_crtcs)
+				{
+					tmpPlanes[tmpNumPlanes].possibleConnectors[tmpPlanes[tmpNumPlanes].numPossibleConnectors] = connPtr->connector_id;
+					tmpPlanes[tmpNumPlanes].numPossibleConnectors++;
+					break;
+				}
+			}
+
+			drmModeFreeConnector(connPtr);
+		}
+
+		tmpNumPlanes++;
+
+		assert(tmpNumPlanes < 32);
+	}
+
+	drmModeFreePlaneResources(planesPtr);
+
+	*numPlanes = tmpNumPlanes;
+
+	memcpy(planes, tmpPlanes, tmpNumPlanes * sizeof(modeset_plane));
+
+	for(uint32_t c = 0; c < tmpNumPlanes; ++c)
+	{
+		memcpy(planes[c].possibleConnectors, tmpPlanes[c].possibleConnectors, tmpPlanes[c].numPossibleConnectors * sizeof(uint32_t));
+	}
+}
+
 void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display* displays)
 {
 	 drmModeResPtr resPtr = drmModeGetResources(fd);
