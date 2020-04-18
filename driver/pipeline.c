@@ -189,8 +189,6 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 
 	for(int c = 0; c < createInfoCount; ++c)
 	{
-		fprintf(stderr, "bbbbbbbb\n");
-
 		_pipeline* pip = ALLOCATE(sizeof(_pipeline), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip)
 		{
@@ -461,8 +459,6 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 		//TODO derivative pipelines ignored
 
 		pPipelines[c] = pip;
-
-		fprintf(stderr, "bbbbbbbb\n");
 	}
 
 	return VK_SUCCESS;
