@@ -189,6 +189,8 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 
 	for(int c = 0; c < createInfoCount; ++c)
 	{
+		fprintf(stderr, "bbbbbbbb\n");
+
 		_pipeline* pip = ALLOCATE(sizeof(_pipeline), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip)
 		{
@@ -276,6 +278,59 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 
 		//tessellation ignored
 
+		uint32_t ignoreViewports = 0,
+				ignoreScissors = 0,
+				ignoreLineWidth = 0,
+				ignoreDepthBias = 0,
+				ignoreBlendConstants = 0,
+				ignoreDepthBounds = 0,
+				ignoreStencilCompareMask = 0,
+				ignoreStencilWriteMask = 0,
+				ignoreStencilReference = 0
+				;
+		if(pCreateInfos[c].pDynamicState)
+		{
+			for(uint32_t d = 0; d < pCreateInfos[c].pDynamicState->dynamicStateCount; ++d)
+			{
+				if(pCreateInfos[c].pDynamicState->pDynamicStates[d] == VK_DYNAMIC_STATE_VIEWPORT)
+				{
+					ignoreViewports = 1;
+				}
+				else if(pCreateInfos[c].pDynamicState->pDynamicStates[d] == VK_DYNAMIC_STATE_SCISSOR)
+				{
+					ignoreScissors = 1;
+				}
+				else if(pCreateInfos[c].pDynamicState->pDynamicStates[d] == VK_DYNAMIC_STATE_LINE_WIDTH)
+				{
+					ignoreLineWidth = 1;
+				}
+				else if(pCreateInfos[c].pDynamicState->pDynamicStates[d] == VK_DYNAMIC_STATE_DEPTH_BIAS)
+				{
+					ignoreDepthBias = 1;
+				}
+				else if(pCreateInfos[c].pDynamicState->pDynamicStates[d] == VK_DYNAMIC_STATE_BLEND_CONSTANTS)
+				{
+					ignoreBlendConstants = 1;
+				}
+				else if(pCreateInfos[c].pDynamicState->pDynamicStates[d] == VK_DYNAMIC_STATE_DEPTH_BOUNDS)
+				{
+					ignoreDepthBounds = 1;
+				}
+				else if(pCreateInfos[c].pDynamicState->pDynamicStates[d] == VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK)
+				{
+					ignoreStencilCompareMask = 1;
+				}
+				else if(pCreateInfos[c].pDynamicState->pDynamicStates[d] == VK_DYNAMIC_STATE_STENCIL_WRITE_MASK)
+				{
+					ignoreStencilWriteMask = 1;
+				}
+				else if(pCreateInfos[c].pDynamicState->pDynamicStates[d] == VK_DYNAMIC_STATE_STENCIL_REFERENCE)
+				{
+					ignoreStencilReference = 1;
+				}
+			}
+		}
+
 		pip->viewportCount = pCreateInfos[c].pViewportState->viewportCount;
 		pip->viewports = ALLOCATE(sizeof(VkViewport) * pip->viewportCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->viewports)
@@ -283,17 +338,23 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		memcpy(pip->viewports, pCreateInfos[c].pViewportState->pViewports, sizeof(VkViewport) * pip->viewportCount);
-
+		if(!ignoreViewports)
+		{
+			memcpy(pip->viewports, pCreateInfos[c].pViewportState->pViewports, sizeof(VkViewport) * pip->viewportCount);
+		}
 
 		pip->scissorCount = pCreateInfos[c].pViewportState->scissorCount;
 		pip->scissors = ALLOCATE(sizeof(VkRect2D) * pip->viewportCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+
 		if(!pip->scissors)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
-		memcpy(pip->scissors, pCreateInfos[c].pViewportState->pScissors, sizeof(VkRect2D) * pip->scissorCount);
+		if(!ignoreScissors)
+		{
+			memcpy(pip->scissors, pCreateInfos[c].pViewportState->pScissors, sizeof(VkRect2D) * pip->scissorCount);
+		}
 
 		pip->depthClampEnable = pCreateInfos[c].pRasterizationState->depthClampEnable;
 		pip->rasterizerDiscardEnable = pCreateInfos[c].pRasterizationState->rasterizerDiscardEnable;
@@ -301,10 +362,16 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 		pip->cullMode = pCreateInfos[c].pRasterizationState->cullMode;
 		pip->frontFace = pCreateInfos[c].pRasterizationState->frontFace;
 		pip->depthBiasEnable = pCreateInfos[c].pRasterizationState->depthBiasEnable;
-		pip->depthBiasConstantFactor = pCreateInfos[c].pRasterizationState->depthBiasConstantFactor;
-		pip->depthBiasClamp = pCreateInfos[c].pRasterizationState->depthBiasClamp;
-		pip->depthBiasSlopeFactor = pCreateInfos[c].pRasterizationState->depthBiasSlopeFactor;
-		pip->lineWidth = pCreateInfos[c].pRasterizationState->lineWidth;
+		if(!ignoreDepthBias)
+		{
+			pip->depthBiasConstantFactor = pCreateInfos[c].pRasterizationState->depthBiasConstantFactor;
+			pip->depthBiasClamp = pCreateInfos[c].pRasterizationState->depthBiasClamp;
+			pip->depthBiasSlopeFactor = pCreateInfos[c].pRasterizationState->depthBiasSlopeFactor;
+		}
+		if(!ignoreLineWidth)
+		{
+			pip->lineWidth = pCreateInfos[c].pRasterizationState->lineWidth;
+		}
 
 		pip->rasterizationSamples = pCreateInfos[c].pMultisampleState->rasterizationSamples;
 		pip->sampleShadingEnable = pCreateInfos[c].pMultisampleState->sampleShadingEnable;
@@ -325,10 +392,34 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 		pip->depthCompareOp = pCreateInfos[c].pDepthStencilState->depthCompareOp;
 		pip->depthBoundsTestEnable = pCreateInfos[c].pDepthStencilState->depthBoundsTestEnable;
 		pip->stencilTestEnable = pCreateInfos[c].pDepthStencilState->stencilTestEnable;
-		pip->front = pCreateInfos[c].pDepthStencilState->front;
-		pip->back = pCreateInfos[c].pDepthStencilState->back;
-		pip->minDepthBounds = pCreateInfos[c].pDepthStencilState->minDepthBounds;
-		pip->maxDepthBounds = pCreateInfos[c].pDepthStencilState->maxDepthBounds;
+		pip->front.compareOp = pCreateInfos[c].pDepthStencilState->front.compareOp;
+		pip->front.depthFailOp = pCreateInfos[c].pDepthStencilState->front.depthFailOp;
+		pip->front.failOp = pCreateInfos[c].pDepthStencilState->front.failOp;
+		pip->front.passOp = pCreateInfos[c].pDepthStencilState->front.passOp;
+		pip->back.compareOp = pCreateInfos[c].pDepthStencilState->back.compareOp;
+		pip->back.depthFailOp = pCreateInfos[c].pDepthStencilState->back.depthFailOp;
+		pip->back.failOp = pCreateInfos[c].pDepthStencilState->back.failOp;
+		pip->back.passOp = pCreateInfos[c].pDepthStencilState->back.passOp;
+		if(!ignoreStencilCompareMask)
+		{
+			pip->front.compareMask = pCreateInfos[c].pDepthStencilState->front.compareMask;
+			pip->back.compareMask = pCreateInfos[c].pDepthStencilState->back.compareMask;
+		}
+		if(!ignoreStencilWriteMask)
+		{
+			pip->front.writeMask = pCreateInfos[c].pDepthStencilState->front.writeMask;
+			pip->back.writeMask = pCreateInfos[c].pDepthStencilState->back.writeMask;
+		}
+		if(!ignoreStencilReference)
+		{
+			pip->front.reference = pCreateInfos[c].pDepthStencilState->front.reference;
+			pip->back.reference = pCreateInfos[c].pDepthStencilState->back.reference;
+		}
+		if(!ignoreDepthBounds)
+		{
+			pip->minDepthBounds = pCreateInfos[c].pDepthStencilState->minDepthBounds;
+			pip->maxDepthBounds = pCreateInfos[c].pDepthStencilState->maxDepthBounds;
+		}
 
 		pip->logicOpEnable = pCreateInfos[c].pColorBlendState->logicOpEnable;
 		pip->logicOp = pCreateInfos[c].pColorBlendState->logicOp;
@@ -341,8 +432,10 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 
 		memcpy(pip->attachmentBlendStates, pCreateInfos[c].pColorBlendState->pAttachments, sizeof(VkPipelineColorBlendAttachmentState) * pip->attachmentCount);
 
-		memcpy(pip->blendConstants, pCreateInfos[c].pColorBlendState, sizeof(float)*4);
-
+		if(!ignoreBlendConstants)
+		{
+			memcpy(pip->blendConstants, pCreateInfos[c].pColorBlendState, sizeof(float)*4);
+		}
 
 		if(pCreateInfos[c].pDynamicState)
 		{
@@ -368,6 +461,8 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 		//TODO derivative pipelines ignored
 
 		pPipelines[c] = pip;
+
+		fprintf(stderr, "bbbbbbbb\n");
 	}
 
 	return VK_SUCCESS;
