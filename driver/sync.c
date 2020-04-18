@@ -329,6 +329,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetFences(
 		f->signaled = 0;
 		f->seqno = 0;
 	}
+
+	return VK_SUCCESS;
 }
 
 /*
@@ -412,6 +414,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
 
 				f->signaled = 1;
 				f->seqno = 0;
+				return VK_SUCCESS;
+			}
+			else
+			{
+				//already signaled
 				return VK_SUCCESS;
 			}
 		}
