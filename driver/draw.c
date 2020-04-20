@@ -81,9 +81,9 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 		//Configuration Bits
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
 		clInsertConfigurationBits(&commandBuffer->binCl,
-								  cb->graphicsPipeline->depthWriteEnable, //earlyz updates enable
+								  1, //earlyz updates enable
 								  cb->graphicsPipeline->depthTestEnable, //earlyz enable
-								  cb->graphicsPipeline->depthWriteEnable, //z updates enable
+								  cb->graphicsPipeline->depthWriteEnable && cb->graphicsPipeline->depthTestEnable, //z updates enable
 								  cb->graphicsPipeline->depthTestEnable ? getCompareOp(cb->graphicsPipeline->depthCompareOp) : V3D_COMPARE_FUNC_ALWAYS, //depth compare func
 								  0, //coverage read mode
 								  0, //coverage pipe select
