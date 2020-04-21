@@ -406,7 +406,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBindDescriptorSets(
 
 	//use pipeline layout's memory to store what is bound...
 
-	_pipelineLayout* pl = pipelineBindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS ? cb->graphicsPipeline->layout : cb->computePipeline->layout;
+	_pipelineLayout* pl = layout;//pipelineBindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS ? cb->graphicsPipeline->layout : cb->computePipeline->layout;
 	assert(firstSet + descriptorSetCount <= pl->setLayoutCount);
 
 	for(uint32_t c = firstSet; c < firstSet + descriptorSetCount; ++c)
