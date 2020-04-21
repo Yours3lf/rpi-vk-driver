@@ -105,18 +105,21 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 			shader->sizes[c] = 0;
 		}
 
-		shader->numMappings[c] = ci->numMappings[c];
-
-		if(ci->numMappings[c] > 0)
+		if(shader->numMappings)
 		{
-			shader->mappings[c] = ALLOCATE(sizeof(VkRpiAssemblyMappingEXT)*ci->numMappings[c], 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+			shader->numMappings[c] = ci->numMappings[c];
 
-			if(!shader->mappings[c])
+			if(ci->numMappings[c] > 0)
 			{
-				return VK_ERROR_OUT_OF_HOST_MEMORY;
-			}
+				shader->mappings[c] = ALLOCATE(sizeof(VkRpiAssemblyMappingEXT)*ci->numMappings[c], 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
-			memcpy(shader->mappings[c], ci->mappings[c], sizeof(VkRpiAssemblyMappingEXT)*ci->numMappings[c]);
+				if(!shader->mappings[c])
+				{
+					return VK_ERROR_OUT_OF_HOST_MEMORY;
+				}
+
+				memcpy(shader->mappings[c], ci->mappings[c], sizeof(VkRpiAssemblyMappingEXT)*ci->numMappings[c]);
+			}
 		}
 	}
 
