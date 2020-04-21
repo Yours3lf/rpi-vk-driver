@@ -243,21 +243,13 @@ typedef struct VkFramebuffer_T
 	uint32_t width, height, layers;
 } _framebuffer;
 
-typedef enum RpiAssemblyType {
-	RPI_ASSEMBLY_TYPE_COORDINATE = 0,
-	RPI_ASSEMBLY_TYPE_VERTEX = 1,
-	RPI_ASSEMBLY_TYPE_FRAGMENT = 2,
-	RPI_ASSEMBLY_TYPE_COMPUTE = 3,
-	RPI_ASSEMBLY_TYPE_MAX,
-} RpiAssemblyType;
-
 typedef struct VkShaderModule_T
 {
-	uint32_t bos[RPI_ASSEMBLY_TYPE_MAX];
-	uint32_t sizes[RPI_ASSEMBLY_TYPE_MAX];
+	uint32_t bos[VK_RPI_ASSEMBLY_TYPE_MAX];
+	uint32_t sizes[VK_RPI_ASSEMBLY_TYPE_MAX];
 	//uint64_t* instructions[RPI_ASSEMBLY_TYPE_MAX];
-	VkRpiAssemblyMappingEXT* mappings;
-	uint32_t numMappings;
+	VkRpiAssemblyMappingEXT* mappings[VK_RPI_ASSEMBLY_TYPE_MAX];
+	uint32_t numMappings[VK_RPI_ASSEMBLY_TYPE_MAX];
 	uint32_t hasThreadSwitch;
 	uint32_t numVaryings;
 } _shaderModule;

@@ -128,19 +128,43 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 						0, //extended shader state record
 						cb->graphicsPipeline->vertexAttributeDescriptionCount & 0x7); //number of attribute arrays, 0 -> 8
 
+	_shaderModule* vertModule = 0, *fragModule = 0;
+
+	//it could be that all stages are contained in a single module, or have separate modules
+
+	if(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)])
+	{
+		fragModule = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)];
+	}
+
+	if(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)])
+	{
+		fragModule = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)];
+	}
+
+	if(!vertModule)
+	{
+		vertModule = fragModule;
+	}
+
+	if(!fragModule)
+	{
+		fragModule = vertModule;
+	}
+
 	//emit shader record
 	ControlListAddress fragCode = {
-		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]))->bos[RPI_ASSEMBLY_TYPE_FRAGMENT],
+		.handle = fragModule->bos[VK_RPI_ASSEMBLY_TYPE_FRAGMENT],
 		.offset = 0,
 	};
 
 	ControlListAddress vertCode = {
-		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]))->bos[RPI_ASSEMBLY_TYPE_VERTEX],
+		.handle = vertModule->bos[VK_RPI_ASSEMBLY_TYPE_VERTEX],
 		.offset = 0,
 	};
 
 	ControlListAddress coordCode = {
-		.handle = ((_shaderModule*)(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]))->bos[RPI_ASSEMBLY_TYPE_COORDINATE],
+		.handle = vertModule->bos[VK_RPI_ASSEMBLY_TYPE_COORDINATE],
 		.offset = 0,
 	};
 
@@ -177,11 +201,11 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 						 &commandBuffer->handlesCl,
 						 cb->binCl.currMarker->handlesBuf,
 						 cb->binCl.currMarker->handlesSize,
-						 !cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->hasThreadSwitch,
+						 !fragModule->hasThreadSwitch,
 						 0, //TODO point size included in shaded vertex data?
 						 1, //enable clipping
 						 0, //TODO fragment number of used uniforms?
-						 cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->numVaryings, //fragment number of varyings
+						 fragModule->numVaryings, //fragment number of varyings
 						 0, //fragment uniform address?
 						 fragCode, //fragment code address
 						 0, //TODO vertex number of used uniforms?
@@ -242,172 +266,187 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 	//write uniforms
 	_pipelineLayout* pl = cb->graphicsPipeline->layout;
 
+
 	//kernel side expects relocations first!
-	for(uint32_t c = 0; c < cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->numMappings; ++c)
+	for(uint32_t c = 0; c < fragModule->numMappings[VK_RPI_ASSEMBLY_TYPE_FRAGMENT]; ++c)
 	{
-		VkRpiAssemblyMappingEXT mapping = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->mappings[c];
+		VkRpiAssemblyMappingEXT mapping = fragModule->mappings[VK_RPI_ASSEMBLY_TYPE_FRAGMENT][c];
 
-		if(mapping.shaderStage & VK_SHADER_STAGE_FRAGMENT_BIT)
+		if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
 		{
-			if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
+			if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+			   mapping.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+			   mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 			{
-				if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
-				   mapping.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
-				   mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-				{
-					_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
-					_descriptorImage* di = getMapElement(ds->imageBindingMap, mapping.descriptorBinding);
-					di += mapping.descriptorArrayElement;
+				_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
+				_descriptorImage* di = getMapElement(ds->imageBindingMap, mapping.descriptorBinding);
+				di += mapping.descriptorArrayElement;
 
-					//emit reloc for texture BO
-					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, di->imageView->image->boundMem->bo);
+				//emit reloc for texture BO
+				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, di->imageView->image->boundMem->bo);
 
-					//emit tex bo reloc index
-					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
-					clInsertData(&commandBuffer->uniformsCl, 4, &idx);
-				}
-				else if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
-						mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
-						mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
-						mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
-				{
-					_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
-					_descriptorBuffer* db = getMapElement(ds->bufferBindingMap, mapping.descriptorBinding);
-					db += mapping.descriptorArrayElement;
+				//emit tex bo reloc index
+				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
+			}
+			else if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+					mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+					mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
+					mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+			{
+				_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
+				_descriptorBuffer* db = getMapElement(ds->bufferBindingMap, mapping.descriptorBinding);
+				db += mapping.descriptorArrayElement;
 
-					//emit reloc for BO
-					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, db->buffer->boundMem->bo);
+				//emit reloc for BO
+				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, db->buffer->boundMem->bo);
 
-					//emit bo reloc index
-					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
-					clInsertData(&commandBuffer->uniformsCl, 4, &idx);
-				}
-				else if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ||
-						mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
-				{
-					_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
-					_descriptorTexelBuffer* dtb = getMapElement(ds->texelBufferBindingMap, mapping.descriptorBinding);
-					dtb += mapping.descriptorArrayElement;
+				//emit bo reloc index
+				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
+			}
+			else if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ||
+					mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
+			{
+				_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
+				_descriptorTexelBuffer* dtb = getMapElement(ds->texelBufferBindingMap, mapping.descriptorBinding);
+				dtb += mapping.descriptorArrayElement;
 
-					//emit reloc for BO
-					clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-					uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, dtb->bufferView->buffer->boundMem->bo);
+				//emit reloc for BO
+				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, cb->binCl.currMarker->handlesBuf, cb->binCl.currMarker->handlesSize, dtb->bufferView->buffer->boundMem->bo);
 
-					//emit bo reloc index
-					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
-					clInsertData(&commandBuffer->uniformsCl, 4, &idx);
-				}
-				else
-				{
-					assert(0); //shouldn't happen
-				}
+				//emit bo reloc index
+				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
+			}
+			else
+			{
+				assert(0); //shouldn't happen
 			}
 		}
 	}
 
 	//after relocs we can proceed with the usual uniforms
-	for(uint32_t c = 0; c < cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->numMappings; ++c)
+	for(uint32_t c = 0; c < fragModule->numMappings[VK_RPI_ASSEMBLY_TYPE_FRAGMENT]; ++c)
 	{
-		VkRpiAssemblyMappingEXT mapping = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_FRAGMENT_BIT)]->mappings[c];
+		VkRpiAssemblyMappingEXT mapping = fragModule->mappings[VK_RPI_ASSEMBLY_TYPE_FRAGMENT][c];
 
-		if(mapping.shaderStage & VK_SHADER_STAGE_FRAGMENT_BIT)
+		if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT)
 		{
-			if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT)
+			clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+			clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferPixel + mapping.resourceOffset);
+		}
+		else if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
+		{
+			if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+			   mapping.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+			   mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
 			{
-				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
-				clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferPixel + mapping.resourceOffset);
-			}
-			else if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
-			{
-				if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
-				   mapping.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
-				   mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+				_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
+				_descriptorImage* di = getMapElement(ds->imageBindingMap, mapping.descriptorBinding);
+				di += mapping.descriptorArrayElement;
+
+				uint32_t cubemapStride = (di->imageView->image->width * di->imageView->image->height * getFormatBpp(di->imageView->interpretedFormat)) >> 3;
+
+				fprintf(stderr, "cubemap stride %i\n", cubemapStride);
+
+				//TODO handle miplevels according to subresource rage?
+				uint32_t params[4];
+				encodeTextureUniform(params,
+									 di->imageView->subresourceRange.levelCount - 1,
+									 getTextureDataType(di->imageView->interpretedFormat),
+									 di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE,
+									 cubemapStride >> 12, //TODO cubemap stride in multiples of 4KB
+									 di->imageView->image->levelOffsets[0] >> 12, //Image level 0 offset in multiples of 4KB
+									 di->imageView->image->height & 2047,
+									 di->imageView->image->width & 2047,
+									 getMinFilterType(di->sampler->minFilter, di->sampler->mipmapMode),// di->sampler->maxLod),
+									 di->sampler->magFilter == VK_FILTER_NEAREST,
+									 getWrapMode(di->sampler->addressModeU),
+									 getWrapMode(di->sampler->addressModeV),
+									 di->sampler->disableAutoLod
+									 );
+
+				uint32_t size = 0;
+				if(di->imageView->viewType == VK_IMAGE_VIEW_TYPE_1D)
 				{
-					_descriptorSet* ds = getMapElement(pl->descriptorSetBindingMap, mapping.descriptorSet);
-					_descriptorImage* di = getMapElement(ds->imageBindingMap, mapping.descriptorBinding);
-					di += mapping.descriptorArrayElement;
-
-					uint32_t cubemapStride = (di->imageView->image->width * di->imageView->image->height * getFormatBpp(di->imageView->interpretedFormat)) >> 3;
-
-					fprintf(stderr, "cubemap stride %i\n", cubemapStride);
-
-					//TODO handle miplevels according to subresource rage?
-					uint32_t params[4];
-					encodeTextureUniform(params,
-										 di->imageView->subresourceRange.levelCount - 1,
-										 getTextureDataType(di->imageView->interpretedFormat),
-										 di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE,
-										 cubemapStride >> 12, //TODO cubemap stride in multiples of 4KB
-										 di->imageView->image->levelOffsets[0] >> 12, //Image level 0 offset in multiples of 4KB
-										 di->imageView->image->height & 2047,
-										 di->imageView->image->width & 2047,
-										 getMinFilterType(di->sampler->minFilter, di->sampler->mipmapMode),// di->sampler->maxLod),
-										 di->sampler->magFilter == VK_FILTER_NEAREST,
-										 getWrapMode(di->sampler->addressModeU),
-										 getWrapMode(di->sampler->addressModeV),
-										 di->sampler->disableAutoLod
-										 );
-
-					uint32_t size = 0;
-					if(di->imageView->viewType == VK_IMAGE_VIEW_TYPE_1D)
-					{
-						size = 4;
-					}
-					else if(di->imageView->viewType == VK_IMAGE_VIEW_TYPE_2D)
-					{
-						size = 8;
-					}
-					else if(di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE)
-					{
-						size = 12;
-					}
-					else
-					{
-						assert(0); //unsupported
-					}
-
-					//TODO handle this properly
-					//TMU0_B requires an extra uniform written
-					//we need to signal that somehow from API side
-					//if mode is cubemap we don't need an extra uniform, it's included!
-					if(di->imageView->viewType != VK_IMAGE_VIEW_TYPE_CUBE && di->sampler->disableAutoLod)
-					{
-						size += 4;
-					}
-
-					//emit tex parameters
-					clFit(commandBuffer, &commandBuffer->uniformsCl, size);
-					clInsertData(&commandBuffer->uniformsCl, size, params);
+					size = 4;
 				}
+				else if(di->imageView->viewType == VK_IMAGE_VIEW_TYPE_2D)
+				{
+					size = 8;
+				}
+				else if(di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE)
+				{
+					size = 12;
+				}
+				else
+				{
+					assert(0); //unsupported
+				}
+
+				//TODO handle this properly
+				//TMU0_B requires an extra uniform written
+				//we need to signal that somehow from API side
+				//if mode is cubemap we don't need an extra uniform, it's included!
+				if(di->imageView->viewType != VK_IMAGE_VIEW_TYPE_CUBE && di->sampler->disableAutoLod)
+				{
+					size += 4;
+				}
+
+				//emit tex parameters
+				clFit(commandBuffer, &commandBuffer->uniformsCl, size);
+				clInsertData(&commandBuffer->uniformsCl, size, params);
 			}
 		}
 	}
 
-	//do it twice for vertex and then coordinate
-	for(uint32_t d = 0; d < 2; ++d)
+	//vertex and then coordinate
+	for(uint32_t c = 0; c < vertModule->numMappings[VK_RPI_ASSEMBLY_TYPE_VERTEX]; ++c)
 	{
-		for(uint32_t c = 0; c < cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]->numMappings; ++c)
+		VkRpiAssemblyMappingEXT mapping = vertModule->mappings[VK_RPI_ASSEMBLY_TYPE_VERTEX][c];
+
+		if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT)
 		{
-			VkRpiAssemblyMappingEXT mapping = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)]->mappings[c];
+			clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+			clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferVertex + mapping.resourceOffset);
+		}
+		else if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
+		{
 
-			if(mapping.shaderStage & VK_SHADER_STAGE_VERTEX_BIT)
-			{
-				if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT)
-				{
-					clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
-					clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferVertex + mapping.resourceOffset);
-				}
-				else if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
-				{
+		}
+		else
+		{
+			assert(0); //shouldn't happen
+		}
+	}
 
-				}
-				else
-				{
-					assert(0); //shouldn't happen
-				}
-			}
+	//if there are no coordinate mappings, just use the vertex ones
+	VkRpiAssemblyTypeEXT coordMappingType = VK_RPI_ASSEMBLY_TYPE_COORDINATE;
+	if(vertModule->numMappings[VK_RPI_ASSEMBLY_TYPE_COORDINATE] < 1)
+	{
+		coordMappingType = VK_RPI_ASSEMBLY_TYPE_VERTEX;
+	}
+
+	for(uint32_t c = 0; c < vertModule->numMappings[coordMappingType]; ++c)
+	{
+		VkRpiAssemblyMappingEXT mapping = vertModule->mappings[coordMappingType][c];
+
+		if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT)
+		{
+			clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+			clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferVertex + mapping.resourceOffset);
+		}
+		else if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
+		{
+
+		}
+		else
+		{
+			assert(0); //shouldn't happen
 		}
 	}
 

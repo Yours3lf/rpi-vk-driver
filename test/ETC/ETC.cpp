@@ -1129,7 +1129,7 @@ void CreateShaders()
 		(char*)cs_asm_code, (char*)vs_asm_code, (char*)sample_fs_asm_code, 0
 	};
 
-	VkRpiAssemblyMappingEXT sample_mappings[] = {
+	VkRpiAssemblyMappingEXT vertexMappings[] = {
 		//vertex shader uniforms
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
@@ -1138,7 +1138,6 @@ void CreateShaders()
 			0, //descriptor binding #
 			0, //descriptor array element #
 			0, //resource offset
-			VK_SHADER_STAGE_VERTEX_BIT
 		},
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
@@ -1147,7 +1146,6 @@ void CreateShaders()
 			0, //descriptor binding #
 			0, //descriptor array element #
 			4, //resource offset
-			VK_SHADER_STAGE_VERTEX_BIT
 		},
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
@@ -1156,7 +1154,6 @@ void CreateShaders()
 			0, //descriptor binding #
 			0, //descriptor array element #
 			8, //resource offset
-			VK_SHADER_STAGE_VERTEX_BIT
 		},
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
@@ -1165,8 +1162,10 @@ void CreateShaders()
 			0, //descriptor binding #
 			0, //descriptor array element #
 			12, //resource offset
-			VK_SHADER_STAGE_VERTEX_BIT
 		},
+	};
+
+	VkRpiAssemblyMappingEXT fragmentMappings[] = {
 		//fragment shader uniforms
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
@@ -1175,20 +1174,27 @@ void CreateShaders()
 			0, //descriptor binding #
 			0, //descriptor array element #
 			0, //resource offset
-			VK_SHADER_STAGE_FRAGMENT_BIT
 		}
 	};
 
 	uint32_t spirv[6];
 
-	uint64_t* asm_ptrs[4];
-	uint32_t asm_sizes[4];
+	uint64_t* asm_ptrs[4] = {};
+	uint32_t asm_sizes[4] = {};
+
+	VkRpiAssemblyMappingEXT* asm_mappings[4] = {};
+	uint32_t asm_mappings_sizes[4] = {};
 
 	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {};
 	shaderModuleCreateInfo.instructions = asm_ptrs;
 	shaderModuleCreateInfo.numInstructions = asm_sizes;
-	shaderModuleCreateInfo.mappings = sample_mappings;
-	shaderModuleCreateInfo.numMappings = sizeof(sample_mappings) / sizeof(VkRpiAssemblyMappingEXT);
+	shaderModuleCreateInfo.mappings = asm_mappings;
+	shaderModuleCreateInfo.numMappings = asm_mappings_sizes;
+
+	asm_mappings[VK_RPI_ASSEMBLY_TYPE_VERTEX] = vertexMappings;
+	asm_mappings_sizes[VK_RPI_ASSEMBLY_TYPE_VERTEX] = sizeof(vertexMappings) / sizeof(VkRpiAssemblyMappingEXT);
+	asm_mappings[VK_RPI_ASSEMBLY_TYPE_FRAGMENT] = fragmentMappings;
+	asm_mappings_sizes[VK_RPI_ASSEMBLY_TYPE_FRAGMENT] = sizeof(fragmentMappings) / sizeof(VkRpiAssemblyMappingEXT);
 
 	{ //assemble cs code
 		asm_sizes[0] = get_num_instructions(cs_asm_code);
@@ -1210,9 +1216,6 @@ void CreateShaders()
 		asm_ptrs[2] = (uint64_t*)malloc(size);
 		assemble_qpu_asm(sample_fs_asm_code, asm_ptrs[2]);
 	}
-
-	asm_sizes[3] = 0;
-	asm_ptrs[3] = 0;
 
 	spirv[0] = 0x07230203;
 	spirv[1] = 0x00010000;

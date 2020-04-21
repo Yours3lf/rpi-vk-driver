@@ -59,10 +59,22 @@ typedef struct LoaderTrampoline
  * and the driver should be able to figure out what to put in the uniform queue
  * based on the mapping
  *
- * vertex and coordinate shader mappings are shared
+ * Coordinate shader mappings are tricky as they are not a concept in Vulkan.
+ * However, assuming they were compiled from the same vertex shader, they must share the same uniforms.
+ * Therefore Coordinate shaders will share the same uniforms, but may employ a different mappping.
+ * If coordinate shader mapping is absent, they'll just use the same mapping as vertex shaders.
+ *
+ * Vertex and coordinate shaders must be in the same shader module.
  *
  */
 
+typedef enum VkRpiAssemblyTypeEXT {
+	VK_RPI_ASSEMBLY_TYPE_COORDINATE = 0,
+	VK_RPI_ASSEMBLY_TYPE_VERTEX = 1,
+	VK_RPI_ASSEMBLY_TYPE_FRAGMENT = 2,
+	VK_RPI_ASSEMBLY_TYPE_COMPUTE = 3,
+	VK_RPI_ASSEMBLY_TYPE_MAX,
+} VkRpiAssemblyTypeEXT;
 
 typedef enum VkRpiAssemblyMappingTypeEXT {
 	VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR = 0,
@@ -78,7 +90,6 @@ typedef struct VkRpiAssemblyMappingEXT {
 	uint32_t					descriptorBinding;
 	uint32_t					descriptorArrayElement;
 	uint32_t					resourceOffset; //in bytes
-	VkShaderStageFlagBits		shaderStage;
 } VkRpiAssemblyMappingEXT;
 
 typedef struct VkRpiShaderModuleAssemblyCreateInfoEXT {
@@ -86,8 +97,8 @@ typedef struct VkRpiShaderModuleAssemblyCreateInfoEXT {
 	const void*                   pNext;
 	uint64_t**					  instructions;
 	uint32_t*					  numInstructions;
-	VkRpiAssemblyMappingEXT*	  mappings;
-	uint32_t					  numMappings;
+	VkRpiAssemblyMappingEXT**	  mappings;
+	uint32_t*					  numMappings;
 } VkRpiShaderModuleAssemblyCreateInfoEXT;
 
 #ifdef __cplusplus

@@ -38,10 +38,21 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 
 	shader->hasThreadSwitch = 0;
 
-	for(int c = 0; c < RPI_ASSEMBLY_TYPE_MAX; ++c)
+	uint32_t hadVertex = 0, hadCoordinate = 0;
+
+	for(int c = 0; c < VK_RPI_ASSEMBLY_TYPE_MAX; ++c)
 	{
 		if(ci->instructions[c])
 		{
+			if(c == VK_RPI_ASSEMBLY_TYPE_VERTEX)
+			{
+				hadVertex = 1;
+			}
+			else if(c == VK_RPI_ASSEMBLY_TYPE_COORDINATE)
+			{
+				hadCoordinate = 1;
+			}
+
 			for(uint64_t d = 0; d < ci->numInstructions[c]; ++d)
 			{
 				uint64_t s = (ci->instructions[c][d] & (0xfll << 60)) >> 60;
@@ -93,21 +104,23 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 			shader->bos[c] = 0;
 			shader->sizes[c] = 0;
 		}
-	}
 
-	shader->numMappings = ci->numMappings;
+		shader->numMappings[c] = ci->numMappings[c];
 
-	if(ci->numMappings > 0)
-	{
-		shader->mappings = ALLOCATE(sizeof(VkRpiAssemblyMappingEXT)*ci->numMappings, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
-
-		if(!shader->mappings)
+		if(ci->numMappings[c] > 0)
 		{
-			return VK_ERROR_OUT_OF_HOST_MEMORY;
-		}
+			shader->mappings[c] = ALLOCATE(sizeof(VkRpiAssemblyMappingEXT)*ci->numMappings[c], 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
-		memcpy(shader->mappings, ci->mappings, sizeof(VkRpiAssemblyMappingEXT)*ci->numMappings);
+			if(!shader->mappings[c])
+			{
+				return VK_ERROR_OUT_OF_HOST_MEMORY;
+			}
+
+			memcpy(shader->mappings[c], ci->mappings[c], sizeof(VkRpiAssemblyMappingEXT)*ci->numMappings[c]);
+		}
 	}
+
+	assert(hadVertex == hadCoordinate);
 
 	*pShaderModule = shader;
 
@@ -122,7 +135,7 @@ void rpi_vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, con
 
 	if(shader)
 	{
-		for(int c = 0; c < RPI_ASSEMBLY_TYPE_MAX; ++c)
+		for(int c = 0; c < VK_RPI_ASSEMBLY_TYPE_MAX; ++c)
 		{
 			if(shader->bos[c])
 			{
