@@ -139,7 +139,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 
 	if(cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)])
 	{
-		fragModule = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)];
+		vertModule = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)];
 	}
 
 	if(!vertModule)
