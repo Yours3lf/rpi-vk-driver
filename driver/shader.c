@@ -53,13 +53,16 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 				hadCoordinate = 1;
 			}
 
-			for(uint64_t d = 0; d < ci->numInstructions[c]; ++d)
+			if(c == VK_RPI_ASSEMBLY_TYPE_FRAGMENT)
 			{
-				uint64_t s = (ci->instructions[c][d] & (0xfll << 60)) >> 60;
-				if(s == 2ll)
+				for(uint64_t d = 0; d < ci->numInstructions[c]; ++d)
 				{
-					shader->hasThreadSwitch = 1;
-					break;
+					uint64_t s = (ci->instructions[c][d] & (0xfll << 60)) >> 60;
+					if(s == 2ll || s == 6ll)
+					{
+						shader->hasThreadSwitch = 1;
+						break;
+					}
 				}
 			}
 
