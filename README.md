@@ -44,7 +44,7 @@
   - [ ] Handle offsets wherever required
   - [ ] Handle subresource ranges properly
   - [ ] Handle allocation scopes properly
-  - [ ] Shader module creation might not be thread safe
+  - [ ] Clean up compile time warnings
 - [ ] Try to pass as much of the VK CTS as possible with existing feature set
 - [ ] Github pages
 - [ ] Wiki
