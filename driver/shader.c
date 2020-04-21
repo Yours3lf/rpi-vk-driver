@@ -105,7 +105,7 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 			shader->sizes[c] = 0;
 		}
 
-		if(shader->numMappings)
+		if(ci->numMappings)
 		{
 			shader->numMappings[c] = ci->numMappings[c];
 
