@@ -121,6 +121,11 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 				memcpy(shader->mappings[c], ci->mappings[c], sizeof(VkRpiAssemblyMappingEXT)*ci->numMappings[c]);
 			}
 		}
+		else
+		{
+			shader->numMappings[c] = 0;
+			shader->mappings[c] = 0;
+		}
 	}
 
 	assert(hadVertex == hadCoordinate);
