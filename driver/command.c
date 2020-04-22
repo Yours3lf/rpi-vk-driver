@@ -4,6 +4,8 @@
 #include "../brcm/cle/v3d_decoder.h"
 #include "../brcm/clif/clif_dump.h"
 
+#include "declarations.h"
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#commandbuffers-pools
  * Command pools are opaque objects that command buffer memory is allocated from, and which allow the implementation to amortize the
@@ -208,9 +210,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBeginCommandBuffer(
 
 	//TODO secondary command buffers
 
-	//VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-	//specifies that each recording of the command buffer will only be submitted once, and the command buffer will be reset and recorded again between each submission.
-
 	//TODO VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
 	//specifies that a secondary command buffer is considered to be entirely inside a render pass. If this is a primary command buffer, then this bit is ignored
 
@@ -222,7 +221,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBeginCommandBuffer(
 	commandBuffer->usageFlags = pBeginInfo->flags;
 	commandBuffer->state = CMDBUF_STATE_RECORDING;
 
-	//TODO reset state?
+	if((pBeginInfo->flags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) &&
+	   commandBuffer->cp->resetAble)
+	{
+		rpi_vkResetCommandBuffer(commandBuffer, 0);
+	}
 
 	return VK_SUCCESS;
 }
@@ -825,7 +828,36 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandBuffer(
 		//TODO release resources
 	}
 
-	//TODO reset state?
+	//reset commandbuffer state
+	commandBuffer->shaderRecCount = 0;
+	clInit(&commandBuffer->binCl, commandBuffer->binCl.buffer, commandBuffer->cp->cpa.blockSize);
+	clInit(&commandBuffer->handlesCl, commandBuffer->handlesCl.buffer, commandBuffer->cp->cpa.blockSize);
+	clInit(&commandBuffer->shaderRecCl, commandBuffer->shaderRecCl.buffer, commandBuffer->cp->cpa.blockSize);
+	clInit(&commandBuffer->uniformsCl, commandBuffer->uniformsCl.buffer, commandBuffer->cp->cpa.blockSize);
+
+	commandBuffer->graphicsPipeline = 0;
+	commandBuffer->computePipeline = 0;
+	commandBuffer->numDrawCallsSubmitted = 0;
+	commandBuffer->indexBuffer = 0;
+	commandBuffer->indexBufferOffset = 0;
+	commandBuffer->vertexBufferDirty = 1;
+	commandBuffer->indexBufferDirty = 1;
+	commandBuffer->viewportDirty = 1;
+	commandBuffer->lineWidthDirty = 1;
+	commandBuffer->depthBiasDirty = 1;
+	commandBuffer->graphicsPipelineDirty = 1;
+	commandBuffer->computePipelineDirty = 1;
+	commandBuffer->subpassDirty = 1;
+	commandBuffer->blendConstantsDirty = 1;
+	commandBuffer->scissorDirty = 1;
+	commandBuffer->depthBoundsDirty = 1;
+	commandBuffer->stencilCompareMaskDirty = 1;
+	commandBuffer->stencilWriteMaskDirty = 1;
+	commandBuffer->stencilReferenceDirty = 1;
+	commandBuffer->descriptorSetDirty = 1;
+	commandBuffer->pushConstantDirty = 1;
+
+	commandBuffer->perfmonID = 0;
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdExecuteCommands(
