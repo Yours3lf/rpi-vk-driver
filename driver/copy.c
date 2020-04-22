@@ -85,16 +85,16 @@ void createFullscreenQuad(VkDevice device, VkBuffer* fsqVertexBuffer, VkDeviceMe
 void createDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool)
 {
 	VkDescriptorPoolSize descriptorPoolSizes[2];
-	descriptorPoolSizes[0].descriptorCount = 100;
+	descriptorPoolSizes[0].descriptorCount = 2048;
 	descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-	descriptorPoolSizes[1].descriptorCount = 100;
+	descriptorPoolSizes[1].descriptorCount = 2048;
 	descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
 	VkDescriptorPoolCreateInfo descriptorPoolCI = {};
 	descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	descriptorPoolCI.poolSizeCount = 2;
 	descriptorPoolCI.pPoolSizes = descriptorPoolSizes;
-	descriptorPoolCI.maxSets = 200;
+	descriptorPoolCI.maxSets = 2048;
 	descriptorPoolCI.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 	rpi_vkCreateDescriptorPool(device, &descriptorPoolCI, 0, descriptorPool);
