@@ -1226,6 +1226,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		rpi_vkCmdEndRenderPass(commandBuffer);
 
 		//free up resources
+		rpi_vkDestroySampler(device, mipSampler, 0);
 		rpi_vkDestroyPipelineLayout(device, blitPipelineLayout, 0);
 		rpi_vkDestroyPipeline(device, blitPipeline, 0);
 		rpi_vkFreeDescriptorSets(device, device->emulDescriptorPool, 1, &blitDescriptorSet);
