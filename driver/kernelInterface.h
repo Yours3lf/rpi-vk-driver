@@ -79,8 +79,6 @@ void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmitt
 uint32_t getBOAlignedSize(uint32_t size, uint32_t alignment);
 void vc4_print_hang_state(int fd);
 
-//TODO perfmon
-
 #if defined (__cplusplus)
 }
 #endif

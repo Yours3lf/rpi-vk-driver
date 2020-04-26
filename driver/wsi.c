@@ -337,26 +337,24 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
 	assert(surface);
 	assert(pPresentModeCount);
 
-	const int numModes = 1;
-
 	if(!pPresentModes)
 	{
-		*pPresentModeCount = numModes;
+		*pPresentModeCount = numSupportedPresentModes;
 		return VK_SUCCESS;
 	}
 
 	int arraySize = *pPresentModeCount;
-	int elementsWritten = min(numModes, arraySize);
+	int elementsWritten = min(numSupportedPresentModes, arraySize);
 
 	for(int c = 0; c < elementsWritten; ++c)
 	{
 		//TODO
-		pPresentModes[c] = VK_PRESENT_MODE_FIFO_KHR;
+		pPresentModes[c] = supportedPresentModes[c];
 	}
 
 	*pPresentModeCount = elementsWritten;
 
-	if(elementsWritten < numModes)
+	if(elementsWritten < numSupportedPresentModes)
 	{
 		return VK_INCOMPLETE;
 	}
@@ -385,8 +383,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 
 	_swapchain* s = *pSwapchain;
 
-	//TODO flags, layers, queue sharing, pretransform, composite alpha, present mode..., clipped, oldswapchain
-	//TODO external sync on surface, oldswapchain
+	//TODO flags, layers, queue sharing, pretransform, composite alpha..., clipped, oldswapchain
+	//TODO present mode
 
 	s->images = ALLOCATE(sizeof(_image) * pCreateInfo->minImageCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!s->images)
@@ -529,7 +527,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireNextImageKHR(
 	int semVal; sem_getvalue(s, &semVal); assert(semVal <= 0); //make sure semaphore is unsignalled
 	sem_post(s);
 
-	//TODO signal fence
+	_fence* f = fence;
+	if(f)
+	{
+		f->signaled = 1;
+	}
 
 	return VK_SUCCESS;
 }

@@ -21,7 +21,7 @@ void rpi_vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pi
 	}
 }
 
-//TODO multiple attachments
+//multiple attachments
 void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, const VkPipelineDepthStencilStateCreateInfo* dsi, const VkPipelineColorBlendAttachmentState* bas, const VkAllocationCallbacks* pAllocator)
 {
 	assert(instructions);
@@ -57,9 +57,9 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
 	}
 
 
-	//TODO account for MSAA state!
-	//TODO patch blending
-	//TODO optimise
+	//account for MSAA state!
+	//patch blending
+	//optimise
 
 	if(bas->blendEnable)
 	{
@@ -140,7 +140,7 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
 		}
 		else //separate factors
 		{
-			//TODO
+			//
 		}
 
 		switch(bas->alphaBlendOp)
@@ -216,11 +216,11 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 			//patch fragment shader
 //			if(pCreateInfos[c].pStages[d].stage & VK_SHADER_STAGE_FRAGMENT_BIT)
 //			{
-//				//TODO we could patch the fragment shader, but it would have a lot of edge cases
+//				//we could patch the fragment shader, but it would have a lot of edge cases
 //				//since the user is writing assembly we can just let them have full control
 //				//patchShaderDepthStencilBlending(&s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT], &s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT], pCreateInfos[c].pDepthStencilState, pCreateInfos[c].pColorBlendState->pAttachments, pAllocator);
 
-//				//TODO if debug...
+//				//if debug...
 //				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_FRAGMENT] / 8; ++e)
 //				{
 //					printf("%#llx ", s->instructions[RPI_ASSEMBLY_TYPE_FRAGMENT][e]);
@@ -233,7 +233,7 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 
 //			if(pCreateInfos[c].pStages[d].stage & VK_SHADER_STAGE_VERTEX_BIT)
 //			{
-//				//TODO if debug...
+//				//if debug...
 //				for(uint64_t e = 0; e < s->sizes[RPI_ASSEMBLY_TYPE_VERTEX] / 8; ++e)
 //				{
 //					printf("%#llx ", s->instructions[RPI_ASSEMBLY_TYPE_VERTEX][e]);
@@ -569,7 +569,16 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyPipelineLayout(
 	VkPipelineLayout                            pipelineLayout,
 	const VkAllocationCallbacks*                pAllocator)
 {
-	//TODO
+	assert(device);
+	assert(pipelineLayout);
+
+	_pipelineLayout* pl = pipelineLayout;
+
+	FREE(pl->descriptorSetBindingMap.elements);
+	FREE(pl->pushConstantRanges);
+	FREE(pl->setLayouts);
+
+	FREE(pl);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineCache(

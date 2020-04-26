@@ -854,7 +854,7 @@ void CreateFramebuffer()
 		VkImageViewCreateInfo ViewCreateInfo = {};
 		ViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		ViewCreateInfo.image = swapChainImages[i];
-		ViewCreateInfo.format = swapchainFormat.format; //Todo
+		ViewCreateInfo.format = swapchainFormat.format; //
 		ViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		ViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		ViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;

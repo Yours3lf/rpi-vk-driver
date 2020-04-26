@@ -1,4 +1,4 @@
-#include "common.h"
+﻿#include "common.h"
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 	VkDevice                                    device,
@@ -383,7 +383,23 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorPool(
 	VkDescriptorPool                            descriptorPool,
 	const VkAllocationCallbacks*                pAllocator)
 {
-	//TODO
+	assert(device);
+	assert(descriptorPool);
+
+	_descriptorPool* dp = descriptorPool;
+
+	//TODO crashes
+//	FREE(dp->descriptorSetPA.buf);
+//	FREE(dp->mapElementCPA.buf);
+//	FREE(dp->imageDescriptorCPA->buf);
+//	FREE(dp->texelBufferDescriptorCPA->buf);
+//	FREE(dp->bufferDescriptorCPA->buf);
+
+	FREE(dp->texelBufferDescriptorCPA);
+	FREE(dp->imageDescriptorCPA);
+	FREE(dp->bufferDescriptorCPA);
+
+	FREE(dp);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBindDescriptorSets(
@@ -422,7 +438,14 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorSetLayout(
 	VkDescriptorSetLayout                       descriptorSetLayout,
 	const VkAllocationCallbacks*                pAllocator)
 {
-	//TODO
+	assert(device);
+	assert(descriptorSetLayout);
+
+	_descriptorSetLayout* dsl = descriptorSetLayout;
+
+	FREE(dsl->bindings);
+
+	FREE(dsl);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkFreeDescriptorSets(
@@ -437,7 +460,31 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkFreeDescriptorSets(
 	_descriptorPool* dp = descriptorPool;
 	assert(dp->freeAble);
 
-	//TODO
+	for(uint32_t c = 0; c < descriptorSetCount; ++c)
+	{
+		_descriptorSet* ds = pDescriptorSets[c];
+
+		if(ds->imageDescriptorsCount > 0)
+		{
+			consecutivePoolFree(&dp->mapElementCPA, ds->imageBindingMap.elements, ds->imageDescriptorsCount);
+			//TODO crashes
+			//consecutivePoolFree(&dp->imageDescriptorCPA, ds->imageDescriptors, ds->imageDescriptorsCount);
+		}
+
+		if(ds->bufferDescriptorsCount > 0)
+		{
+			consecutivePoolFree(&dp->mapElementCPA, ds->bufferBindingMap.elements, ds->bufferDescriptorsCount);
+			//consecutivePoolFree(&dp->bufferDescriptorCPA, ds->bufferDescriptors, ds->bufferDescriptorsCount);
+		}
+
+		if(ds->bufferDescriptorsCount > 0)
+		{
+			consecutivePoolFree(&dp->mapElementCPA, ds->texelBufferBindingMap.elements, ds->texelBufferDescriptorsCount);
+			//consecutivePoolFree(&dp->texelBufferDescriptorCPA, ds->texelBufferDescriptors, ds->texelBufferDescriptorsCount);
+		}
+
+		poolFree(&dp->descriptorSetPA, ds);
+	}
 
 	return VK_SUCCESS;
 }

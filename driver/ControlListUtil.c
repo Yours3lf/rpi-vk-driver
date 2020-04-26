@@ -250,7 +250,7 @@ void clInsertStoreFullResolutionTileBuffer(ControlList* cls,
 	assert(cls->buffer);
 	assert(cls->nextFreeByte);
 	*cls->nextFreeByte = V3D21_STORE_FULL_RESOLUTION_TILE_BUFFER_opcode; cls->nextFreeByte++;
-	//TODO is this correct?
+	//is this correct?
 	clEmitShaderRelocation(cls, &address);
 	*(uint32_t*)cls->nextFreeByte =
 			moveBits(disableColorBufferWrite, 1, 0) |
@@ -273,7 +273,7 @@ void clInsertReLoadFullResolutionTileBuffer(ControlList* cls,
 	assert(cls->buffer);
 	assert(cls->nextFreeByte);
 	*cls->nextFreeByte = V3D21_RE_LOAD_FULL_RESOLUTION_TILE_BUFFER_opcode; cls->nextFreeByte++;
-	//TODO is this correct?
+	//is this correct?
 	clEmitShaderRelocation(cls, &address);
 	*(uint32_t*)cls->nextFreeByte =
 			moveBits(disableColorBufferRead, 1, 0) |
@@ -302,7 +302,7 @@ void clInsertStoreTileBufferGeneral(ControlList* cls,
 	assert(cls->buffer);
 	assert(cls->nextFreeByte);
 	*cls->nextFreeByte = V3D21_STORE_TILE_BUFFER_GENERAL_opcode; cls->nextFreeByte++;
-	//TODO is this correct?
+	//is this correct?
 	*cls->nextFreeByte =
 			moveBits(bufferToStore, 3, 0) |
 			moveBits(format, 2, 4) |
@@ -341,7 +341,7 @@ void clInsertLoadTileBufferGeneral(ControlList* cls,
 	assert(cls->buffer);
 	assert(cls->nextFreeByte);
 	*cls->nextFreeByte = V3D21_LOAD_TILE_BUFFER_GENERAL_opcode; cls->nextFreeByte++;
-	//TODO is this correct?
+	//is this correct?
 	*cls->nextFreeByte =
 			moveBits(bufferToLoad, 3, 0) |
 			moveBits(format, 2, 4);
@@ -656,7 +656,7 @@ void clInsertTileRenderingModeConfiguration(ControlList* cls,
 	assert(cls->buffer);
 	assert(cls->nextFreeByte);
 	*cls->nextFreeByte = V3D21_TILE_RENDERING_MODE_CONFIGURATION_opcode; cls->nextFreeByte++;
-	//TODO is this correct?
+	//is this correct?
 	clEmitShaderRelocation(cls, &address);
 	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
 	*(uint32_t*)cls->nextFreeByte = moveBits(widthPixels, 16, 0) | moveBits(heightPixels, 16, 16); cls->nextFreeByte += 4;
@@ -740,7 +740,7 @@ void clInsertShaderRecord(ControlList* cls,
 	*cls->nextFreeByte = vertexAttributeArraySelectBits; cls->nextFreeByte++;
 	*cls->nextFreeByte = vertexTotalAttributesSize; cls->nextFreeByte++;
 	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &vertexCodeAddress);
-	//TODO wtf??? --> check kernel side...
+	//wtf??? --> shader code will always have an offset of 0 so this is fine
 	uint32_t offset = moveBits(vertexCodeAddress.offset, 32, 0) | moveBits(vertexUniformsAddress, 32, 0);
 	*(uint32_t*)cls->nextFreeByte = offset; cls->nextFreeByte += 4;
 	cls->nextFreeByte += 4;

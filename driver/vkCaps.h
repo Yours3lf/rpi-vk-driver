@@ -10,7 +10,7 @@ static VkPhysicalDeviceLimits _limits =
 	//eg. staticcally allocated buffers instead of dynamically growing ones
 	.maxImageDimension1D = 2048,
 	.maxImageDimension2D = 2048,
-	.maxImageDimension3D = 2084,
+	.maxImageDimension3D = 0, //3D textures not supported
 	.maxImageDimensionCube = 2048,
 	.maxImageArrayLayers = 2048,
 	.maxTexelBufferElements = 134217728,
@@ -160,7 +160,7 @@ static VkPhysicalDeviceFeatures _features =
 	.shaderCullDistance = 1,
 	.shaderFloat64 = 0,
 	.shaderInt64 = 0,
-	.shaderInt16 = 0,
+	.shaderInt16 = 1,
 	.shaderResourceResidency = 0,
 	.shaderResourceMinLod = 0,
 	.sparseBinding = 0,
@@ -579,5 +579,15 @@ static VkPerformanceCounterDescriptionKHR performanceCounterDescriptions[] =
 };
 
 #define numPerformanceCounterTypes (sizeof(performanceCounterTypes)/sizeof(VkPerformanceCounterKHR))
+
+static VkPresentModeKHR supportedPresentModes[] =
+{
+	VK_PRESENT_MODE_IMMEDIATE_KHR,
+	VK_PRESENT_MODE_MAILBOX_KHR,
+	VK_PRESENT_MODE_FIFO_KHR,
+	VK_PRESENT_MODE_FIFO_RELAXED_KHR
+};
+
+#define numSupportedPresentModes (sizeof(supportedPresentModes)/sizeof(VkPresentModeKHR))
 
 #define VK_DRIVER_VERSION VK_MAKE_VERSION(1, 1, 0)

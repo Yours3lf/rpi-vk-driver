@@ -61,8 +61,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceExtensionProperties(
 {
 	assert(pPropertyCount);
 
-	//TODO layers
-
 	if(!pProperties)
 	{
 		*pPropertyCount = numInstanceExtensions;
@@ -115,8 +113,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 	set_loader_magic_value(&(*pInstance)->loaderData);
 
 	(*pInstance)->numEnabledExtensions = 0;
-
-	//TODO handle layers
 
 	if(pCreateInfo->enabledExtensionCount)
 	{
@@ -276,9 +272,6 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	VkInstance                                  instance,
 	const char*                                 pName)
 {
-	//TODO take instance into consideration
-	//eg only return extension functions that are enabled?
-
 	if(!instance && !(
 		   !strcmp(pName, "vkEnumerateInstanceVersion") ||
 		   !strcmp(pName, "vkEnumerateInstanceExtensionProperties") ||
@@ -487,6 +480,5 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceLayerProperties(
 	uint32_t*                                   pPropertyCount,
 	VkLayerProperties*                          pProperties)
 {
-	//TODO handle layers
 	return VK_SUCCESS;
 }

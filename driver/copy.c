@@ -12,7 +12,6 @@
 // 64-bit block the way it would an uncompressed
 // pixels.
 
-//TODO
 // Cube map faces appear as whole miptrees at a page-aligned offset
 // from the first face's miptree.
 
@@ -676,7 +675,7 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 			///packed
 			///horizontal
 			///stride=1
-			///vectors to read = 4 (TODO not exactly clear what this means...)
+			///vectors to read = 4
 			"sig_load_imm ; vr_setup = load32.always(0x00401a00) ; nop = load32.always() ;\n"
 			///uni = viewportXScale
 			///r0 = vpm * uni

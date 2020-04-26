@@ -351,15 +351,17 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 
 				uint32_t cubemapStride = (di->imageView->image->width * di->imageView->image->height * getFormatBpp(di->imageView->interpretedFormat)) >> 3;
 
-				fprintf(stderr, "cubemap stride %i\n", cubemapStride);
+				//fprintf(stderr, "cubemap stride %i\n", cubemapStride);
 
-				//TODO handle miplevels according to subresource rage?
+				uint32_t numLevels = 0;
+				numLevels = di->imageView->subresourceRange.levelCount < di->imageView->image->miplevels ? di->imageView->subresourceRange.levelCount : di->imageView->image->miplevels;
+
 				uint32_t params[4];
 				encodeTextureUniform(params,
-									 di->imageView->subresourceRange.levelCount - 1,
+									 numLevels - 1,
 									 getTextureDataType(di->imageView->interpretedFormat),
 									 di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE,
-									 cubemapStride >> 12, //TODO cubemap stride in multiples of 4KB
+									 cubemapStride >> 12, //cubemap stride in multiples of 4KB
 									 di->imageView->image->levelOffsets[0] >> 12, //Image level 0 offset in multiples of 4KB
 									 di->imageView->image->height & 2047,
 									 di->imageView->image->width & 2047,
@@ -388,7 +390,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 					assert(0); //unsupported
 				}
 
-				//TODO handle this properly
 				//TMU0_B requires an extra uniform written
 				//we need to signal that somehow from API side
 				//if mode is cubemap we don't need an extra uniform, it's included!

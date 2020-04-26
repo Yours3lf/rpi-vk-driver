@@ -152,11 +152,11 @@ void rpi_vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, con
 			{
 				vc4_bo_free(controlFd, shader->bos[c], 0, shader->sizes[c]);
 			}
-		}
 
-		if(shader->numMappings>0)
-		{
-			FREE(shader->mappings);
+			if(shader->numMappings[c]>0)
+			{
+				FREE(shader->mappings[c]);
+			}
 		}
 
 		FREE(shader);

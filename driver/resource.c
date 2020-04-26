@@ -47,7 +47,7 @@ VkResult rpi_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateIn
 	buf->size = pCreateInfo->size;
 	buf->usage = pCreateInfo->usage;
 	buf->boundMem = 0;
-	buf->alignment = ARM_PAGE_SIZE; //TODO
+	buf->alignment = ARM_PAGE_SIZE;
 	buf->alignedSize = getBOAlignedSize(buf->size, ARM_PAGE_SIZE);
 
 	*pBuffer = buf;
@@ -65,7 +65,6 @@ void rpi_vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemor
 	assert(pMemoryRequirements);
 
 	pMemoryRequirements->alignment = ((_buffer*)buffer)->alignment;
-	//TODO do we really need ARM page size aligned buffers?
 	pMemoryRequirements->size = getBOAlignedSize(((_buffer*)buffer)->size, ARM_PAGE_SIZE);
 	//there's only one memory type so that's gonna be it...
 	pMemoryRequirements->memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -232,7 +231,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	i->layout = pCreateInfo->initialLayout;
 	i->boundMem = 0;
 	i->boundOffset = 0;
-	i->alignment = ARM_PAGE_SIZE; //TODO?
+	i->alignment = ARM_PAGE_SIZE;
 
 	i->concurrentAccess = pCreateInfo->sharingMode; //TODO?
 	i->numQueueFamiliesWithAccess = pCreateInfo->queueFamilyIndexCount;
@@ -436,7 +435,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory(
 	i->boundMem = m;
 	i->boundOffset = memoryOffset;
 
-	//TODO not sure if this is necessary
+	//TODO this is necessary, but maybe don't do it here?
 	if(i->tiling == VC4_TILING_FORMAT_LINEAR)
 	{
 		int ret = vc4_bo_set_tiling(controlFd, i->boundMem->bo, DRM_FORMAT_MOD_LINEAR); assert(ret);

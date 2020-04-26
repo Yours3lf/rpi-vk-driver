@@ -6,6 +6,11 @@
 
 #include "declarations.h"
 
+#include <stdatomic.h>
+
+static uint64_t lastFinishedSeqno = 0;
+static atomic_int lastSeqnoGuard = 0;
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#commandbuffers-pools
  * Command pools are opaque objects that command buffer memory is allocated from, and which allow the implementation to amortize the
@@ -39,15 +44,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 	cp->queueFamilyIndex = pCreateInfo->queueFamilyIndex;
 
 	cp->resetAble = pCreateInfo->flags & VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-	//TODO CTS fails as we can't allocate enough memory for some reason
-	//tweak system allocation as root using:
-	//make sure kernel denies memory allocation that it won't be able to serve
-	//sysctl -w vm.overcommit_memory="2"
-	//specify after how much memory used the kernel will start denying requests
-	//sysctl -w vm.overcommit_ratio="80"
-	//
-
 
 
 	//initial number of command buffers to hold
@@ -644,13 +640,14 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 			assert(submitCl.bo_handle_count > 0);
 
-			//TODO somehow store last finished globally
-			//so waiting on fences is faster
-			//eg. could be an atomic value
-			static uint64_t lastFinishedSeqno = 0;
-
-			//submit ioctl
-			vc4_cl_submit(controlFd, &submitCl, &queue->lastEmitSeqno, &lastFinishedSeqno);
+			//TODO
+			while(lastSeqnoGuard);
+			{
+				lastSeqnoGuard = 1;
+				//submit ioctl
+				vc4_cl_submit(controlFd, &submitCl, &queue->lastEmitSeqno, &lastFinishedSeqno);
+				lastSeqnoGuard = 0;
+			}
 
 			//advance in linked list
 			marker = marker->nextMarker;

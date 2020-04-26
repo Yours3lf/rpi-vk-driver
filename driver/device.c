@@ -107,8 +107,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceExtensionProperties(
 		return VK_SUCCESS;
 	}
 
-	//TODO layers
-
 	int arraySize = *pPropertyCount;
 	int elementsWritten = min(numDeviceExtensions, arraySize);
 
@@ -226,9 +224,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 	assert(physicalDevice);
 	assert(pDevice);
 	assert(pCreateInfo);
-
-	//TODO store enabled features and extensions
-	//and check later on if they are enabled.
 
 	//check for enabled extensions
 	for(int c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
