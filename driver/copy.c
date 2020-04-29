@@ -1162,7 +1162,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		writeDescriptorSet.descriptorCount = 1;
 		rpi_vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, 0);
 
-		createRendertarget(device, 0, dstMipLevel, dstWidth, dstHeight, dstImage, &dstTextureView, &offscreenRenderPass, &offscreenFramebuffer);
+		createRendertarget(device, pRegions[c].dstSubresource.baseArrayLayer, dstMipLevel, dstWidth, dstHeight, dstImage, &dstTextureView, &offscreenRenderPass, &offscreenFramebuffer);
 		createPipeline(device, 1, 4, 2, device->emulTextureToTextureShaderModule, device->emulTextureDsl, &blitPipelineLayout, offscreenRenderPass, &blitPipeline);
 
 		//offscreen rendering

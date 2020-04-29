@@ -3,7 +3,7 @@
 #include "kernel/vc4_packet.h"
 
 //returns max index
-static uint32_t drawCommon(VkCommandBuffer commandBuffer)
+static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 {
 	assert(commandBuffer);
 
@@ -229,23 +229,25 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer)
 		{
 			uint32_t formatByteSize = getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[c].format);
 
-			//TODO the indexing here is incorrect....
 			uint32_t stride = cb->graphicsPipeline->vertexBindingDescriptions[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding].stride;
 
-			if(stride > 0)
-			{
-				//TODO offset
-				uint32_t usedIndices = (cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundMem->size - formatByteSize) / stride;
+//			if(stride > 0)
+//			{
+//				//TODO offset
+//				uint32_t usedIndices = (cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundMem->size - formatByteSize) / stride;
 
-				if(usedIndices < maxIndex)
-				{
-					maxIndex = usedIndices;
-				}
-			}
+//				if(usedIndices < maxIndex)
+//				{
+//					maxIndex = usedIndices;
+//				}
+//			}
 
 			ControlListAddress vertexBuffer = {
 				.handle = cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundMem->bo,
-				.offset = cb->graphicsPipeline->vertexAttributeDescriptions[c].offset,
+				.offset = cb->graphicsPipeline->vertexAttributeDescriptions[c].offset
+				+ vertexOffset * stride
+				+ cb->vertexBufferOffsets[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]
+				+ cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundOffset,
 			};
 
 			clFit(commandBuffer, &commandBuffer->shaderRecCl, V3D21_ATTRIBUTE_RECORD_length);
@@ -467,7 +469,7 @@ void rpi_vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t
 		UNSUPPORTED(instancing);
 	}
 
-	drawCommon(commandBuffer);
+	drawCommon(commandBuffer, 0);
 
 	_commandBuffer* cb = commandBuffer;
 
@@ -494,7 +496,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
 		UNSUPPORTED(instancing);
 	}
 
-	uint32_t maxIndex = drawCommon(commandBuffer);
+	uint32_t maxIndex = drawCommon(commandBuffer, vertexOffset);
 
 	_commandBuffer* cb = commandBuffer;
 
@@ -507,7 +509,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
 	clInsertIndexedPrimitiveList(&commandBuffer->binCl,
 								 maxIndex, //max index
-								 0, //TODO we can pass an offset here
+								 cb->indexBuffer->boundOffset + cb->indexBufferOffset + firstIndex * 2,
 								 indexCount,
 								 1, //we only support 16 bit indices
 								 getPrimitiveMode(cb->graphicsPipeline->topology));
