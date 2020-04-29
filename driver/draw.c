@@ -231,16 +231,20 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 			uint32_t stride = cb->graphicsPipeline->vertexBindingDescriptions[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding].stride;
 
-//			if(stride > 0)
-//			{
-//				//TODO offset
-//				uint32_t usedIndices = (cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundMem->size - formatByteSize) / stride;
+			if(stride > 0)
+			{
+				uint32_t usedIndices = (cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundMem->size
+						- cb->graphicsPipeline->vertexAttributeDescriptions[c].offset
+						- vertexOffset * stride
+						- cb->vertexBufferOffsets[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]
+						- cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundOffset
+						- formatByteSize) / stride;
 
-//				if(usedIndices < maxIndex)
-//				{
-//					maxIndex = usedIndices;
-//				}
-//			}
+				if(usedIndices < maxIndex)
+				{
+					maxIndex = usedIndices;
+				}
+			}
 
 			ControlListAddress vertexBuffer = {
 				.handle = cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundMem->bo,

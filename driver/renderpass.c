@@ -167,22 +167,26 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 		}
 	}
 
-	cb->binCl.currMarker->flags = flags;
-
 	if(rp->subpasses[0].pDepthStencilAttachment)
 	{
 		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
 		{
+			flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+
 			cb->binCl.currMarker->clearDepth =
 					(uint32_t)(pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.depth * 0xffffff) & 0xffffff;
 		}
 
 		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
 		{
+			flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+
 			cb->binCl.currMarker->clearStencil =
 					pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.stencil & 0xff;
 		}
 	}
+
+	cb->binCl.currMarker->flags = flags;
 
 	//insert relocs
 
