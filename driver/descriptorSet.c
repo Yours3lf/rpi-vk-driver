@@ -16,6 +16,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
+	memset(dp, 0, sizeof(_descriptorPool));
+
 	uint32_t imageDescriptorCount = 0, bufferDescriptorCount = 0, texelBufferDescriptorCount = 0;
 	for(uint32_t c = 0; c < pCreateInfo->poolSizeCount; ++c)
 	{
@@ -50,9 +52,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 	}
 
 	dp->descriptorSetPA = createPoolAllocator(dsmem, sizeof(_descriptorSet), sizeof(_descriptorSet) * pCreateInfo->maxSets);
-	dp->imageDescriptorCPA = 0;
-	dp->bufferDescriptorCPA = 0;
-	dp->texelBufferDescriptorCPA = 0;
 
 //	fprintf(stderr, "imageDescriptorCount %u\n", imageDescriptorCount);
 //	fprintf(stderr, "bufferDescriptorCount %u\n", bufferDescriptorCount);
@@ -70,53 +69,35 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 
 	if(imageDescriptorCount > 0)
 	{
-		dp->imageDescriptorCPA = ALLOCATE(sizeof(ConsecutivePoolAllocator), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
-		if(!dp)
-		{
-			return VK_ERROR_OUT_OF_HOST_MEMORY;
-		}
-
 		uint32_t blockSize = sizeof(_descriptorImage);
 		void* mem = ALLOCATE(blockSize*imageDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
-		*dp->imageDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * imageDescriptorCount);
+		dp->imageDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * imageDescriptorCount);
 	}
 
 	if(bufferDescriptorCount > 0)
 	{
-		dp->bufferDescriptorCPA = ALLOCATE(sizeof(ConsecutivePoolAllocator), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
-		if(!dp)
-		{
-			return VK_ERROR_OUT_OF_HOST_MEMORY;
-		}
-
 		uint32_t blockSize = sizeof(_descriptorBuffer);
 		void* mem = ALLOCATE(blockSize*bufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
-		*dp->bufferDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * bufferDescriptorCount);
+		dp->bufferDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * bufferDescriptorCount);
 	}
 
 	if(texelBufferDescriptorCount > 0)
 	{
-		dp->texelBufferDescriptorCPA = ALLOCATE(sizeof(ConsecutivePoolAllocator), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
-		if(!dp)
-		{
-			return VK_ERROR_OUT_OF_HOST_MEMORY;
-		}
-
 		uint32_t blockSize = sizeof(_descriptorBuffer);
 		void* mem = ALLOCATE(blockSize*texelBufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
-		*dp->texelBufferDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * texelBufferDescriptorCount);
+		dp->texelBufferDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * texelBufferDescriptorCount);
 	}
 
 	*pDescriptorPool = dp;
@@ -181,19 +162,19 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateDescriptorSets(
 
 		if(imageDescriptorCount > 0)
 		{
-			ds->imageDescriptors = consecutivePoolAllocate(dp->imageDescriptorCPA, imageDescriptorCount);
+			ds->imageDescriptors = consecutivePoolAllocate(&dp->imageDescriptorCPA, imageDescriptorCount);
 			ds->imageBindingMap = createMap(consecutivePoolAllocate(&dp->mapElementCPA, imageDescriptorCount), imageDescriptorCount);
 		}
 
 		if(bufferDescriptorCount > 0)
 		{
-			ds->bufferDescriptors = consecutivePoolAllocate(dp->bufferDescriptorCPA, bufferDescriptorCount);
+			ds->bufferDescriptors = consecutivePoolAllocate(&dp->bufferDescriptorCPA, bufferDescriptorCount);
 			ds->bufferBindingMap = createMap(consecutivePoolAllocate(&dp->mapElementCPA, bufferDescriptorCount), bufferDescriptorCount);
 		}
 
 		if(texelBufferDescriptorCount > 0)
 		{
-			ds->texelBufferDescriptors = consecutivePoolAllocate(dp->texelBufferDescriptorCPA, texelBufferDescriptorCount);
+			ds->texelBufferDescriptors = consecutivePoolAllocate(&dp->texelBufferDescriptorCPA, texelBufferDescriptorCount);
 			ds->texelBufferBindingMap = createMap(consecutivePoolAllocate(&dp->mapElementCPA, texelBufferDescriptorCount), texelBufferDescriptorCount);
 		}
 
@@ -388,16 +369,11 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorPool(
 
 	_descriptorPool* dp = descriptorPool;
 
-	//TODO crashes
-//	FREE(dp->descriptorSetPA.buf);
-//	FREE(dp->mapElementCPA.buf);
-//	FREE(dp->imageDescriptorCPA->buf);
-//	FREE(dp->texelBufferDescriptorCPA->buf);
-//	FREE(dp->bufferDescriptorCPA->buf);
-
-	FREE(dp->texelBufferDescriptorCPA);
-	FREE(dp->imageDescriptorCPA);
-	FREE(dp->bufferDescriptorCPA);
+	FREE(dp->descriptorSetPA.buf);
+	FREE(dp->mapElementCPA.buf);
+	FREE(dp->imageDescriptorCPA.buf);
+	FREE(dp->texelBufferDescriptorCPA.buf);
+	FREE(dp->bufferDescriptorCPA.buf);
 
 	FREE(dp);
 }
@@ -467,20 +443,19 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkFreeDescriptorSets(
 		if(ds->imageDescriptorsCount > 0)
 		{
 			consecutivePoolFree(&dp->mapElementCPA, ds->imageBindingMap.elements, ds->imageDescriptorsCount);
-			//TODO crashes
-			//consecutivePoolFree(&dp->imageDescriptorCPA, ds->imageDescriptors, ds->imageDescriptorsCount);
+			consecutivePoolFree(&dp->imageDescriptorCPA, ds->imageDescriptors, ds->imageDescriptorsCount);
 		}
 
 		if(ds->bufferDescriptorsCount > 0)
 		{
 			consecutivePoolFree(&dp->mapElementCPA, ds->bufferBindingMap.elements, ds->bufferDescriptorsCount);
-			//consecutivePoolFree(&dp->bufferDescriptorCPA, ds->bufferDescriptors, ds->bufferDescriptorsCount);
+			consecutivePoolFree(&dp->bufferDescriptorCPA, ds->bufferDescriptors, ds->bufferDescriptorsCount);
 		}
 
-		if(ds->bufferDescriptorsCount > 0)
+		if(ds->texelBufferDescriptorsCount > 0)
 		{
 			consecutivePoolFree(&dp->mapElementCPA, ds->texelBufferBindingMap.elements, ds->texelBufferDescriptorsCount);
-			//consecutivePoolFree(&dp->texelBufferDescriptorCPA, ds->texelBufferDescriptors, ds->texelBufferDescriptorsCount);
+			consecutivePoolFree(&dp->texelBufferDescriptorCPA, ds->texelBufferDescriptors, ds->texelBufferDescriptorsCount);
 		}
 
 		poolFree(&dp->descriptorSetPA, ds);

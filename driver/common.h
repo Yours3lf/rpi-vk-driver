@@ -485,9 +485,9 @@ typedef struct VkDescriptorPool_T
 {
 	PoolAllocator descriptorSetPA;
 	ConsecutivePoolAllocator mapElementCPA;
-	ConsecutivePoolAllocator* imageDescriptorCPA;
-	ConsecutivePoolAllocator* bufferDescriptorCPA;
-	ConsecutivePoolAllocator* texelBufferDescriptorCPA;
+	ConsecutivePoolAllocator imageDescriptorCPA;
+	ConsecutivePoolAllocator bufferDescriptorCPA;
+	ConsecutivePoolAllocator texelBufferDescriptorCPA;
 
 	uint32_t freeAble;
 } _descriptorPool;
