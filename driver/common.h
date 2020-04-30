@@ -525,7 +525,6 @@ uint32_t getCompareOp(VkCompareOp op);
 uint32_t getStencilOp(VkStencilOp op);
 uint32_t getTopology(VkPrimitiveTopology topology);
 uint32_t getPrimitiveMode(VkPrimitiveTopology topology);
-uint32_t getFormatByteSize(VkFormat format);
 uint32_t ulog2(uint32_t v);
 void encodeTextureUniform(uint32_t* params,
 						  uint8_t numMipLevels,

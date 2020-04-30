@@ -187,7 +187,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	uint32_t attribSize = 0;
 	for(uint32_t c = 0; c < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++c)
 	{
-		attribSize += getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[c].format);
+		attribSize += getFormatBpp(cb->graphicsPipeline->vertexAttributeDescriptions[c].format) >> 3;
 	}
 
 	//number of attribs
@@ -217,17 +217,29 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 						 //TODO how do we know which attribute contains the vertices?
 						 //for now the first one will be hardcoded to have the vertices...
 						 1 << 0, //coordinate attribute array select bits
-						 getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[0].format), //coordinate total attribute size
+						 getFormatBpp(cb->graphicsPipeline->vertexAttributeDescriptions[0].format) >> 3, //coordinate total attribute size
 						 0, //coordinate uniform address
 						 coordCode  //coordinate shader code address
 						 );
+
+	uint32_t vertexAttribOffsets[8] = {};
+	for(uint32_t c = 0 ; c < 8; ++c)
+	{
+		for(uint32_t d = 0 ; d < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++d)
+		{
+			if(cb->graphicsPipeline->vertexAttributeDescriptions[d].binding < c)
+			{
+				vertexAttribOffsets[c] += cb->graphicsPipeline->vertexBindingDescriptions[cb->graphicsPipeline->vertexAttributeDescriptions[d].binding].stride;
+			}
+		}
+	}
 
 	uint32_t maxIndex = 0xffff;
 	for(uint32_t c = 0 ; c < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++c)
 	{
 		if(cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding])
 		{
-			uint32_t formatByteSize = getFormatByteSize(cb->graphicsPipeline->vertexAttributeDescriptions[c].format);
+			uint32_t formatByteSize = getFormatBpp(cb->graphicsPipeline->vertexAttributeDescriptions[c].format) >> 3;
 
 			uint32_t stride = cb->graphicsPipeline->vertexBindingDescriptions[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding].stride;
 
@@ -263,8 +275,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 									vertexBuffer, //reloc address
 									formatByteSize,
 									stride,
-									cb->graphicsPipeline->vertexAttributeDescriptions[c].offset, //vertex vpm offset
-									cb->graphicsPipeline->vertexAttributeDescriptions[c].offset  //coordinte vpm offset
+									cb->graphicsPipeline->vertexAttributeDescriptions[c].offset + vertexAttribOffsets[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding], //vertex vpm offset
+									cb->graphicsPipeline->vertexAttributeDescriptions[c].offset + vertexAttribOffsets[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]  //coordinte vpm offset
 									);
 		}
 	}
