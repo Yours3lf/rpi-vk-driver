@@ -554,7 +554,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 				printf("%i ", *((uint32_t*)(marker->uniformsBuf)+d));
 			}
 			printf("\nShader recs: ");
-			uint8_t* ptr = marker->shaderRecBuf + (3 + 2) * 4;
+			uint8_t* ptr = marker->shaderRecBuf + (3 + 3) * 4;
 			for(int d = 0; d < marker->shaderRecCount; ++d)
 			{
 				uint8_t flags = *ptr;

@@ -38,8 +38,6 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 
 	shader->hasThreadSwitch = 0;
 	shader->numVaryings = 0;
-	shader->numCoordVPMWrites = 0;
-	shader->numVertVPMWrites = 0;
 
 	uint32_t hadVertex = 0, hadCoordinate = 0;
 
@@ -88,28 +86,6 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 						if(sig_bits != 13 && raddr_b == 35)
 						{
 							shader->numVaryings++;
-						}
-					}
-				}
-			}
-
-
-			if(c == VK_RPI_ASSEMBLY_TYPE_VERTEX || c == VK_RPI_ASSEMBLY_TYPE_COORDINATE)
-			{
-				for(uint64_t d = 0; d < ci->numInstructions[c]; ++d)
-				{
-					unsigned waddr_add = ((ci->instructions[c][d] & (0x3fll << 38)) >> 38);
-					unsigned waddr_mul = ((ci->instructions[c][d] & (0x3fll << 32)) >> 32);
-
-					if(waddr_add == 48 || waddr_mul == 48)
-					{
-						if(c == VK_RPI_ASSEMBLY_TYPE_VERTEX)
-						{
-							shader->numVertVPMWrites++;
-						}
-						else if(c == VK_RPI_ASSEMBLY_TYPE_COORDINATE)
-						{
-							shader->numCoordVPMWrites++;
 						}
 					}
 				}

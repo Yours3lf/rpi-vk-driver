@@ -184,15 +184,23 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		}
 	}
 
-	//TODO
-	//attrib size is simply how many times we wrote VPM x 4bytes minus the usual stuff (so 3x4bytes for Xs/Ys etc.)
-	//for CS it's always 12
 
-	//for attrib offsets
-	//vertex coords will obviouslly have offset 0
-	//coord offsets will always be 12 unless it's vertex coords then it's 0
-	//the rest:
-	//for VS we need to add the size of Xs/Ys, Zs, and 1/Wc (+point size if ever), so 3x4bytes
+	//attrib size is simply how many times we read VPM (x4 bytes) in VS and CS
+	//attrib records:
+	//base address, num bytes, stride are for the kernel side to assemble our vpm
+	//VPM offsets: these would be how many vpm reads were before a specific attrib (x4 bytes)
+	//we don't really have that info, so we have to play with strides/formats
+
+	uint32_t vertexAttribSize = 0, coordAttribSize = 0;
+	for(uint32_t c = 0; c < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++c)
+	{
+		vertexAttribSize += getFormatBpp(cb->graphicsPipeline->vertexAttributeDescriptions[c].format) >> 3;
+		if(cb->graphicsPipeline->vertexAttributeDescriptions[c].location == 0)
+		{
+			//this should be the vertex coordinates location
+			coordAttribSize = getFormatBpp(cb->graphicsPipeline->vertexAttributeDescriptions[c].format) >> 3;
+		}
+	}
 
 	//number of attribs
 	//3 is the number of type of possible shaders
@@ -214,32 +222,34 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 						 fragCode, //fragment code address
 						 0, //TODO vertex number of used uniforms?
 						 attribSelectBits, //vertex attribute array select bits
-						 vertModule->numVertVPMWrites * 4 - 12, //vertex total attribute size
+						 vertexAttribSize, //vertex total attribute size
 						 0, //vertex uniform address
 						 vertCode, //vertex shader code address
 						 0, //TODO coordinate number of used uniforms?
 						 //TODO how do we know which attribute contains the vertices?
 						 //for now the first one will be hardcoded to have the vertices...
 						 1 << 0, //coordinate attribute array select bits
-						 12, //coordinate total attribute size
+						 coordAttribSize, //coordinate total attribute size
 						 0, //coordinate uniform address
 						 coordCode  //coordinate shader code address
 						 );
 
 	uint32_t vertexAttribOffsets[8] = {};
 	uint32_t coordAttribOffsets[8] = {};
-	vertexAttribOffsets[1] = 12;
-	coordAttribOffsets[1] = 12;
-	for(uint32_t c = 2 ; c < 8; ++c)
+	for(uint32_t c = 1; c < 8; ++c)
 	{
-		coordAttribOffsets[c] = 12;
 		for(uint32_t d = 0; d < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++d)
 		{
-			if(cb->graphicsPipeline->vertexAttributeDescriptions[d].location < c && cb->graphicsPipeline->vertexAttributeDescriptions[d].location > 0)
+			if(cb->graphicsPipeline->vertexAttributeDescriptions[d].location < c)
 			{
-				vertexAttribOffsets[c] += cb->graphicsPipeline->vertexBindingDescriptions[cb->graphicsPipeline->vertexAttributeDescriptions[d].binding].stride;
+				vertexAttribOffsets[c] += getFormatBpp(cb->graphicsPipeline->vertexAttributeDescriptions[d].format) >> 3;
 			}
 		}
+	}
+
+	for(uint32_t c = 1; c < 8; ++c)
+	{
+		coordAttribOffsets[c] = vertexAttribOffsets[1];
 	}
 
 	uint32_t maxIndex = 0xffff;

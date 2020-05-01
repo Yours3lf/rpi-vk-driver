@@ -252,8 +252,6 @@ typedef struct VkShaderModule_T
 	uint32_t numMappings[VK_RPI_ASSEMBLY_TYPE_MAX];
 	uint32_t hasThreadSwitch;
 	uint32_t numVaryings;
-	uint32_t numVertVPMWrites;
-	uint32_t numCoordVPMWrites;
 } _shaderModule;
 
 typedef struct VkDescriptorSetLayout_T
