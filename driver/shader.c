@@ -37,6 +37,9 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 	}
 
 	shader->hasThreadSwitch = 0;
+	shader->numVaryings = 0;
+	shader->numCoordVPMWrites = 0;
+	shader->numVertVPMWrites = 0;
 
 	uint32_t hadVertex = 0, hadCoordinate = 0;
 
@@ -64,42 +67,65 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 						break;
 					}
 				}
+
+				for(uint64_t d = 0; d < ci->numInstructions[c]; ++d)
+				{
+					unsigned is_sem = ((ci->instructions[c][d] & (0x7fll << 57)) >> 57) == 0x74;
+					unsigned sig_bits = ((ci->instructions[c][d] & (0xfll << 60)) >> 60);
+
+					//if it's an ALU instruction
+					if(!is_sem && sig_bits != 14 && sig_bits != 15)
+					{
+						unsigned raddr_a = ((ci->instructions[c][d] & (0x3fll << 18)) >> 18);
+						unsigned raddr_b = ((ci->instructions[c][d] & (0x3fll << 12)) >> 12);
+
+						if(raddr_a == 35)
+						{
+							shader->numVaryings++;
+						}
+
+						//don't count small immediates
+						if(sig_bits != 13 && raddr_b == 35)
+						{
+							shader->numVaryings++;
+						}
+					}
+				}
 			}
 
-			shader->numVaryings = 0;
-			for(uint64_t d = 0; d < ci->numInstructions[c]; ++d)
+
+			if(c == VK_RPI_ASSEMBLY_TYPE_VERTEX || c == VK_RPI_ASSEMBLY_TYPE_COORDINATE)
 			{
-				unsigned is_sem = ((ci->instructions[c][d] & (0x7fll << 57)) >> 57) == 0x74;
-				unsigned sig_bits = ((ci->instructions[c][d] & (0xfll << 60)) >> 60);
-
-				//if it's an ALU instruction
-				if(!is_sem && sig_bits != 14 && sig_bits != 15)
+				for(uint64_t d = 0; d < ci->numInstructions[c]; ++d)
 				{
-					unsigned raddr_a = ((ci->instructions[c][d] & (0x3fll << 18)) >> 18);
-					unsigned raddr_b = ((ci->instructions[c][d] & (0x3fll << 12)) >> 12);
+					unsigned waddr_add = ((ci->instructions[c][d] & (0x3fll << 38)) >> 38);
+					unsigned waddr_mul = ((ci->instructions[c][d] & (0x3fll << 32)) >> 32);
 
-					if(raddr_a == 35)
+					if(waddr_add == 48 || waddr_mul == 48)
 					{
-						shader->numVaryings++;
-					}
-
-					//don't count small immediates
-					if(sig_bits != 13 && raddr_b == 35)
-					{
-						shader->numVaryings++;
+						if(c == VK_RPI_ASSEMBLY_TYPE_VERTEX)
+						{
+							shader->numVertVPMWrites++;
+						}
+						else if(c == VK_RPI_ASSEMBLY_TYPE_COORDINATE)
+						{
+							shader->numCoordVPMWrites++;
+						}
 					}
 				}
 			}
 
 			shader->sizes[c] = ci->numInstructions[c]*sizeof(uint64_t);
 
-
+			/**
 			for(uint64_t e = 0; e < shader->sizes[c] / 8; ++e)
 			{
 				printf("%#llx ", ci->instructions[c][e]);
 				disassemble_qpu_asm(ci->instructions[c][e]);
 			}
 			printf("\n");
+			/**/
+
 			shader->bos[c] = vc4_bo_alloc_shader(controlFd, ci->instructions[c], &shader->sizes[c]);
 		}
 		else

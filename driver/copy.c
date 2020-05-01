@@ -148,11 +148,11 @@ void createRendertarget(VkDevice device, uint32_t baseLayer, uint32_t baseMip, u
 	_image* img = textureImage;
 	VkFormat format = img->format;
 
-	printf("\nCopy Create RT\n");
-	printf("baseLayer %u\n", baseLayer);
-	printf("baseMip %u\n", baseMip);
-	printf("width %u\n", width);
-	printf("height %u\n", height);
+//	printf("\nCopy Create RT\n");
+//	printf("baseLayer %u\n", baseLayer);
+//	printf("baseMip %u\n", baseMip);
+//	printf("width %u\n", width);
+//	printf("height %u\n", height);
 
 	//we can't render to an ETC1 texture, so we'll just stick with RGBA8 for now
 	if(img->format == VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK)

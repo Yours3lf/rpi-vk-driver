@@ -551,10 +551,10 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			printf("\nUniforms: ");
 			for(int d = 0; d < marker->uniformsSize / 4; ++d)
 			{
-				printf("%u ", *((uint32_t*)(marker->uniformsBuf)+d));
+				printf("%i ", *((uint32_t*)(marker->uniformsBuf)+d));
 			}
 			printf("\nShader recs: ");
-			uint8_t* ptr = marker->shaderRecBuf + (3 + 1) * 4;
+			uint8_t* ptr = marker->shaderRecBuf + (3 + 2) * 4;
 			for(int d = 0; d < marker->shaderRecCount; ++d)
 			{
 				uint8_t flags = *ptr;
@@ -607,6 +607,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 					numAttribs += (vertexAttribSelectBits & (1 << e)) >> e;
 				}
 
+				printf("\nnumattribs: %i", numAttribs);
 				for(uint8_t e = 0; e < numAttribs; ++e)
 				{
 					uint32_t attribBaseAddress = *(uint32_t*)ptr; ptr+=4;

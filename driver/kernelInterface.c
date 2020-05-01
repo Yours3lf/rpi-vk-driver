@@ -303,7 +303,7 @@ int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns)
 				.timeout_ns = timeout_ns,
 	};
 
-	printf("Wait for BO: %u\n", bo);
+	//printf("Wait for BO: %u\n", bo);
 
 	int ret = drmIoctl(fd, DRM_IOCTL_VC4_WAIT_BO, &wait);
 	if (ret) {
@@ -335,7 +335,7 @@ int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t
 				.timeout_ns = *timeout_ns,
 	};
 
-	printf("Wait for seqno: %llu\n", seqno);
+	//printf("Wait for seqno: %llu\n", seqno);
 
 	int ret = drmIoctl(fd, DRM_IOCTL_VC4_WAIT_SEQNO, &wait);
 	if (ret) {
@@ -577,6 +577,7 @@ void vc4_cl_submit(int fd, struct drm_vc4_submit_cl* submit, uint64_t* lastEmitt
 		fprintf(stderr, "Draw call returned %s.  "
 			   "Expect corruption.\n", strerror(errno));
 		warned = 1;
+		assert(0);
 	} else if (!ret) {
 		*lastEmittedSeqno = submit->seqno;
 	}
