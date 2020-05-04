@@ -63,13 +63,13 @@ void createFullscreenQuad(VkDevice device, VkBuffer* fsqVertexBuffer, VkDeviceMe
 
 		float vertices[] =
 		{
-			-1, -1,		0, 1,
-			1, -1,		1, 1,
-			1, 1,		1, 0,
+			-1, 1,		0, 1,
+			1, 1,		1, 1,
+			1, -1,		1, 0,
 
-			1, 1,		1, 0,
-			-1, 1,		0, 0,
-			-1, -1,		0, 1
+			1, -1,		1, 0,
+			-1, -1,		0, 0,
+			-1, 1,		0, 1
 		};
 
 		void* data;
@@ -1040,8 +1040,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 
 		float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
 		float viewportScaleX = (float)(width) * 0.5f * 16.0f;
-		float viewportScaleY = -1.0f * (float)(height) * 0.5f * 16.0f;
-		float Zs = 0.5f;
+		float viewportScaleY = 1.0f * (float)(height) * 0.5f * 16.0f;
+		float Zs = 1.0f;
 
 		uint32_t vertConstants[4];
 		vertConstants[0] = *(uint32_t*)&Wcoeff;
@@ -1203,8 +1203,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 
 		float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
 		float viewportScaleX = (float)(dstWidth) * 0.5f * 16.0f;
-		float viewportScaleY = -1.0f * (float)(dstHeight) * 0.5f * 16.0f;
-		float Zs = 0.5f;
+		float viewportScaleY = 1.0f * (float)(dstHeight) * 0.5f * 16.0f;
+		float Zs = 1.0f;
 
 		uint32_t vertConstants[4];
 		vertConstants[0] = *(uint32_t*)&Wcoeff;

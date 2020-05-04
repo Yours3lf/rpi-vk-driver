@@ -64,10 +64,10 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 						   vp.y, //bottom pixel coord
 						   vp.x); //left pixel coord
 
-		//TODO why flipped???
+		//Vulkan conventions, Y flipped [1...-1] bottom->top
 		//Clipper XY Scaling
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_XY_SCALING_length);
-		clInsertClipperXYScaling(&commandBuffer->binCl, (float)(vp.width) * 0.5f * 16.0f, -1.0f * (float)(vp.height) * 0.5f * 16.0f);
+		clInsertClipperXYScaling(&commandBuffer->binCl, (float)(vp.width) * 0.5f * 16.0f, 1.0f * (float)(vp.height) * 0.5f * 16.0f);
 
 		//Viewport Offset
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
@@ -99,14 +99,11 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_DEPTH_OFFSET_length);
 		clInsertDepthOffset(&commandBuffer->binCl, cb->graphicsPipeline->depthBiasConstantFactor, cb->graphicsPipeline->depthBiasSlopeFactor);
 
-		//TODO how is this calculated?
-		//it's Zc to Zs scale and bias
-		//seems to go from -1.0 .. 1.0 to 0.0 .. 1.0
-		//eg. x * 0.5 + 0.5
+		//Vulkan conventions, we expect the resulting NDC space Z axis to be in range [0...1] close->far
 		//cb->graphicsPipeline->minDepthBounds;
 		//Clipper Z Scale and Offset
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_Z_SCALE_AND_OFFSET_length);
-		clInsertClipperZScaleOffset(&commandBuffer->binCl, 0.5f, 0.5f);
+		clInsertClipperZScaleOffset(&commandBuffer->binCl, 0.0f, 1.0f);
 
 		cb->vertexBufferDirty = 0;
 		cb->depthBoundsDirty = 0;

@@ -807,9 +807,9 @@ void recordCommandBuffers()
 
 		float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
 		float viewportScaleX = (float)(swapChainExtent.width) * 0.5f * 16.0f;
-		float viewportScaleY = -1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
-		float Zs = 0.5f;
-		float Zo = 0.5f;
+		float viewportScaleY = 1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
+		float Zs = 1.0f;
+		float Zo = 0.0f;
 
 		uint32_t pushConstants[5];
 		pushConstants[0] = *(uint32_t*)&Wcoeff;
@@ -1415,9 +1415,9 @@ void CreateVertexBuffer()
 
 		float vertices[] =
 		{
-			-1, -1, 0.2,
-			 1, -1, 0.2,
-			 0,  1, 0.2
+			-1, 1, 0.2,
+			 1, 1, 0.2,
+			 0,  -1, 0.2
 		};
 
 		void* data;
@@ -1442,9 +1442,9 @@ void CreateVertexBuffer()
 
 		float vertices[] =
 		{
-			-0.5, -1, 0.5,
-			 1.5, -1, 0.5,
-			 0.5,  1, 0.5
+			-0.5, 1, 0.5,
+			 1.5, 1, 0.5,
+			 0.5,  -1, 0.5
 		};
 
 		void* data;

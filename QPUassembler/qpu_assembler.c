@@ -1104,7 +1104,7 @@ void disassemble_qpu_asm(uint64_t instruction)
 #define GET_BITFIELD(num_bits, place) (((instruction) & ((uint64_t)num_bits << place)) >> place)
 
 	qpu_sig_bits sig_bits = GET_BITFIELD(0xf, 60);
-	printf("%s ; ", qpu_sig_bits_str[sig_bits]);
+	printf("\"%s ; ", qpu_sig_bits_str[sig_bits]);
 
 	unsigned is_sem = GET_BITFIELD(0x7f, 57) == 0x74;
 
@@ -1460,7 +1460,7 @@ void disassemble_qpu_asm(uint64_t instruction)
 		printf("(%s, %s) ; ", qpu_mux_str[mul_a], qpu_mux_str[mul_b]);
 	}
 
-	printf("\n");
+	printf("\"\n");
 }
 
 unsigned get_num_instructions(char* ptr)

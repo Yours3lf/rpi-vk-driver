@@ -131,11 +131,55 @@ void run() {
 	cleanup();
 }
 
-void setupVulkan() {
+void setupVulkan() {	
 	createInstance();
 	findPhysicalDevice();
 	findQueueFamilies();
 	createLogicalDevice();
+
+	VkDescriptorPoolSize ps[2];
+	ps[0].descriptorCount = 1;
+	ps[0].type = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+	ps[1].descriptorCount = 1;
+	ps[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+	VkDescriptorPoolCreateInfo ci = {};
+	ci.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	ci.maxSets = 2;
+	ci.poolSizeCount = 2;
+	ci.pPoolSizes = ps;
+	ci.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+	VkDescriptorPool dp;
+	vkCreateDescriptorPool(device, &ci, 0, &dp);
+
+	VkDescriptorSet ds;
+
+	VkDescriptorSetLayoutBinding bi = {};
+	bi.binding = 0;
+	bi.descriptorCount = 1;
+	bi.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	bi.stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+	VkDescriptorSetLayoutCreateInfo dc = {};
+	dc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	dc.bindingCount = 1;
+	dc.pBindings = &bi;
+
+	VkDescriptorSetLayout sl;
+	vkCreateDescriptorSetLayout(device, &dc, 0, &sl);
+
+	VkDescriptorSetAllocateInfo ai = {};
+	ai.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	ai.descriptorPool = dp;
+	ai.descriptorSetCount = 1;
+	ai.pSetLayouts = &sl;
+	vkAllocateDescriptorSets(device, &ai, &ds);
+
+	vkFreeDescriptorSets(device, dp, 1, &ds);
+	vkDestroyDescriptorSetLayout(device, sl, 0);
+	vkDestroyDescriptorPool(device, dp, 0);
+
 	CreateShaders();
 	createWindowSurface();
 	checkSwapChainSupport();
@@ -744,8 +788,8 @@ void recordCommandBuffers()
 
 		float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
 		float viewportScaleX = (float)(swapChainExtent.width) * 0.5f * 16.0f;
-		float viewportScaleY = -1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
-		float Zs = 0.5f;
+		float viewportScaleY = 1.0f * (float)(swapChainExtent.height) * 0.5f * 16.0f;
+		float Zs = 1.0f;
 
 		uint32_t pushConstants[4];
 		pushConstants[0] = *(uint32_t*)&Wcoeff;
@@ -1285,9 +1329,9 @@ void CreateVertexBuffer()
 
 		float vertices[] =
 		{
-			-1, -1,
-			1, -1,
-			0, 1
+			-1, 1,
+			1, 1,
+			0, -1
 		};
 
 		void* data;
