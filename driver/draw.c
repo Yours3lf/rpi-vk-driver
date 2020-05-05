@@ -404,7 +404,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 									 getTextureDataType(di->imageView->interpretedFormat),
 									 di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE,
 									 cubemapStride >> 12, //cubemap stride in multiples of 4KB
-									 di->imageView->image->levelOffsets[0] >> 12, //Image level 0 offset in multiples of 4KB
+									 (di->imageView->image->levelOffsets[0] + di->imageView->image->boundOffset) >> 12, //Image level 0 offset in multiples of 4KB
 									 di->imageView->image->height & 2047,
 									 di->imageView->image->width & 2047,
 									 getMinFilterType(di->sampler->minFilter, di->sampler->mipmapMode),// di->sampler->maxLod),

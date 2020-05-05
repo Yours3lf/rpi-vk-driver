@@ -1,4 +1,4 @@
-#include "common.h"
+﻿#include "common.h"
 
 #include "kernel/vc4_packet.h"
 
@@ -219,7 +219,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	}
 	else
 	{
-		if(nonPaddedSize > 4096)
+		if(nonPaddedSize >= 4096)
 		{
 			 i->tiling = VC4_TILING_FORMAT_T;
 		}
@@ -432,6 +432,9 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory(
 	assert(memoryOffset % i->alignment == 0);
 	assert(i->size <= m->size - memoryOffset);
 
+	//image memory must be aligned to 4096 bytes
+	assert((memoryOffset % 4096) == 0);
+
 	i->boundMem = m;
 	i->boundOffset = memoryOffset;
 
@@ -440,7 +443,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory(
 	{
 		int ret = vc4_bo_set_tiling(controlFd, i->boundMem->bo, DRM_FORMAT_MOD_LINEAR); assert(ret);
 	}
-	else if(i->tiling == VC4_TILING_FORMAT_T)
+	else if(i->tiling == VC4_TILING_FORMAT_T || i->tiling == VC4_TILING_FORMAT_LT)
 	{
 		int ret = vc4_bo_set_tiling(controlFd, i->boundMem->bo, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
 	}

@@ -360,13 +360,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 				uint32_t tiling = writeImage->tiling;
 
-				if(writeImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
+				if(writeImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize < 4096)
 				{
 					tiling = VC4_TILING_FORMAT_LT;
 				}
 
 				submitCl.color_write.hindex = writeImageIdx;
-				submitCl.color_write.offset = marker->writeImageOffset;
+				submitCl.color_write.offset = marker->writeImageOffset + writeImage->boundOffset;
 				submitCl.color_write.flags = 0;
 				submitCl.color_write.bits =
 						VC4_SET_FIELD(getRenderTargetFormatVC4(writeImage->format), VC4_RENDER_CONFIG_FORMAT) |
@@ -381,7 +381,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			if(writeMSAAimage)
 			{
 				submitCl.msaa_color_write.hindex = writeMSAAimageIdx;
-				submitCl.msaa_color_write.offset = marker->writeMSAAimageOffset;
+				submitCl.msaa_color_write.offset = marker->writeMSAAimageOffset + writeMSAAimage->boundOffset;
 				submitCl.msaa_color_write.flags = 0;
 				submitCl.msaa_color_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X;
 			}
@@ -392,13 +392,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 				uint32_t tiling = readImage->tiling;
 
-				if(readImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
+				if(readImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize < 4096)
 				{
 					tiling = VC4_TILING_FORMAT_LT;
 				}
 
 				submitCl.color_read.hindex = readImageIdx;
-				submitCl.color_read.offset = marker->readImageOffset;
+				submitCl.color_read.offset = marker->readImageOffset + readImage->boundOffset;
 				submitCl.color_read.flags = readMSAAimage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0;
 				submitCl.color_read.bits = VC4_SET_FIELD(getRenderTargetFormatVC4(readImage->format), VC4_RENDER_CONFIG_FORMAT) |
 						VC4_SET_FIELD(tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
@@ -410,13 +410,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 				uint32_t tiling = writeDepthStencilImage->tiling;
 
-				if(writeDepthStencilImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
+				if(writeDepthStencilImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize < 4096)
 				{
 					tiling = VC4_TILING_FORMAT_LT;
 				}
 
 				submitCl.zs_write.hindex = writeDepthStencilImageIdx;
-				submitCl.zs_write.offset = marker->writeDepthStencilImageOffset;
+				submitCl.zs_write.offset = marker->writeDepthStencilImageOffset + writeDepthStencilImage->boundOffset;
 				submitCl.zs_write.flags = 0;
 				submitCl.zs_write.bits = VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
 										 VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
@@ -425,7 +425,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			if(writeMSAAdepthStencilImage)
 			{
 				submitCl.msaa_zs_write.hindex = writeMSAAdepthStencilImageIdx;
-				submitCl.msaa_zs_write.offset = marker->writeMSAAdepthStencilImageOffset;
+				submitCl.msaa_zs_write.offset = marker->writeMSAAdepthStencilImageOffset + writeMSAAdepthStencilImage->boundOffset;
 				submitCl.msaa_zs_write.flags = 0;
 				submitCl.msaa_zs_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X;
 			}
@@ -436,13 +436,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 				uint32_t tiling = readDepthStencilImage->tiling;
 
-				if(readDepthStencilImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
+				if(readDepthStencilImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize < 4096)
 				{
 					tiling = VC4_TILING_FORMAT_LT;
 				}
 
 				submitCl.zs_read.hindex = readDepthStencilImageIdx;
-				submitCl.zs_read.offset = marker->readDepthStencilImageOffset;
+				submitCl.zs_read.offset = marker->readDepthStencilImageOffset + readDepthStencilImage->boundOffset;
 				submitCl.zs_read.flags = readMSAAdepthStencilImage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0; //TODO is this valid?
 				submitCl.zs_read.bits = VC4_SET_FIELD(getRenderTargetFormatVC4(readDepthStencilImage->format), VC4_RENDER_CONFIG_FORMAT) |
 						VC4_SET_FIELD(tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);

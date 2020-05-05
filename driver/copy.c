@@ -1058,7 +1058,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 		fragConstants[0] = *(uint32_t*)&w;
 		fragConstants[1] = *(uint32_t*)&bppfloat;
 		fragConstants[2] = size;
-		fragConstants[3] = pRegions[c].bufferOffset;
+		fragConstants[3] = pRegions[c].bufferOffset + buf->boundOffset;
 
 		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragConstants), &fragConstants);
 
@@ -1092,6 +1092,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 	_device* device = cmdBuf->dev;
 	_image* srcImg = srcImage;
 	_image* dstImg = dstImage;
+
+	//TODO handle offsets
 
 	for(uint32_t c = 0; c < regionCount; ++c)
 	{
