@@ -433,7 +433,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory(
 	assert(i->size <= m->size - memoryOffset);
 
 	//image memory must be aligned to 4096 bytes
-	assert((memoryOffset % 4096) == 0);
+	//assert((memoryOffset % 4096) == 0);
 
 	i->boundMem = m;
 	i->boundOffset = memoryOffset;
