@@ -909,10 +909,14 @@ void CreateShaders()
 			///vpm = rb0 (1)
 			"sig_none ; vpm = or.always(b, b, nop, rb0) ; nop = nop(r0, r0);\n"
 			///vpm = r0
-			"sig_none ; vpm.nop = itof.always.8a(r0, r0) ; nop = nop.never(r0, r0) ; "
-			"sig_none ; vpm.nop = itof.always.8b(r0, r0) ; nop = nop.never(r0, r0) ; "
-			"sig_none ; vpm.nop = itof.always.8c(r0, r0) ; nop = nop.never(r0, r0) ; "
-			"sig_none ; vpm.nop = itof.always.8d(r0, r0) ; nop = nop.never(r0, r0) ; "
+			"sig_none ; r1.nop = or.always.8a(r0, r0) ; nop = nop(r0, r0) ; "
+			"sig_none ; vpm.nop = itof.always(r1, r1) ; nop = nop(r0, r0) ; "
+			"sig_none ; r1.nop = or.always.8b(r0, r0) ; nop = nop(r0, r0) ; "
+			"sig_none ; vpm.nop = itof.always(r1, r1) ; nop = nop(r0, r0) ; "
+			"sig_none ; r1.nop = or.always.8c(r0, r0) ; nop = nop(r0, r0) ; "
+			"sig_none ; vpm.nop = itof.always(r1, r1) ; nop = nop(r0, r0) ; "
+			"sig_none ; r1.nop = or.always.8d(r0, r0) ; nop = nop(r0, r0) ; "
+			"sig_none ; vpm.nop = itof.always(r1, r1) ; nop = nop(r0, r0) ; "
 			///END
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
@@ -1015,10 +1019,10 @@ void CreateShaders()
 			///r0 = varyingX * W
 			"sig_none ; nop = nop(r0, r0, pay_zw, vary) ; r0 = fmul.always(a, b) ;"
 			///r2 = r0 + r5 (C)
-			"sig_none ; rx0 = fadd.always(r0, r5, pay_zw, vary) ; r0 = fmul.always(a, b) ;"
-			"sig_none ; rx1 = fadd.always(r0, r5, pay_zw, vary) ; r0 = fmul.always(a, b) ;"
-			"sig_none ; rx2 = fadd.always(r0, r5, pay_zw, vary) ; r0 = fmul.always(a, b) ;"
-			"sig_none ; rx3 = fadd.always(r0, r5) ; nop = nop(r0, r0) ;"
+			"sig_none ; rx0 = fadd.always(r0, r5, pay_zw, vary) ; r1 = fmul.always(a, b) ;"
+			"sig_none ; rx1 = fadd.always(r1, r5, pay_zw, vary) ; r2 = fmul.always(a, b) ;"
+			"sig_none ; rx2 = fadd.always(r2, r5, pay_zw, vary) ; r3 = fmul.always(a, b) ;"
+			"sig_none ; rx3 = fadd.always(r3, r5) ; nop = nop(r0, r0) ;"
 			"sig_none ; nop = nop.pm(r0, r0, ra0, nop) ; r0.8a = v8min.always(a, a) ;"
 			"sig_none ; nop = nop.pm(r0, r0, ra1, nop) ; r0.8b = v8min.always(a, a) ;"
 			"sig_none ; nop = nop.pm(r0, r0, ra2, nop) ; r0.8c = v8min.always(a, a) ;"
@@ -1299,26 +1303,27 @@ void CreateVertexBuffer()
 
 		res = vkAllocateMemory(device, &mai, 0, &vertexBufferMemory);
 
-		float vertices[9] =
-		{ // verts
-			-1,  1,
-			 1,  1,
-			 0, -1,
-		};
-		((uint8_t*)&vertices[6])[0] = 255;
-		((uint8_t*)&vertices[6])[1] = 0;
-		((uint8_t*)&vertices[6])[2] = 0;
-		((uint8_t*)&vertices[6])[3] = 255;
+		uint32_t vertices[9];
+		((float*)vertices)[0] = -1;
+		((float*)vertices)[1] = 1;
+		((float*)vertices)[2] = 1;
+		((float*)vertices)[3] = 1;
+		((float*)vertices)[4] = 0;
+		((float*)vertices)[5] = -1;
+		((uint8_t*)vertices)[6*4 + 0] = 1;
+		((uint8_t*)vertices)[6*4 + 1] = 0;
+		((uint8_t*)vertices)[6*4 + 2] = 0;
+		((uint8_t*)vertices)[6*4 + 3] = 0;
 
-		((uint8_t*)&vertices[7])[0] = 0;
-		((uint8_t*)&vertices[7])[1] = 255;
-		((uint8_t*)&vertices[7])[2] = 0;
-		((uint8_t*)&vertices[7])[3] = 255;
+		((uint8_t*)vertices)[7*4 + 0] = 0;
+		((uint8_t*)vertices)[7*4 + 1] = 0;
+		((uint8_t*)vertices)[7*4 + 2] = 0;
+		((uint8_t*)vertices)[7*4 + 3] = 0;
 
-		((uint8_t*)&vertices[8])[0] = 0;
-		((uint8_t*)&vertices[8])[1] = 0;
-		((uint8_t*)&vertices[8])[2] = 128;
-		((uint8_t*)&vertices[8])[3] = 255;
+		((uint8_t*)vertices)[8*4 + 0] = 0;
+		((uint8_t*)vertices)[8*4 + 1] = 0;
+		((uint8_t*)vertices)[8*4 + 2] = 0;
+		((uint8_t*)vertices)[8*4 + 3] = 0;
 
 		void* data;
 		res = vkMapMemory(device, vertexBufferMemory, 0, mr.size, 0, &data);
