@@ -886,7 +886,7 @@ void CreateShaders()
 			"sig_none ; rx0.16a = ftoi.always(r1, r1, vpm_read, uni) ; r2 = fmul.always(a, b) ;\n"
 			///r3 = r2 * rb0
 			///r0 = vpm
-			"sig_none ; r0 = or.always(a, a, vpm_read, rb0) ; r3 = fmul.always(r2, b) ;\n"
+			"sig_none ; rx1 = or.always(a, a, vpm_read, rb0) ; r3 = fmul.always(r2, b) ;\n"
 			///ra0.16b = int(r3)
 			///r1 = vpm
 			"sig_none ; rx0.16b = ftoi.always(r3, r3) ; nop = nop(r0, r0) ;\n"
@@ -909,14 +909,10 @@ void CreateShaders()
 			///vpm = rb0 (1)
 			"sig_none ; vpm = or.always(b, b, nop, rb0) ; nop = nop(r0, r0);\n"
 			///vpm = r0
-			"sig_none ; r1.nop = or.always.8a(r0, r0) ; nop = nop(r0, r0) ; "
-			"sig_none ; vpm.nop = itof.always(r1, r1) ; nop = nop(r0, r0) ; "
-			"sig_none ; r1.nop = or.always.8b(r0, r0) ; nop = nop(r0, r0) ; "
-			"sig_none ; vpm.nop = itof.always(r1, r1) ; nop = nop(r0, r0) ; "
-			"sig_none ; r1.nop = or.always.8c(r0, r0) ; nop = nop(r0, r0) ; "
-			"sig_none ; vpm.nop = itof.always(r1, r1) ; nop = nop(r0, r0) ; "
-			"sig_none ; r1.nop = or.always.8d(r0, r0) ; nop = nop(r0, r0) ; "
-			"sig_none ; vpm.nop = itof.always(r1, r1) ; nop = nop(r0, r0) ; "
+			"sig_none ; vpm.nop = fmax.always.8a(a, a, ra1) ; nop = nop(r0, r0) ; "
+			"sig_none ; vpm.nop = fmax.always.8b(a, a, ra1) ; nop = nop(r0, r0) ; "
+			"sig_none ; vpm.nop = fmax.always.8c(a, a, ra1) ; nop = nop(r0, r0) ; "
+			"sig_none ; vpm.nop = fmax.always.8d(a, a, ra1) ; nop = nop(r0, r0) ; "
 			///END
 			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
 			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;\n"
@@ -1310,19 +1306,19 @@ void CreateVertexBuffer()
 		((float*)vertices)[3] = 1;
 		((float*)vertices)[4] = 0;
 		((float*)vertices)[5] = -1;
-		((uint8_t*)vertices)[6*4 + 0] = 1;
+		((uint8_t*)vertices)[6*4 + 0] = 255;
 		((uint8_t*)vertices)[6*4 + 1] = 0;
 		((uint8_t*)vertices)[6*4 + 2] = 0;
 		((uint8_t*)vertices)[6*4 + 3] = 0;
 
 		((uint8_t*)vertices)[7*4 + 0] = 0;
-		((uint8_t*)vertices)[7*4 + 1] = 0;
+		((uint8_t*)vertices)[7*4 + 1] = 255;
 		((uint8_t*)vertices)[7*4 + 2] = 0;
 		((uint8_t*)vertices)[7*4 + 3] = 0;
 
 		((uint8_t*)vertices)[8*4 + 0] = 0;
 		((uint8_t*)vertices)[8*4 + 1] = 0;
-		((uint8_t*)vertices)[8*4 + 2] = 0;
+		((uint8_t*)vertices)[8*4 + 2] = 255;
 		((uint8_t*)vertices)[8*4 + 3] = 0;
 
 		void* data;
