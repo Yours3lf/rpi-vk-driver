@@ -540,7 +540,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			submitCl.shader_rec_count = marker->shaderRecCount;
 			submitCl.uniforms_size = marker->uniformsSize;
 
-			/**/
+			/**
 			printf("BCL:\n");
 			clDump(((uint8_t*)marker) + sizeof(CLMarker), marker->size);
 			printf("BO handles: ");
