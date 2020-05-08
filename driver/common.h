@@ -137,12 +137,14 @@ typedef struct VkDevice_T
 	VkDescriptorPool emulDescriptorPool;
 	VkDescriptorSetLayout emulBufferDsl;
 	VkDescriptorSetLayout emulTextureDsl;
+	VkDescriptorSetLayout emulClearDsl;
 	VkSampler emulNearestTextureSampler;
 	VkSampler emulLinearTextureSampler;
 	VkShaderModule emulBufferToTextureShaderModule;
 	VkShaderModule emulTextureToTextureShaderModule;
 	VkShaderModule emulTextureToBufferShaderModule; //TODO
 	VkShaderModule emulBufferToBufferShaderModule; //TODO
+	VkShaderModule emulClearShaderModule;
 } _device;
 
 typedef struct VkRenderPass_T
@@ -350,6 +352,8 @@ typedef struct VkCommandBuffer_T
 	_pipeline* graphicsPipeline;
 	_pipeline* computePipeline;
 
+	_renderpass* currRenderPass;
+
 	uint32_t numDrawCallsSubmitted;
 
 	VkViewport viewport;
@@ -553,4 +557,5 @@ uint32_t getRenderTargetFormatVC4(VkFormat format);
 void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize);
 void clDump(void* cl, uint32_t size);
 void setupEmulationResources(VkDevice device);
+void setupClearEmulationResources(VkDevice device);
 uint32_t getPow2Pad(uint32_t n);

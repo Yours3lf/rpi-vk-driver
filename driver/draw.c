@@ -139,6 +139,10 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		vertModule = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)];
 	}
 
+//	fprintf(stderr, "==============\n", fragModule);
+//	fprintf(stderr, "fragModule %p\n", fragModule);
+//	fprintf(stderr, "vertModule %p\n", vertModule);
+
 	if(!vertModule)
 	{
 		vertModule = fragModule;
@@ -148,6 +152,15 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	{
 		fragModule = vertModule;
 	}
+
+//	fprintf(stderr, "fragModule %p\n", fragModule);
+//	fprintf(stderr, "vertModule %p\n", vertModule);
+
+	assert(fragModule);
+	assert(vertModule);
+	assert(fragModule->bos[VK_RPI_ASSEMBLY_TYPE_FRAGMENT]);
+	assert(vertModule->bos[VK_RPI_ASSEMBLY_TYPE_VERTEX]);
+	assert(vertModule->bos[VK_RPI_ASSEMBLY_TYPE_COORDINATE]);
 
 	//emit shader record
 	ControlListAddress fragCode = {

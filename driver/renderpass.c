@@ -278,6 +278,8 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	clInsertStartTileBinning(&commandBuffer->binCl);
 
 	cb->binCl.currMarker->perfmonID = cb->perfmonID;
+
+	cb->currRenderPass = rp;
 }
 
 /*
@@ -300,6 +302,8 @@ void rpi_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
 	clInsertIncrementSemaphore(&cb->binCl);
 	clFit(commandBuffer, &cb->binCl, V3D21_FLUSH_length);
 	clInsertFlush(&cb->binCl);
+
+	cb->currRenderPass = 0;
 }
 
 /*

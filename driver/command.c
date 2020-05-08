@@ -146,6 +146,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateCommandBuffers(
 			pCommandBuffers[c]->stencilReferenceDirty = 1;
 			pCommandBuffers[c]->descriptorSetDirty = 1;
 			pCommandBuffers[c]->pushConstantDirty = 1;
+			pCommandBuffers[c]->currRenderPass = 0;
 
 			pCommandBuffers[c]->perfmonID = 0;
 
@@ -854,6 +855,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandBuffer(
 	commandBuffer->stencilReferenceDirty = 1;
 	commandBuffer->descriptorSetDirty = 1;
 	commandBuffer->pushConstantDirty = 1;
+	commandBuffer->currRenderPass = 0;
 
 	commandBuffer->perfmonID = 0;
 }
