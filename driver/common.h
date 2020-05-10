@@ -145,6 +145,7 @@ typedef struct VkDevice_T
 	VkShaderModule emulTextureToBufferShaderModule; //TODO
 	VkShaderModule emulBufferToBufferShaderModule; //TODO
 	VkShaderModule emulClearShaderModule;
+	VkShaderModule emulClearNoColorShaderModule;
 } _device;
 
 typedef struct VkRenderPass_T

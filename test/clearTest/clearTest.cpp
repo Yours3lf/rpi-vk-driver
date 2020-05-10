@@ -825,19 +825,25 @@ void recordCommandBuffers()
 		uint32_t fragColor = 0xffa14ccc; //purple
 		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragColor), &fragColor);
 
-		VkDeviceSize offsets = 0;
-		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer1, &offsets );
-		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
+		VkClearAttachment clearAttachment[2] = {};
+		clearAttachment[0].aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		clearAttachment[0].clearValue.depthStencil.depth = 0.3f;
 
-		VkClearAttachment clearAttachment = {};
-		clearAttachment.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		clearAttachment.clearValue.depthStencil.depth = 0.0f;
+		clearAttachment[1].aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		clearAttachment[1].clearValue.color.float32[0] = 1.0f;
+		clearAttachment[1].clearValue.color.float32[1] = 1.0f;
+		clearAttachment[1].clearValue.color.float32[2] = 1.0f;
+		clearAttachment[1].clearValue.color.float32[3] = 1.0f;
 		VkClearRect clearRect = {};
 		clearRect.rect.offset.x = 0;
 		clearRect.rect.offset.y = 0;
 		clearRect.rect.extent.width = swapChainExtent.width;
 		clearRect.rect.extent.height = swapChainExtent.height;
-		vkCmdClearAttachments(presentCommandBuffers[i], 1, &clearAttachment, 1, &clearRect);
+		vkCmdClearAttachments(presentCommandBuffers[i], 2, clearAttachment, 1, &clearRect);
+
+		VkDeviceSize offsets = 0;
+		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer1, &offsets );
+		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
 
 		fragColor = 0xffafcd02; //yellow
 		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragColor), &fragColor);

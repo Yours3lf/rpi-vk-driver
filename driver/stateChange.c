@@ -6,7 +6,7 @@
 
 #include "QPUassembler/qpu_assembler.h"
 
-void createClearShaderModule(VkDevice device, VkShaderModule* blitShaderModule)
+void createClearShaderModule(VkDevice device, VkShaderModule* blitShaderModule, VkShaderModule* blitShaderModuleNoColor)
 {
 	char vs_asm_code[] =
 			///0x40000000 = 2.0
@@ -118,10 +118,17 @@ void createClearShaderModule(VkDevice device, VkShaderModule* blitShaderModule)
 			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 				"\0";
 
-	char* blit_asm_strings[] =
-	{
-		(char*)cs_asm_code, (char*)vs_asm_code, (char*)fs_asm_code, 0
-	};
+	char fs_asm_code_no_color[] =
+			"sig_none ; r0 = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;" //clear color value
+			"sig_none ; r1 = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;" //stencil setup
+			"sig_none ; r2 = or.always(a, a, uni, nop) ; nop = nop(r0, r0) ;" //depth clear value
+			"sig_none ; tlb_stencil_setup = or.always(r1, r1) ; nop = nop(r0, r0) ;"
+			"sig_none ; tlb_z = or.always(r2, r2) ; nop = nop(r0, r0) ;"
+			///"sig_none ; tlb_color_all = or.always(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_end ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_none ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
+				"\0";
 
 	VkRpiAssemblyMappingEXT vertexMappings[] = {
 		//vertex shader uniforms
@@ -253,6 +260,20 @@ void createClearShaderModule(VkDevice device, VkShaderModule* blitShaderModule)
 	smci.pCode = spirv;
 	rpi_vkCreateShaderModule(device, &smci, 0, blitShaderModule);
 	assert(*blitShaderModule);
+
+	{ //assemble fs code
+		asm_sizes[2] = get_num_instructions(fs_asm_code_no_color);
+		uint32_t size = sizeof(uint64_t)*asm_sizes[2];
+		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
+		//why not map kernel space mem to user space instead?
+		free(asm_ptrs[2]);
+		asm_ptrs[2] = (uint64_t*)malloc(size);
+		assemble_qpu_asm(fs_asm_code_no_color, asm_ptrs[2]);
+		assert(asm_ptrs[2]);
+	}
+
+	rpi_vkCreateShaderModule(device, &smci, 0, blitShaderModuleNoColor);
+	assert(*blitShaderModuleNoColor);
 
 //	_shaderModule* s = *blitShaderModule;
 //	fprintf(stderr, "=================\n");
@@ -392,7 +413,7 @@ void setupClearEmulationResources(VkDevice device)
 	//create resources that won't change
 	_device* dev = device;
 
-	createClearShaderModule(device, &dev->emulClearShaderModule);
+	createClearShaderModule(device, &dev->emulClearShaderModule, &dev->emulClearNoColorShaderModule);
 	createClearDescriptorSetLayouts(device, &dev->emulClearDsl);
 }
 
@@ -576,6 +597,19 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 		return;
 	}
 
+	_pipeline* oldPipeline;
+	uint32_t oldVertexBufferOffsets[8];
+	_buffer* oldVertexBuffers[8];
+	char oldPushConstantBufferVertex[256];
+	char oldPushConstantBufferPixel[256];
+
+	//save the state that we'll modify
+	oldPipeline = cmdBuf->graphicsPipeline;
+	memcpy(oldVertexBufferOffsets, cmdBuf->vertexBufferOffsets, sizeof(oldVertexBufferOffsets));
+	memcpy(oldVertexBuffers, cmdBuf->vertexBuffers, sizeof(oldVertexBuffers));
+	memcpy(oldPushConstantBufferVertex, cmdBuf->pushConstantBufferVertex, sizeof(oldPushConstantBufferVertex));
+	memcpy(oldPushConstantBufferPixel, cmdBuf->pushConstantBufferPixel, sizeof(oldPushConstantBufferPixel));
+
 	for(uint32_t c = 0; c < attachmentCount; ++c)
 	{
 		uint32_t clearColor = 0, clearDepth = 0, clearStencil = 0;
@@ -613,7 +647,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 		dsci.front.passOp = VK_STENCIL_OP_REPLACE;
 		dsci.back = dsci.front;
 
-		createClearPipeline(device, &dsci, device->emulClearShaderModule, device->emulClearDsl, &blitPipelineLayout, cmdBuf->currRenderPass, &blitPipeline);
+		createClearPipeline(device, &dsci, clearColor ? device->emulClearShaderModule : device->emulClearNoColorShaderModule, device->emulClearDsl, &blitPipelineLayout, cmdBuf->currRenderPass, &blitPipeline);
 
 //		_shaderModule* s = device->emulClearShaderModule;
 //		fprintf(stderr, "=================\n");
@@ -629,7 +663,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 		uint32_t clearColorValue = 0, stencilSetup = 0, depthClearValue = 0;
 
 		clearColorValue = packVec4IntoABGR8(&pAttachments[c].clearValue.color.float32[0]);
-		depthClearValue = (uint32_t)(pAttachments[c].clearValue.depthStencil.depth * 0xffffff) & 0xffffff;
+		depthClearValue = (uint32_t)(pAttachments[c].clearValue.depthStencil.depth * 0xffffffu) & 0xffffffu;
 		uint32_t numValues = 1;
 		encodeStencilValue(&stencilSetup, &numValues, dsci.front, dsci.back, clearStencil);
 
@@ -673,6 +707,13 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 		rpi_vkDestroyPipelineLayout(device, blitPipelineLayout, 0);
 		rpi_vkDestroyPipeline(device, blitPipeline, 0);
 	}
+
+	//restore state
+	cmdBuf->graphicsPipeline = oldPipeline;
+	memcpy(cmdBuf->vertexBufferOffsets, oldVertexBufferOffsets, sizeof(oldVertexBufferOffsets));
+	memcpy(cmdBuf->vertexBuffers, oldVertexBuffers, sizeof(oldVertexBuffers));
+	memcpy(cmdBuf->pushConstantBufferVertex, oldPushConstantBufferVertex, sizeof(oldPushConstantBufferVertex));
+	memcpy(cmdBuf->pushConstantBufferPixel, oldPushConstantBufferPixel, sizeof(oldPushConstantBufferPixel));
 }
 
 /*
