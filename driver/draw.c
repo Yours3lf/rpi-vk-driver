@@ -59,8 +59,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		//Clip Window
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
 		clInsertClipWindow(&commandBuffer->binCl,
-						   vp.width,
-						   vp.height,
+						   vp.width - vp.x,
+						   vp.height - vp.y,
 						   vp.y, //bottom pixel coord
 						   vp.x); //left pixel coord
 
@@ -71,7 +71,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 		//Viewport Offset
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
-		clInsertViewPortOffset(&commandBuffer->binCl, vp.width * 0.5f, vp.height * 0.5f);
+		clInsertViewPortOffset(&commandBuffer->binCl, vp.width * 0.5f + vp.x, vp.height * 0.5f - vp.y);
 
 		cb->viewportDirty = 0;
 	}
