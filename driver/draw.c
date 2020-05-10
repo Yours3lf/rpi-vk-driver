@@ -59,8 +59,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		//Clip Window
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
 		clInsertClipWindow(&commandBuffer->binCl,
-						   vp.width - vp.x,
-						   vp.height - vp.y,
+						   vp.width,
+						   vp.height,
 						   vp.y, //bottom pixel coord
 						   vp.x); //left pixel coord
 
