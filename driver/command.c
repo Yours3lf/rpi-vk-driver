@@ -48,7 +48,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 
 	//initial number of command buffers to hold
 	int numCommandBufs = 128;
-	int consecutiveBlockSize = ARM_PAGE_SIZE;
+	//TODO uniforms might need to realloc, which should be handled properly
+	int consecutiveBlockSize = ARM_PAGE_SIZE * 20;
 	int consecutiveBlockNumber = 64;
 	//int numCommandBufs = 30;
 	//int consecutiveBlockSize = getCPABlockSize(256);
