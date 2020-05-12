@@ -212,6 +212,9 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		}
 	}
 
+	assert(vertModule->numVertVPMreads == vertexAttribSize >> 2);
+	assert(vertModule->numCoordVPMreads == coordAttribSize >> 2);
+
 	//number of attribs
 	//3 is the number of type of possible shaders
 	for(int c = 0; c < (3 + attribCount)*4; ++c)
@@ -321,6 +324,11 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	//write uniforms
 	_pipelineLayout* pl = cb->graphicsPipeline->layout;
 
+	assert(vertModule->numVertVPMwrites - 3 == fragModule->numVaryings);
+	assert(vertModule->numCoordVPMwrites == 7);
+
+	uint32_t numTextureSamples = 0;
+	uint32_t numFragUniformReads = 0;
 
 	//kernel side expects relocations first!
 	for(uint32_t c = 0; c < fragModule->numMappings[VK_RPI_ASSEMBLY_TYPE_FRAGMENT]; ++c)
@@ -329,6 +337,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 		if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
 		{
+			numTextureSamples++;
+
 			if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
 			   mapping.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
 			   mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
@@ -344,6 +354,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 				//emit tex bo reloc index
 				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
 				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
+
+				numFragUniformReads++;
 			}
 			else if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
 					mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
@@ -361,6 +373,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 				//emit bo reloc index
 				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
 				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
+
+				numFragUniformReads++;
 			}
 			else if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ||
 					mapping.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
@@ -376,6 +390,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 				//emit bo reloc index
 				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
 				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
+
+				numFragUniformReads++;
 			}
 			else
 			{
@@ -384,6 +400,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		}
 	}
 
+	assert(numTextureSamples == fragModule->numTextureSamples);
+
 	//after relocs we can proceed with the usual uniforms
 	for(uint32_t c = 0; c < fragModule->numMappings[VK_RPI_ASSEMBLY_TYPE_FRAGMENT]; ++c)
 	{
@@ -391,6 +409,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 		if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT)
 		{
+			numFragUniformReads++;
+
 			clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
 			clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferPixel + mapping.resourceOffset);
 		}
@@ -453,12 +473,18 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 					size += 4;
 				}
 
+				numFragUniformReads += size >> 2;
+
 				//emit tex parameters
 				clFit(commandBuffer, &commandBuffer->uniformsCl, size);
 				clInsertData(&commandBuffer->uniformsCl, size, params);
 			}
 		}
 	}
+
+	assert(numFragUniformReads == fragModule->numFragUniformReads);
+
+	uint32_t numVertUniformReads = 0;
 
 	//vertex and then coordinate
 	for(uint32_t c = 0; c < vertModule->numMappings[VK_RPI_ASSEMBLY_TYPE_VERTEX]; ++c)
@@ -467,6 +493,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 		if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT)
 		{
+			numVertUniformReads++;
+
 			clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
 			clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferVertex + mapping.resourceOffset);
 		}
@@ -479,6 +507,10 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 			assert(0); //shouldn't happen
 		}
 	}
+
+	assert(numVertUniformReads == vertModule->numVertUniformReads);
+
+	uint32_t numCoordUniformReads = 0;
 
 	//if there are no coordinate mappings, just use the vertex ones
 	VkRpiAssemblyTypeEXT coordMappingType = VK_RPI_ASSEMBLY_TYPE_COORDINATE;
@@ -493,6 +525,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 		if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT)
 		{
+			numCoordUniformReads++;
+
 			clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
 			clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferVertex + mapping.resourceOffset);
 		}
@@ -505,6 +539,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 			assert(0); //shouldn't happen
 		}
 	}
+
+	assert(numCoordUniformReads == vertModule->numCoordUniformReads);
 
 	return maxIndex;
 }

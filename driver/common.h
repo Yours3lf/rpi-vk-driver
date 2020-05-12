@@ -254,7 +254,30 @@ typedef struct VkShaderModule_T
 	VkRpiAssemblyMappingEXT* mappings[VK_RPI_ASSEMBLY_TYPE_MAX];
 	uint32_t numMappings[VK_RPI_ASSEMBLY_TYPE_MAX];
 	uint32_t hasThreadSwitch;
+	uint32_t numTextureSamples;
 	uint32_t numVaryings;
+	uint32_t numFragUniformReads;
+	uint32_t numVertUniformReads;
+	uint32_t numCoordUniformReads;
+	uint32_t numVertVPMreads;
+	uint32_t numCoordVPMreads;
+	uint32_t numVertVPMwrites;
+	uint32_t numCoordVPMwrites;
+	uint32_t numFragCycles;
+	uint32_t numVertCycles;
+	uint32_t numCoordCycles;
+	uint32_t numFragALUcycles;
+	uint32_t numVertALUcycles;
+	uint32_t numCoordALUcycles;
+	uint32_t numEmptyFragALUinstructions;
+	uint32_t numEmptyVertALUinstructions;
+	uint32_t numEmptyCoordALUinstructions;
+	uint32_t numFragBranches;
+	uint32_t numVertBranches;
+	uint32_t numCoordBranches;
+	uint32_t numFragSFUoperations;
+	uint32_t numVertSFUoperations;
+	uint32_t numCoordSFUoperations;
 } _shaderModule;
 
 typedef struct VkDescriptorSetLayout_T
