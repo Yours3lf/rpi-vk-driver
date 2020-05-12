@@ -1,0 +1,44 @@
+	singleTextureVS
+sig_load_imm ; vr_setup.nop = load32.always(0x901a00) ; nop = load32.always() ;--------------------------------------
+sig_none ; rx1.nop = or.ws.always.nop(a, a, vpm_read, nop) ; nop = nop.never(r0, r0) ;			//read rb1 = vx
+sig_none ; rx2.nop = or.always.nop(a, a, vpm_read, nop) ; nop = nop.never(r0, r0) ;				//read ra2 = vy
+sig_none ; nop.nop = nop.never.nop(r0, r0, uni, rb1) ; r2 = fmul.always(a, b) ;					//vx * m3x
+sig_none ; nop.nop = nop.never.nop(r0, r0, ra2, uni) ; r1 = fmul.always(b, a) ;					//vy * m3y
+sig_none ; rx4.nop = fadd.always.nop(r2, r1, uni, rb1) ; r3 = fmul.always(a, b) ;				//vx * m0x
+sig_none ; nop.nop = nop.never.nop(r0, r0, ra2, uni) ; r2 = fmul.always(b, a) ;					//vy * m0y
+sig_none ; rx2.nop = fadd.ws.always.nop(r3, r2, uni, rb1) ; r0 = fmul.always(a, b) ;			//vx * m1x
+sig_none ; nop.nop = nop.never.nop(r0, r0, ra2, uni) ; r3 = fmul.always(b, a) ;					//vy * m1y
+sig_none ; rx3.nop = fadd.ws.always.nop(r0, r3, uni, rb1) ; r1 = fmul.always(a, b) ;			//vx * m2x
+sig_none ; nop.nop = nop.never.nop(r0, r0, ra2, uni) ; r0 = fmul.always(b, a) ;					//vy * m2y
+sig_none ; rx3.nop = fadd.always.nop(r1, r0, vpm_read, nop) ; rx0 = v8min.always(a, a) ;		//read rb0 = vz
+sig_load_imm ; vw_setup = load32.ws.always(0x1a00) ; nop = load32.always() ;
+sig_none ; nop.nop = nop.never.nop(r0, r0, uni, rb0) ; r0 = fmul.always(a, b) ;					//vz * m3z
+sig_none ; r3.nop = fadd.always.nop(a, r0, ra4, nop) ; nop = nop.never(r0, r0) ;
+sig_none ; r0.nop = fadd.always.nop(r3, a, uni, nop) ; nop = nop.never(r0, r0) ;				//+m3w
+sig_none ; sfu_recip.nop = or.ws.always.nop(r0, r0, uni, rb0) ; r3 = fmul.always(a, b) ;		//1 / Wc, vz * m1z
+sig_none ; nop.nop = nop.never.nop(r0, r0, uni, rb0) ; r2 = fmul.always(a, b) ;					//vz * m0z
+sig_none ; r1.nop = fadd.always.nop(b, r3, nop, rb3) ; nop = nop.never(r0, r0) ;
+sig_none ; rx1.nop = fadd.always.nop(b, r2, nop, rb2) ; r2 = fmul.always(r0, r4) ;				//
+sig_none ; nop.nop = nop.never.nop(r0, r0, uni, rb0) ; r3 = fmul.always(a, b) ;					//vz * m2z
+sig_none ; rx4.nop = fadd.ws.always.nop(a, r3, ra3, nop) ; nop = nop.never(r0, r0) ;			//
+sig_small_imm ; r3.nop = fsub.always.nop(b, r2, nop, 0x40000000) ; nop = nop.never(r0, r0) ;	//
+sig_none ; r0.nop = fadd.ws.always.nop(a, b, ra1, uni) ; rx5 = fmul.always(r4, r3) ;			//+m0w, ra5 = 1/Wc
+sig_none ; nop.nop = nop.never.nop(r0, r0, uni, nop) ; r2 = fmul.always(r0, a) ;				//Xscale
+sig_none ; r1.nop = fadd.always.nop(r1, b, ra5, uni) ; r3 = fmul.always(r2, a) ;				//+m1w
+sig_none ; rx0.16a = ftoi.always.nop(r3, r3, uni, nop) ; r0 = fmul.always(r1, a) ;				//Yscale
+sig_none ; nop.nop = nop.never.nop(r0, r0, ra5, nop) ; r1 = fmul.always(r0, a) ;
+sig_none ; rx0.16b = ftoi.always.nop(r1, r1, nop, nop) ; nop = nop.never(r0, r0) ;
+sig_none ; r1.nop = fadd.always.nop(b, a, uni, rb4) ; nop = nop.never(r0, r0) ;					//+m2w
+sig_none ; vpm.nop = or.always.nop(a, a, ra0, uni) ; r0 = fmul.always(r1, b) ;					//write Xs/Ys, Zscale
+sig_none ; nop.nop = nop.never.nop(r0, r0, ra5, nop) ; r1 = fmul.always(r0, a) ;
+sig_none ; vpm.nop = fadd.always.nop(r1, b, vpm_read, uni) ; r0 = v8min.always(a, a) ;			//write Zs, Zoffset
+sig_none ; vpm.nop = or.always.nop(a, a, ra5, nop) ; nop = nop.never(r0, r0) ;					//write 1/Wc
+sig_none ; vpm.nop = or.always.nop(r0, r0, vpm_read, nop) ; r1 = v8min.always(a, a) ;
+sig_none ; vpm.nop = or.always.nop(r1, r1, vpm_read, nop) ; r2 = v8min.always(a, a) ;
+sig_none ; vpm.nop = or.always.nop(r2, r2, vpm_read, nop) ; r3 = v8min.always(a, a) ;
+sig_none ; vpm.nop = or.always.nop(r3, r3, vpm_read, nop) ; r0 = v8min.always(a, a) ;
+sig_none ; vpm.nop = or.always.nop(r0, r0, vpm_read, nop) ; r1 = v8min.always(a, a) ;
+sig_none ; vpm.nop = or.always.nop(r1, r1, nop, nop) ; nop = nop.never(r0, r0) ;
+sig_end ; nop.nop = nop.never.nop(r0, r0, nop, nop) ; nop = nop.never(r0, r0) ;
+sig_none ; nop.nop = nop.never.nop(r0, r0, nop, nop) ; nop = nop.never(r0, r0) ;
+sig_none ; nop.nop = nop.never.nop(r0, r0, nop, nop) ; nop = nop.never(r0, r0) ;
