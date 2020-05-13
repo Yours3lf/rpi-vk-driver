@@ -827,7 +827,7 @@ void recordCommandBuffers()
 
 		VkClearAttachment clearAttachment[2] = {};
 		clearAttachment[0].aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		clearAttachment[0].clearValue.depthStencil.depth = 0.3f;
+		clearAttachment[0].clearValue.depthStencil.depth = 0.0f;
 
 		clearAttachment[1].aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		clearAttachment[1].clearValue.color.float32[0] = 1.0f;
@@ -835,10 +835,10 @@ void recordCommandBuffers()
 		clearAttachment[1].clearValue.color.float32[2] = 1.0f;
 		clearAttachment[1].clearValue.color.float32[3] = 1.0f;
 		VkClearRect clearRect = {};
-		clearRect.rect.offset.x = 0;
-		clearRect.rect.offset.y = 0;
-		clearRect.rect.extent.width = swapChainExtent.width;
-		clearRect.rect.extent.height = swapChainExtent.height;
+		clearRect.rect.offset.x = 300;
+		clearRect.rect.offset.y = 972;
+		clearRect.rect.extent.width = 144;
+		clearRect.rect.extent.height = 108;
 		vkCmdClearAttachments(presentCommandBuffers[i], 2, clearAttachment, 1, &clearRect);
 
 		VkDeviceSize offsets = 0;
