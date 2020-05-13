@@ -1349,6 +1349,9 @@ void CreatePipeline()
 	rastCreateInfo.cullMode = VK_CULL_MODE_NONE;
 	rastCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rastCreateInfo.lineWidth = 1.0f;
+	rastCreateInfo.depthBiasEnable = 1;
+	rastCreateInfo.depthBiasConstantFactor = -2.0f;
+	rastCreateInfo.depthBiasSlopeFactor = -1.0f;
 
 	VkPipelineMultisampleStateCreateInfo pipelineMSCreateInfo = {};
 	pipelineMSCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;

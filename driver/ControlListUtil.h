@@ -137,8 +137,8 @@ void clInsertLineWidth(ControlList* cl,
 void clInsertRHTXBoundary(ControlList* cl,
 						uint32_t boundary); //sint16
 void clInsertDepthOffset(ControlList* cl,
-						uint32_t units, //float 187
-						 uint32_t factor); //float 187
+						float units,
+						 float factor);
 void clInsertClipWindow(ControlList* cl,
 						uint32_t width, //uint16
 						uint32_t height, //uint16

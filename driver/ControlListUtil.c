@@ -506,14 +506,20 @@ void clInsertRHTXBoundary(ControlList* cl,
 	*(uint16_t*)cl->nextFreeByte = moveBits(boundary, 16, 0); cl->nextFreeByte += 2;
 }
 
+uint32_t f32_to_f187(float f32)
+{
+   uint32_t bits = *(uint32_t*)&f32;
+   return bits >> 16;
+}
+
 void clInsertDepthOffset(ControlList* cl,
-						uint32_t units, //float 187
-						 uint32_t factor) //float 187
+						float units,
+						 float factor)
 {
 	assert(cl);
 	assert(cl->nextFreeByte);
 	*cl->nextFreeByte = V3D21_DEPTH_OFFSET_opcode; cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte = moveBits(factor, 16, 0) | moveBits(units, 16, 16); cl->nextFreeByte += 4;
+	*(uint32_t*)cl->nextFreeByte = moveBits(f32_to_f187(factor), 16, 0) | moveBits(f32_to_f187(units), 16, 16); cl->nextFreeByte += 4;
 }
 
 void clInsertClipWindow(ControlList* cl,
