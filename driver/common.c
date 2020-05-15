@@ -210,7 +210,7 @@ uint32_t isLTformat(uint32_t bpp, uint32_t width, uint32_t height)
 {
 	uint32_t utileW, utileH;
 	getUTileDimensions(bpp, &utileW, &utileH);
-	return (width <= 4 * utileW || height <= utileH);
+	return (width <= 4 * utileW || height <= 4 * utileH);
 }
 
 //Textures in T format:

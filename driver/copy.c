@@ -1097,10 +1097,10 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 
 	for(uint32_t c = 0; c < regionCount; ++c)
 	{
-		uint32_t srcWidth = pRegions[c].srcOffsets[1].x - pRegions[c].srcOffsets[0].x;
-		uint32_t srcHeight = pRegions[c].srcOffsets[1].y - pRegions[c].srcOffsets[0].y;
-		uint32_t dstWidth = pRegions[c].dstOffsets[1].x - pRegions[c].dstOffsets[0].x;
-		uint32_t dstHeight = pRegions[c].dstOffsets[1].y - pRegions[c].dstOffsets[0].y;
+		uint32_t srcWidth = max(pRegions[c].srcOffsets[1].x - pRegions[c].srcOffsets[0].x, 1);
+		uint32_t srcHeight = max(pRegions[c].srcOffsets[1].y - pRegions[c].srcOffsets[0].y, 1);
+		uint32_t dstWidth = max(pRegions[c].dstOffsets[1].x - pRegions[c].dstOffsets[0].x, 1);
+		uint32_t dstHeight = max(pRegions[c].dstOffsets[1].y - pRegions[c].dstOffsets[0].y, 1);
 		uint32_t srcMipLevel = pRegions[c].srcSubresource.mipLevel;
 		uint32_t dstMipLevel = pRegions[c].dstSubresource.mipLevel;
 

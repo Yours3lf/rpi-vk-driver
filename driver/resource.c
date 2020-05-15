@@ -350,16 +350,6 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 			}
 		}
 
-		if(mipW < 4)
-		{
-			mipW = 4;
-		}
-
-		if(mipH < 4)
-		{
-			mipH = 4;
-		}
-
 		i->levelOffsets[c] = offset;
 
 		strides[c] = (mipW * bpp * max(i->samples, 1)) >> 3;
