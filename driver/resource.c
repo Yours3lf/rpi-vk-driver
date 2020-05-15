@@ -200,8 +200,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	i->width = pCreateInfo->extent.width;
 	i->height = pCreateInfo->extent.height;
 	i->depth = pCreateInfo->extent.depth;
-	i->paddedWidth = 0; //when format is T
-	i->paddedHeight = 0;
 	i->miplevels = pCreateInfo->mipLevels;
 	memset(i->levelOffsets, 0, sizeof(uint32_t) * 11);
 	i->samples = pCreateInfo->samples;
@@ -295,116 +293,93 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 	uint32_t utileW, utileH;
 	getUTileDimensions(bpp, &utileW, &utileH);
 
-	switch(i->tiling)
+	uint32_t w = i->width;
+	uint32_t h = i->height;
+
+	if(i->format == VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK)
 	{
-	case VC4_TILING_FORMAT_T:
+		w = (w + 3) >> 2;
+		h = (h + 3) >> 2;
+	}
+
+	uint32_t potW = getPow2Pad(w);
+	uint32_t potH = getPow2Pad(h);
+	uint32_t offset = 0;
+
+	uint32_t sizes[11];
+	uint32_t strides[11];
+
+	for(int c = i->miplevels - 1; c >= 0; c--)
+	{
+		uint32_t mipW, mipH;
+		if(!c)
 		{
-			//need to pad to T format, as HW automatically chooses that
-			i->paddedWidth = roundUp(i->width, utileW * 8);
-			i->paddedHeight = roundUp(i->height, utileH * 8);
-			break;
+			mipW = w;
+			mipH = h;
 		}
-	case VC4_TILING_FORMAT_LT:
+		else
 		{
-			//LT format
-			i->paddedWidth = roundUp(i->width, utileW);
-			i->paddedHeight = roundUp(i->height, utileH);
-			break;
+			mipW = max(potW >> c, 1);
+			mipH = max(potH >> c, 1);
 		}
-	case VC4_TILING_FORMAT_LINEAR:
+
+		if(i->tiling == VC4_TILING_FORMAT_LINEAR)
 		{
-			//linear format
-			i->paddedWidth = roundUp(i->width, utileW);
-			i->paddedHeight = i->height;
-			break;
+			if(i->samples > 1)
+			{
+				mipW = roundUp(mipW, 32);
+				mipH = roundUp(mipH, 32);
+			}
+			else
+			{
+				mipW = roundUp(mipW, utileW);
+			}
+		}
+		else
+		{
+			uint32_t isMipLT = isLTformat(bpp, mipW, mipH);
+			if(isMipLT)
+			{
+				mipW = roundUp(mipW, utileW);
+				mipH = roundUp(mipH, utileH);
+			}
+			else
+			{
+				mipW = roundUp(mipW, utileW * 8);
+				mipH = roundUp(mipH, utileH * 8);
+			}
+		}
+
+		if(mipW < 4)
+		{
+			mipW = 4;
+		}
+
+		if(mipH < 4)
+		{
+			mipH = 4;
+		}
+
+		i->levelOffsets[c] = offset;
+
+		strides[c] = (mipW * bpp * max(i->samples, 1)) >> 3;
+		sizes[c] = mipH * strides[c];
+
+		offset += sizes[c];
+	}
+
+	uint32_t levelZeroOffset = roundUp(i->levelOffsets[0], ARM_PAGE_SIZE) - i->levelOffsets[0];
+
+	if(levelZeroOffset)
+	{
+		for(uint32_t c = 0; c < i->miplevels; ++c)
+		{
+			i->levelOffsets[c] += levelZeroOffset;
 		}
 	}
 
-	i->stride = (i->paddedWidth * bpp) >> 3;
-
-	//mip levels are laid out in memory the following way:
-	//0x0.................................................0xffffff
-	//smallest mip level ... largest mip level - 1, base mip level
-	//base mip level offset must be a multiple of 4KB
-	//mip levels other than the base must be aligned to power of two sizes
-	//mip levels must be padded to either T or LT format depending on size
-
-	uint32_t prevMipPaddedSize = 0;
-	uint32_t mipSizes[11];
-
-	for(uint32_t c = i->miplevels - 1; c >= 1; --c)
-	{
-		uint32_t mipWidth = max(i->width >> c, 1);
-		uint32_t mipHeight = max(i->height >> c, 1);
-		uint32_t nonPaddedSize = (mipWidth * mipHeight * bpp) >> 3;
-		uint32_t mipPaddedWidth, mipPaddedHeight;
-
-//		uint32_t tiling = i->tiling;
-
-//		if(i->tiling == VC4_TILING_FORMAT_T && nonPaddedSize <= 4096)
-//		{
-//			tiling = VC4_TILING_FORMAT_LT;
-//		}
-
-//		switch(tiling)
-//		{
-//		case VC4_TILING_FORMAT_T:
-//			{
-//				//T format
-//				mipPaddedWidth = roundUp(mipWidth, utileW * 8);
-//				mipPaddedHeight = roundUp(mipHeight, utileH * 8);
-//				break;
-//			}
-//		case VC4_TILING_FORMAT_LT:
-//			{
-//				//LT format
-//				mipPaddedWidth = roundUp(mipWidth, utileW);
-//				mipPaddedHeight = roundUp(mipHeight, utileH);
-//				break;
-//			}
-//		case VC4_TILING_FORMAT_LINEAR:
-//			{
-//				//linear format
-//				mipPaddedWidth = roundUp(mipWidth, utileW);
-//				mipPaddedHeight = mipHeight;
-//				break;
-//			}
-//		}
-
-		mipPaddedWidth = getPow2Pad(mipWidth);
-		mipPaddedHeight = getPow2Pad(mipHeight);
-		uint32_t greater = mipPaddedWidth > mipPaddedHeight ? mipPaddedWidth : mipPaddedHeight;
-		greater = greater < 4 ? 4 : greater;
-		mipPaddedWidth = mipPaddedHeight = greater;
-
-		uint32_t mipPaddedSize = (mipPaddedWidth * mipPaddedHeight * bpp) >> 3;
-
-		mipSizes[c] = mipPaddedSize;
-		i->levelOffsets[c] = prevMipPaddedSize;
-		prevMipPaddedSize += mipPaddedSize;
-
-//		fprintf(stderr, "mipPaddedWidth: %u\n", mipPaddedWidth);
-//		fprintf(stderr, "mipPaddedHeight: %u\n", mipPaddedHeight);
-//		fprintf(stderr, "i->levelOffsets[%u]: %u\n", c, i->levelOffsets[c]);
-	}
-
-	//must be a multiple of 4096 bytes
-	i->levelOffsets[0] = getBOAlignedSize(prevMipPaddedSize, 4096);
-
-	for(uint32_t c = 1; c < i->miplevels; c++)
-	{
-		i->levelOffsets[c] = i->levelOffsets[c - 1] - mipSizes[c];
-	}
-
-	i->size = getBOAlignedSize(((i->paddedWidth * i->paddedHeight * bpp) >> 3) + i->levelOffsets[0], ARM_PAGE_SIZE) * i->layers;
-
-//	fprintf(stderr, "i->tiling %u\n", i->tiling);
-//	fprintf(stderr, "i->levelOffsets[0] %u\n", i->levelOffsets[0]);
-//	fprintf(stderr, "i->size %u\n", i->size);
-//	fprintf(stderr, "i->paddedWidth %u\n", i->paddedWidth);
-//	fprintf(stderr, "i->paddedHeight %u\n", i->paddedHeight);
-//	fprintf(stderr, "mipSize %u\n", mipSize);
-//	fprintf(stderr, "bpp %u\n", bpp);
+	i->size = getBOAlignedSize(sizes[0] + i->levelOffsets[0], ARM_PAGE_SIZE) * i->layers;
+	i->stride = strides[0];
 
 	pMemoryRequirements->alignment = ARM_PAGE_SIZE;
 	pMemoryRequirements->memoryTypeBits = memoryTypes[0].propertyFlags; //TODO

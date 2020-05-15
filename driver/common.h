@@ -195,7 +195,6 @@ typedef struct VkImage_T
 	VkImageType type; //1d, 2d, 3d
 	uint32_t fb; //needed for swapchain
 	uint32_t width, height, depth;
-	uint32_t paddedWidth, paddedHeight;
 	uint32_t miplevels, samples;
 	uint32_t levelOffsets[11]; //max 11 mip levels
 	uint32_t layers; //number of views for multiview/stereo
