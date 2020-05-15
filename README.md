@@ -16,6 +16,7 @@
   - [x] mipmapping
   - [x] cube mapping
   - [x] shadow mapping / depth texture sampling
+  - [ ] Cubemaps with mipmaps
   - [ ] Multi threaded cmdbuf generation test
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
