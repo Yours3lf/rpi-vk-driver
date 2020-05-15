@@ -358,11 +358,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			//fill out submit cl fields
 			if(writeImage)
 			{
-				uint32_t nonPaddedSize = (marker->width * marker->height * getFormatBpp(writeImage->format)) >> 3;
-
 				uint32_t tiling = writeImage->tiling;
 
-				if(writeImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize < 4096)
+				uint32_t isLT = isLTformat(getFormatBpp(writeImage->format), marker->width, marker->height);
+
+				if(writeImage->tiling == VC4_TILING_FORMAT_T && isLT)
 				{
 					tiling = VC4_TILING_FORMAT_LT;
 				}
@@ -390,11 +390,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 			if(readImage)
 			{
-				uint32_t nonPaddedSize = (marker->width * marker->height * getFormatBpp(readImage->format)) >> 3;
-
 				uint32_t tiling = readImage->tiling;
 
-				if(readImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize < 4096)
+				uint32_t isLT = isLTformat(getFormatBpp(readImage->format), marker->width, marker->height);
+
+				if(readImage->tiling == VC4_TILING_FORMAT_T && isLT)
 				{
 					tiling = VC4_TILING_FORMAT_LT;
 				}
@@ -408,11 +408,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 			if(writeDepthStencilImage)
 			{
-				uint32_t nonPaddedSize = (marker->width * marker->height * getFormatBpp(writeDepthStencilImage->format)) >> 3;
-
 				uint32_t tiling = writeDepthStencilImage->tiling;
 
-				if(writeDepthStencilImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize < 4096)
+				uint32_t isLT = isLTformat(getFormatBpp(writeDepthStencilImage->format), marker->width, marker->height);
+
+				if(writeDepthStencilImage->tiling == VC4_TILING_FORMAT_T && isLT)
 				{
 					tiling = VC4_TILING_FORMAT_LT;
 				}
@@ -434,11 +434,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 			if(readDepthStencilImage)
 			{
-				uint32_t nonPaddedSize = (marker->width * marker->height * getFormatBpp(readDepthStencilImage->format)) >> 3;
-
 				uint32_t tiling = readDepthStencilImage->tiling;
 
-				if(readDepthStencilImage->tiling == VC4_TILING_FORMAT_T && nonPaddedSize < 4096)
+				uint32_t isLT = isLTformat(getFormatBpp(readDepthStencilImage->format), marker->width, marker->height);
+
+				if(readDepthStencilImage->tiling == VC4_TILING_FORMAT_T && isLT)
 				{
 					tiling = VC4_TILING_FORMAT_LT;
 				}

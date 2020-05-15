@@ -206,6 +206,13 @@ int findDeviceExtension(char* name)
 	return -1;
 }
 
+uint32_t isLTformat(uint32_t bpp, uint32_t width, uint32_t height)
+{
+	uint32_t utileW, utileH;
+	getUTileDimensions(bpp, &utileW, &utileH);
+	return (width <= 4 * utileW || height <= utileH);
+}
+
 //Textures in T format:
 //formed out of 4KB tiles, which have 1KB subtiles (see page 105 in VC4 arch guide)
 //1KB subtiles have 512b microtiles.

@@ -546,6 +546,7 @@ uint32_t packVec4IntoABGR8(const float rgba[4]);
 void createImageBO(_image* i);
 int findInstanceExtension(char* name);
 int findDeviceExtension(char* name);
+uint32_t isLTformat(uint32_t bpp, uint32_t width, uint32_t height);
 void getUTileDimensions(uint32_t bpp, uint32_t* tileW, uint32_t* tileH);
 uint32_t roundUp(uint32_t numToRound, uint32_t multiple);
 int isDepthStencilFormat(VkFormat format);

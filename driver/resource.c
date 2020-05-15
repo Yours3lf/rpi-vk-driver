@@ -211,7 +211,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	i->usageBits = pCreateInfo->usage;
 	i->format = pCreateInfo->format;
 	i->imageSpace = 0;
-	uint32_t nonPaddedSize = (i->width * i->height * getFormatBpp(i->format)) >> 3;
 	i->tiling = 0;
 	if(pCreateInfo->tiling == VK_IMAGE_TILING_LINEAR)
 	{
@@ -219,7 +218,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	}
 	else
 	{
-		if(nonPaddedSize >= 4096)
+		uint32_t isLT = isLTformat(getFormatBpp(i->format), i->width, i->height);
+		if(!isLT)
 		{
 			 i->tiling = VC4_TILING_FORMAT_T;
 		}
@@ -431,9 +431,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory(
 	assert(memoryOffset < m->size);
 	assert(memoryOffset % i->alignment == 0);
 	assert(i->size <= m->size - memoryOffset);
-
-	//image memory must be aligned to 4096 bytes
-	//assert((memoryOffset % 4096) == 0);
 
 	i->boundMem = m;
 	i->boundOffset = memoryOffset;
