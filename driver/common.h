@@ -197,6 +197,7 @@ typedef struct VkImage_T
 	uint32_t width, height, depth;
 	uint32_t miplevels, samples;
 	uint32_t levelOffsets[11]; //max 11 mip levels
+	uint32_t levelTiling[11];
 	uint32_t layers; //number of views for multiview/stereo
 	uint32_t size; //overall size including padding and alignment
 	uint32_t stride; //the number of bytes from one row of pixels in memory to the next row of pixels in memory (aka pitch)

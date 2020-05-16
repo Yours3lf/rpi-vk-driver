@@ -360,11 +360,9 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			{
 				uint32_t tiling = writeImage->tiling;
 
-				uint32_t isLT = isLTformat(getFormatBpp(writeImage->format), marker->width, marker->height);
-
-				if(writeImage->tiling == VC4_TILING_FORMAT_T && isLT)
+				if(marker->mipLevel > 0)
 				{
-					tiling = VC4_TILING_FORMAT_LT;
+					tiling = writeImage->levelTiling[marker->mipLevel];
 				}
 
 				submitCl.color_write.hindex = writeImageIdx;
@@ -392,11 +390,9 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			{
 				uint32_t tiling = readImage->tiling;
 
-				uint32_t isLT = isLTformat(getFormatBpp(readImage->format), marker->width, marker->height);
-
-				if(readImage->tiling == VC4_TILING_FORMAT_T && isLT)
+				if(marker->mipLevel > 0)
 				{
-					tiling = VC4_TILING_FORMAT_LT;
+					tiling = readImage->levelTiling[marker->mipLevel];
 				}
 
 				submitCl.color_read.hindex = readImageIdx;
@@ -410,11 +406,9 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			{
 				uint32_t tiling = writeDepthStencilImage->tiling;
 
-				uint32_t isLT = isLTformat(getFormatBpp(writeDepthStencilImage->format), marker->width, marker->height);
-
-				if(writeDepthStencilImage->tiling == VC4_TILING_FORMAT_T && isLT)
+				if(marker->mipLevel > 0)
 				{
-					tiling = VC4_TILING_FORMAT_LT;
+					tiling = writeDepthStencilImage->levelTiling[marker->mipLevel];
 				}
 
 				submitCl.zs_write.hindex = writeDepthStencilImageIdx;
@@ -436,11 +430,9 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			{
 				uint32_t tiling = readDepthStencilImage->tiling;
 
-				uint32_t isLT = isLTformat(getFormatBpp(readDepthStencilImage->format), marker->width, marker->height);
-
-				if(readDepthStencilImage->tiling == VC4_TILING_FORMAT_T && isLT)
+				if(marker->mipLevel > 0)
 				{
-					tiling = VC4_TILING_FORMAT_LT;
+					tiling = readDepthStencilImage->levelTiling[marker->mipLevel];
 				}
 
 				submitCl.zs_read.hindex = readDepthStencilImageIdx;
@@ -498,7 +490,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			heightInTiles = divRoundUp(height, tileSizeH);
 
 			//pad width if rendering to miplevel
-			if(marker->renderToMip)
+			if(marker->mipLevel > 0)
 			{
 				width = getPow2Pad(width);
 				width = width < 4 ? 4 : width;
@@ -542,21 +534,21 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			submitCl.shader_rec_count = marker->shaderRecCount;
 			submitCl.uniforms_size = marker->uniformsSize;
 
-			/**
+			/**/
 			printf("BCL:\n");
 			clDump(((uint8_t*)marker) + sizeof(CLMarker), marker->size);
 			printf("BO handles: ");
 			for(int d = 0; d < marker->handlesSize / 4; ++d)
 			{
-				printf("%u ", *((uint32_t*)(marker->handlesBuf)+d));
+				printf("%u ", *(((uint32_t*)getCPAptrFromOffset(cmdbuf->handlesCl.CPA, marker->handlesBufOffset))+d));
 			}
 			printf("\nUniforms: ");
 			for(int d = 0; d < marker->uniformsSize / 4; ++d)
 			{
-				printf("%i ", *((uint32_t*)(marker->uniformsBuf)+d));
+				printf("%i ", *(((uint32_t*)getCPAptrFromOffset(cmdbuf->uniformsCl.CPA, marker->uniformsBufOffset))+d));
 			}
 			printf("\nShader recs: ");
-			uint8_t* ptr = marker->shaderRecBuf + (3 + 3) * 4;
+			uint8_t* ptr = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset + (3 + 3) * 4);
 			for(int d = 0; d < marker->shaderRecCount; ++d)
 			{
 				uint8_t flags = *ptr;

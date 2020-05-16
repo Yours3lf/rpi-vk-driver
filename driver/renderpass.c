@@ -248,11 +248,11 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	}
 
 	//pad render size if we are rendering to a mip level
-	currMarker->renderToMip = biggestMip > 0;
+	currMarker->mipLevel = biggestMip;
 
 	uint32_t width = currMarker->width;
 
-	if(currMarker->renderToMip)
+	if(currMarker->mipLevel > 0)
 	{
 		width = getPow2Pad(width);
 		width = width < 4 ? 4 : width;

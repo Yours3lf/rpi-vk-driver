@@ -202,6 +202,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	i->depth = pCreateInfo->extent.depth;
 	i->miplevels = pCreateInfo->mipLevels;
 	memset(i->levelOffsets, 0, sizeof(uint32_t) * 11);
+	memset(i->levelTiling, 0, sizeof(uint32_t) * 11);
 	i->samples = pCreateInfo->samples;
 	i->layers = pCreateInfo->arrayLayers;
 	i->size = 0;
@@ -311,6 +312,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 
 	for(int c = i->miplevels - 1; c >= 0; c--)
 	{
+		i->levelTiling[c] = i->tiling;
+
 		uint32_t mipW, mipH;
 		if(!c)
 		{
@@ -340,6 +343,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 			uint32_t isMipLT = isLTformat(bpp, mipW, mipH);
 			if(isMipLT)
 			{
+				i->levelTiling[c] = VC4_TILING_FORMAT_LT;
 				mipW = roundUp(mipW, utileW);
 				mipH = roundUp(mipH, utileH);
 			}
