@@ -7,7 +7,7 @@
 
 int main()
 {
-#define shader singleTextureClippingPlane_AlphaDisabled_DstSrcColor_SrcZero_DepthStencilEnabled_FS
+#define shader singleTextureClippingPlane_AlphaGE80_DstOneMinusSrcAlpha_SrcSrcAlpha_DepthStencilEnabled_FS
 
 	for(uint32_t c = 0; c < sizeof(shader)/sizeof(uint64_t); ++c)
 	{
