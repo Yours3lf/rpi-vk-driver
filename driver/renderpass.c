@@ -194,37 +194,37 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	if(writeImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, writeImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, writeImage->boundMem->bo);
 	}
 
 	if(readImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, readImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, readImage->boundMem->bo);
 	}
 
 	if(writeDepthStencilImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, writeDepthStencilImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, writeDepthStencilImage->boundMem->bo);
 	}
 
 	if(readDepthStencilImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, readDepthStencilImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, readDepthStencilImage->boundMem->bo);
 	}
 
 	if(writeMSAAimage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, writeMSAAimage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, writeMSAAimage->boundMem->bo);
 	}
 
 	if(writeMSAAdepthStencilImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo);
 	}
 
 	uint32_t bpp = 0;

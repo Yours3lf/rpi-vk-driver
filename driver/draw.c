@@ -225,7 +225,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	clInsertShaderRecord(&commandBuffer->shaderRecCl,
 						 &relocCl,
 						 &commandBuffer->handlesCl,
-						 getCPAptrFromOffset(cb->handlesCl.CPA, currMarker->handlesBufOffset),
+						 currMarker->handlesBufOffset,
 						 currMarker->handlesSize,
 						 !fragModule->hasThreadSwitch,
 						 0, //TODO point size included in shaded vertex data?
@@ -311,7 +311,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 			clInsertAttributeRecord(&commandBuffer->shaderRecCl,
 									&relocCl,
 									&commandBuffer->handlesCl,
-									getCPAptrFromOffset(cb->handlesCl.CPA, currMarker->handlesBufOffset),
+									currMarker->handlesBufOffset,
 									currMarker->handlesSize,
 									vertexBuffer, //reloc address
 									formatByteSize,
@@ -350,7 +350,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 				//emit reloc for texture BO
 				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, di->imageView->image->boundMem->bo);
+				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, di->imageView->image->boundMem->bo);
 
 				//emit tex bo reloc index
 				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
@@ -369,7 +369,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 				//emit reloc for BO
 				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, db->buffer->boundMem->bo);
+				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, db->buffer->boundMem->bo);
 
 				//emit bo reloc index
 				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
@@ -386,7 +386,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 				//emit reloc for BO
 				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, dtb->bufferView->buffer->boundMem->bo);
+				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, dtb->bufferView->buffer->boundMem->bo);
 
 				//emit bo reloc index
 				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
@@ -592,7 +592,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
 	CLMarker* currMarker = getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset);
 
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, cb->indexBuffer->boundMem->bo);
+	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, cb->indexBuffer->boundMem->bo);
 
 	clInsertGEMRelocations(&commandBuffer->binCl, idx, 0);
 

@@ -67,7 +67,7 @@ typedef struct ControlList
 	uint32_t currMarkerOffset;
 } ControlList;
 
-void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, uint32_t handlesSize, const ControlListAddress* address);
+void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, uint32_t handlesOffset, uint32_t handlesSize, const ControlListAddress* address);
 void clDummyRelocation(ControlList* relocCl, const ControlListAddress* address);
 
 #define __gen_user_data struct ControlList
@@ -187,7 +187,8 @@ void clInsertGEMRelocations(ControlList* cl,
 void clInsertShaderRecord(ControlList* cls,
 						  ControlList* relocCl,
 						  ControlList* handlesCl,
-						  uint8_t* handlesBuf, uint32_t handlesSize,
+						  uint32_t handlesOffset,
+						  uint32_t handlesSize,
 						  uint32_t fragmentShaderIsSingleThreaded, //0/1
 						  uint32_t pointSizeIncludedInShadedVertexData, //0/1
 						  uint32_t enableClipping, //0/1
@@ -208,13 +209,13 @@ void clInsertShaderRecord(ControlList* cls,
 void clInsertAttributeRecord(ControlList* cls,
 							 ControlList* relocCl,
 							 ControlList* handlesCl,
-							 uint8_t* handlesBuf, uint32_t handlesSize,
+							 uint32_t handlesOffset, uint32_t handlesSize,
 						  ControlListAddress address,
 						  uint32_t sizeBytes,
 						  uint32_t stride,
 						  uint32_t vertexVPMOffset,
 						  uint32_t coordinateVPMOffset);
-uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handlesSize, uint32_t handle);
+uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handlesOffset, uint32_t handlesSize, uint32_t handle);
 
 #if defined (__cplusplus)
 }

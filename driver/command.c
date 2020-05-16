@@ -327,12 +327,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			uint32_t readMSAAdepthStencilImage = marker->readMSAAdepthStencilImage;
 
 			//This should not result in an insertion!
-			uint32_t writeImageIdx = writeImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, writeImage->boundMem->bo) : 0;
-			uint32_t readImageIdx = readImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, readImage->boundMem->bo) : 0;
-			uint32_t writeDepthStencilImageIdx = writeDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, writeDepthStencilImage->boundMem->bo) : 0;
-			uint32_t readDepthStencilImageIdx = readDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, readDepthStencilImage->boundMem->bo) : 0;
-			uint32_t writeMSAAimageIdx = writeMSAAimage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, writeMSAAimage->boundMem->bo) : 0;
-			uint32_t writeMSAAdepthStencilImageIdx = writeMSAAdepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo) : 0;
+			uint32_t writeImageIdx = writeImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset, marker->handlesSize, writeImage->boundMem->bo) : 0;
+			uint32_t readImageIdx = readImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset, marker->handlesSize, readImage->boundMem->bo) : 0;
+			uint32_t writeDepthStencilImageIdx = writeDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset, marker->handlesSize, writeDepthStencilImage->boundMem->bo) : 0;
+			uint32_t readDepthStencilImageIdx = readDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset, marker->handlesSize, readDepthStencilImage->boundMem->bo) : 0;
+			uint32_t writeMSAAimageIdx = writeMSAAimage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, marker->handlesBufOffset, writeMSAAimage->boundMem->bo) : 0;
+			uint32_t writeMSAAdepthStencilImageIdx = writeMSAAdepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset, marker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo) : 0;
 
 //			fprintf(stderr, "writeImage: %u\n", writeImage);
 //			fprintf(stderr, "readImage: %u\n", readImage);

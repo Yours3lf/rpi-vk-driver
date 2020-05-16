@@ -696,7 +696,8 @@ void clInsertGEMRelocations(ControlList* cl,
 void clInsertShaderRecord(ControlList* cls,
 						  ControlList* relocCl,
 						  ControlList* handlesCl,
-						  uint8_t* handlesBuf, uint32_t handlesSize,
+						  uint32_t handlesOffset,
+						  uint32_t handlesSize,
 						  uint32_t fragmentShaderIsSingleThreaded, //0/1
 						  uint32_t pointSizeIncludedInShadedVertexData, //0/1
 						  uint32_t enableClipping, //0/1
@@ -724,14 +725,14 @@ void clInsertShaderRecord(ControlList* cls,
 	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = 0; cls->nextFreeByteOffset++;
 	*(uint16_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = moveBits(fragmentNumberOfUsedUniforms, 16, 0); cls->nextFreeByteOffset++;
 	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) |= fragmentNumberOfVaryings; cls->nextFreeByteOffset++;
-	clEmitShaderRelocation(relocCl, handlesCl, handlesSize, &fragmentCodeAddress);
+	clEmitShaderRelocation(relocCl, handlesCl, handlesOffset, handlesSize, &fragmentCodeAddress);
 	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = fragmentCodeAddress.offset; cls->nextFreeByteOffset += 4;
 	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = fragmentUniformsAddress; cls->nextFreeByteOffset += 4;
 
 	*(uint16_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = moveBits(vertexNumberOfUsedUniforms, 16, 0); cls->nextFreeByteOffset += 2;
 	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = vertexAttributeArraySelectBits; cls->nextFreeByteOffset++;
 	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = vertexTotalAttributesSize; cls->nextFreeByteOffset++;
-	clEmitShaderRelocation(relocCl, handlesCl, handlesSize, &vertexCodeAddress);
+	clEmitShaderRelocation(relocCl, handlesCl, handlesOffset, handlesSize, &vertexCodeAddress);
 	//wtf??? --> shader code will always have an offset of 0 so this is fine
 	uint32_t offset = moveBits(vertexCodeAddress.offset, 32, 0) | moveBits(vertexUniformsAddress, 32, 0);
 	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = offset; cls->nextFreeByteOffset += 4;
@@ -740,7 +741,7 @@ void clInsertShaderRecord(ControlList* cls,
 	*(uint16_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = moveBits(coordinateNumberOfUsedUniforms, 16, 0); cls->nextFreeByteOffset += 2;
 	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = coordinateAttributeArraySelectBits; cls->nextFreeByteOffset++;
 	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = coordinateTotalAttributesSize; cls->nextFreeByteOffset++;
-	clEmitShaderRelocation(relocCl, handlesCl, handlesSize, &coordinateCodeAddress);
+	clEmitShaderRelocation(relocCl, handlesCl, handlesOffset, handlesSize, &coordinateCodeAddress);
 	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = coordinateCodeAddress.offset; cls->nextFreeByteOffset += 4;
 	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = coordinateUniformsAddress; cls->nextFreeByteOffset += 4;
 }
@@ -749,7 +750,7 @@ void clInsertShaderRecord(ControlList* cls,
 void clInsertAttributeRecord(ControlList* cls,
 							 ControlList* relocCl,
 							 ControlList* handlesCl,
-							 uint8_t* handlesBuf, uint32_t handlesSize,
+							 uint32_t handlesOffset, uint32_t handlesSize,
 						  ControlListAddress address,
 						  uint32_t sizeBytes,
 						  uint32_t stride,
@@ -759,7 +760,7 @@ void clInsertAttributeRecord(ControlList* cls,
 	assert(cls);
 	assert(cls->CPA);
 	uint32_t sizeBytesMinusOne = sizeBytes - 1;
-	clEmitShaderRelocation(relocCl, handlesCl, handlesSize, &address);
+	clEmitShaderRelocation(relocCl, handlesCl, handlesOffset, handlesSize, &address);
 	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = address.offset; cls->nextFreeByteOffset += 4;
 	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = sizeBytesMinusOne; cls->nextFreeByteOffset++;
 	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = stride; cls->nextFreeByteOffset++;
@@ -767,16 +768,16 @@ void clInsertAttributeRecord(ControlList* cls,
 	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = coordinateVPMOffset; cls->nextFreeByteOffset++;
 }
 
-uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handlesSize, uint32_t handle)
+uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handlesOffset, uint32_t handlesSize, uint32_t handle)
 {
 	uint32_t c = 0;
 
 	//if curr marker is closed already we need to work with the stored size
-	uint32_t numHandles = (handlesSize ? handlesSize : (handlesCl->nextFreeByteOffset - handlesCl->offset)) / 4;
+	uint32_t numHandles = (handlesSize ? handlesSize : (handlesCl->nextFreeByteOffset - handlesOffset)) / 4;
 
 	for(; c < numHandles; ++c)
 	{
-		if(((uint32_t*)getCPAptrFromOffset(handlesCl->CPA, handlesCl->offset))[c] == handle)
+		if(((uint32_t*)getCPAptrFromOffset(handlesCl->CPA, handlesOffset))[c] == handle)
 		{
 			//found
 			return c;
@@ -791,7 +792,7 @@ uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handlesSize, uint32_t
 }
 
 //input: 2 cls (cl + handles cl)
-inline void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, uint32_t handlesSize, const ControlListAddress* address)
+inline void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, uint32_t handlesOffset, uint32_t handlesSize, const ControlListAddress* address)
 {
 	assert(relocCl);
 	assert(relocCl->CPA);
@@ -801,7 +802,7 @@ inline void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl,
 	assert(address->handle);
 
 	//store offset within handles in cl
-	*(uint32_t*)getCPAptrFromOffset(relocCl->CPA, relocCl->nextFreeByteOffset) = clGetHandleIndex(handlesCl, handlesSize, address->handle);
+	*(uint32_t*)getCPAptrFromOffset(relocCl->CPA, relocCl->nextFreeByteOffset) = clGetHandleIndex(handlesCl, handlesOffset, handlesSize, address->handle);
 	relocCl->nextFreeByteOffset += 4;
 }
 
