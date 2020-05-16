@@ -44,7 +44,8 @@ void destroyConsecutivePoolAllocator(ConsecutivePoolAllocator* pa)
 }
 
 //allocate numBlocks consecutive memory
-void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
+//return an offset into the pool buffer, as pool could be reallocated!
+uint32_t consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 {
 	assert(pa);
 	assert(pa->buf);
@@ -56,7 +57,7 @@ void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 
 	if(!ptr)
 	{
-		return 0; //no free blocks
+		return -1; //no free blocks
 	}
 
 	for(; ptr; ptr = *ptr)
@@ -89,7 +90,7 @@ void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks)
 	//TODO debug stuff, not for release
 	if(ptr) memset(ptr, 0, numBlocks * pa->blockSize);
 
-	return ptr;
+	return (char*)ptr - pa->buf;
 }
 
 //free numBlocks consecutive memory
@@ -167,16 +168,12 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 	}
 }
 
-void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks)
+uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks)
 {
 	assert(pa);
 	assert(pa->buf);
 	assert(currentMem);
 	assert(currNumBlocks);
-
-	assert(0);
-
-	//fprintf(stderr, "CPA realloc\n");
 
 	uint32_t* nextCandidate = (char*)currentMem + pa->blockSize * currNumBlocks;
 
@@ -185,14 +182,18 @@ void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, 
 	{
 		if(listPtr == nextCandidate)
 		{
-			//if the free list contains an element that points right after our currentMem
-			//we can just use that one
-			*prevPtr = *listPtr;
+			//update next free block to be the one after our current candidate
+			if(prevPtr)
+			{
+				*prevPtr = *listPtr;
+				pa->nextFreeBlock = prevPtr;
+			}
+			else if(*listPtr)
+			{
+				pa->nextFreeBlock = *listPtr;
+			}
 
-			//TODO debug stuff, not for release
-			memset(nextCandidate, 0, pa->blockSize);
-
-			return currentMem;
+			return (char*)currentMem - pa->buf;
 		}
 
 		prevPtr = listPtr;
@@ -204,7 +205,7 @@ void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, 
 
 		if(!newMem)
 		{
-			return 0;
+			return -1;
 		}
 
 		//copy over old content
@@ -212,8 +213,17 @@ void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, 
 		//free current element
 		consecutivePoolFree(pa, currentMem, currNumBlocks);
 
-		return newMem;
+		return (char*)newMem - pa->buf;
 	}
+}
+
+void* getCPAptrFromOffset(ConsecutivePoolAllocator* pa, uint32_t offset)
+{
+	assert(pa);
+	assert(pa->buf);
+	assert(offset <= pa->size - pa->blockSize);
+
+	return pa->buf + offset;
 }
 
 void CPAdebugPrint(ConsecutivePoolAllocator* pa)

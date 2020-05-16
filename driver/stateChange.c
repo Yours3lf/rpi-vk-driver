@@ -512,11 +512,13 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearColorImage(
 	{ //Simplest case: just submit a job to clear the image
 		clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
 		clInsertNewCLMarker(&commandBuffer->binCl, &commandBuffer->handlesCl, &commandBuffer->shaderRecCl, commandBuffer->shaderRecCount, &commandBuffer->uniformsCl);
-		commandBuffer->binCl.currMarker->writeImage = i;
+
+		CLMarker* currMarker = getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset);
+		currMarker->writeImage = i;
 
 		//insert reloc for render target
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, i->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, i->boundMem->bo);
 
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
 		clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
@@ -548,11 +550,11 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearColorImage(
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLUSH_length);
 		clInsertFlush(&commandBuffer->binCl);
 
-		commandBuffer->binCl.currMarker->clearColor[0] = commandBuffer->binCl.currMarker->clearColor[1] = packVec4IntoABGR8(pColor->float32);
-		commandBuffer->binCl.currMarker->flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+		currMarker->clearColor[0] = currMarker->clearColor[1] = packVec4IntoABGR8(pColor->float32);
+		currMarker->flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
 
-		commandBuffer->binCl.currMarker->width = i->width;
-		commandBuffer->binCl.currMarker->height = i->height;
+		currMarker->width = i->width;
+		currMarker->height = i->height;
 	}
 }
 

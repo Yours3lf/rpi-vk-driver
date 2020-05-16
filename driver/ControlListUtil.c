@@ -1,4 +1,5 @@
 #include "ControlListUtil.h"
+#include "ConsecutivePoolAllocator.h"
 
 #include <stdint.h>
 
@@ -16,9 +17,8 @@ uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset)
 uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	uint32_t currSize = cl->nextFreeByte - cl->buffer;
+	assert(cl->CPA);
+	uint32_t currSize = cl->nextFreeByteOffset - cl->offset;
 	if(currSize + size < cl->numBlocks * cl->blockSize - 4)
 	{
 		return 1; //fits!
@@ -29,15 +29,16 @@ uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size)
 	}
 }
 
-void clInit(ControlList* cl, void* buffer, uint32_t blockSize)
+void clInit(ControlList* cl, void* CPA, uint32_t offset, uint32_t blockSize)
 {
 	assert(cl);
-	assert(buffer);
-	cl->buffer = buffer;
+	assert(CPA);
+	cl->offset = offset;
 	cl->numBlocks = 1;
 	cl->blockSize = blockSize;
-	cl->nextFreeByte = &cl->buffer[0];
-	cl->currMarker = 0;
+	cl->nextFreeByteOffset = offset;
+	cl->currMarkerOffset = -1;
+	cl->CPA = CPA;
 }
 
 void clInsertNewCLMarker(ControlList* cl,
@@ -48,175 +49,173 @@ void clInsertNewCLMarker(ControlList* cl,
 {
 	//to be inserted when you'd insert tile binning mode config
 	assert(cl);
+	assert(cl->CPA);
 	assert(handlesCL);
 	assert(shaderRecCL);
 	assert(uniformsCL);
 
 	CLMarker marker = {};
-	marker.handlesBuf = handlesCL->buffer;
-	marker.shaderRecBuf = shaderRecCL->buffer;
-	marker.uniformsBuf = uniformsCL->buffer;
+	marker.handlesBufOffset = handlesCL->offset;
+	marker.shaderRecBufOffset = shaderRecCL->offset;
+	marker.uniformsBufOffset = uniformsCL->offset;
+	marker.nextMarkerOffset = -1;
 
 	//close current marker
-	if(cl->currMarker && !cl->currMarker->size)
+	if(cl->currMarkerOffset != -1 && !((CLMarker*)getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset))->size)
 	{
 		clCloseCurrentMarker(cl, handlesCL, shaderRecCL, shaderRecCount, uniformsCL);
 	}
 
 	//if this is not the first marker
-	if(cl->currMarker)
+	if(cl->currMarkerOffset != -1)
 	{
-		marker.handlesBuf = cl->currMarker->handlesBuf + cl->currMarker->handlesSize;
-		marker.shaderRecBuf = cl->currMarker->shaderRecBuf + cl->currMarker->shaderRecSize;
-		marker.uniformsBuf = cl->currMarker->uniformsBuf + cl->currMarker->uniformsSize;
-		marker.shaderRecCount = cl->currMarker->shaderRecCount; //initialize with previous marker's data
+		CLMarker* currMarker = getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset);
+		marker.handlesBufOffset = currMarker->handlesBufOffset + currMarker->handlesSize;
+		marker.shaderRecBufOffset = currMarker->shaderRecBufOffset + currMarker->shaderRecSize;
+		marker.uniformsBufOffset = currMarker->uniformsBufOffset + currMarker->uniformsSize;
+		marker.shaderRecCount = currMarker->shaderRecCount; //initialize with previous marker's data
 	}
 
-	*(CLMarker*)cl->nextFreeByte = marker;
-	if(cl->currMarker)
+	*(CLMarker*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = marker;
+	if(cl->currMarkerOffset != -1)
 	{
-		cl->currMarker->nextMarker = cl->nextFreeByte;
+		((CLMarker*)getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset))->nextMarkerOffset = cl->nextFreeByteOffset;
 	}
-	cl->currMarker = cl->nextFreeByte;
-	cl->nextFreeByte += sizeof(CLMarker);
+	cl->currMarkerOffset = cl->nextFreeByteOffset;
+	cl->nextFreeByteOffset += sizeof(CLMarker);
 }
 
 void clCloseCurrentMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, uint32_t shaderRecCount, ControlList* uniformsCL)
 {
 	assert(cl);
+	assert(cl->CPA);
 	assert(handlesCL);
 	assert(shaderRecCL);
 	assert(uniformsCL);
-	assert(cl->currMarker);
-	cl->currMarker->size = cl->nextFreeByte - ((uint8_t*)cl->currMarker + sizeof(CLMarker));
-	cl->currMarker->handlesSize = handlesCL->nextFreeByte - cl->currMarker->handlesBuf;
-	cl->currMarker->shaderRecSize = shaderRecCL->nextFreeByte - cl->currMarker->shaderRecBuf;
-	cl->currMarker->uniformsSize = uniformsCL->nextFreeByte - cl->currMarker->uniformsBuf;
-	cl->currMarker->shaderRecCount = shaderRecCount - cl->currMarker->shaderRecCount; //update shader rec count to reflect added shader recs
+	CLMarker* currMarker = getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset);
+	currMarker->size = cl->nextFreeByteOffset - (cl->currMarkerOffset + sizeof(CLMarker));
+	currMarker->handlesSize = handlesCL->nextFreeByteOffset - currMarker->handlesBufOffset;
+	currMarker->shaderRecSize = shaderRecCL->nextFreeByteOffset - currMarker->shaderRecBufOffset;
+	currMarker->uniformsSize = uniformsCL->nextFreeByteOffset - currMarker->uniformsBufOffset;
+	currMarker->shaderRecCount = shaderRecCount - currMarker->shaderRecCount; //update shader rec count to reflect added shader recs
 }
 
 void clInsertData(ControlList* cl, uint32_t size, uint8_t* data)
 {
 	assert(cl);
-	memcpy(cl->nextFreeByte, data, size);
-	cl->nextFreeByte += size;
+	assert(cl->CPA);
+	memcpy(getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset), data, size);
+	cl->nextFreeByteOffset += size;
 }
 
 void clInsertUniformConstant(ControlList* cl, uint32_t data)
 {
 	assert(cl);
-	*(uint32_t*)cl->nextFreeByte = data;
-	cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = data;
+	cl->nextFreeByteOffset += 4;
 }
 
 void clInsertUniformXYScale(ControlList* cl, float data)
 {
 	assert(cl);
-	*(float*)cl->nextFreeByte = data;
-	cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(float*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = data;
+	cl->nextFreeByteOffset += 4;
 }
 
 void clInsertUniformZOffset(ControlList* cl, float data)
 {
 	assert(cl);
-	*(float*)cl->nextFreeByte = data;
-	cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(float*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = data;
+	cl->nextFreeByteOffset += 4;
 }
 
 void clInsertHalt(ControlList* cl)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_HALT_opcode;
-	cl->nextFreeByte++;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_HALT_opcode;
+	cl->nextFreeByteOffset++;
 }
 
 void clInsertNop(ControlList* cl)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_NOP_opcode;
-	cl->nextFreeByte++;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_NOP_opcode;
+	cl->nextFreeByteOffset++;
 }
 
 void clInsertFlush(ControlList* cl)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_FLUSH_opcode;
-	cl->nextFreeByte++;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_FLUSH_opcode;
+	cl->nextFreeByteOffset++;
 }
 
 void clInsertFlushAllState(ControlList* cl)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_FLUSH_ALL_STATE_opcode;
-	cl->nextFreeByte++;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_FLUSH_ALL_STATE_opcode;
+	cl->nextFreeByteOffset++;
 }
 
 void clInsertStartTileBinning(ControlList* cl)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_START_TILE_BINNING_opcode;
-	cl->nextFreeByte++;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_START_TILE_BINNING_opcode;
+	cl->nextFreeByteOffset++;
 }
 
 void clInsertIncrementSemaphore(ControlList* cl)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_INCREMENT_SEMAPHORE_opcode;
-	cl->nextFreeByte++;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_INCREMENT_SEMAPHORE_opcode;
+	cl->nextFreeByteOffset++;
 }
 
 void clInsertWaitOnSemaphore(ControlList* cl)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_WAIT_ON_SEMAPHORE_opcode;
-	cl->nextFreeByte++;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_WAIT_ON_SEMAPHORE_opcode;
+	cl->nextFreeByteOffset++;
 }
 
 //input: 2 cls (cl, handles cl)
 void clInsertBranch(ControlList* cls, ControlListAddress address)
 {
 	assert(cls);
-	assert(cls->buffer);
-	assert(cls->nextFreeByte);
-	*cls->nextFreeByte = V3D21_BRANCH_opcode; cls->nextFreeByte++;
+	assert(cls->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = V3D21_BRANCH_opcode; cls->nextFreeByteOffset++;
 	//TODO is this correct?
 	//clEmitShaderRelocation(cls, &address);
-	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
+	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = address.offset; cls->nextFreeByteOffset += 4;
 }
 
 //input: 2 cls (cl, handles cl)
 void clInsertBranchToSubList(ControlList* cls, ControlListAddress address)
 {
 	assert(cls);
-	assert(cls->buffer);
-	assert(cls->nextFreeByte);
-	*cls->nextFreeByte = V3D21_BRANCH_TO_SUB_LIST_opcode; cls->nextFreeByte++;
+	assert(cls->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = V3D21_BRANCH_TO_SUB_LIST_opcode; cls->nextFreeByteOffset++;
 	//TODO is this correct?
 	//clEmitShaderRelocation(cls, &address);
-	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
+	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = address.offset; cls->nextFreeByteOffset += 4;
 }
 
 void clInsertReturnFromSubList(ControlList* cl)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_RETURN_FROM_SUB_LIST_opcode;
-	cl->nextFreeByte++;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_RETURN_FROM_SUB_LIST_opcode;
+	cl->nextFreeByteOffset++;
 }
 
 /*void clInsertStoreMultiSampleResolvedTileColorBuffer(ControlList* cl)
@@ -368,13 +367,12 @@ void clInsertIndexedPrimitiveList(ControlList* cl,
 								  enum V3D21_Primitive primitiveMode)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_INDEXED_PRIMITIVE_LIST_opcode; cl->nextFreeByte++;
-	*cl->nextFreeByte = moveBits(indexType, 4, 4) | moveBits(primitiveMode, 4, 0); cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte = length; cl->nextFreeByte += 4;
-	*(uint32_t*)cl->nextFreeByte = indicesAddress; cl->nextFreeByte += 4;
-	*(uint32_t*)cl->nextFreeByte = maxIndex; cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_INDEXED_PRIMITIVE_LIST_opcode; cl->nextFreeByteOffset++;
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = moveBits(indexType, 4, 4) | moveBits(primitiveMode, 4, 0); cl->nextFreeByteOffset++;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = length; cl->nextFreeByteOffset += 4;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = indicesAddress; cl->nextFreeByteOffset += 4;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = maxIndex; cl->nextFreeByteOffset += 4;
 }
 
 void clInsertVertexArrayPrimitives(ControlList* cl,
@@ -383,11 +381,11 @@ void clInsertVertexArrayPrimitives(ControlList* cl,
 								  enum V3D21_Primitive primitiveMode)
 {
 	assert(cl);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_VERTEX_ARRAY_PRIMITIVES_opcode; cl->nextFreeByte++;
-	*cl->nextFreeByte = moveBits(primitiveMode, 8, 0); cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte = length; cl->nextFreeByte += 4;
-	*(uint32_t*)cl->nextFreeByte = firstVertexIndex; cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_VERTEX_ARRAY_PRIMITIVES_opcode; cl->nextFreeByteOffset++;
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = moveBits(primitiveMode, 8, 0); cl->nextFreeByteOffset++;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = length; cl->nextFreeByteOffset += 4;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = firstVertexIndex; cl->nextFreeByteOffset += 4;
 }
 
 /*void clInsertPrimitiveListFormat(ControlList* cl,
@@ -407,12 +405,12 @@ void clInsertShaderState(ControlList* cl,
 						 uint32_t numberOfAttributeArrays)
 {
 	assert(cl);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_GL_SHADER_STATE_opcode; cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte =
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_GL_SHADER_STATE_opcode; cl->nextFreeByteOffset++;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) =
 			moveBits(address, 28, 4) |
 			moveBits(extendedShaderRecord, 1, 3) |
-			moveBits(numberOfAttributeArrays, 3, 0); cl->nextFreeByte += 4;
+			moveBits(numberOfAttributeArrays, 3, 0); cl->nextFreeByteOffset += 4;
 }
 
 /*
@@ -447,10 +445,9 @@ void clInsertConfigurationBits(ControlList* cl,
 						uint32_t enableForwardFacingPrimitive) //0/1
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_CONFIGURATION_BITS_opcode; cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte =
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_CONFIGURATION_BITS_opcode; cl->nextFreeByteOffset++;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) =
 			moveBits(enableForwardFacingPrimitive, 1, 0) |
 			moveBits(enableReverseFacingPrimitive, 1, 1) |
 			moveBits(clockwisePrimitives, 1, 2) |
@@ -463,47 +460,43 @@ void clInsertConfigurationBits(ControlList* cl,
 			moveBits(depthTestFunction, 3, 12) |
 			moveBits(zUpdatesEnable, 1, 15) |
 			moveBits(earlyZEnable, 1, 16) |
-			moveBits(earlyZUpdatesEnable, 1, 17); cl->nextFreeByte += 3;
+			moveBits(earlyZUpdatesEnable, 1, 17); cl->nextFreeByteOffset += 3;
 }
 
 void clInsertFlatShadeFlags(ControlList* cl,
 						uint32_t flags)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_FLAT_SHADE_FLAGS_opcode; cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte = flags; cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_FLAT_SHADE_FLAGS_opcode; cl->nextFreeByteOffset++;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = flags; cl->nextFreeByteOffset += 4;
 }
 
 void clInsertPointSize(ControlList* cl,
 						float size)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_POINT_SIZE_opcode; cl->nextFreeByte++;
-	*(float*)cl->nextFreeByte = size; cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_POINT_SIZE_opcode; cl->nextFreeByteOffset++;
+	*(float*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = size; cl->nextFreeByteOffset += 4;
 }
 
 void clInsertLineWidth(ControlList* cl,
 						float width)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_LINE_WIDTH_opcode; cl->nextFreeByte++;
-	*(float*)cl->nextFreeByte = width; cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_LINE_WIDTH_opcode; cl->nextFreeByteOffset++;
+	*(float*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = width; cl->nextFreeByteOffset += 4;
 }
 
 void clInsertRHTXBoundary(ControlList* cl,
 						uint32_t boundary) //sint16
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_RHT_X_BOUNDARY_opcode; cl->nextFreeByte++;
-	*(uint16_t*)cl->nextFreeByte = moveBits(boundary, 16, 0); cl->nextFreeByte += 2;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_RHT_X_BOUNDARY_opcode; cl->nextFreeByteOffset++;
+	*(uint16_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = moveBits(boundary, 16, 0); cl->nextFreeByteOffset += 2;
 }
 
 uint32_t f32_to_f187(float f32)
@@ -517,9 +510,9 @@ void clInsertDepthOffset(ControlList* cl,
 						 float factor)
 {
 	assert(cl);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_DEPTH_OFFSET_opcode; cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte = moveBits(f32_to_f187(factor), 16, 0) | moveBits(f32_to_f187(units), 16, 16); cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_DEPTH_OFFSET_opcode; cl->nextFreeByteOffset++;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = moveBits(f32_to_f187(factor), 16, 0) | moveBits(f32_to_f187(units), 16, 16); cl->nextFreeByteOffset += 4;
 }
 
 void clInsertClipWindow(ControlList* cl,
@@ -529,11 +522,10 @@ void clInsertClipWindow(ControlList* cl,
 						uint32_t leftPixelCoord)  //uint16
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_CLIP_WINDOW_opcode; cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte = moveBits(leftPixelCoord, 16, 0) | moveBits(bottomPixelCoord, 16, 16); cl->nextFreeByte += 4;
-	*(uint32_t*)cl->nextFreeByte = moveBits(width, 16, 0) | moveBits(height, 16, 16); cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_CLIP_WINDOW_opcode; cl->nextFreeByteOffset++;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = moveBits(leftPixelCoord, 16, 0) | moveBits(bottomPixelCoord, 16, 16); cl->nextFreeByteOffset += 4;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = moveBits(width, 16, 0) | moveBits(height, 16, 16); cl->nextFreeByteOffset += 4;
 }
 
 uint16_t get16bitSignedFixedNumber(float x)
@@ -549,12 +541,11 @@ void clInsertViewPortOffset(ControlList* cl,
 						)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_VIEWPORT_OFFSET_opcode; cl->nextFreeByte++;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_VIEWPORT_OFFSET_opcode; cl->nextFreeByteOffset++;
 	//expects 16 bit signed fixed point number with 4 fractional bits
-	*(uint16_t*)cl->nextFreeByte = get16bitSignedFixedNumber(x); cl->nextFreeByte += 2;
-	*(uint16_t*)cl->nextFreeByte = get16bitSignedFixedNumber(y); cl->nextFreeByte += 2;
+	*(uint16_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = get16bitSignedFixedNumber(x); cl->nextFreeByteOffset += 2;
+	*(uint16_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = get16bitSignedFixedNumber(y); cl->nextFreeByteOffset += 2;
 }
 
 void clInsertZMinMaxClippingPlanes(ControlList* cl,
@@ -563,10 +554,10 @@ void clInsertZMinMaxClippingPlanes(ControlList* cl,
 						)
 {
 	assert(cl);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_Z_MIN_AND_MAX_CLIPPING_PLANES_opcode; cl->nextFreeByte++;
-	*(float*)cl->nextFreeByte = minZw; cl->nextFreeByte += 4;
-	*(float*)cl->nextFreeByte = maxZw; cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_Z_MIN_AND_MAX_CLIPPING_PLANES_opcode; cl->nextFreeByteOffset++;
+	*(float*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = minZw; cl->nextFreeByteOffset += 4;
+	*(float*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = maxZw; cl->nextFreeByteOffset += 4;
 }
 
 void clInsertClipperXYScaling(ControlList* cl,
@@ -575,11 +566,10 @@ void clInsertClipperXYScaling(ControlList* cl,
 						)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_CLIPPER_XY_SCALING_opcode; cl->nextFreeByte++;
-	*(float*)cl->nextFreeByte = width; cl->nextFreeByte += 4;
-	*(float*)cl->nextFreeByte = height; cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_CLIPPER_XY_SCALING_opcode; cl->nextFreeByteOffset++;
+	*(float*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = width; cl->nextFreeByteOffset += 4;
+	*(float*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = height; cl->nextFreeByteOffset += 4;
 }
 
 void clInsertClipperZScaleOffset(ControlList* cl,
@@ -588,11 +578,10 @@ void clInsertClipperZScaleOffset(ControlList* cl,
 						)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_CLIPPER_Z_SCALE_AND_OFFSET_opcode; cl->nextFreeByte++;
-	*(float*)cl->nextFreeByte = zScale; cl->nextFreeByte += 4;
-	*(float*)cl->nextFreeByte = zOffset; cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_CLIPPER_Z_SCALE_AND_OFFSET_opcode; cl->nextFreeByteOffset++;
+	*(float*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = zScale; cl->nextFreeByteOffset += 4;
+	*(float*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = zOffset; cl->nextFreeByteOffset += 4;
 }
 
 void clInsertTileBinningModeConfiguration(ControlList* cl,
@@ -610,12 +599,11 @@ void clInsertTileBinningModeConfiguration(ControlList* cl,
 						)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_TILE_BINNING_MODE_CONFIGURATION_opcode; cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte = tileAllocationMemoryAddress; cl->nextFreeByte += 4;
-	*(uint32_t*)cl->nextFreeByte = tileAllocationMemorySize; cl->nextFreeByte += 4;
-	*(uint32_t*)cl->nextFreeByte = tileStateDataArrayAddress; cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_TILE_BINNING_MODE_CONFIGURATION_opcode; cl->nextFreeByteOffset++;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = tileAllocationMemoryAddress; cl->nextFreeByteOffset += 4;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = tileAllocationMemorySize; cl->nextFreeByteOffset += 4;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = tileStateDataArrayAddress; cl->nextFreeByteOffset += 4;
 	uint32_t tileSizeW = 64;
 	uint32_t tileSizeH = 64;
 
@@ -632,15 +620,15 @@ void clInsertTileBinningModeConfiguration(ControlList* cl,
 
 	uint32_t widthInTiles = divRoundUp(widthInPixels, tileSizeW);
 	uint32_t heightInTiles = divRoundUp(heightInPixels, tileSizeH);
-	*(uint8_t*)cl->nextFreeByte = widthInTiles; cl->nextFreeByte++;
-	*(uint8_t*)cl->nextFreeByte = heightInTiles; cl->nextFreeByte++;
-	*cl->nextFreeByte =
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = widthInTiles; cl->nextFreeByteOffset++;
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = heightInTiles; cl->nextFreeByteOffset++;
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) =
 			moveBits(multisampleMode4x, 1, 0) |
 			moveBits(tileBuffer64BitColorDepth, 1, 1) |
 			moveBits(autoInitializeTileStateDataArray, 1, 2) |
 			moveBits(tileAllocationInitialBlockSize, 2, 3) |
 			moveBits(tileAllocationBlockSize, 2, 5) |
-			moveBits(doubleBufferInNonMsMode, 1, 7); cl->nextFreeByte++;
+			moveBits(doubleBufferInNonMsMode, 1, 7); cl->nextFreeByteOffset++;
 }
 
 /*
@@ -698,11 +686,10 @@ void clInsertGEMRelocations(ControlList* cl,
 							uint32_t buffer1)
 {
 	assert(cl);
-	assert(cl->buffer);
-	assert(cl->nextFreeByte);
-	*cl->nextFreeByte = V3D21_GEM_RELOCATIONS_opcode; cl->nextFreeByte++;
-	*(uint32_t*)cl->nextFreeByte = buffer0; cl->nextFreeByte += 4;
-	*(uint32_t*)cl->nextFreeByte = buffer1; cl->nextFreeByte += 4;
+	assert(cl->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = V3D21_GEM_RELOCATIONS_opcode; cl->nextFreeByteOffset++;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = buffer0; cl->nextFreeByteOffset += 4;
+	*(uint32_t*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = buffer1; cl->nextFreeByteOffset += 4;
 }
 
 //input: 2 cls (cl, handles cl)
@@ -729,34 +716,33 @@ void clInsertShaderRecord(ControlList* cls,
 						  ControlListAddress coordinateCodeAddress)
 {
 	assert(cls);
-	assert(cls->buffer);
-	assert(cls->nextFreeByte);
-	*cls->nextFreeByte =
+	assert(cls->CPA);
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) =
 			moveBits(fragmentShaderIsSingleThreaded, 1, 0) |
 			moveBits(pointSizeIncludedInShadedVertexData, 1, 1) |
-			moveBits(enableClipping, 1, 2); cls->nextFreeByte++;
-	*cls->nextFreeByte = 0; cls->nextFreeByte++;
-	*(uint16_t*)cls->nextFreeByte = moveBits(fragmentNumberOfUsedUniforms, 16, 0); cls->nextFreeByte++;
-	*cls->nextFreeByte |= fragmentNumberOfVaryings; cls->nextFreeByte++;
-	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &fragmentCodeAddress);
-	*(uint32_t*)cls->nextFreeByte = fragmentCodeAddress.offset; cls->nextFreeByte += 4;
-	*(uint32_t*)cls->nextFreeByte = fragmentUniformsAddress; cls->nextFreeByte += 4;
+			moveBits(enableClipping, 1, 2); cls->nextFreeByteOffset++;
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = 0; cls->nextFreeByteOffset++;
+	*(uint16_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = moveBits(fragmentNumberOfUsedUniforms, 16, 0); cls->nextFreeByteOffset++;
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) |= fragmentNumberOfVaryings; cls->nextFreeByteOffset++;
+	clEmitShaderRelocation(relocCl, handlesCl, handlesSize, &fragmentCodeAddress);
+	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = fragmentCodeAddress.offset; cls->nextFreeByteOffset += 4;
+	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = fragmentUniformsAddress; cls->nextFreeByteOffset += 4;
 
-	*(uint16_t*)cls->nextFreeByte = moveBits(vertexNumberOfUsedUniforms, 16, 0); cls->nextFreeByte += 2;
-	*cls->nextFreeByte = vertexAttributeArraySelectBits; cls->nextFreeByte++;
-	*cls->nextFreeByte = vertexTotalAttributesSize; cls->nextFreeByte++;
-	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &vertexCodeAddress);
+	*(uint16_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = moveBits(vertexNumberOfUsedUniforms, 16, 0); cls->nextFreeByteOffset += 2;
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = vertexAttributeArraySelectBits; cls->nextFreeByteOffset++;
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = vertexTotalAttributesSize; cls->nextFreeByteOffset++;
+	clEmitShaderRelocation(relocCl, handlesCl, handlesSize, &vertexCodeAddress);
 	//wtf??? --> shader code will always have an offset of 0 so this is fine
 	uint32_t offset = moveBits(vertexCodeAddress.offset, 32, 0) | moveBits(vertexUniformsAddress, 32, 0);
-	*(uint32_t*)cls->nextFreeByte = offset; cls->nextFreeByte += 4;
-	cls->nextFreeByte += 4;
+	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = offset; cls->nextFreeByteOffset += 4;
+	cls->nextFreeByteOffset += 4;
 
-	*(uint16_t*)cls->nextFreeByte = moveBits(coordinateNumberOfUsedUniforms, 16, 0); cls->nextFreeByte += 2;
-	*cls->nextFreeByte = coordinateAttributeArraySelectBits; cls->nextFreeByte++;
-	*cls->nextFreeByte = coordinateTotalAttributesSize; cls->nextFreeByte++;
-	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &coordinateCodeAddress);
-	*(uint32_t*)cls->nextFreeByte = coordinateCodeAddress.offset; cls->nextFreeByte += 4;
-	*(uint32_t*)cls->nextFreeByte = coordinateUniformsAddress; cls->nextFreeByte += 4;
+	*(uint16_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = moveBits(coordinateNumberOfUsedUniforms, 16, 0); cls->nextFreeByteOffset += 2;
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = coordinateAttributeArraySelectBits; cls->nextFreeByteOffset++;
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = coordinateTotalAttributesSize; cls->nextFreeByteOffset++;
+	clEmitShaderRelocation(relocCl, handlesCl, handlesSize, &coordinateCodeAddress);
+	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = coordinateCodeAddress.offset; cls->nextFreeByteOffset += 4;
+	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = coordinateUniformsAddress; cls->nextFreeByteOffset += 4;
 }
 
 //input: 2 cls (cl, handles cl)
@@ -771,27 +757,26 @@ void clInsertAttributeRecord(ControlList* cls,
 						  uint32_t coordinateVPMOffset)
 {
 	assert(cls);
-	assert(cls->buffer);
-	assert(cls->nextFreeByte);
+	assert(cls->CPA);
 	uint32_t sizeBytesMinusOne = sizeBytes - 1;
-	clEmitShaderRelocation(relocCl, handlesCl, handlesBuf, handlesSize, &address);
-	*(uint32_t*)cls->nextFreeByte = address.offset; cls->nextFreeByte += 4;
-	*cls->nextFreeByte = sizeBytesMinusOne; cls->nextFreeByte++;
-	*cls->nextFreeByte = stride; cls->nextFreeByte++;
-	*cls->nextFreeByte = vertexVPMOffset; cls->nextFreeByte++;
-	*cls->nextFreeByte = coordinateVPMOffset; cls->nextFreeByte++;
+	clEmitShaderRelocation(relocCl, handlesCl, handlesSize, &address);
+	*(uint32_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = address.offset; cls->nextFreeByteOffset += 4;
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = sizeBytesMinusOne; cls->nextFreeByteOffset++;
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = stride; cls->nextFreeByteOffset++;
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = vertexVPMOffset; cls->nextFreeByteOffset++;
+	*(uint8_t*)getCPAptrFromOffset(cls->CPA, cls->nextFreeByteOffset) = coordinateVPMOffset; cls->nextFreeByteOffset++;
 }
 
-uint32_t clGetHandleIndex(ControlList* handlesCl, uint8_t* handlesBuf, uint32_t handlesSize, uint32_t handle)
+uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handlesSize, uint32_t handle)
 {
 	uint32_t c = 0;
 
 	//if curr marker is closed already we need to work with the stored size
-	uint32_t numHandles = (handlesSize ? handlesSize : (handlesCl->nextFreeByte - handlesBuf)) / 4;
+	uint32_t numHandles = (handlesSize ? handlesSize : (handlesCl->nextFreeByteOffset - handlesCl->offset)) / 4;
 
 	for(; c < numHandles; ++c)
 	{
-		if(((uint32_t*)handlesBuf)[c] == handle)
+		if(((uint32_t*)getCPAptrFromOffset(handlesCl->CPA, handlesCl->offset))[c] == handle)
 		{
 			//found
 			return c;
@@ -799,27 +784,25 @@ uint32_t clGetHandleIndex(ControlList* handlesCl, uint8_t* handlesBuf, uint32_t 
 	}
 
 	//write handle to handles cl
-	*(uint32_t*)handlesCl->nextFreeByte = handle;
-	handlesCl->nextFreeByte += 4;
+	*(uint32_t*)getCPAptrFromOffset(handlesCl->CPA, handlesCl->nextFreeByteOffset) = handle;
+	handlesCl->nextFreeByteOffset += 4;
 
 	return c;
 }
 
 //input: 2 cls (cl + handles cl)
-inline void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, uint8_t* handlesBuf, uint32_t handlesSize, const ControlListAddress* address)
+inline void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, uint32_t handlesSize, const ControlListAddress* address)
 {
 	assert(relocCl);
-	assert(relocCl->buffer);
-	assert(relocCl->nextFreeByte);
+	assert(relocCl->CPA);
 	assert(handlesCl);
-	assert(handlesCl->buffer);
-	assert(handlesCl->nextFreeByte);
+	assert(handlesCl->CPA);
 	assert(address);
 	assert(address->handle);
 
 	//store offset within handles in cl
-	*(uint32_t*)relocCl->nextFreeByte = clGetHandleIndex(handlesCl, handlesBuf, handlesSize, address->handle);
-	relocCl->nextFreeByte += 4;
+	*(uint32_t*)getCPAptrFromOffset(relocCl->CPA, relocCl->nextFreeByteOffset) = clGetHandleIndex(handlesCl, handlesSize, address->handle);
+	relocCl->nextFreeByteOffset += 4;
 }
 
 inline void clDummyRelocation(ControlList* relocCl, const ControlListAddress* address)

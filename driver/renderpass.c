@@ -127,21 +127,22 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 
 	clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
 	clInsertNewCLMarker(&commandBuffer->binCl, &cb->handlesCl, &cb->shaderRecCl, cb->shaderRecCount, &cb->uniformsCl);
-	commandBuffer->binCl.currMarker->writeImage = writeImage;
-	commandBuffer->binCl.currMarker->writeImageOffset = writeImageOffset;
-	commandBuffer->binCl.currMarker->readImage = readImage;
-	commandBuffer->binCl.currMarker->readImageOffset = readImageOffset;
-	commandBuffer->binCl.currMarker->writeDepthStencilImage = writeDepthStencilImage;
-	commandBuffer->binCl.currMarker->writeDepthStencilImageOffset = writeDepthStencilImageOffset;
-	commandBuffer->binCl.currMarker->readDepthStencilImage = readDepthStencilImage;
-	commandBuffer->binCl.currMarker->readDepthStencilImageOffset = readDepthStencilImageOffset;
-	commandBuffer->binCl.currMarker->writeMSAAimage = writeMSAAimage;
-	commandBuffer->binCl.currMarker->writeMSAAimageOffset = writeMSAAimageOffset;
-	commandBuffer->binCl.currMarker->writeMSAAdepthStencilImage = writeMSAAdepthStencilImage;
-	commandBuffer->binCl.currMarker->writeMSAAdepthStencilImageOffset = writeMSAAdepthStencilImageOffset;
-	commandBuffer->binCl.currMarker->performResolve = performResolve;
-	commandBuffer->binCl.currMarker->readMSAAimage = readMSAAimage;
-	commandBuffer->binCl.currMarker->readMSAAdepthStencilImage = readMSAAdepthStencilImage;
+	CLMarker* currMarker = getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset);
+	currMarker->writeImage = writeImage;
+	currMarker->writeImageOffset = writeImageOffset;
+	currMarker->readImage = readImage;
+	currMarker->readImageOffset = readImageOffset;
+	currMarker->writeDepthStencilImage = writeDepthStencilImage;
+	currMarker->writeDepthStencilImageOffset = writeDepthStencilImageOffset;
+	currMarker->readDepthStencilImage = readDepthStencilImage;
+	currMarker->readDepthStencilImageOffset = readDepthStencilImageOffset;
+	currMarker->writeMSAAimage = writeMSAAimage;
+	currMarker->writeMSAAimageOffset = writeMSAAimageOffset;
+	currMarker->writeMSAAdepthStencilImage = writeMSAAdepthStencilImage;
+	currMarker->writeMSAAdepthStencilImageOffset = writeMSAAdepthStencilImageOffset;
+	currMarker->performResolve = performResolve;
+	currMarker->readMSAAimage = readMSAAimage;
+	currMarker->readMSAAdepthStencilImage = readMSAAdepthStencilImage;
 
 	if(rp->subpasses[0].colorAttachmentCount > 0)
 	{
@@ -153,14 +154,14 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 
 				if(!rp->subpasses[0].pResolveAttachments)
 				{
-					cb->binCl.currMarker->clearColor[0] =
-					cb->binCl.currMarker->clearColor[1] =
+					currMarker->clearColor[0] =
+					currMarker->clearColor[1] =
 							packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
 				}
 				else
 				{
-					cb->binCl.currMarker->clearColor[0] =
-					cb->binCl.currMarker->clearColor[1] =
+					currMarker->clearColor[0] =
+					currMarker->clearColor[1] =
 							packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
 				}
 			}
@@ -173,7 +174,7 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 		{
 			flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
 
-			cb->binCl.currMarker->clearDepth =
+			currMarker->clearDepth =
 					(uint32_t)(pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.depth * 0xffffff) & 0xffffff;
 		}
 
@@ -181,55 +182,55 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 		{
 			flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
 
-			cb->binCl.currMarker->clearStencil =
+			currMarker->clearStencil =
 					pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.stencil & 0xff;
 		}
 	}
 
-	cb->binCl.currMarker->flags = flags;
+	currMarker->flags = flags;
 
 	//insert relocs
 
 	if(writeImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, writeImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, writeImage->boundMem->bo);
 	}
 
 	if(readImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, readImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, readImage->boundMem->bo);
 	}
 
 	if(writeDepthStencilImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, writeDepthStencilImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, writeDepthStencilImage->boundMem->bo);
 	}
 
 	if(readDepthStencilImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, readDepthStencilImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, readDepthStencilImage->boundMem->bo);
 	}
 
 	if(writeMSAAimage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, writeMSAAimage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, writeMSAAimage->boundMem->bo);
 	}
 
 	if(writeMSAAdepthStencilImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, commandBuffer->binCl.currMarker->handlesBuf, commandBuffer->binCl.currMarker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo);
 	}
 
 	uint32_t bpp = 0;
 
-	cb->binCl.currMarker->width = fb->width;
-	cb->binCl.currMarker->height = fb->height;
+	currMarker->width = fb->width;
+	currMarker->height = fb->height;
 
 	if(writeImage)
 	{
@@ -247,11 +248,11 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	}
 
 	//pad render size if we are rendering to a mip level
-	cb->binCl.currMarker->renderToMip = biggestMip > 0;
+	currMarker->renderToMip = biggestMip > 0;
 
-	uint32_t width = cb->binCl.currMarker->width;
+	uint32_t width = currMarker->width;
 
-	if(cb->binCl.currMarker->renderToMip)
+	if(currMarker->renderToMip)
 	{
 		width = getPow2Pad(width);
 		width = width < 4 ? 4 : width;
@@ -265,7 +266,7 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 										 0, //auto initialize tile state data array
 										 bpp == 64, //64 bit color mode
 										 writeMSAAimage || writeMSAAdepthStencilImage || performResolve ? 1 : 0, //msaa
-										 width, cb->binCl.currMarker->height,
+										 width, currMarker->height,
 										 0, //tile state data array address
 										 0, //tile allocation memory size
 										 0); //tile allocation memory address
@@ -277,7 +278,7 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
 	clInsertStartTileBinning(&commandBuffer->binCl);
 
-	cb->binCl.currMarker->perfmonID = cb->perfmonID;
+	currMarker->perfmonID = cb->perfmonID;
 
 	cb->currRenderPass = rp;
 }

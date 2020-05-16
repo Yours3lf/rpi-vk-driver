@@ -18,10 +18,11 @@ typedef struct ConsecutivePoolAllocator
 
 ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, unsigned s);
 void destroyConsecutivePoolAllocator(ConsecutivePoolAllocator* pa);
-void* consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks);
+uint32_t consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks);
 void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBlocks);
-void* consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks);
+uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks);
 void CPAdebugPrint(ConsecutivePoolAllocator* pa);
+void* getCPAptrFromOffset(ConsecutivePoolAllocator* pa, uint32_t offset);
 
 #if defined (__cplusplus)
 }

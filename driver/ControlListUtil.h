@@ -15,7 +15,8 @@ typedef struct ControlListAddress
 typedef struct CLMarker
 {
 	//current binning cl buf position is this struct in the CL plus sizeof(this struct)
-	struct CLMarker* nextMarker; //TODO change to offset, could be reallocated
+	//struct CLMarker* nextMarker; //
+	uint32_t nextMarkerOffset;
 	uint32_t size; //in bytes
 	void* writeImage; //_image* to render to
 	void* readImage;
@@ -41,25 +42,32 @@ typedef struct CLMarker
 
 	//pointers that point to where all the other CL data is
 	//plus sizes
-	uint8_t* handlesBuf; //TODO change to offset, could be reallocated
+	//uint8_t* handlesBuf; //
+	uint32_t handlesBufOffset;
 	uint32_t handlesSize;
-	uint8_t* shaderRecBuf; //TODO change to offset, could be reallocated
+	//uint8_t* shaderRecBuf; //
+	uint32_t shaderRecBufOffset;
 	uint32_t shaderRecSize;
 	uint32_t shaderRecCount;
-	uint8_t* uniformsBuf; //TODO change to offset, could be reallocated
+	//uint8_t* uniformsBuf; //
+	uint32_t uniformsBufOffset;
 	uint32_t uniformsSize;
 } CLMarker;
 
 typedef struct ControlList
 {
-	uint8_t* buffer;
+	void* CPA;
+	//uint8_t* buffer;
+	uint32_t offset; //offset into CPA buf
 	uint32_t numBlocks;
 	uint32_t blockSize;
-	uint8_t* nextFreeByte; //pointer to the next available free byte
-	CLMarker* currMarker; //TODO change to offset, could be reallocated
+	//uint8_t* nextFreeByte; //pointer to the next available free byte
+	uint32_t nextFreeByteOffset; //pointer to the next available free byte
+	//CLMarker* currMarker;
+	uint32_t currMarkerOffset;
 } ControlList;
 
-void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, uint8_t* handlesBuf, uint32_t handlesSize, const ControlListAddress* address);
+void clEmitShaderRelocation(ControlList* relocCl, ControlList* handlesCl, uint32_t handlesSize, const ControlListAddress* address);
 void clDummyRelocation(ControlList* relocCl, const ControlListAddress* address);
 
 #define __gen_user_data struct ControlList
@@ -74,7 +82,7 @@ void clDummyRelocation(ControlList* relocCl, const ControlListAddress* address);
 uint32_t divRoundUp(uint32_t n, uint32_t d);
 uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset);
 uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size);
-void clInit(ControlList* cl, void* buffer, uint32_t blockSize);
+void clInit(ControlList* cl, void* CPA, uint32_t offset, uint32_t blockSize);
 void clInsertNewCLMarker(ControlList* cl,
 						 ControlList* handlesCL,
 						 ControlList* shaderRecCL,
@@ -206,7 +214,7 @@ void clInsertAttributeRecord(ControlList* cls,
 						  uint32_t stride,
 						  uint32_t vertexVPMOffset,
 						  uint32_t coordinateVPMOffset);
-uint32_t clGetHandleIndex(ControlList* handlesCl, uint8_t* handlesBuf, uint32_t handlesSize, uint32_t handle);
+uint32_t clGetHandleIndex(ControlList* handlesCl, uint32_t handlesSize, uint32_t handle);
 
 #if defined (__cplusplus)
 }

@@ -162,20 +162,20 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateDescriptorSets(
 
 		if(imageDescriptorCount > 0)
 		{
-			ds->imageDescriptors = consecutivePoolAllocate(&dp->imageDescriptorCPA, imageDescriptorCount);
-			ds->imageBindingMap = createMap(consecutivePoolAllocate(&dp->mapElementCPA, imageDescriptorCount), imageDescriptorCount);
+			ds->imageDescriptors = getCPAptrFromOffset(&dp->imageDescriptorCPA, consecutivePoolAllocate(&dp->imageDescriptorCPA, imageDescriptorCount));
+			ds->imageBindingMap = createMap(getCPAptrFromOffset(&dp->mapElementCPA, consecutivePoolAllocate(&dp->mapElementCPA, imageDescriptorCount)), imageDescriptorCount);
 		}
 
 		if(bufferDescriptorCount > 0)
 		{
-			ds->bufferDescriptors = consecutivePoolAllocate(&dp->bufferDescriptorCPA, bufferDescriptorCount);
-			ds->bufferBindingMap = createMap(consecutivePoolAllocate(&dp->mapElementCPA, bufferDescriptorCount), bufferDescriptorCount);
+			ds->bufferDescriptors = getCPAptrFromOffset(&dp->bufferDescriptorCPA, consecutivePoolAllocate(&dp->bufferDescriptorCPA, bufferDescriptorCount));
+			ds->bufferBindingMap = createMap(getCPAptrFromOffset(&dp->mapElementCPA, consecutivePoolAllocate(&dp->mapElementCPA, bufferDescriptorCount)), bufferDescriptorCount);
 		}
 
 		if(texelBufferDescriptorCount > 0)
 		{
-			ds->texelBufferDescriptors = consecutivePoolAllocate(&dp->texelBufferDescriptorCPA, texelBufferDescriptorCount);
-			ds->texelBufferBindingMap = createMap(consecutivePoolAllocate(&dp->mapElementCPA, texelBufferDescriptorCount), texelBufferDescriptorCount);
+			ds->texelBufferDescriptors = getCPAptrFromOffset(&dp->texelBufferDescriptorCPA, consecutivePoolAllocate(&dp->texelBufferDescriptorCPA, texelBufferDescriptorCount));
+			ds->texelBufferBindingMap = createMap(getCPAptrFromOffset(&dp->mapElementCPA, consecutivePoolAllocate(&dp->mapElementCPA, texelBufferDescriptorCount)), texelBufferDescriptorCount);
 		}
 
 		//TODO immutable samplers

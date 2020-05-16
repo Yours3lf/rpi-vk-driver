@@ -121,10 +121,10 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateCommandBuffers(
 			pCommandBuffers[c]->usageFlags = 0;
 			pCommandBuffers[c]->state = CMDBUF_STATE_INITIAL;
 			pCommandBuffers[c]->cp = cp;
-			clInit(&pCommandBuffers[c]->binCl, consecutivePoolAllocate(&cp->cpa, 1), cp->cpa.blockSize);
-			clInit(&pCommandBuffers[c]->handlesCl, consecutivePoolAllocate(&cp->cpa, 1), cp->cpa.blockSize);
-			clInit(&pCommandBuffers[c]->shaderRecCl, consecutivePoolAllocate(&cp->cpa, 1), cp->cpa.blockSize);
-			clInit(&pCommandBuffers[c]->uniformsCl, consecutivePoolAllocate(&cp->cpa, 1), cp->cpa.blockSize);
+			clInit(&pCommandBuffers[c]->binCl, &cp->cpa, consecutivePoolAllocate(&cp->cpa, 1), cp->cpa.blockSize);
+			clInit(&pCommandBuffers[c]->handlesCl, &cp->cpa, consecutivePoolAllocate(&cp->cpa, 1), cp->cpa.blockSize);
+			clInit(&pCommandBuffers[c]->shaderRecCl, &cp->cpa, consecutivePoolAllocate(&cp->cpa, 1), cp->cpa.blockSize);
+			clInit(&pCommandBuffers[c]->uniformsCl, &cp->cpa, consecutivePoolAllocate(&cp->cpa, 1), cp->cpa.blockSize);
 
 			pCommandBuffers[c]->graphicsPipeline = 0;
 			pCommandBuffers[c]->computePipeline = 0;
@@ -151,25 +151,25 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateCommandBuffers(
 
 			pCommandBuffers[c]->perfmonID = 0;
 
-			if(!pCommandBuffers[c]->binCl.buffer)
+			if(pCommandBuffers[c]->binCl.offset == -1)
 			{
 				res = VK_ERROR_OUT_OF_HOST_MEMORY;
 				break;
 			}
 
-			if(!pCommandBuffers[c]->handlesCl.buffer)
+			if(pCommandBuffers[c]->handlesCl.offset == -1)
 			{
 				res = VK_ERROR_OUT_OF_HOST_MEMORY;
 				break;
 			}
 
-			if(!pCommandBuffers[c]->shaderRecCl.buffer)
+			if(pCommandBuffers[c]->shaderRecCl.offset == -1)
 			{
 				res = VK_ERROR_OUT_OF_HOST_MEMORY;
 				break;
 			}
 
-			if(!pCommandBuffers[c]->uniformsCl.buffer)
+			if(pCommandBuffers[c]->uniformsCl.offset == -1)
 			{
 				res = VK_ERROR_OUT_OF_HOST_MEMORY;
 				break;
@@ -183,10 +183,10 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateCommandBuffers(
 		{
 			for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
 			{
-				consecutivePoolFree(&cp->cpa, pCommandBuffers[c]->binCl.buffer, pCommandBuffers[c]->binCl.numBlocks);
-				consecutivePoolFree(&cp->cpa, pCommandBuffers[c]->handlesCl.buffer, pCommandBuffers[c]->handlesCl.numBlocks);
-				consecutivePoolFree(&cp->cpa, pCommandBuffers[c]->shaderRecCl.buffer, pCommandBuffers[c]->shaderRecCl.numBlocks);
-				consecutivePoolFree(&cp->cpa, pCommandBuffers[c]->uniformsCl.buffer, pCommandBuffers[c]->uniformsCl.numBlocks);
+				consecutivePoolFree(&cp->cpa, getCPAptrFromOffset(&cp->cpa, pCommandBuffers[c]->binCl.offset), pCommandBuffers[c]->binCl.numBlocks);
+				consecutivePoolFree(&cp->cpa, getCPAptrFromOffset(&cp->cpa, pCommandBuffers[c]->handlesCl.offset), pCommandBuffers[c]->handlesCl.numBlocks);
+				consecutivePoolFree(&cp->cpa, getCPAptrFromOffset(&cp->cpa, pCommandBuffers[c]->shaderRecCl.offset), pCommandBuffers[c]->shaderRecCl.numBlocks);
+				consecutivePoolFree(&cp->cpa, getCPAptrFromOffset(&cp->cpa, pCommandBuffers[c]->uniformsCl.offset), pCommandBuffers[c]->uniformsCl.numBlocks);
 				poolFree(&cp->pa, pCommandBuffers[c]);
 				pCommandBuffers[c] = 0;
 			}
@@ -290,14 +290,14 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 	{
 		VkCommandBuffer cmdbuf = pSubmits->pCommandBuffers[c];
 
-		if(!cmdbuf->binCl.currMarker)
+		if(cmdbuf->binCl.currMarkerOffset == -1)
 		{
 			//no markers recorded yet, skip
 			continue;
 		}
 
 		//first entry is assumed to be a marker
-		CLMarker* marker = cmdbuf->binCl.buffer;
+		CLMarker* marker = getCPAptrFromOffset(cmdbuf->binCl.CPA, cmdbuf->binCl.offset);
 
 		//a command buffer may contain multiple render passes
 		//and commands outside render passes such as clear commands
@@ -327,12 +327,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			uint32_t readMSAAdepthStencilImage = marker->readMSAAdepthStencilImage;
 
 			//This should not result in an insertion!
-			uint32_t writeImageIdx = writeImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, writeImage->boundMem->bo) : 0;
-			uint32_t readImageIdx = readImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, readImage->boundMem->bo) : 0;
-			uint32_t writeDepthStencilImageIdx = writeDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, writeDepthStencilImage->boundMem->bo) : 0;
-			uint32_t readDepthStencilImageIdx = readDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, readDepthStencilImage->boundMem->bo) : 0;
-			uint32_t writeMSAAimageIdx = writeMSAAimage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, writeMSAAimage->boundMem->bo) : 0;
-			uint32_t writeMSAAdepthStencilImageIdx = writeMSAAdepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBuf, marker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo) : 0;
+			uint32_t writeImageIdx = writeImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, writeImage->boundMem->bo) : 0;
+			uint32_t readImageIdx = readImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, readImage->boundMem->bo) : 0;
+			uint32_t writeDepthStencilImageIdx = writeDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, writeDepthStencilImage->boundMem->bo) : 0;
+			uint32_t readDepthStencilImageIdx = readDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, readDepthStencilImage->boundMem->bo) : 0;
+			uint32_t writeMSAAimageIdx = writeMSAAimage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, writeMSAAimage->boundMem->bo) : 0;
+			uint32_t writeMSAAdepthStencilImageIdx = writeMSAAdepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo) : 0;
 
 //			fprintf(stderr, "writeImage: %u\n", writeImage);
 //			fprintf(stderr, "readImage: %u\n", readImage);
@@ -510,10 +510,10 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			submitCl.height = height;
 			submitCl.flags |= marker->flags;
 
-			submitCl.bo_handles = marker->handlesBuf;
+			submitCl.bo_handles = getCPAptrFromOffset(cmdbuf->handlesCl.CPA, marker->handlesBufOffset);
 			submitCl.bin_cl = ((uint8_t*)marker) + sizeof(CLMarker);
-			submitCl.shader_rec = marker->shaderRecBuf;
-			submitCl.uniforms = marker->uniformsBuf;
+			submitCl.shader_rec = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset);
+			submitCl.uniforms = getCPAptrFromOffset(cmdbuf->uniformsCl.CPA, marker->uniformsBufOffset);
 
 			if(marker->perfmonID)
 			{
@@ -653,7 +653,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			}
 
 			//advance in linked list
-			marker = marker->nextMarker;
+			marker = marker->nextMarkerOffset == -1 ? 0 : getCPAptrFromOffset(cmdbuf->binCl.CPA, marker->nextMarkerOffset);
 		}
 	}
 
@@ -706,10 +706,10 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkFreeCommandBuffers(
 	{
 		if(pCommandBuffers[c])
 		{
-			consecutivePoolFree(&cp->cpa, pCommandBuffers[c]->binCl.buffer, pCommandBuffers[c]->binCl.numBlocks);
-			consecutivePoolFree(&cp->cpa, pCommandBuffers[c]->handlesCl.buffer, pCommandBuffers[c]->handlesCl.numBlocks);
-			consecutivePoolFree(&cp->cpa, pCommandBuffers[c]->shaderRecCl.buffer, pCommandBuffers[c]->shaderRecCl.numBlocks);
-			consecutivePoolFree(&cp->cpa, pCommandBuffers[c]->uniformsCl.buffer, pCommandBuffers[c]->uniformsCl.numBlocks);
+			consecutivePoolFree(&cp->cpa, getCPAptrFromOffset(&cp->cpa, pCommandBuffers[c]->binCl.offset), pCommandBuffers[c]->binCl.numBlocks);
+			consecutivePoolFree(&cp->cpa, getCPAptrFromOffset(&cp->cpa, pCommandBuffers[c]->handlesCl.offset), pCommandBuffers[c]->handlesCl.numBlocks);
+			consecutivePoolFree(&cp->cpa, getCPAptrFromOffset(&cp->cpa, pCommandBuffers[c]->shaderRecCl.offset), pCommandBuffers[c]->shaderRecCl.numBlocks);
+			consecutivePoolFree(&cp->cpa, getCPAptrFromOffset(&cp->cpa, pCommandBuffers[c]->uniformsCl.offset), pCommandBuffers[c]->uniformsCl.numBlocks);
 			poolFree(&cp->pa, pCommandBuffers[c]);
 		}
 	}
@@ -830,10 +830,10 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandBuffer(
 
 	//reset commandbuffer state
 	commandBuffer->shaderRecCount = 0;
-	clInit(&commandBuffer->binCl, commandBuffer->binCl.buffer, commandBuffer->cp->cpa.blockSize);
-	clInit(&commandBuffer->handlesCl, commandBuffer->handlesCl.buffer, commandBuffer->cp->cpa.blockSize);
-	clInit(&commandBuffer->shaderRecCl, commandBuffer->shaderRecCl.buffer, commandBuffer->cp->cpa.blockSize);
-	clInit(&commandBuffer->uniformsCl, commandBuffer->uniformsCl.buffer, commandBuffer->cp->cpa.blockSize);
+	clInit(&commandBuffer->binCl, &commandBuffer->cp->cpa, commandBuffer->binCl.offset, commandBuffer->cp->cpa.blockSize);
+	clInit(&commandBuffer->handlesCl, &commandBuffer->cp->cpa, commandBuffer->handlesCl.offset, commandBuffer->cp->cpa.blockSize);
+	clInit(&commandBuffer->shaderRecCl, &commandBuffer->cp->cpa, commandBuffer->shaderRecCl.offset, commandBuffer->cp->cpa.blockSize);
+	clInit(&commandBuffer->uniformsCl, &commandBuffer->cp->cpa, commandBuffer->uniformsCl.offset, commandBuffer->cp->cpa.blockSize);
 
 	commandBuffer->graphicsPipeline = 0;
 	commandBuffer->computePipeline = 0;
