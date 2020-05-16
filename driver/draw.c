@@ -8,7 +8,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
-	CLMarker* currMarker = getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset);
+
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
 	//TODO handle cases when submitting >65k vertices in a VBO
 	//TODO HW-2116 workaround
@@ -110,6 +111,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		cb->depthBoundsDirty = 0;
 	}
 
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
 	//Point size
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_POINT_SIZE_length);
 	clInsertPointSize(&commandBuffer->binCl, 1.0f);
@@ -202,6 +205,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	//VPM offsets: these would be how many vpm reads were before a specific attrib (x4 bytes)
 	//we don't really have that info, so we have to play with strides/formats
 
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
 	uint32_t vertexAttribSize = 0, coordAttribSize = 0;
 	for(uint32_t c = 0; c < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++c)
 	{
@@ -216,6 +221,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	assert(vertModule->numVertVPMreads == vertexAttribSize >> 2);
 	assert(vertModule->numCoordVPMreads == coordAttribSize >> 2);
 
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
 	//number of attribs
 	//3 is the number of type of possible shaders
 	for(int c = 0; c < (3 + attribCount)*4; ++c)
@@ -225,8 +232,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	clInsertShaderRecord(&commandBuffer->shaderRecCl,
 						 &relocCl,
 						 &commandBuffer->handlesCl,
-						 currMarker->handlesBufOffset,
-						 currMarker->handlesSize,
+						 ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset,
+						 ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize,
 						 !fragModule->hasThreadSwitch,
 						 0, //TODO point size included in shaded vertex data?
 						 1, //enable clipping
@@ -248,6 +255,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 						 coordCode  //coordinate shader code address
 						 );
 
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
 	uint32_t vertexAttribOffsets[8] = {};
 	uint32_t coordAttribOffsets[8] = {};
 	for(uint32_t c = 1; c < 8; ++c)
@@ -265,6 +274,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	{
 		coordAttribOffsets[c] = vertexAttribOffsets[1];
 	}
+
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
 	uint32_t maxIndex = 0xffff;
 	for(uint32_t c = 0 ; c < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++c)
@@ -311,8 +322,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 			clInsertAttributeRecord(&commandBuffer->shaderRecCl,
 									&relocCl,
 									&commandBuffer->handlesCl,
-									currMarker->handlesBufOffset,
-									currMarker->handlesSize,
+									((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset,
+									((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize,
 									vertexBuffer, //reloc address
 									formatByteSize,
 									stride,
@@ -321,6 +332,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 									);
 		}
 	}
+
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
 	//write uniforms
 	_pipelineLayout* pl = cb->graphicsPipeline->layout;
@@ -350,7 +363,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 				//emit reloc for texture BO
 				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, di->imageView->image->boundMem->bo);
+				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, di->imageView->image->boundMem->bo);
 
 				//emit tex bo reloc index
 				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
@@ -369,7 +382,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 				//emit reloc for BO
 				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, db->buffer->boundMem->bo);
+				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, db->buffer->boundMem->bo);
 
 				//emit bo reloc index
 				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
@@ -386,7 +399,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 				//emit reloc for BO
 				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, dtb->bufferView->buffer->boundMem->bo);
+				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, dtb->bufferView->buffer->boundMem->bo);
 
 				//emit bo reloc index
 				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
@@ -400,6 +413,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 			}
 		}
 	}
+
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
 	assert(numTextureSamples == fragModule->numTextureSamples);
 
@@ -509,6 +524,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		}
 	}
 
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
 	assert(numVertUniformReads == vertModule->numVertUniformReads);
 
 	uint32_t numCoordUniformReads = 0;
@@ -543,6 +560,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 	assert(numCoordUniformReads == vertModule->numCoordUniformReads);
 
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
 	return maxIndex;
 }
 
@@ -568,6 +587,8 @@ void rpi_vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t
 	clInsertVertexArrayPrimitives(&commandBuffer->binCl, firstVertex, vertexCount, getPrimitiveMode(cb->graphicsPipeline->topology));
 
 	cb->numDrawCallsSubmitted++;
+
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
@@ -589,15 +610,21 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
 	uint32_t maxIndex = drawCommon(commandBuffer, vertexOffset);
 
 	_commandBuffer* cb = commandBuffer;
-	CLMarker* currMarker = getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset);
+
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, currMarker->handlesBufOffset, currMarker->handlesSize, cb->indexBuffer->boundMem->bo);
+	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, cb->indexBuffer->boundMem->bo);
 
 	clInsertGEMRelocations(&commandBuffer->binCl, idx, 0);
 
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
 	//Submit draw call: vertex Array Primitives
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
+
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
 	clInsertIndexedPrimitiveList(&commandBuffer->binCl,
 								 maxIndex, //max index
 								 cb->indexBuffer->boundOffset + cb->indexBufferOffset + firstIndex * 2,
@@ -606,6 +633,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
 								 getPrimitiveMode(cb->graphicsPipeline->topology));
 
 	cb->numDrawCallsSubmitted++;
+
+	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexedIndirect(

@@ -55,6 +55,7 @@ void clInsertNewCLMarker(ControlList* cl,
 	assert(uniformsCL);
 
 	CLMarker marker = {};
+	marker.memGuard = 0xDDDDDDDD;
 	marker.handlesBufOffset = handlesCL->offset;
 	marker.shaderRecBufOffset = shaderRecCL->offset;
 	marker.uniformsBufOffset = uniformsCL->offset;

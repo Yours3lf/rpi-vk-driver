@@ -535,10 +535,16 @@ void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize)
 	{
 		uint32_t currSize = cl->nextFreeByteOffset - cl->offset;
 		uint32_t currMarkerOffset = cl->currMarkerOffset - cl->offset;
-		cl->offset = consecutivePoolReAllocate(&cb->cp->cpa, getCPAptrFromOffset(cl->CPA, cl->offset), cl->numBlocks); assert(cl->offset != -1);
+		fprintf(stderr, "currOffset %u nextFreeByteOffset %u currMarkerOffset %u\n", cl->offset, cl->nextFreeByteOffset, cl->currMarkerOffset);
+		cl->offset = consecutivePoolReAllocate(cl->CPA, getCPAptrFromOffset(cl->CPA, cl->offset), cl->numBlocks); assert(cl->offset != -1);
 		cl->nextFreeByteOffset = cl->offset + currSize;
 		cl->numBlocks++;
-		cl->currMarkerOffset = cl->offset + currMarkerOffset;
+		cl->currMarkerOffset = cl->currMarkerOffset == -1 ? -1 : cl->offset + currMarkerOffset;
+		fprintf(stderr, "currOffset %u nextFreeByteOffset %u currMarkerOffset %u\n", cl->offset, cl->nextFreeByteOffset, cl->currMarkerOffset);
+		if(cl->currMarkerOffset != -1)
+		{
+			assert(((CLMarker*)getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset))->memGuard == 0xDDDDDDDD);
+		}
 	}
 }
 

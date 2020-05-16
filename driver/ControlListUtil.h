@@ -14,6 +14,8 @@ typedef struct ControlListAddress
 
 typedef struct CLMarker
 {
+	uint32_t memGuard;
+
 	//current binning cl buf position is this struct in the CL plus sizeof(this struct)
 	//struct CLMarker* nextMarker; //
 	uint32_t nextMarkerOffset;

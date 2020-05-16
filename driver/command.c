@@ -49,8 +49,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 	//initial number of command buffers to hold
 	int numCommandBufs = 128;
 	//TODO uniforms might need to realloc, which should be handled properly
-	int consecutiveBlockSize = ARM_PAGE_SIZE * 20;
-	int consecutiveBlockNumber = 64;
+	int consecutiveBlockSize = ARM_PAGE_SIZE;// * 20;
+	int consecutiveBlockNumber = 128;
 	//int numCommandBufs = 30;
 	//int consecutiveBlockSize = getCPABlockSize(256);
 	//int consecutiveBlockNumber = 30;
@@ -298,6 +298,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 
 		//first entry is assumed to be a marker
 		CLMarker* marker = getCPAptrFromOffset(cmdbuf->binCl.CPA, cmdbuf->binCl.offset);
+
+		assert(marker->memGuard == 0xDDDDDDDD);
 
 		//a command buffer may contain multiple render passes
 		//and commands outside render passes such as clear commands
@@ -822,10 +824,19 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandBuffer(
 
 	//reset commandbuffer state
 	commandBuffer->shaderRecCount = 0;
-	clInit(&commandBuffer->binCl, &commandBuffer->cp->cpa, commandBuffer->binCl.offset, commandBuffer->cp->cpa.blockSize);
-	clInit(&commandBuffer->handlesCl, &commandBuffer->cp->cpa, commandBuffer->handlesCl.offset, commandBuffer->cp->cpa.blockSize);
-	clInit(&commandBuffer->shaderRecCl, &commandBuffer->cp->cpa, commandBuffer->shaderRecCl.offset, commandBuffer->cp->cpa.blockSize);
-	clInit(&commandBuffer->uniformsCl, &commandBuffer->cp->cpa, commandBuffer->uniformsCl.offset, commandBuffer->cp->cpa.blockSize);
+
+	//preserve allocated blocks, only free them if the app requests so
+	commandBuffer->binCl.nextFreeByteOffset = commandBuffer->binCl.offset;
+	commandBuffer->binCl.currMarkerOffset = -1;
+
+	commandBuffer->handlesCl.nextFreeByteOffset = commandBuffer->handlesCl.offset;
+	commandBuffer->handlesCl.currMarkerOffset = -1;
+
+	commandBuffer->shaderRecCl.nextFreeByteOffset = commandBuffer->shaderRecCl.offset;
+	commandBuffer->shaderRecCl.currMarkerOffset = -1;
+
+	commandBuffer->uniformsCl.nextFreeByteOffset = commandBuffer->uniformsCl.offset;
+	commandBuffer->uniformsCl.currMarkerOffset = -1;
 
 	commandBuffer->graphicsPipeline = 0;
 	commandBuffer->computePipeline = 0;
