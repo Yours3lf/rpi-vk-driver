@@ -8,7 +8,7 @@ file(GLOB asmSrc
 )
 
 add_library(QPUassembler OBJECT ${asmSrc})
-target_compile_options(QPUassembler PRIVATE -Wall -Werror=implicit-function-declaration -std=c11)
+target_compile_options(QPUassembler PRIVATE -Wall -Werror=implicit-function-declaration -std=c11 -march=${RPI_ARCH} -fPIC)
 
 add_executable(QPUassemblerExe ${asmSrc} main.c shaders.h)
-target_compile_options(QPUassemblerExe PRIVATE -Wall -Werror=implicit-function-declaration -std=c11)
+target_compile_options(QPUassemblerExe PRIVATE -Wall -Werror=implicit-function-declaration -std=c11 -march=${RPI_ARCH} -fPIC)

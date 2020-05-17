@@ -23,6 +23,9 @@ else(CMD_ERROR2 STREQUAL "")
 endif(CMD_ERROR2 STREQUAL "")
 
 add_library(brcm OBJECT ${brcmSrc})
-target_compile_options(brcm PRIVATE -Wall -std=c99)
+target_compile_options(brcm PRIVATE -Wall -std=c99
+	-march=${RPI_ARCH}
+	-fPIC
+	)
 #target_link_libraries(brcm expat z)
 target_compile_definitions(brcm PRIVATE V3D_VERSION=21)

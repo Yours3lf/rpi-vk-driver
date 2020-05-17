@@ -337,22 +337,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			uint32_t writeMSAAimageIdx = writeMSAAimage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, marker->handlesBufOffset + cmdbuf->handlesCl.offset, writeMSAAimage->boundMem->bo) : 0;
 			uint32_t writeMSAAdepthStencilImageIdx = writeMSAAdepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo) : 0;
 
-//			fprintf(stderr, "writeImage: %u\n", writeImage);
-//			fprintf(stderr, "readImage: %u\n", readImage);
-//			fprintf(stderr, "writeDepthStencilImage: %u\n", writeDepthStencilImage);
-//			fprintf(stderr, "readDepthStencilImage: %u\n", readDepthStencilImage);
-//			fprintf(stderr, "writeMSAAimage: %u\n", writeMSAAimage);
-//			fprintf(stderr, "writeMSAAdepthStencilImage: %u\n", writeMSAAdepthStencilImage);
-//			fprintf(stderr, "performResolve: %u\n", performResolve);
-//			fprintf(stderr, "readMSAAimage: %u\n", readMSAAimage);
-//			fprintf(stderr, "readMSAAdepthStencilImage: %u\n", readMSAAdepthStencilImage);
-//			fprintf(stderr, "writeImageIdx: %u\n", writeImageIdx);
-//			fprintf(stderr, "readImageIdx: %u\n", readImageIdx);
-//			fprintf(stderr, "writeDepthStencilImageIdx: %u\n", writeDepthStencilImageIdx);
-//			fprintf(stderr, "readDepthStencilImageIdx: %u\n", readDepthStencilImageIdx);
-//			fprintf(stderr, "writeMSAAimageIdx: %u\n", writeMSAAimageIdx);
-//			fprintf(stderr, "writeMSAAdepthStencilImageIdx: %u\n", writeMSAAdepthStencilImageIdx);
-
 			submitCl.clear_color[0] = 0;
 			submitCl.clear_color[1] = 0;
 			submitCl.clear_z = 0;

@@ -182,8 +182,6 @@ uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMe
 	assert(currentMem);
 	assert(currNumBlocks);
 
-	fprintf(stderr, "CPA realloc begin \n");
-
 	uint32_t* nextCandidate = (char*)currentMem + pa->blockSize * currNumBlocks;
 
 	uint32_t* prevPtr = 0;
@@ -202,8 +200,6 @@ uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMe
 				pa->nextFreeBlock = *listPtr;
 			}
 
-			fprintf(stderr, "CPA realloc end continue \n");
-
 			return (char*)currentMem - pa->buf;
 		}
 
@@ -218,16 +214,10 @@ uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMe
 		{
 			return -1;
 		}
-
-		fprintf(stderr, "CPA realloc pre-copy \n");
-		fprintf(stderr, "new offset %u, buf %p, max size %u, to copy %u\n", newMemOffset, pa->buf, pa->size, currNumBlocks * pa->blockSize);
-
 		//copy over old content
 		memcpy(pa->buf + newMemOffset, currentMem, currNumBlocks * pa->blockSize);
 		//free current element
 		consecutivePoolFree(pa, currentMem, currNumBlocks);
-
-		fprintf(stderr, "CPA realloc end copy \n");
 
 		return newMemOffset;
 	}

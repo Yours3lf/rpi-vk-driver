@@ -143,10 +143,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		vertModule = cb->graphicsPipeline->modules[ulog2(VK_SHADER_STAGE_VERTEX_BIT)];
 	}
 
-//	fprintf(stderr, "==============\n", fragModule);
-//	fprintf(stderr, "fragModule %p\n", fragModule);
-//	fprintf(stderr, "vertModule %p\n", vertModule);
-
 	if(!vertModule)
 	{
 		vertModule = fragModule;
@@ -156,9 +152,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	{
 		fragModule = vertModule;
 	}
-
-//	fprintf(stderr, "fragModule %p\n", fragModule);
-//	fprintf(stderr, "vertModule %p\n", vertModule);
 
 	assert(fragModule);
 	assert(vertModule);
@@ -298,15 +291,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 						- cb->vertexBufferOffsets[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]
 						- cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundOffset
 						- formatByteSize) / stride;
-
-//				fprintf(stderr, "usedIndices %i\n", usedIndices);
-//				fprintf(stderr, "boundMemsize %i\n", cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundMem->size);
-//				fprintf(stderr, "vertexattrib offset %i\n", cb->graphicsPipeline->vertexAttributeDescriptions[c].offset);
-//				fprintf(stderr, "vertex offset %i\n", vertexOffset * stride);
-//				fprintf(stderr, "vertex buffer offset %i\n", cb->vertexBufferOffsets[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]);
-//				fprintf(stderr, "bound offset %i\n", cb->vertexBuffers[cb->graphicsPipeline->vertexAttributeDescriptions[c].binding]->boundOffset);
-//				fprintf(stderr, "format size %i\n", formatByteSize);
-//				fprintf(stderr, "stride %i\n", stride);
 
 				if(usedIndices < maxIndex)
 				{

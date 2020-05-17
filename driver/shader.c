@@ -403,10 +403,6 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 
 	assert(hadVertex == hadCoordinate);
 
-//	fprintf(stderr, "pixel shader bo %i\n", shader->bos[2]);
-//	fprintf(stderr, "vertex shader bo %i\n", shader->bos[1]);
-//	fprintf(stderr, "coord shader bo %i\n", shader->bos[0]);
-
 	*pShaderModule = shader;
 
 	return VK_SUCCESS;

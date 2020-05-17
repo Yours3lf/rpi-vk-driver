@@ -53,10 +53,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 
 	dp->descriptorSetPA = createPoolAllocator(dsmem, sizeof(_descriptorSet), sizeof(_descriptorSet) * pCreateInfo->maxSets);
 
-//	fprintf(stderr, "imageDescriptorCount %u\n", imageDescriptorCount);
-//	fprintf(stderr, "bufferDescriptorCount %u\n", bufferDescriptorCount);
-//	fprintf(stderr, "texelBufferDescriptorCount %u\n", texelBufferDescriptorCount);
-
 
 	uint32_t mapElemBlockSize = sizeof(mapElem);
 	uint32_t mapBufSize = mapElemBlockSize * (imageDescriptorCount + bufferDescriptorCount + texelBufferDescriptorCount);
@@ -155,10 +151,6 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateDescriptorSets(
 		ds->imageDescriptors = 0;
 		ds->bufferDescriptors = 0;
 		ds->texelBufferDescriptors = 0;
-
-//		fprintf(stderr, "imageDescriptorCount %u\n", imageDescriptorCount);
-//		fprintf(stderr, "bufferDescriptorCount %u\n", bufferDescriptorCount);
-//		fprintf(stderr, "texelBufferDescriptorCount %u\n", texelBufferDescriptorCount);
 
 		if(imageDescriptorCount > 0)
 		{

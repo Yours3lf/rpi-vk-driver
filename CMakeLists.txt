@@ -22,6 +22,13 @@ link_directories(${EXTERNAL_PATH}/lib)
 include_directories(${EXTERNAL_PATH}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+set(RPI_ARCH
+	armv8-a		#RPi support: 2B 1.2, 3B, 3B+
+	#armv7-a	#RPi support: 2B
+	#armv8		#RPi support: 3A+
+	#armv6z		#RPi support: 1A, 1A+, 1B, Zero 1.2, Zero 1.3, Zero W
+	)
+
 add_subdirectory(brcm)
 add_subdirectory(QPUassembler)
 add_subdirectory(driver)

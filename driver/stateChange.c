@@ -275,12 +275,6 @@ void createClearShaderModule(VkDevice device, VkShaderModule* blitShaderModule, 
 	rpi_vkCreateShaderModule(device, &smci, 0, blitShaderModuleNoColor);
 	assert(*blitShaderModuleNoColor);
 
-//	_shaderModule* s = *blitShaderModule;
-//	fprintf(stderr, "=================\n");
-//	fprintf(stderr, "pixel shader bo %i\n", s->bos[2]);
-//	fprintf(stderr, "vertex shader bo %i\n", s->bos[1]);
-//	fprintf(stderr, "coord shader bo %i\n", s->bos[0]);
-
 	for(uint32_t c = 0; c < 4; ++c)
 	{
 		free(asm_ptrs[c]);
@@ -651,12 +645,6 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 		dsci.back = dsci.front;
 
 		createClearPipeline(device, &dsci, clearColor ? device->emulClearShaderModule : device->emulClearNoColorShaderModule, device->emulClearDsl, &blitPipelineLayout, cmdBuf->currRenderPass, &blitPipeline);
-
-//		_shaderModule* s = device->emulClearShaderModule;
-//		fprintf(stderr, "=================\n");
-//		fprintf(stderr, "pixel shader bo %i\n", s->bos[2]);
-//		fprintf(stderr, "vertex shader bo %i\n", s->bos[1]);
-//		fprintf(stderr, "coord shader bo %i\n", s->bos[0]);
 
 		rpi_vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipeline);
 
