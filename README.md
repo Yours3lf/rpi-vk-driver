@@ -46,6 +46,8 @@
   - [ ] Handle subresource ranges properly
   - [ ] Handle allocation scopes properly
   - [ ] Clean up compile time warnings
+- [ ] Performance
+  - [ ] Profile and optimise the driver code
 - [ ] Try to pass as much of the VK CTS as possible with existing feature set
 - [ ] Github pages
 - [ ] Wiki
