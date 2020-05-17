@@ -49,8 +49,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 	//initial number of command buffers to hold
 	int numCommandBufs = 128;
 	//TODO uniforms might need to realloc, which should be handled properly
-	int consecutiveBlockSize = ARM_PAGE_SIZE;// * 20;
-	int consecutiveBlockNumber = 128;
+	int consecutiveBlockSize = ARM_PAGE_SIZE * 20;
+	int consecutiveBlockNumber = 256;
 	//int numCommandBufs = 30;
 	//int consecutiveBlockSize = getCPABlockSize(256);
 	//int consecutiveBlockNumber = 30;
@@ -329,12 +329,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			uint32_t readMSAAdepthStencilImage = marker->readMSAAdepthStencilImage;
 
 			//This should not result in an insertion!
-			uint32_t writeImageIdx = writeImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset, marker->handlesSize, writeImage->boundMem->bo) : 0;
-			uint32_t readImageIdx = readImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset, marker->handlesSize, readImage->boundMem->bo) : 0;
-			uint32_t writeDepthStencilImageIdx = writeDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset, marker->handlesSize, writeDepthStencilImage->boundMem->bo) : 0;
-			uint32_t readDepthStencilImageIdx = readDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset, marker->handlesSize, readDepthStencilImage->boundMem->bo) : 0;
-			uint32_t writeMSAAimageIdx = writeMSAAimage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, marker->handlesBufOffset, writeMSAAimage->boundMem->bo) : 0;
-			uint32_t writeMSAAdepthStencilImageIdx = writeMSAAdepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset, marker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo) : 0;
+			clFit(cmdbuf, &cmdbuf->handlesCl, 4 * 6); //just to be safe
+			uint32_t writeImageIdx = writeImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, writeImage->boundMem->bo) : 0;
+			uint32_t readImageIdx = readImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, readImage->boundMem->bo) : 0;
+			uint32_t writeDepthStencilImageIdx = writeDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, writeDepthStencilImage->boundMem->bo) : 0;
+			uint32_t readDepthStencilImageIdx = readDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, readDepthStencilImage->boundMem->bo) : 0;
+			uint32_t writeMSAAimageIdx = writeMSAAimage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, marker->handlesBufOffset + cmdbuf->handlesCl.offset, writeMSAAimage->boundMem->bo) : 0;
+			uint32_t writeMSAAdepthStencilImageIdx = writeMSAAdepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo) : 0;
 
 //			fprintf(stderr, "writeImage: %u\n", writeImage);
 //			fprintf(stderr, "readImage: %u\n", readImage);
@@ -504,10 +505,10 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			submitCl.height = height;
 			submitCl.flags |= marker->flags;
 
-			submitCl.bo_handles = getCPAptrFromOffset(cmdbuf->handlesCl.CPA, marker->handlesBufOffset);
+			submitCl.bo_handles = getCPAptrFromOffset(cmdbuf->handlesCl.CPA, marker->handlesBufOffset + cmdbuf->handlesCl.offset);
 			submitCl.bin_cl = ((uint8_t*)marker) + sizeof(CLMarker);
-			submitCl.shader_rec = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset);
-			submitCl.uniforms = getCPAptrFromOffset(cmdbuf->uniformsCl.CPA, marker->uniformsBufOffset);
+			submitCl.shader_rec = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset + cmdbuf->shaderRecCl.offset);
+			submitCl.uniforms = getCPAptrFromOffset(cmdbuf->uniformsCl.CPA, marker->uniformsBufOffset + cmdbuf->uniformsCl.offset);
 
 			if(marker->perfmonID)
 			{
@@ -542,15 +543,15 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 			printf("BO handles: ");
 			for(int d = 0; d < marker->handlesSize / 4; ++d)
 			{
-				printf("%u ", *(((uint32_t*)getCPAptrFromOffset(cmdbuf->handlesCl.CPA, marker->handlesBufOffset))+d));
+				printf("%u ", *(((uint32_t*)getCPAptrFromOffset(cmdbuf->handlesCl.CPA, marker->handlesBufOffset + cmdbuf->handlesCl.offset))+d));
 			}
 			printf("\nUniforms: ");
 			for(int d = 0; d < marker->uniformsSize / 4; ++d)
 			{
-				printf("%i ", *(((uint32_t*)getCPAptrFromOffset(cmdbuf->uniformsCl.CPA, marker->uniformsBufOffset))+d));
+				printf("%i ", *(((uint32_t*)getCPAptrFromOffset(cmdbuf->uniformsCl.CPA, marker->uniformsBufOffset + cmdbuf->uniformsCl.offset))+d));
 			}
 			printf("\nShader recs: ");
-			uint8_t* ptr = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset + (3 + 3) * 4);
+			uint8_t* ptr = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset + cmdbuf->shaderRecCl.offset + (3 + 3) * 4);
 			for(int d = 0; d < marker->shaderRecCount; ++d)
 			{
 				uint8_t flags = *ptr;

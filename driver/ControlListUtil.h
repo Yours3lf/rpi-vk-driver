@@ -45,7 +45,7 @@ typedef struct CLMarker
 	//pointers that point to where all the other CL data is
 	//plus sizes
 	//uint8_t* handlesBuf; //
-	uint32_t handlesBufOffset;
+	uint32_t handlesBufOffset; //relative offset, because underlying buffer could be moved
 	uint32_t handlesSize;
 	//uint8_t* shaderRecBuf; //
 	uint32_t shaderRecBufOffset;

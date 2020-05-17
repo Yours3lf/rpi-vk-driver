@@ -517,7 +517,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearColorImage(
 
 		//insert reloc for render target
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->handlesBufOffset, ((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->handlesSize, i->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->handlesBufOffset + commandBuffer->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->handlesSize, i->boundMem->bo);
 
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
 		clInsertTileBinningModeConfiguration(&commandBuffer->binCl,

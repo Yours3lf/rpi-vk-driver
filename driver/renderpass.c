@@ -194,37 +194,37 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	if(writeImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeImage->boundMem->bo);
 	}
 
 	if(readImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, readImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, readImage->boundMem->bo);
 	}
 
 	if(writeDepthStencilImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeDepthStencilImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeDepthStencilImage->boundMem->bo);
 	}
 
 	if(readDepthStencilImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, readDepthStencilImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, readDepthStencilImage->boundMem->bo);
 	}
 
 	if(writeMSAAimage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeMSAAimage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeMSAAimage->boundMem->bo);
 	}
 
 	if(writeMSAAdepthStencilImage)
 	{
 		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeMSAAdepthStencilImage->boundMem->bo);
+		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeMSAAdepthStencilImage->boundMem->bo);
 	}
 
 	uint32_t bpp = 0;
