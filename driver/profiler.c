@@ -4,10 +4,6 @@ extern "C" {
 
 #include "profiler.h"
 
-/**
-#define _POSIX_C_SOURCE 199309L
-
-#include <time.h>
 #include <unistd.h>
 
 #include <stdlib.h>
@@ -28,6 +24,7 @@ void initProfiler()
 
 			globalProfiler = (profiler*)malloc(sizeof(profiler));
 			globalProfiler->funcDatabase = createMap(malloc(sizeof(mapElem) * MAX_FUNCTIONS), MAX_FUNCTIONS);
+			globalProfiler->frameCounter = 0;
 
 			globalProfilerGuard = 0;
 		}
@@ -67,11 +64,8 @@ void startMeasure(void* func, const char* funcName)
 	}
 }
 
-/**/
-
-void endMeasure(unsigned func)
+void endMeasure(void* func)
 {
-	/**
 	struct timespec end;
 	clock_gettime(CLOCK_REALTIME, &end);
 
@@ -87,15 +81,31 @@ void endMeasure(unsigned func)
 		assert(data->inProgress);
 		data->inProgress = 0;
 
-		data->timeSpent = (end.tv_nsec - data->start.tv_nsec) / MILLION;
+		if((end.tv_nsec - data->start.tv_nsec) < 0)
+		{
+			data->timeSpent += (end.tv_sec - data->start.tv_sec - 1) * 0.001 + (1000000000 + end.tv_nsec - data->start.tv_nsec) / MILLION;
+		}
+		else
+		{
+			data->timeSpent += (end.tv_sec - data->start.tv_sec) * 0.001 + (end.tv_nsec - data->start.tv_nsec) / MILLION;
+		}
 
 		globalProfilerGuard = 0;
 	}
-	/**/
 }
 
+void endFrame()
+{
+	while(globalProfilerGuard);
+	{
+		globalProfilerGuard = 1;
 
-/**
+		globalProfiler->frameCounter++;
+
+		globalProfilerGuard = 0;
+	}
+}
+
 double getTimeSpent(void* func)
 {
 	assert(globalProfiler);
@@ -107,7 +117,7 @@ double getTimeSpent(void* func)
 		return 0;
 	}
 
-	return data->timeSpent;
+	return data->timeSpent / (double)globalProfiler->frameCounter;
 }
 
 void profilePrintResults()
@@ -167,14 +177,13 @@ void profilePrintResults()
 	uint32_t counter = 0;
 	for(int32_t c = numFunctions - 1; c >= 0; --c)
 	{
-		fprintf(stderr, "#%u %-30s: %lf ms\n", ++counter, profileResults[c].funcName, profileResults[c].timeSpent);
+		fprintf(stderr, "#%u %-30s: %lf ms\n", ++counter, profileResults[c].funcName, profileResults[c].timeSpent / (double)globalProfiler->frameCounter);
 		if(counter >= 10)
 		{
 			//break;
 		}
 	}
 }
-/**/
 
 #if defined (__cplusplus)
 }

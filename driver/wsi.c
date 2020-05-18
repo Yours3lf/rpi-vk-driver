@@ -635,6 +635,9 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueuePresentKHR)(
 	}
 
 	PROFILEEND(RPIFUNC(vkQueuePresentKHR));
+
+	endFrame();
+
 	return VK_SUCCESS;
 }
 
@@ -669,7 +672,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroySwapchainKHR)(
 
 	PROFILEEND(RPIFUNC(vkDestroySwapchainKHR));
 
-	//profilePrintResults();
+	profilePrintResults();
 }
 
 /*
