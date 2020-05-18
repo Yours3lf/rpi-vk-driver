@@ -24,6 +24,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 		const VkAllocationCallbacks*                pAllocator,
 		VkCommandPool*                              pCommandPool)
 {
+	PROFILESTART(rpi_vkCreateCommandPool);
+
 	assert(device);
 	assert(pCreateInfo);
 
@@ -38,6 +40,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 
 	if(!cp)
 	{
+		PROFILEEND(rpi_vkCreateCommandPool);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -64,6 +67,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 		void* pamem = ALLOCATE(numCommandBufs * sizeof(_commandBuffer), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pamem)
 		{
+			PROFILEEND(rpi_vkCreateCommandPool);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 		cp->pa = createPoolAllocator(pamem, sizeof(_commandBuffer), numCommandBufs * sizeof(_commandBuffer));
@@ -71,6 +75,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 		void* cpamem = ALLOCATE(consecutivePoolSize, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!cpamem)
 		{
+			PROFILEEND(rpi_vkCreateCommandPool);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 		cp->cpa = createConsecutivePoolAllocator(cpamem, consecutiveBlockSize, consecutivePoolSize);
@@ -78,6 +83,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 
 	*pCommandPool = (VkCommandPool)cp;
 
+	PROFILEEND(rpi_vkCreateCommandPool);
 	return VK_SUCCESS;
 }
 
@@ -91,6 +97,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateCommandBuffers(
 		const VkCommandBufferAllocateInfo*          pAllocateInfo,
 		VkCommandBuffer*                            pCommandBuffers)
 {
+	PROFILESTART(rpi_vkAllocateCommandBuffers);
+
 	assert(device);
 	assert(pAllocateInfo);
 	assert(pCommandBuffers);
@@ -193,6 +201,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateCommandBuffers(
 		}
 	}
 
+	PROFILEEND(rpi_vkAllocateCommandBuffers);
 	return res;
 }
 
@@ -203,6 +212,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBeginCommandBuffer(
 		VkCommandBuffer                             commandBuffer,
 		const VkCommandBufferBeginInfo*             pBeginInfo)
 {
+	PROFILESTART(rpi_vkBeginCommandBuffer);
+
 	assert(commandBuffer);
 	assert(pBeginInfo);
 
@@ -225,6 +236,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBeginCommandBuffer(
 		rpi_vkResetCommandBuffer(commandBuffer, 0);
 	}
 
+	PROFILEEND(rpi_vkBeginCommandBuffer);
 	return VK_SUCCESS;
 }
 
@@ -237,10 +249,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBeginCommandBuffer(
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEndCommandBuffer(
 		VkCommandBuffer                             commandBuffer)
 {
+	PROFILESTART(rpi_vkEndCommandBuffer);
+
 	assert(commandBuffer);
 
 	commandBuffer->state = CMDBUF_STATE_EXECUTABLE;
 
+	PROFILEEND(rpi_vkEndCommandBuffer);
 	return VK_SUCCESS;
 }
 
@@ -268,6 +283,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 		const VkSubmitInfo*                         pSubmits,
 		VkFence                                     fence)
 {
+	PROFILESTART(rpi_vkQueueSubmit);
+
 	assert(queue);
 
 	//TODO this is incorrect
@@ -662,6 +679,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 		f->seqno = queue->lastEmitSeqno;
 	}
 
+	PROFILEEND(rpi_vkQueueSubmit);
 	return VK_SUCCESS;
 }
 
@@ -675,6 +693,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkFreeCommandBuffers(
 		uint32_t                                    commandBufferCount,
 		const VkCommandBuffer*                      pCommandBuffers)
 {
+	PROFILESTART(rpi_vkFreeCommandBuffers);
+
 	assert(device);
 	assert(commandPool);
 	assert(pCommandBuffers);
@@ -692,6 +712,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkFreeCommandBuffers(
 			poolFree(&cp->pa, pCommandBuffers[c]);
 		}
 	}
+
+	PROFILEEND(rpi_vkFreeCommandBuffers);
 }
 
 /*
@@ -705,6 +727,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyCommandPool(
 		VkCommandPool                               commandPool,
 		const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyCommandPool);
+
 	assert(device);
 
 	_commandPool* cp = (_commandPool*)commandPool;
@@ -717,6 +741,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyCommandPool(
 		destroyConsecutivePoolAllocator(&cp->cpa);
 		FREE(cp);
 	}
+
+	PROFILEEND(rpi_vkDestroyCommandPool);
 }
 
 /*
@@ -727,6 +753,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkTrimCommandPool(
 	VkCommandPool                               commandPool,
 	VkCommandPoolTrimFlags                      flags)
 {
+	PROFILESTART(rpi_vkTrimCommandPool);
+
 	assert(device);
 	assert(commandPool);
 
@@ -735,6 +763,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkTrimCommandPool(
 	//TODO trim cp's pool allocator and consecutive pool allocator
 	//by reallocating to just used size
 	//kinda silly, as if you need memory afterwards we need to reallocate again...
+
+	PROFILEEND(rpi_vkTrimCommandPool);
 }
 
 /*
@@ -745,6 +775,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandPool(
 	VkCommandPool                               commandPool,
 	VkCommandPoolResetFlags                     flags)
 {
+	PROFILESTART(rpi_vkResetCommandPool);
+
 	assert(device);
 	assert(commandPool);
 
@@ -776,6 +808,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandPool(
 	//TODO secondary command buffers
 
 	//TODO reset flag --> free all pool resources
+
+	PROFILEEND(rpi_vkResetCommandPool);
 }
 
 /*
@@ -785,6 +819,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandBuffer(
 	VkCommandBuffer                             commandBuffer,
 	VkCommandBufferResetFlags                   flags)
 {
+	PROFILESTART(rpi_vkResetCommandBuffer);
+
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
@@ -847,6 +883,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandBuffer(
 	commandBuffer->currRenderPass = 0;
 
 	commandBuffer->perfmonID = 0;
+
+	PROFILEEND(rpi_vkResetCommandBuffer);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdExecuteCommands(
@@ -854,7 +892,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdExecuteCommands(
 	uint32_t                                    commandBufferCount,
 	const VkCommandBuffer*                      pCommandBuffers)
 {
+	PROFILESTART(rpi_vkCmdExecuteCommands);
 
+	PROFILEEND(rpi_vkCmdExecuteCommands);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDeviceMask(

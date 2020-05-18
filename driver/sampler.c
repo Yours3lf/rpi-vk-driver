@@ -6,6 +6,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSampler(
 	const VkAllocationCallbacks*                pAllocator,
 	VkSampler*                                  pSampler)
 {
+	PROFILESTART(rpi_vkCreateSampler);
+
 	assert(device);
 	assert(pCreateInfo);
 	assert(pSampler);
@@ -14,6 +16,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSampler(
 
 	if(!s)
 	{
+		PROFILEEND(rpi_vkCreateSampler);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -36,6 +39,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSampler(
 
 	*pSampler = s;
 
+	PROFILEEND(rpi_vkCreateSampler);
 	return VK_SUCCESS;
 }
 
@@ -44,9 +48,13 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySampler(
 	VkSampler                                   sampler,
 	const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroySampler);
+
 	assert(device);
 
 	FREE(sampler);
+
+	PROFILEEND(rpi_vkDestroySampler);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSamplerYcbcrConversion(
@@ -55,7 +63,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSamplerYcbcrConversion(
 	const VkAllocationCallbacks*                pAllocator,
 	VkSamplerYcbcrConversion*                   pYcbcrConversion)
 {
+	PROFILESTART(rpi_vkCreateSamplerYcbcrConversion);
+
 	//TODO
+
+	PROFILEEND(rpi_vkCreateSamplerYcbcrConversion);
 	return VK_SUCCESS;
 }
 
@@ -64,5 +76,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySamplerYcbcrConversion(
 	VkSamplerYcbcrConversion                    ycbcrConversion,
 	const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroySamplerYcbcrConversion);
+
 	//TODO
+
+	PROFILEEND(rpi_vkDestroySamplerYcbcrConversion);
 }

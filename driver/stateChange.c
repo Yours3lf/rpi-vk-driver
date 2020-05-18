@@ -416,6 +416,8 @@ void setupClearEmulationResources(VkDevice device)
  */
 void rpi_vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
 {
+	PROFILESTART(rpi_vkCmdSetViewport);
+
 	assert(commandBuffer);
 	assert(firstViewport == 0);
 	assert(viewportCount == 1);
@@ -427,6 +429,8 @@ void rpi_vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport,
 	cb->viewport = pViewports[0];
 
 	cb->viewportDirty = 1;
+
+	PROFILEEND(rpi_vkCmdSetViewport);
 }
 
 /*
@@ -434,6 +438,8 @@ void rpi_vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport,
  */
 void rpi_vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors)
 {
+	PROFILESTART(rpi_vkCmdSetScissor);
+
 	assert(commandBuffer);
 	assert(firstScissor == 0);
 	assert(scissorCount == 1);
@@ -445,6 +451,8 @@ void rpi_vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, u
 	cb->scissor = pScissors[0];
 
 	cb->scissorDirty = 1;
+
+	PROFILEEND(rpi_vkCmdSetScissor);
 }
 
 /*
@@ -452,6 +460,8 @@ void rpi_vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, u
  */
 void rpi_vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
 {
+	PROFILESTART(rpi_vkCmdBindVertexBuffers);
+
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
@@ -463,6 +473,8 @@ void rpi_vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBin
 	}
 
 	cb->vertexBufferDirty = 1;
+
+	PROFILEEND(rpi_vkCmdBindVertexBuffers);
 }
 
 /*
@@ -478,6 +490,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearColorImage(
 		uint32_t                                    rangeCount,
 		const VkImageSubresourceRange*              pRanges)
 {
+	PROFILESTART(rpi_vkCmdClearColorImage);
+
 	assert(commandBuffer);
 	assert(image);
 	assert(pColor);
@@ -551,6 +565,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearColorImage(
 
 		assert(((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 	}
+
+	PROFILEEND(rpi_vkCmdClearColorImage);
 }
 
 /*
@@ -564,11 +580,15 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearDepthStencilImage(
 	uint32_t                                    rangeCount,
 	const VkImageSubresourceRange*              pRanges)
 {
+	PROFILESTART(rpi_vkCmdClearDepthStencilImage);
+
 	assert(commandBuffer);
 	assert(image);
 	assert(pDepthStencil);
 
 	//TODO
+
+	PROFILEEND(rpi_vkCmdClearDepthStencilImage);
 }
 
 /*
@@ -581,6 +601,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 	uint32_t                                    rectCount,
 	const VkClearRect*                          pRects)
 {
+	PROFILESTART(rpi_vkCmdClearAttachments);
+
 	assert(commandBuffer);
 	assert(pAttachments);
 	assert(pRects);
@@ -591,6 +613,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 	if(!cmdBuf->currRenderPass)
 	{
 		//no active render pass
+		PROFILEEND(rpi_vkCmdClearAttachments);
 		return;
 	}
 
@@ -705,6 +728,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 	memcpy(cmdBuf->vertexBuffers, oldVertexBuffers, sizeof(oldVertexBuffers));
 	memcpy(cmdBuf->pushConstantBufferVertex, oldPushConstantBufferVertex, sizeof(oldPushConstantBufferVertex));
 	memcpy(cmdBuf->pushConstantBufferPixel, oldPushConstantBufferPixel, sizeof(oldPushConstantBufferPixel));
+
+	PROFILEEND(rpi_vkCmdClearAttachments);
 }
 
 /*
@@ -717,7 +742,11 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdFillBuffer(
 	VkDeviceSize                                size,
 	uint32_t                                    data)
 {
+	PROFILESTART(rpi_vkCmdFillBuffer);
+
 	//TODO
+
+	PROFILEEND(rpi_vkCmdFillBuffer);
 }
 
 /*
@@ -730,7 +759,11 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdUpdateBuffer(
 	VkDeviceSize                                dataSize,
 	const void*                                 pData)
 {
+	PROFILESTART(rpi_vkCmdUpdateBuffer);
+
 	//TODO
+
+	PROFILEEND(rpi_vkCmdUpdateBuffer);
 }
 
 /*
@@ -742,6 +775,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBindIndexBuffer(
 	VkDeviceSize                                offset,
 	VkIndexType                                 indexType)
 {
+	PROFILESTART(rpi_vkCmdBindIndexBuffer);
+
 	assert(commandBuffer);
 
 	if(indexType == VK_INDEX_TYPE_UINT32)
@@ -755,6 +790,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBindIndexBuffer(
 	cb->indexBufferOffset = offset;
 
 	cb->indexBufferDirty = 1;
+
+	PROFILEEND(rpi_vkCmdBindIndexBuffer);
 }
 
 /*
@@ -764,12 +801,16 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetLineWidth(
 	VkCommandBuffer                             commandBuffer,
 	float                                       lineWidth)
 {
+	PROFILESTART(rpi_vkCmdSetLineWidth);
+
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
 	cb->lineWidth = lineWidth;
 
 	cb->lineWidthDirty = 1;
+
+	PROFILEEND(rpi_vkCmdSetLineWidth);
 }
 
 /*
@@ -781,6 +822,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDepthBias(
 	float                                       depthBiasClamp,
 	float                                       depthBiasSlopeFactor)
 {
+	PROFILESTART(rpi_vkCmdSetDepthBias);
+
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
@@ -789,6 +832,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDepthBias(
 	cb->depthBiasSlopeFactor = depthBiasSlopeFactor;
 
 	cb->depthBiasDirty = 1;
+
+	PROFILEEND(rpi_vkCmdSetDepthBias);
 }
 
 /*
@@ -798,12 +843,16 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetBlendConstants(
 	VkCommandBuffer                             commandBuffer,
 	const float                                 blendConstants[4])
 {
+	PROFILESTART(rpi_vkCmdSetBlendConstants);
+
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
 	memcpy(cb->blendConstants, blendConstants, 4 * sizeof(float));
 
 	cb->blendConstantsDirty = 1;
+
+	PROFILEEND(rpi_vkCmdSetBlendConstants);
 }
 
 /*
@@ -814,6 +863,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDepthBounds(
 	float                                       minDepthBounds,
 	float                                       maxDepthBounds)
 {
+	PROFILESTART(rpi_vkCmdSetDepthBounds);
+
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
@@ -821,6 +872,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDepthBounds(
 	cb->maxDepthBounds = maxDepthBounds;
 
 	cb->depthBoundsDirty = 1;
+
+	PROFILEEND(rpi_vkCmdSetDepthBounds);
 }
 
 /*
@@ -831,6 +884,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilCompareMask(
 	VkStencilFaceFlags                          faceMask,
 	uint32_t                                    compareMask)
 {
+	PROFILESTART(rpi_vkCmdSetStencilCompareMask);
+
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
@@ -846,6 +901,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilCompareMask(
 	}
 
 	cb->stencilCompareMaskDirty = 1;
+
+	PROFILEEND(rpi_vkCmdSetStencilCompareMask);
 }
 
 /*
@@ -856,6 +913,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilWriteMask(
 	VkStencilFaceFlags                          faceMask,
 	uint32_t                                    writeMask)
 {
+	PROFILESTART(rpi_vkCmdSetStencilWriteMask);
+
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
@@ -871,6 +930,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilWriteMask(
 	}
 
 	cb->stencilWriteMaskDirty = 1;
+
+	PROFILEEND(rpi_vkCmdSetStencilWriteMask);
 }
 
 /*
@@ -881,6 +942,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilReference(
 	VkStencilFaceFlags                          faceMask,
 	uint32_t                                    reference)
 {
+	PROFILESTART(rpi_vkCmdSetStencilReference);
+
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
@@ -896,4 +959,6 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilReference(
 	}
 
 	cb->stencilReferenceDirty = 1;
+
+	PROFILEEND(rpi_vkCmdSetStencilReference);
 }

@@ -15,6 +15,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDevices(
 		uint32_t*                                   pPhysicalDeviceCount,
 		VkPhysicalDevice*                           pPhysicalDevices)
 {
+	PROFILESTART(rpi_vkEnumeratePhysicalDevices);
+
 	assert(instance);
 
 	int numGPUs = 1;
@@ -24,6 +26,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDevices(
 	if(!pPhysicalDevices)
 	{
 		*pPhysicalDeviceCount = numGPUs;
+		PROFILEEND(rpi_vkEnumeratePhysicalDevices);
 		return VK_SUCCESS;
 	}
 
@@ -39,10 +42,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDevices(
 
 	if(arraySize < numGPUs)
 	{
+		PROFILEEND(rpi_vkEnumeratePhysicalDevices);
 		return VK_INCOMPLETE;
 	}
 	else
 	{
+		PROFILEEND(rpi_vkEnumeratePhysicalDevices);
 		return VK_SUCCESS;
 	}
 }
@@ -54,6 +59,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceProperties(
 		VkPhysicalDevice                            physicalDevice,
 		VkPhysicalDeviceProperties*                 pProperties)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceProperties);
+
 	assert(physicalDevice);
 	assert(pProperties);
 
@@ -74,6 +81,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceProperties(
 	strcpy(pProperties->deviceName, "VideoCore IV HW");
 	pProperties->limits = _limits;
 	pProperties->sparseProperties = sparseProps;
+
+	PROFILEEND(rpi_vkGetPhysicalDeviceProperties);
 }
 
 /*
@@ -83,10 +92,14 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFeatures(
 		VkPhysicalDevice                            physicalDevice,
 		VkPhysicalDeviceFeatures*                   pFeatures)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceFeatures);
+
 	assert(physicalDevice);
 	assert(pFeatures);
 
 	*pFeatures = _features;
+
+	PROFILEEND(rpi_vkGetPhysicalDeviceFeatures);
 }
 
 /*
@@ -98,12 +111,15 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceExtensionProperties(
 		uint32_t*                                   pPropertyCount,
 		VkExtensionProperties*                      pProperties)
 {
+	PROFILESTART(rpi_vkEnumerateDeviceExtensionProperties);
+
 	assert(physicalDevice);
 	assert(pPropertyCount);
 
 	if(!pProperties)
 	{
 		*pPropertyCount = numDeviceExtensions;
+		PROFILEEND(rpi_vkEnumerateDeviceExtensionProperties);
 		return VK_SUCCESS;
 	}
 
@@ -119,9 +135,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceExtensionProperties(
 
 	if(arraySize < numDeviceExtensions)
 	{
+		PROFILEEND(rpi_vkEnumerateDeviceExtensionProperties);
 		return VK_INCOMPLETE;
 	}
 
+	PROFILEEND(rpi_vkEnumerateDeviceExtensionProperties);
 	return VK_SUCCESS;
 }
 
@@ -137,12 +155,15 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties(
 		uint32_t*                                   pQueueFamilyPropertyCount,
 		VkQueueFamilyProperties*                    pQueueFamilyProperties)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceQueueFamilyProperties);
+
 	assert(physicalDevice);
 	assert(pQueueFamilyPropertyCount);
 
 	if(!pQueueFamilyProperties)
 	{
 		*pQueueFamilyPropertyCount = 1;
+		PROFILEEND(rpi_vkGetPhysicalDeviceQueueFamilyProperties);
 		return;
 	}
 
@@ -155,6 +176,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties(
 	}
 
 	*pQueueFamilyPropertyCount = elementsWritten;
+
+	PROFILEEND(rpi_vkGetPhysicalDeviceQueueFamilyProperties);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(
@@ -164,12 +187,15 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceQueueFamilyPerforman
 	VkPerformanceCounterKHR*                    pCounters,
 	VkPerformanceCounterDescriptionKHR*         pCounterDescriptions)
 {
+	PROFILESTART(rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR);
+
 	assert(physicalDevice);
 	assert(pCounterCount);
 
 	if(!pCounters && !pCounterDescriptions)
 	{
 		*pCounterCount = numPerformanceCounterTypes;
+		PROFILEEND(rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR);
 		return VK_SUCCESS;
 	}
 
@@ -186,9 +212,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceQueueFamilyPerforman
 
 	if(arraySize < numPerformanceCounterTypes)
 	{
+		PROFILEEND(rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR);
 		return VK_INCOMPLETE;
 	}
 
+	PROFILEEND(rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR);
 	return VK_SUCCESS;
 }
 
@@ -197,11 +225,15 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPas
 	const VkQueryPoolPerformanceCreateInfoKHR*  pPerformanceQueryCreateInfo,
 	uint32_t*                                   pNumPasses)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR);
+
 	assert(physicalDevice);
 	assert(pPerformanceQueryCreateInfo);
 	assert(pNumPasses);
 
 	*pNumPasses = pPerformanceQueryCreateInfo->counterIndexCount / DRM_VC4_MAX_PERF_COUNTERS + 1;
+
+	PROFILEEND(rpi_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR);
 }
 
 /*
@@ -221,6 +253,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 		const VkAllocationCallbacks*                pAllocator,
 		VkDevice*                                   pDevice)
 {
+	PROFILESTART(rpi_vkCreateDevice);
+
 	assert(physicalDevice);
 	assert(pDevice);
 	assert(pCreateInfo);
@@ -231,6 +265,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 		int findres = findDeviceExtension(pCreateInfo->ppEnabledExtensionNames[c]);
 		if(findres == -1)
 		{
+			PROFILEEND(rpi_vkCreateDevice);
 			return VK_ERROR_EXTENSION_NOT_PRESENT;
 		}
 	}
@@ -245,6 +280,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 		{
 			if(requestedFeatures[c] && !supportedFeatures[c])
 			{
+				PROFILEEND(rpi_vkCreateDevice);
 				return VK_ERROR_FEATURE_NOT_PRESENT;
 			}
 		}
@@ -253,6 +289,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 	*pDevice = ALLOCATE(sizeof(_device), 1, VK_SYSTEM_ALLOCATION_SCOPE_DEVICE);
 	if(!*pDevice)
 	{
+		PROFILEEND(rpi_vkCreateDevice);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -278,6 +315,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 		{
 			if(requestedFeatures[c] && !supportedFeatures[c])
 			{
+				PROFILEEND(rpi_vkCreateDevice);
 				return VK_ERROR_FEATURE_NOT_PRESENT;
 			}
 		}
@@ -305,6 +343,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 
 			if(!(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex])
 			{
+				PROFILEEND(rpi_vkCreateDevice);
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -322,6 +361,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 	setupEmulationResources(*pDevice);
 	setupClearEmulationResources(*pDevice);
 
+	PROFILEEND(rpi_vkCreateDevice);
 	return VK_SUCCESS;
 }
 
@@ -336,6 +376,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue(
 		uint32_t                                    queueIndex,
 		VkQueue*                                    pQueue)
 {
+	PROFILESTART(rpi_vkGetDeviceQueue);
+
 	assert(device);
 	assert(pQueue);
 
@@ -343,6 +385,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue(
 	assert(queueIndex < device->numQueues[queueFamilyIndex]);
 
 	*pQueue = &device->queues[queueFamilyIndex][queueIndex];
+
+	PROFILEEND(rpi_vkGetDeviceQueue);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue2(
@@ -350,6 +394,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue2(
 	const VkDeviceQueueInfo2*                   pQueueInfo,
 	VkQueue*                                    pQueue)
 {
+	PROFILESTART(rpi_vkGetDeviceQueue2);
+
 	assert(device);
 	assert(pQueueInfo);
 	assert(pQueue);
@@ -357,6 +403,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue2(
 	//TODO handle pNext
 
 	rpi_vkGetDeviceQueue(device, pQueueInfo->queueFamilyIndex, pQueueInfo->queueIndex, pQueue);
+
+	PROFILEEND(rpi_vkGetDeviceQueue2);
 }
 
 /*
@@ -369,6 +417,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDevice(
 		VkDevice                                    device,
 		const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyDevice);
+
 	_device* dev = device;
 
 	if(dev)
@@ -382,6 +432,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDevice(
 		}
 		FREE(dev);
 	}
+
+	PROFILEEND(rpi_vkDestroyDevice);
 }
 
 /*
@@ -392,12 +444,15 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceGroups(
 	uint32_t*                                   pPhysicalDeviceGroupCount,
 	VkPhysicalDeviceGroupProperties*            pPhysicalDeviceGroupProperties)
 {
+	PROFILESTART(rpi_vkEnumeratePhysicalDeviceGroups);
+
 	assert(instance);
 	assert(pPhysicalDeviceGroupCount);
 
 	if(!pPhysicalDeviceGroupProperties)
 	{
 		*pPhysicalDeviceGroupCount = 1;
+		PROFILEEND(rpi_vkEnumeratePhysicalDeviceGroups);
 		return VK_SUCCESS;
 	}
 
@@ -414,9 +469,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceGroups(
 
 	if(c < 1)
 	{
+		PROFILEEND(rpi_vkEnumeratePhysicalDeviceGroups);
 		return VK_INCOMPLETE;
 	}
 
+	PROFILEEND(rpi_vkEnumeratePhysicalDeviceGroups);
 	return VK_SUCCESS;
 }
 
@@ -427,6 +484,8 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetDeviceProcAddr(
 	VkDevice                                    device,
 	const char*                                 pName)
 {
+	PROFILESTART(rpi_vkGetDeviceProcAddr);
+
 	if(
 	!strcmp("vkDestroyInstance", pName) ||
 	!strcmp("vkEnumeratePhysicalDevices", pName) ||
@@ -453,19 +512,24 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetDeviceProcAddr(
 	!strcmp("vkGetPhysicalDeviceExternalSemaphoreProperties", pName)
 	)
 	{
+		PROFILEEND(rpi_vkGetDeviceProcAddr);
 		return 0;
 	}
 
 
 	//there can't be any other device, so this will do fine...
 	_device* d = device;
-	return rpi_vkGetInstanceProcAddr(d->dev->instance, pName);
+	PFN_vkVoidFunction retval = rpi_vkGetInstanceProcAddr(d->dev->instance, pName);
+	PROFILEEND(rpi_vkGetDeviceProcAddr);
+	return retval;
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceProperties2(
 	VkPhysicalDevice                            physicalDevice,
 	VkPhysicalDeviceProperties2*                pProperties)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceProperties2);
+
 	assert(physicalDevice);
 	assert(pProperties);
 	rpi_vkGetPhysicalDeviceProperties(physicalDevice, &pProperties->properties);
@@ -487,6 +551,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceProperties2(
 			ptr->conformanceVersion.patch = 1;
 		}
 	}
+
+	PROFILEEND(rpi_vkGetPhysicalDeviceProperties2);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties(
@@ -494,6 +560,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties(
 	VkFormat                                    format,
 	VkFormatProperties*                         pFormatProperties)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceFormatProperties);
+
 	assert(physicalDevice);
 	assert(pFormatProperties);
 
@@ -611,6 +679,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties(
 		pFormatProperties->bufferFeatures = 0;
 		break;
 	}
+
+	PROFILEEND(rpi_vkGetPhysicalDeviceFormatProperties);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties2(
@@ -618,9 +688,13 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties2(
 	VkFormat                                    format,
 	VkFormatProperties2*                        pFormatProperties)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceFormatProperties2);
+
 	assert(physicalDevice);
 	assert(pFormatProperties);
 	rpi_vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &pFormatProperties->formatProperties);
+
+	PROFILEEND(rpi_vkGetPhysicalDeviceFormatProperties2);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties(
@@ -632,6 +706,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties(
 	VkImageCreateFlags                          flags,
 	VkImageFormatProperties*                    pImageFormatProperties)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceImageFormatProperties);
+
 	assert(physicalDevice);
 	assert(pImageFormatProperties);
 
@@ -686,6 +762,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties(
 
 	if(!supported)
 	{
+		PROFILEEND(rpi_vkGetPhysicalDeviceImageFormatProperties);
 		return VK_ERROR_FORMAT_NOT_SUPPORTED;
 	}
 
@@ -741,6 +818,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties(
 	//2^31
 	pImageFormatProperties->maxResourceSize = 1<<31;
 
+	PROFILEEND(rpi_vkGetPhysicalDeviceImageFormatProperties);
 	return VK_SUCCESS;
 }
 
@@ -749,19 +827,23 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties2(
 	const VkPhysicalDeviceImageFormatInfo2*     pImageFormatInfo,
 	VkImageFormatProperties2*                   pImageFormatProperties)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceImageFormatProperties2);
+
 	assert(physicalDevice);
 	assert(pImageFormatProperties);
 	assert(pImageFormatInfo);
 
 	//TODO handle pNext
 
-	return rpi_vkGetPhysicalDeviceImageFormatProperties(physicalDevice,
+	VkResult retval = rpi_vkGetPhysicalDeviceImageFormatProperties(physicalDevice,
 													pImageFormatInfo->format,
 													pImageFormatInfo->type,
 													pImageFormatInfo->tiling,
 													pImageFormatInfo->usage,
 													pImageFormatInfo->flags,
 													&pImageFormatProperties->imageFormatProperties);
+	PROFILEEND(rpi_vkGetPhysicalDeviceImageFormatProperties2);
+	return retval;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceLayerProperties(
@@ -769,17 +851,25 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceLayerProperties(
 	uint32_t*                                   pPropertyCount,
 	VkLayerProperties*                          pProperties)
 {
+	PROFILESTART(rpi_vkEnumerateDeviceLayerProperties);
+
 	//deprecated, just return instance layers
-	return rpi_vkEnumerateInstanceLayerProperties(pPropertyCount, pProperties);
+	VkResult retval = rpi_vkEnumerateInstanceLayerProperties(pPropertyCount, pProperties);
+	PROFILEEND(rpi_vkEnumerateDeviceLayerProperties);
+	return retval;
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFeatures2(
 	VkPhysicalDevice                            physicalDevice,
 	VkPhysicalDeviceFeatures2*                  pFeatures)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceFeatures2);
+
 	assert(physicalDevice);
 	assert(pFeatures);
 	rpi_vkGetPhysicalDeviceFeatures(physicalDevice, &pFeatures->features);
+
+	PROFILEEND(rpi_vkGetPhysicalDeviceFeatures2);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties2(
@@ -787,6 +877,10 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties2(
 	uint32_t*                                   pQueueFamilyPropertyCount,
 	VkQueueFamilyProperties2*                   pQueueFamilyProperties)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceQueueFamilyProperties2);
+
 	assert(physicalDevice);
 	rpi_vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
+
+	PROFILEEND(rpi_vkGetPhysicalDeviceQueueFamilyProperties2);
 }

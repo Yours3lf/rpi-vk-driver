@@ -4,6 +4,8 @@
 #include "brcm/cle/v3d_decoder.h"
 #include "brcm/clif/clif_dump.h"
 
+#include "declarations.h"
+
 uint32_t getFormatBpp(VkFormat f)
 {
 	switch(f)

@@ -7,6 +7,8 @@
  */
 void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents)
 {
+	PROFILESTART(rpi_vkCmdBeginRenderPass);
+
 	assert(commandBuffer);
 	assert(pRenderPassBegin);
 
@@ -283,6 +285,8 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 	cb->currRenderPass = rp;
 
 	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
+	PROFILEEND(rpi_vkCmdBeginRenderPass);
 }
 
 /*
@@ -290,6 +294,8 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
  */
 void rpi_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
 {
+	PROFILESTART(rpi_vkCmdEndRenderPass);
+
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
@@ -309,6 +315,8 @@ void rpi_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
 	cb->currRenderPass = 0;
 
 	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
+	PROFILEEND(rpi_vkCmdEndRenderPass);
 }
 
 /*
@@ -316,6 +324,8 @@ void rpi_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
  */
 VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
 {
+	PROFILESTART(rpi_vkCreateRenderPass);
+
 	assert(device);
 	assert(pCreateInfo);
 	assert(pRenderPass);
@@ -326,6 +336,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 	_renderpass* rp = ALLOCATE(sizeof(_renderpass), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp)
 	{
+		PROFILEEND(rpi_vkCreateRenderPass);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -333,6 +344,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 	rp->attachments = ALLOCATE(sizeof(VkAttachmentDescription)*rp->numAttachments, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp->attachments)
 	{
+		PROFILEEND(rpi_vkCreateRenderPass);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -342,6 +354,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 	rp->subpasses = ALLOCATE(sizeof(VkSubpassDescription)*rp->numSubpasses, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp->subpasses)
 	{
+		PROFILEEND(rpi_vkCreateRenderPass);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -358,6 +371,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 			rp->subpasses[c].pInputAttachments = ALLOCATE(sizeof(VkAttachmentReference)*rp->subpasses[c].inputAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pInputAttachments)
 			{
+				PROFILEEND(rpi_vkCreateRenderPass);
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -373,6 +387,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 			rp->subpasses[c].pColorAttachments = ALLOCATE(sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pColorAttachments)
 			{
+				PROFILEEND(rpi_vkCreateRenderPass);
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -388,6 +403,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 			rp->subpasses[c].pResolveAttachments = ALLOCATE(sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pResolveAttachments)
 			{
+				PROFILEEND(rpi_vkCreateRenderPass);
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -403,6 +419,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 			rp->subpasses[c].pDepthStencilAttachment = ALLOCATE(sizeof(VkAttachmentReference), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pDepthStencilAttachment)
 			{
+				PROFILEEND(rpi_vkCreateRenderPass);
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -418,6 +435,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 			rp->subpasses[c].pPreserveAttachments = ALLOCATE(sizeof(uint32_t)*rp->subpasses[c].preserveAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pPreserveAttachments)
 			{
+				PROFILEEND(rpi_vkCreateRenderPass);
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -433,6 +451,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 	rp->subpassDependencies = ALLOCATE(sizeof(VkSubpassDependency)*rp->numSubpassDependencies, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp->subpassDependencies)
 	{
+		PROFILEEND(rpi_vkCreateRenderPass);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -440,11 +459,14 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 
 	*pRenderPass = rp;
 
+	PROFILEEND(rpi_vkCreateRenderPass);
 	return VK_SUCCESS;
 }
 
 void rpi_vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyRenderPass);
+
 	assert(device);
 
 	_renderpass* rp = renderPass;
@@ -468,6 +490,8 @@ void rpi_vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkA
 
 		FREE(rp);
 	}
+
+	PROFILEEND(rpi_vkDestroyRenderPass);
 }
 
 /*
@@ -475,6 +499,8 @@ void rpi_vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkA
  */
 VkResult rpi_vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
 {
+	PROFILESTART(rpi_vkCreateFramebuffer);
+
 	assert(device);
 	assert(pCreateInfo);
 	assert(pFramebuffer);
@@ -483,6 +509,7 @@ VkResult rpi_vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo*
 
 	if(!fb)
 	{
+		PROFILEEND(rpi_vkCreateFramebuffer);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -493,6 +520,7 @@ VkResult rpi_vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo*
 
 	if(!fb->attachmentViews)
 	{
+		PROFILEEND(rpi_vkCreateFramebuffer);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -507,11 +535,14 @@ VkResult rpi_vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo*
 
 	*pFramebuffer = fb;
 
+	PROFILEEND(rpi_vkCreateFramebuffer);
 	return VK_SUCCESS;
 }
 
 void rpi_vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyFramebuffer);
+
 	assert(device);
 
 	_framebuffer* fb = framebuffer;
@@ -520,6 +551,8 @@ void rpi_vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const 
 		FREE(fb->attachmentViews);
 		FREE(fb);
 	}
+
+	PROFILEEND(rpi_vkDestroyFramebuffer);
 }
 
 /*
@@ -529,12 +562,16 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdNextSubpass(
 	VkCommandBuffer                             commandBuffer,
 	VkSubpassContents                           contents)
 {
+	PROFILESTART(rpi_vkCmdNextSubpass);
+
 	assert(commandBuffer);
 
 	//TODO contents, everything else...
 
 	_commandBuffer* cb = commandBuffer;
 	//cb->currentSubpass++; //TODO check max subpass?
+
+	PROFILEEND(rpi_vkCmdNextSubpass);
 }
 
 /*
@@ -545,6 +582,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetRenderAreaGranularity(
 	VkRenderPass                                renderPass,
 	VkExtent2D*                                 pGranularity)
 {
+	PROFILESTART(rpi_vkGetRenderAreaGranularity);
+
 	assert(device);
 	assert(renderPass);
 	assert(pGranularity);
@@ -569,4 +608,6 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetRenderAreaGranularity(
 
 	pGranularity->width = tileSizeW;
 	pGranularity->height = tileSizeH;
+
+	PROFILEEND(rpi_vkGetRenderAreaGranularity);
 }

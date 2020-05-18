@@ -59,11 +59,14 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceExtensionProperties(
 		uint32_t*                                   pPropertyCount,
 		VkExtensionProperties*                      pProperties)
 {
+	PROFILESTART(rpi_vkEnumerateInstanceExtensionProperties);
+
 	assert(pPropertyCount);
 
 	if(!pProperties)
 	{
 		*pPropertyCount = numInstanceExtensions;
+		PROFILEEND(rpi_vkEnumerateInstanceExtensionProperties);
 		return VK_SUCCESS;
 	}
 
@@ -79,10 +82,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceExtensionProperties(
 
 	if(arraySize < numInstanceExtensions)
 	{
+		PROFILEEND(rpi_vkEnumerateInstanceExtensionProperties);
 		return VK_INCOMPLETE;
 	}
 	else
 	{
+		PROFILEEND(rpi_vkEnumerateInstanceExtensionProperties);
 		return VK_SUCCESS;
 	}
 }
@@ -100,6 +105,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 		const VkAllocationCallbacks*                pAllocator,
 		VkInstance*                                 pInstance)
 {
+	PROFILESTART(rpi_vkCreateInstance);
+
 	assert(pInstance);
 	assert(pCreateInfo);
 
@@ -107,6 +114,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 
 	if(!*pInstance)
 	{
+		PROFILEEND(rpi_vkCreateInstance);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -131,6 +139,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 		{
 			FREE(*pInstance);
 			*pInstance = 0;
+			PROFILEEND(rpi_vkCreateInstance);
 			return VK_ERROR_EXTENSION_NOT_PRESENT;
 		}
 	}
@@ -143,6 +152,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 
 		if(!f)
 		{
+			PROFILEEND(rpi_vkCreateInstance);
 			return VK_ERROR_INITIALIZATION_FAILED;
 		}
 
@@ -160,6 +170,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 		   strcmp(hw, "BCM2836") &&
 		   strcmp(hw, "BCM2837"))
 		{
+			PROFILEEND(rpi_vkCreateInstance);
 			return VK_ERROR_INITIALIZATION_FAILED;
 		}
 
@@ -235,6 +246,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 	assert((*pInstance)->hasThreadedFs);
 	assert((*pInstance)->hasPerfmon);
 
+	PROFILEEND(rpi_vkCreateInstance);
 	return VK_SUCCESS;
 }
 
@@ -246,12 +258,14 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyInstance(
 		VkInstance                                  instance,
 		const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyInstance);
 	if(instance)
 	{
 		closeIoctl();
 
 		FREE(instance);
 	}
+	PROFILEEND(rpi_vkDestroyInstance);
 }
 
 /*
@@ -260,8 +274,10 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyInstance(
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceVersion(
 	uint32_t*                                   pApiVersion)
 {
+	PROFILESTART(rpi_vkEnumerateInstanceVersion);
 	assert(pApiVersion);
 	*pApiVersion = VK_DRIVER_VERSION; //
+	PROFILEEND(rpi_vkEnumerateInstanceVersion);
 	return VK_SUCCESS;
 }
 
@@ -272,6 +288,8 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	VkInstance                                  instance,
 	const char*                                 pName)
 {
+	PROFILESTART(rpi_vkGetInstanceProcAddr);
+
 	if(!instance && !(
 		   !strcmp(pName, "vkEnumerateInstanceVersion") ||
 		   !strcmp(pName, "vkEnumerateInstanceExtensionProperties") ||
@@ -279,8 +297,11 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 		   !strcmp(pName, "vkCreateInstance")
 		   ))
 	{
+		PROFILEEND(rpi_vkGetInstanceProcAddr);
 		return 0;
 	}
+
+	PROFILEEND(rpi_vkGetInstanceProcAddr);
 
 	RETFUNC(vkCreateInstance);
 	RETFUNC(vkEnumerateInstanceVersion);
@@ -480,5 +501,9 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceLayerProperties(
 	uint32_t*                                   pPropertyCount,
 	VkLayerProperties*                          pProperties)
 {
+	PROFILESTART(rpi_vkEnumerateInstanceLayerProperties);
+
+
+	PROFILEEND(rpi_vkEnumerateInstanceLayerProperties);
 	return VK_SUCCESS;
 }

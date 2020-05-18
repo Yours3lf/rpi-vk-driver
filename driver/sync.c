@@ -58,6 +58,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSemaphore(
 		const VkAllocationCallbacks*                pAllocator,
 		VkSemaphore*                                pSemaphore)
 {
+	PROFILESTART(rpi_vkCreateSemaphore);
+
 	assert(device);
 	assert(pSemaphore);
 
@@ -65,12 +67,14 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSemaphore(
 	sem_t* s = ALLOCATE(sizeof(sem_t), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!s)
 	{
+		PROFILEEND(rpi_vkCreateSemaphore);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 	sem_init(s, 0, 0); //create semaphore unsignalled, shared between threads
 
 	*pSemaphore = (VkSemaphore)s;
 
+	PROFILEEND(rpi_vkCreateSemaphore);
 	return VK_SUCCESS;
 }
 
@@ -109,6 +113,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdPipelineBarrier(
 		uint32_t                                    imageMemoryBarrierCount,
 		const VkImageMemoryBarrier*                 pImageMemoryBarriers)
 {
+	PROFILESTART(rpi_vkCmdPipelineBarrier);
+
 	assert(commandBuffer);
 
 	//TODO pipeline stage flags
@@ -194,6 +200,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdPipelineBarrier(
 		//transition to new layout
 		i->layout = pImageMemoryBarriers[c].newLayout;
 	}
+
+	PROFILEEND(rpi_vkCmdPipelineBarrier);
 }
 
 /*
@@ -203,6 +211,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdPipelineBarrier(
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkDeviceWaitIdle(
 		VkDevice									device)
 {
+	PROFILESTART(rpi_vkDeviceWaitIdle);
+
 	assert(device);
 
 	for(int c = 0; c < numQueueFamilies; ++c)
@@ -215,6 +225,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkDeviceWaitIdle(
 		}
 	}
 
+	PROFILEEND(rpi_vkDeviceWaitIdle);
 	return VK_SUCCESS;
 }
 
@@ -224,6 +235,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkDeviceWaitIdle(
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueWaitIdle(
 	VkQueue                                     queue)
 {
+	PROFILESTART(rpi_vkQueueWaitIdle);
+
 	assert(queue);
 
 	_queue* q = queue;
@@ -231,6 +244,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueWaitIdle(
 	uint64_t timeout = WAIT_TIMEOUT_INFINITE;
 	vc4_seqno_wait(controlFd, &lastFinishedSeqno, q->lastEmitSeqno, &timeout);
 
+	PROFILEEND(rpi_vkQueueWaitIdle);
 	return VK_SUCCESS;
 }
 
@@ -242,6 +256,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySemaphore(
 		VkSemaphore                                 semaphore,
 		const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroySemaphore);
+
 	assert(device);
 
 	if(semaphore)
@@ -249,6 +265,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySemaphore(
 		sem_destroy((sem_t*)semaphore);
 		FREE(semaphore);
 	}
+
+	PROFILEEND(rpi_vkDestroySemaphore);
 }
 
 /*
@@ -260,6 +278,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateFence(
 	const VkAllocationCallbacks*                pAllocator,
 	VkFence*                                    pFence)
 {
+	PROFILESTART(rpi_vkCreateFence);
+
 	assert(device);
 	assert(pCreateInfo);
 	assert(pFence);
@@ -268,6 +288,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateFence(
 
 	if(!f)
 	{
+		PROFILEEND(rpi_vkCreateFence);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -276,6 +297,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateFence(
 
 	*pFence = f;
 
+	PROFILEEND(rpi_vkCreateFence);
 	return VK_SUCCESS;
 }
 
@@ -287,12 +309,16 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyFence(
 	VkFence                                     fence,
 	const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyFence);
+
 	assert(device);
 
 	if(fence)
 	{
 		FREE(fence);
 	}
+
+	PROFILEEND(rpi_vkDestroyFence);
 }
 
 /*
@@ -302,13 +328,18 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetFenceStatus(
 	VkDevice                                    device,
 	VkFence                                     fence)
 {
+	PROFILESTART(rpi_vkGetFenceStatus);
+
 	assert(device);
 	assert(fence);
 
 	//TODO update fence status based on last completed seqno?
 
 	_fence* f = fence;
-	return f->signaled ? VK_SUCCESS : VK_NOT_READY;
+	VkResult retval = f->signaled ? VK_SUCCESS : VK_NOT_READY;
+
+	PROFILEEND(rpi_vkGetFenceStatus);
+	return retval;
 }
 
 /*
@@ -319,6 +350,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetFences(
 	uint32_t                                    fenceCount,
 	const VkFence*                              pFences)
 {
+	PROFILESTART(rpi_vkResetFences);
+
 	assert(device);
 	assert(pFences);
 	assert(fenceCount > 0);
@@ -330,6 +363,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetFences(
 		f->seqno = 0;
 	}
 
+	PROFILEEND(rpi_vkResetFences);
 	return VK_SUCCESS;
 }
 
@@ -343,6 +377,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
 	VkBool32                                    waitAll,
 	uint64_t                                    timeout)
 {
+	PROFILESTART(rpi_vkWaitForFences);
+
 	assert(device);
 	assert(pFences);
 	assert(fenceCount > 0);
@@ -356,9 +392,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
 				_fence* f = pFences[c];
 				if(!f->signaled) //if any unsignaled
 				{
+					PROFILEEND(rpi_vkWaitForFences);
 					return VK_TIMEOUT;
 				}
 
+				PROFILEEND(rpi_vkWaitForFences);
 				return VK_SUCCESS;
 			}
 		}
@@ -374,6 +412,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
 
 				if(ret < 0)
 				{
+					PROFILEEND(rpi_vkWaitForFences);
 					return VK_TIMEOUT;
 				}
 
@@ -391,9 +430,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
 				_fence* f = pFences[c];
 				if(f->signaled) //if any signaled
 				{
+					PROFILEEND(rpi_vkWaitForFences);
 					return VK_SUCCESS;
 				}
 
+				PROFILEEND(rpi_vkWaitForFences);
 				return VK_TIMEOUT;
 			}
 		}
@@ -414,18 +455,22 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
 
 				f->signaled = 1;
 				f->seqno = 0;
+				PROFILEEND(rpi_vkWaitForFences);
 				return VK_SUCCESS;
 			}
 			else
 			{
 				//already signaled
+				PROFILEEND(rpi_vkWaitForFences);
 				return VK_SUCCESS;
 			}
 		}
 
+		PROFILEEND(rpi_vkWaitForFences);
 		return VK_TIMEOUT;
 	}
 
+	PROFILEEND(rpi_vkWaitForFences);
 	return VK_SUCCESS;
 }
 

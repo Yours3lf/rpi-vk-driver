@@ -7,6 +7,8 @@
  */
 VkResult rpi_vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView)
 {
+	PROFILESTART(rpi_vkCreateImageView);
+
 	assert(device);
 	assert(pCreateInfo);
 	assert(pView);
@@ -15,6 +17,7 @@ VkResult rpi_vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCr
 
 	if(!view)
 	{
+		PROFILEEND(rpi_vkCreateImageView);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -26,6 +29,7 @@ VkResult rpi_vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCr
 
 	*pView = view;
 
+	PROFILEEND(rpi_vkCreateImageView);
 	return VK_SUCCESS;
 }
 
@@ -34,6 +38,8 @@ VkResult rpi_vkCreateImageView(VkDevice device, const VkImageViewCreateInfo* pCr
  */
 VkResult rpi_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer)
 {
+	PROFILESTART(rpi_vkCreateBuffer);
+
 	assert(device);
 	assert(pCreateInfo);
 	assert(pBuffer);
@@ -41,6 +47,7 @@ VkResult rpi_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateIn
 	_buffer* buf = ALLOCATE(sizeof(_buffer), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!buf)
 	{
+		PROFILEEND(rpi_vkCreateBuffer);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -52,6 +59,7 @@ VkResult rpi_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateIn
 
 	*pBuffer = buf;
 
+	PROFILEEND(rpi_vkCreateBuffer);
 	return VK_SUCCESS;
 }
 
@@ -60,6 +68,8 @@ VkResult rpi_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateIn
  */
 void rpi_vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryRequirements* pMemoryRequirements)
 {
+	PROFILESTART(rpi_vkGetBufferMemoryRequirements);
+
 	assert(device);
 	assert(buffer);
 	assert(pMemoryRequirements);
@@ -68,6 +78,8 @@ void rpi_vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemor
 	pMemoryRequirements->size = getBOAlignedSize(((_buffer*)buffer)->size, ARM_PAGE_SIZE);
 	//there's only one memory type so that's gonna be it...
 	pMemoryRequirements->memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+	PROFILEEND(rpi_vkGetBufferMemoryRequirements);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetBufferMemoryRequirements2(
@@ -75,11 +87,15 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetBufferMemoryRequirements2(
 	const VkBufferMemoryRequirementsInfo2*      pInfo,
 	VkMemoryRequirements2*                      pMemoryRequirements)
 {
+	PROFILESTART(rpi_vkGetBufferMemoryRequirements2);
+
 	assert(device);
 	assert(pInfo);
 	assert(pMemoryRequirements);
 
 	rpi_vkGetBufferMemoryRequirements(device, pInfo->buffer, &pMemoryRequirements->memoryRequirements);
+
+	PROFILEEND(rpi_vkGetBufferMemoryRequirements2);
 }
 
 /*
@@ -87,6 +103,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetBufferMemoryRequirements2(
  */
 VkResult rpi_vkBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset)
 {
+	PROFILESTART(rpi_vkBindBufferMemory);
+
 	assert(device);
 	assert(buffer);
 	assert(memory);
@@ -102,11 +120,14 @@ VkResult rpi_vkBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory
 	buf->boundMem = mem;
 	buf->boundOffset = memoryOffset;
 
+	PROFILEEND(rpi_vkBindBufferMemory);
 	return VK_SUCCESS;
 }
 
 void rpi_vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyBuffer);
+
 	assert(device);
 
 	_buffer* buf = buffer;
@@ -114,10 +135,14 @@ void rpi_vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCal
 	{
 		FREE(buf);
 	}
+
+	PROFILEEND(rpi_vkDestroyBuffer);
 }
 
 void rpi_vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyImageView);
+
 	assert(device);
 
 	_imageView* view = imageView;
@@ -125,6 +150,8 @@ void rpi_vkDestroyImageView(VkDevice device, VkImageView imageView, const VkAllo
 	{
 		FREE(view);
 	}
+
+	PROFILEEND(rpi_vkDestroyImageView);
 }
 
 
@@ -137,6 +164,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateBufferView(
 	const VkAllocationCallbacks*                pAllocator,
 	VkBufferView*                               pView)
 {
+	PROFILESTART(rpi_vkCreateBufferView);
+
 	assert(device);
 	assert(pCreateInfo);
 	assert(pView);
@@ -145,6 +174,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateBufferView(
 
 	if(!bv)
 	{
+		PROFILEEND(rpi_vkCreateBufferView);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -155,6 +185,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateBufferView(
 
 	*pView = bv;
 
+	PROFILEEND(rpi_vkCreateBufferView);
 	return VK_SUCCESS;
 }
 
@@ -166,6 +197,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyBufferView(
 	VkBufferView                                bufferView,
 	const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyBufferView);
+
 	assert(device);
 
 	_bufferView* bv = bufferView;
@@ -173,6 +206,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyBufferView(
 	{
 		FREE(bv);
 	}
+
+	PROFILEEND(rpi_vkDestroyBufferView);
 }
 
 /*
@@ -184,6 +219,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	const VkAllocationCallbacks*                pAllocator,
 	VkImage*                                    pImage)
 {
+	PROFILESTART(rpi_vkCreateImage);
+
 	assert(device);
 	assert(pCreateInfo);
 	assert(pImage);
@@ -191,6 +228,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 	_image* i = ALLOCATE(sizeof(_image), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!i)
 	{
+		PROFILEEND(rpi_vkCreateImage);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -239,6 +277,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 		i->queueFamiliesWithAccess = ALLOCATE(sizeof(uint32_t) * i->numQueueFamiliesWithAccess, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!i->queueFamiliesWithAccess)
 		{
+			PROFILEEND(rpi_vkCreateImage);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 		memcpy(i->queueFamiliesWithAccess, pCreateInfo->pQueueFamilyIndices, sizeof(uint32_t) * i->numQueueFamiliesWithAccess);
@@ -251,6 +290,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateImage(
 
 	*pImage = i;
 
+	PROFILEEND(rpi_vkCreateImage);
 	return VK_SUCCESS;
 }
 
@@ -262,6 +302,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyImage(
 	VkImage                                     image,
 	const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyImage);
+
 	assert(device);
 
 	_image* i = image;
@@ -274,6 +316,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyImage(
 		}
 		FREE(i);
 	}
+
+	PROFILEEND(rpi_vkDestroyImage);
 }
 
 /*
@@ -284,6 +328,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 	VkImage                                     image,
 	VkMemoryRequirements*                       pMemoryRequirements)
 {
+	PROFILESTART(rpi_vkGetImageMemoryRequirements);
+
 	assert(device);
 	assert(image);
 	assert(pMemoryRequirements);
@@ -378,6 +424,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements(
 	pMemoryRequirements->alignment = ARM_PAGE_SIZE;
 	pMemoryRequirements->memoryTypeBits = memoryTypes[0].propertyFlags; //TODO
 	pMemoryRequirements->size = i->size;
+
+	PROFILEEND(rpi_vkGetImageMemoryRequirements);
 }
 
 /*
@@ -389,6 +437,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory(
 	VkDeviceMemory                              memory,
 	VkDeviceSize                                memoryOffset)
 {
+	PROFILESTART(rpi_vkBindImageMemory);
+
 	assert(device);
 	assert(image);
 	assert(memory);
@@ -414,6 +464,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory(
 		int ret = vc4_bo_set_tiling(controlFd, i->boundMem->bo, DRM_FORMAT_MOD_BROADCOM_VC4_T_TILED); assert(ret);
 	}
 
+	PROFILEEND(rpi_vkBindImageMemory);
 	return VK_SUCCESS;
 }
 
@@ -422,6 +473,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindBufferMemory2(
 	uint32_t                                    bindInfoCount,
 	const VkBindBufferMemoryInfo*               pBindInfos)
 {
+	PROFILESTART(rpi_vkBindBufferMemory2);
+
 	assert(device);
 	assert(pBindInfos);
 
@@ -436,6 +489,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindBufferMemory2(
 		}
 	}
 
+	PROFILEEND(rpi_vkBindBufferMemory2);
 	return ret;
 }
 
@@ -444,10 +498,14 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageMemoryRequirements2(
 	const VkImageMemoryRequirementsInfo2*       pInfo,
 	VkMemoryRequirements2*                      pMemoryRequirements)
 {
+	PROFILESTART(rpi_vkGetImageMemoryRequirements2);
+
 	assert(device);
 	assert(pInfo);
 	assert(pMemoryRequirements);
 	rpi_vkGetImageMemoryRequirements(device, pInfo->image, pMemoryRequirements);
+
+	PROFILEEND(rpi_vkGetImageMemoryRequirements2);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory2(
@@ -455,6 +513,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory2(
 	uint32_t                                    bindInfoCount,
 	const VkBindImageMemoryInfo*                pBindInfos)
 {
+	PROFILESTART(rpi_vkBindImageMemory2);
+
 	assert(device);
 	assert(pBindInfos);
 
@@ -469,6 +529,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBindImageMemory2(
 		}
 	}
 
+	PROFILEEND(rpi_vkBindImageMemory2);
 	return ret;
 }
 
@@ -480,6 +541,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdPushConstants(
 	uint32_t                                    size,
 	const void*                                 pValues)
 {
+	PROFILESTART(rpi_vkCmdPushConstants);
+
 	assert(commandBuffer);
 	assert(layout);
 
@@ -497,6 +560,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdPushConstants(
 	}
 
 	cb->pushConstantDirty = 1;
+
+	PROFILEEND(rpi_vkCmdPushConstants);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageSubresourceLayout(
@@ -505,5 +570,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageSubresourceLayout(
 	const VkImageSubresource*                   pSubresource,
 	VkSubresourceLayout*                        pLayout)
 {
+	PROFILESTART(rpi_vkGetImageSubresourceLayout);
+
 	//TODO
+
+	PROFILEEND(rpi_vkGetImageSubresourceLayout);
 }

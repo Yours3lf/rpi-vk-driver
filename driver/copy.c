@@ -951,6 +951,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 	uint32_t                                    regionCount,
 	const VkBufferImageCopy*                    pRegions)
 {
+	PROFILESTART(rpi_vkCmdCopyBufferToImage);
+
 	_commandBuffer* cmdBuf = commandBuffer;
 	_device* device = cmdBuf->dev;
 	_buffer* buf = srcBuffer;
@@ -1076,6 +1078,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBufferToImage(
 	}
 
 	img->layout = dstImageLayout;
+
+	PROFILEEND(rpi_vkCmdCopyBufferToImage);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
@@ -1088,6 +1092,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 	const VkImageBlit*                          pRegions,
 	VkFilter                                    filter)
 {
+	PROFILESTART(rpi_vkCmdBlitImage);
+
 	_commandBuffer* cmdBuf = commandBuffer;
 	_device* device = cmdBuf->dev;
 	_image* srcImg = srcImage;
@@ -1236,6 +1242,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBlitImage(
 		rpi_vkDestroyRenderPass(device, offscreenRenderPass, 0);
 		rpi_vkDestroyFramebuffer(device, offscreenFramebuffer, 0);
 	}
+
+	PROFILEEND(rpi_vkCmdBlitImage);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdResolveImage(
@@ -1247,7 +1255,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdResolveImage(
 	uint32_t                                    regionCount,
 	const VkImageResolve*                       pRegions)
 {
+	PROFILESTART(rpi_vkCmdResolveImage);
 	//TODO
+	PROFILEEND(rpi_vkCmdResolveImage);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyImageToBuffer(
@@ -1258,7 +1268,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyImageToBuffer(
 	uint32_t                                    regionCount,
 	const VkBufferImageCopy*                    pRegions)
 {
+	PROFILESTART(rpi_vkCmdCopyImageToBuffer);
 	//TODO
+	PROFILEEND(rpi_vkCmdCopyImageToBuffer);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyImage(
@@ -1270,7 +1282,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyImage(
 	uint32_t                                    regionCount,
 	const VkImageCopy*                          pRegions)
 {
+	PROFILESTART(rpi_vkCmdCopyImage);
 	rpi_vkCmdBlitImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions, VK_FILTER_NEAREST);
+	PROFILEEND(rpi_vkCmdCopyImage);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBuffer(
@@ -1280,5 +1294,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyBuffer(
 	uint32_t                                    regionCount,
 	const VkBufferCopy*                         pRegions)
 {
+	PROFILESTART(rpi_vkCmdCopyBuffer);
 	//TODO
+	PROFILEEND(rpi_vkCmdCopyImage);
 }

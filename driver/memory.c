@@ -7,6 +7,8 @@
  */
 void rpi_vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceMemoryProperties);
+
 	assert(physicalDevice);
 	assert(pMemoryProperties);
 
@@ -54,6 +56,8 @@ void rpi_vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, Vk
 	{
 		pMemoryProperties->memoryHeaps[c] = memoryHeaps[c];
 	}
+
+	PROFILEEND(rpi_vkGetPhysicalDeviceMemoryProperties);
 }
 
 /*
@@ -61,6 +65,8 @@ void rpi_vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, Vk
  */
 VkResult rpi_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
 {
+	PROFILESTART(rpi_vkAllocateMemory);
+
 	assert(device);
 	assert(pAllocateInfo);
 	assert(pMemory);
@@ -68,12 +74,14 @@ VkResult rpi_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllo
 	uint32_t bo = vc4_bo_alloc(controlFd, pAllocateInfo->allocationSize, "vkAllocateMemory");
 	if(!bo)
 	{
+		PROFILEEND(rpi_vkAllocateMemory);
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
 	}
 
 	_deviceMemory* mem = ALLOCATE(sizeof(_deviceMemory), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!mem)
 	{
+		PROFILEEND(rpi_vkAllocateMemory);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -86,6 +94,7 @@ VkResult rpi_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllo
 
 	//TODO max number of allocations
 
+	PROFILEEND(rpi_vkAllocateMemory);
 	return VK_SUCCESS;
 }
 
@@ -94,6 +103,8 @@ VkResult rpi_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllo
  */
 VkResult rpi_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData)
 {
+	PROFILESTART(rpi_vkMapMemory);
+
 	assert(device);
 	assert(memory);
 	assert(size);
@@ -117,6 +128,7 @@ VkResult rpi_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize of
 	void* ptr = vc4_bo_map(controlFd, ((_deviceMemory*)memory)->bo, offset, size);
 	if(!ptr)
 	{
+		PROFILEEND(rpi_vkMapMemory);
 		return VK_ERROR_MEMORY_MAP_FAILED;
 	}
 
@@ -125,6 +137,7 @@ VkResult rpi_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize of
 	((_deviceMemory*)memory)->mappedSize = size;
 	*ppData = ptr;
 
+	PROFILEEND(rpi_vkMapMemory);
 	return VK_SUCCESS;
 }
 
@@ -133,6 +146,8 @@ VkResult rpi_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize of
  */
 void rpi_vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
 {
+	PROFILESTART(rpi_vkUnmapMemory);
+
 	assert(device);
 	assert(memory);
 
@@ -140,10 +155,14 @@ void rpi_vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
 	((_deviceMemory*)memory)->mappedPtr = 0;
 	((_deviceMemory*)memory)->mappedSize = 0;
 	((_deviceMemory*)memory)->mappedOffset = 0;
+
+	PROFILEEND(rpi_vkUnmapMemory);
 }
 
 void rpi_vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
+	PROFILESTART(rpi_vkFreeMemory);
+
 	assert(device);
 
 	_deviceMemory* mem = memory;
@@ -152,6 +171,8 @@ void rpi_vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocation
 		vc4_bo_free(controlFd, mem->bo, mem->mappedPtr, mem->size);
 		FREE(mem);
 	}
+
+	PROFILEEND(rpi_vkFreeMemory);
 }
 
 /*
@@ -162,8 +183,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkFlushMappedMemoryRanges(
 	uint32_t                                    memoryRangeCount,
 	const VkMappedMemoryRange*                  pMemoryRanges)
 {
+	PROFILESTART(rpi_vkFlushMappedMemoryRanges);
+
 	//TODO
 
+	PROFILEEND(rpi_vkFlushMappedMemoryRanges);
 	return VK_SUCCESS;
 }
 

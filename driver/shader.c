@@ -15,12 +15,15 @@
  */
 VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
 {
+	PROFILESTART(rpi_vkCreateShaderModule);
+
 	uint32_t magic = pCreateInfo->pCode[2];
 	VkRpiShaderModuleAssemblyCreateInfoEXT* ci = pCreateInfo->pCode[4];
 
 	//shader magic doesn't add up
 	if(magic != 0x14E45250)
 	{
+		PROFILEEND(rpi_vkCreateShaderModule);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -32,6 +35,7 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 
 	if(!shader)
 	{
+		PROFILEEND(rpi_vkCreateShaderModule);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -388,6 +392,7 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 
 				if(!shader->mappings[c])
 				{
+					PROFILEEND(rpi_vkCreateShaderModule);
 					return VK_ERROR_OUT_OF_HOST_MEMORY;
 				}
 
@@ -405,11 +410,14 @@ VkResult rpi_vkCreateShaderModule(VkDevice device, const VkShaderModuleCreateInf
 
 	*pShaderModule = shader;
 
+	PROFILEEND(rpi_vkCreateShaderModule);
 	return VK_SUCCESS;
 }
 
 void rpi_vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, const VkAllocationCallbacks* pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyShaderModule);
+
 	assert(device);
 
 	_shaderModule* shader = shaderModule;
@@ -431,4 +439,6 @@ void rpi_vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, con
 
 		FREE(shader);
 	}
+
+	PROFILEEND(rpi_vkDestroyShaderModule);
 }

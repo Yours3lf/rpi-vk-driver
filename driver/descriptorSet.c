@@ -6,6 +6,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 	const VkAllocationCallbacks*                pAllocator,
 	VkDescriptorPool*                           pDescriptorPool)
 {
+	PROFILESTART(rpi_vkCreateDescriptorPool);
+
 	assert(device);
 	assert(pCreateInfo);
 
@@ -13,6 +15,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 
 	if(!dp)
 	{
+		PROFILEEND(rpi_vkCreateDescriptorPool);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -48,6 +51,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 	void* dsmem = ALLOCATE(sizeof(_descriptorSet)*pCreateInfo->maxSets, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!dsmem)
 	{
+		PROFILEEND(rpi_vkCreateDescriptorPool);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -59,6 +63,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 	void* memem = ALLOCATE(mapBufSize, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!memem)
 	{
+		PROFILEEND(rpi_vkCreateDescriptorPool);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 	dp->mapElementCPA = createConsecutivePoolAllocator(memem, mapElemBlockSize, mapBufSize);
@@ -69,6 +74,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 		void* mem = ALLOCATE(blockSize*imageDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
+			PROFILEEND(rpi_vkCreateDescriptorPool);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 		dp->imageDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * imageDescriptorCount);
@@ -80,6 +86,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 		void* mem = ALLOCATE(blockSize*bufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
+			PROFILEEND(rpi_vkCreateDescriptorPool);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 		dp->bufferDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * bufferDescriptorCount);
@@ -91,6 +98,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 		void* mem = ALLOCATE(blockSize*texelBufferDescriptorCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!mem)
 		{
+			PROFILEEND(rpi_vkCreateDescriptorPool);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 		dp->texelBufferDescriptorCPA = createConsecutivePoolAllocator(mem, blockSize, blockSize * texelBufferDescriptorCount);
@@ -98,6 +106,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorPool(
 
 	*pDescriptorPool = dp;
 
+	PROFILEEND(rpi_vkCreateDescriptorPool);
 	return VK_SUCCESS;
 }
 
@@ -106,6 +115,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateDescriptorSets(
 	const VkDescriptorSetAllocateInfo*          pAllocateInfo,
 	VkDescriptorSet*                            pDescriptorSets)
 {
+	PROFILESTART(rpi_vkAllocateDescriptorSets);
+
 	assert(device);
 
 	_descriptorPool* dp = pAllocateInfo->descriptorPool;
@@ -210,6 +221,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateDescriptorSets(
 		}
 	}
 
+	PROFILEEND(rpi_vkAllocateDescriptorSets);
 	return VK_SUCCESS;
 }
 
@@ -219,6 +231,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorSetLayout(
 	const VkAllocationCallbacks*                pAllocator,
 	VkDescriptorSetLayout*                      pSetLayout)
 {
+	PROFILESTART(rpi_vkCreateDescriptorSetLayout);
+
 	assert(device);
 	assert(pCreateInfo);
 
@@ -228,6 +242,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorSetLayout(
 
 	if(!dsl)
 	{
+		PROFILEEND(rpi_vkCreateDescriptorSetLayout);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -235,6 +250,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorSetLayout(
 
 	if(!dsl->bindings)
 	{
+		PROFILEEND(rpi_vkCreateDescriptorSetLayout);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -245,6 +261,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorSetLayout(
 
 	*pSetLayout = dsl;
 
+	PROFILEEND(rpi_vkCreateDescriptorSetLayout);
 	return VK_SUCCESS;
 }
 
@@ -255,6 +272,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkUpdateDescriptorSets(
 	uint32_t                                    descriptorCopyCount,
 	const VkCopyDescriptorSet*                  pDescriptorCopies)
 {
+	PROFILESTART(rpi_vkUpdateDescriptorSets);
+
 	assert(device);
 
 	for(uint32_t c = 0; c < descriptorWriteCount; ++c)
@@ -340,6 +359,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkUpdateDescriptorSets(
 			memcpy(ddtb, sdtb, sizeof(_descriptorTexelBuffer) * pDescriptorCopies[c].descriptorCount);
 		}
 	}
+
+	PROFILEEND(rpi_vkUpdateDescriptorSets);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetDescriptorPool(
@@ -347,7 +368,9 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetDescriptorPool(
 	VkDescriptorPool                            descriptorPool,
 	VkDescriptorPoolResetFlags                  flags)
 {
+	PROFILESTART(rpi_vkResetDescriptorPool);
 	//TODO
+	PROFILEEND(rpi_vkResetDescriptorPool);
 	return VK_SUCCESS;
 }
 
@@ -356,6 +379,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorPool(
 	VkDescriptorPool                            descriptorPool,
 	const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyDescriptorPool);
+
 	assert(device);
 	assert(descriptorPool);
 
@@ -368,6 +393,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorPool(
 	FREE(dp->bufferDescriptorCPA.buf);
 
 	FREE(dp);
+
+	PROFILEEND(rpi_vkDestroyDescriptorPool);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBindDescriptorSets(
@@ -380,6 +407,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBindDescriptorSets(
 	uint32_t                                    dynamicOffsetCount,
 	const uint32_t*                             pDynamicOffsets)
 {
+	PROFILESTART(rpi_vkCmdBindDescriptorSets);
+
 	//TODO dynamic offsets
 
 	assert(commandBuffer);
@@ -399,6 +428,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBindDescriptorSets(
 	}
 
 	cb->descriptorSetDirty = 1;
+
+	PROFILEEND(rpi_vkCmdBindDescriptorSets);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorSetLayout(
@@ -406,6 +437,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorSetLayout(
 	VkDescriptorSetLayout                       descriptorSetLayout,
 	const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyDescriptorSetLayout);
+
 	assert(device);
 	assert(descriptorSetLayout);
 
@@ -414,6 +447,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorSetLayout(
 	FREE(dsl->bindings);
 
 	FREE(dsl);
+
+	PROFILEEND(rpi_vkDestroyDescriptorSetLayout);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkFreeDescriptorSets(
@@ -422,6 +457,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkFreeDescriptorSets(
 	uint32_t                                    descriptorSetCount,
 	const VkDescriptorSet*                      pDescriptorSets)
 {
+	PROFILESTART(rpi_vkFreeDescriptorSets);
+
 	assert(device);
 	assert(descriptorPool);
 
@@ -453,6 +490,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkFreeDescriptorSets(
 		poolFree(&dp->descriptorSetPA, ds);
 	}
 
+	PROFILEEND(rpi_vkFreeDescriptorSets);
 	return VK_SUCCESS;
 }
 
@@ -463,7 +501,9 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDescriptorUpdateTemplate(
 	const VkAllocationCallbacks*                pAllocator,
 	VkDescriptorUpdateTemplate*                 pDescriptorUpdateTemplate)
 {
+	PROFILESTART(rpi_vkCreateDescriptorUpdateTemplate);
 	//TODO
+	PROFILEEND(rpi_vkCreateDescriptorUpdateTemplate);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorUpdateTemplate(
@@ -471,7 +511,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDescriptorUpdateTemplate(
 	VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
 	const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyDescriptorUpdateTemplate);
 	//TODO
+	PROFILEEND(rpi_vkDestroyDescriptorUpdateTemplate);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkUpdateDescriptorSetWithTemplate(
@@ -480,7 +522,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkUpdateDescriptorSetWithTemplate(
 	VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
 	const void*                                 pData)
 {
+	PROFILESTART(rpi_vkUpdateDescriptorSetWithTemplate);
 	//TODO
+	PROFILEEND(rpi_vkUpdateDescriptorSetWithTemplate);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkGetDescriptorSetLayoutSupport(
@@ -488,5 +532,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDescriptorSetLayoutSupport(
 	const VkDescriptorSetLayoutCreateInfo*      pCreateInfo,
 	VkDescriptorSetLayoutSupport*               pSupport)
 {
+	PROFILESTART(rpi_vkGetDescriptorSetLayoutSupport);
 	//TODO
+	PROFILEEND(rpi_vkGetDescriptorSetLayoutSupport);
 }

@@ -557,6 +557,8 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
  */
 void rpi_vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
+	PROFILESTART(rpi_vkCmdDraw);
+
 	assert(commandBuffer);
 
 	if(instanceCount != 1 || firstInstance != 0)
@@ -576,6 +578,8 @@ void rpi_vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t
 	cb->numDrawCallsSubmitted++;
 
 	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
+	PROFILEEND(rpi_vkCmdDraw);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
@@ -586,6 +590,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
 	int32_t                                     vertexOffset,
 	uint32_t                                    firstInstance)
 {
+	PROFILESTART(rpi_vkCmdDrawIndexed);
+
 	assert(commandBuffer);
 
 	if(instanceCount != 1 || firstInstance != 0)
@@ -622,6 +628,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
 	cb->numDrawCallsSubmitted++;
 
 	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+
+	PROFILEEND(rpi_vkCmdDrawIndexed);
 }
 
 VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexedIndirect(

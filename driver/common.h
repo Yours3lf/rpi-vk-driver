@@ -37,6 +37,9 @@
 
 #include "vkCaps.h"
 
+#define PROFILESTART(x) startMeasure((x), (#x))
+#define PROFILEEND(x) endMeasure((x))
+
 /**
 //scope
 VK_SYSTEM_ALLOCATION_SCOPE_COMMAND

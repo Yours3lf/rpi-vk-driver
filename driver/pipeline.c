@@ -8,6 +8,8 @@
  */
 void rpi_vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
 {
+	PROFILESTART(rpi_vkCmdBindPipeline);
+
 	assert(commandBuffer);
 
 	_commandBuffer* cb = commandBuffer;
@@ -19,6 +21,8 @@ void rpi_vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pi
 	{
 		cb->computePipeline = pipeline;
 	}
+
+	PROFILEEND(rpi_vkCmdBindPipeline);
 }
 
 //multiple attachments
@@ -174,6 +178,8 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
  */
 VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 {
+	PROFILESTART(rpi_vkCreateGraphicsPipelines);
+
 	assert(device);
 	assert(createInfoCount > 0);
 	assert(pCreateInfos);
@@ -192,6 +198,7 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 		_pipeline* pip = ALLOCATE(sizeof(_pipeline), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip)
 		{
+			PROFILEEND(rpi_vkCreateGraphicsPipelines);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
@@ -208,6 +215,7 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 			pip->names[idx] = ALLOCATE(strlen(pCreateInfos[c].pStages[d].pName)+1, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!pip->names[idx])
 			{
+				PROFILEEND(rpi_vkCreateGraphicsPipelines);
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -257,6 +265,7 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 		pip->vertexAttributeDescriptions = ALLOCATE(sizeof(VkVertexInputAttributeDescription) * pip->vertexAttributeDescriptionCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->vertexAttributeDescriptions)
 		{
+			PROFILEEND(rpi_vkCreateGraphicsPipelines);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
@@ -266,6 +275,7 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 		pip->vertexBindingDescriptions = ALLOCATE(sizeof(VkVertexInputBindingDescription) * pip->vertexBindingDescriptionCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->vertexBindingDescriptions)
 		{
+			PROFILEEND(rpi_vkCreateGraphicsPipelines);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
@@ -333,6 +343,7 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 		pip->viewports = ALLOCATE(sizeof(VkViewport) * pip->viewportCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->viewports)
 		{
+			PROFILEEND(rpi_vkCreateGraphicsPipelines);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
@@ -346,6 +357,7 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 
 		if(!pip->scissors)
 		{
+			PROFILEEND(rpi_vkCreateGraphicsPipelines);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
@@ -425,6 +437,7 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 		pip->attachmentBlendStates = ALLOCATE(sizeof(VkPipelineColorBlendAttachmentState) * pip->attachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip->attachmentBlendStates)
 		{
+			PROFILEEND(rpi_vkCreateGraphicsPipelines);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
@@ -441,6 +454,7 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 			pip->dynamicStates = ALLOCATE(sizeof(VkDynamicState)*pip->dynamicStateCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!pip->dynamicStates)
 			{
+				PROFILEEND(rpi_vkCreateGraphicsPipelines);
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -461,11 +475,14 @@ VkResult rpi_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipeline
 		pPipelines[c] = pip;
 	}
 
+	PROFILEEND(rpi_vkCreateGraphicsPipelines);
 	return VK_SUCCESS;
 }
 
 void rpi_vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyPipeline);
+
 	assert(device);
 
 	_pipeline* pip = pipeline;
@@ -485,6 +502,8 @@ void rpi_vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocat
 		}
 		FREE(pip);
 	}
+
+	PROFILEEND(rpi_vkDestroyPipeline);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkMergePipelineCaches(
@@ -521,6 +540,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineLayout(
 	const VkAllocationCallbacks*                pAllocator,
 	VkPipelineLayout*                           pPipelineLayout)
 {
+	PROFILESTART(rpi_vkCreatePipelineLayout);
+
 	assert(device);
 	assert(pCreateInfo);
 	assert(pPipelineLayout);
@@ -529,6 +550,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineLayout(
 
 	if(!pl)
 	{
+		PROFILEEND(rpi_vkCreatePipelineLayout);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -540,6 +562,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineLayout(
 		pl->setLayouts = ALLOCATE(sizeof(VkDescriptorSetLayout)*pCreateInfo->setLayoutCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pl->setLayouts)
 		{
+			PROFILEEND(rpi_vkCreatePipelineLayout);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
@@ -551,6 +574,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineLayout(
 		pl->pushConstantRanges = ALLOCATE(sizeof(VkPushConstantRange)*pCreateInfo->pushConstantRangeCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pl->pushConstantRanges)
 		{
+			PROFILEEND(rpi_vkCreatePipelineLayout);
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 
@@ -561,6 +585,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineLayout(
 
 	*pPipelineLayout = pl;
 
+	PROFILEEND(rpi_vkCreatePipelineLayout);
 	return VK_SUCCESS;
 }
 
@@ -569,6 +594,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyPipelineLayout(
 	VkPipelineLayout                            pipelineLayout,
 	const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroyPipelineLayout);
+
 	assert(device);
 	assert(pipelineLayout);
 
@@ -579,6 +606,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyPipelineLayout(
 	FREE(pl->setLayouts);
 
 	FREE(pl);
+
+	PROFILEEND(rpi_vkDestroyPipelineLayout);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreatePipelineCache(

@@ -14,6 +14,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
 	uint32_t*                                   pPropertyCount,
 	VkDisplayPlanePropertiesKHR*                pProperties)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
+
 	assert(physicalDevice);
 	assert(pPropertyCount);
 
@@ -24,6 +26,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
 	if(!pProperties)
 	{
 		*pPropertyCount = numPlanes;
+		PROFILEEND(rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
 		return VK_SUCCESS;
 	}
 
@@ -36,6 +39,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
 		pProperties[c].currentStackIndex = c; //TODO dunno?
 	}
 
+	PROFILEEND(rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
 	return VK_SUCCESS;
 }
 
@@ -45,6 +49,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayPlaneSupportedDisplaysKHR(
 	uint32_t*                                   pDisplayCount,
 	VkDisplayKHR*                               pDisplays)
 {
+	PROFILESTART(rpi_vkGetDisplayPlaneSupportedDisplaysKHR);
+
 	assert(physicalDevice);
 	assert(pDisplayCount);
 
@@ -55,6 +61,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayPlaneSupportedDisplaysKHR(
 	if(!pDisplays)
 	{
 		*pDisplayCount = planes[planeIndex].numPossibleConnectors;
+
+		PROFILEEND(rpi_vkGetDisplayPlaneSupportedDisplaysKHR);
 		return VK_SUCCESS;
 	}
 
@@ -70,9 +78,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayPlaneSupportedDisplaysKHR(
 
 	if(arraySize < planes[planeIndex].numPossibleConnectors)
 	{
+		PROFILEEND(rpi_vkGetDisplayPlaneSupportedDisplaysKHR);
 		return VK_INCOMPLETE;
 	}
 
+	PROFILEEND(rpi_vkGetDisplayPlaneSupportedDisplaysKHR);
 	return VK_SUCCESS;
 }
 
@@ -81,6 +91,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPropertiesKHR(
 	uint32_t*                                   pPropertyCount,
 	VkDisplayPropertiesKHR*                     pProperties)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceDisplayPropertiesKHR);
+
 	assert(physicalDevice);
 	assert(pPropertyCount);
 
@@ -91,6 +103,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPropertiesKHR(
 	if(!pProperties)
 	{
 		*pPropertyCount = numDisplays;
+
+		PROFILEEND(rpi_vkGetPhysicalDeviceDisplayPropertiesKHR);
 		return VK_SUCCESS;
 	}
 
@@ -114,9 +128,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPropertiesKHR(
 
 	if(arraySize < numDisplays)
 	{
+		PROFILEEND(rpi_vkGetPhysicalDeviceDisplayPropertiesKHR);
 		return VK_INCOMPLETE;
 	}
 
+	PROFILEEND(rpi_vkGetPhysicalDeviceDisplayPropertiesKHR);
 	return VK_SUCCESS;
 }
 
@@ -126,6 +142,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayModePropertiesKHR(
 	uint32_t*                                   pPropertyCount,
 	VkDisplayModePropertiesKHR*                 pProperties)
 {
+	PROFILESTART(rpi_vkGetDisplayModePropertiesKHR);
+
 	assert(physicalDevice);
 	assert(display);
 	assert(pPropertyCount);
@@ -137,6 +155,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayModePropertiesKHR(
 	if(!pProperties)
 	{
 		*pPropertyCount = numModes;
+
+		PROFILEEND(rpi_vkGetDisplayModePropertiesKHR);
 		return VK_SUCCESS;
 	}
 
@@ -156,9 +176,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayModePropertiesKHR(
 
 	if(arraySize < numModes)
 	{
+		PROFILEEND(rpi_vkGetDisplayModePropertiesKHR);
 		return VK_INCOMPLETE;
 	}
 
+	PROFILEEND(rpi_vkGetDisplayModePropertiesKHR);
 	return VK_SUCCESS;
 }
 
@@ -169,6 +191,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayModeKHR(
 	const VkAllocationCallbacks*                pAllocator,
 	VkDisplayModeKHR*                           pMode)
 {
+	PROFILESTART(rpi_vkCreateDisplayModeKHR);
+
 	assert(physicalDevice);
 	assert(display);
 
@@ -188,6 +212,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayModeKHR(
 			break;
 		}
 	}
+
+	PROFILEEND(rpi_vkCreateDisplayModeKHR);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayPlaneSurfaceKHR(
@@ -196,6 +222,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayPlaneSurfaceKHR(
 	const VkAllocationCallbacks*                pAllocator,
 	VkSurfaceKHR*                               pSurface)
 {
+	PROFILESTART(rpi_vkCreateDisplayPlaneSurfaceKHR);
+
 	assert(instance);
 	assert(pSurface);
 
@@ -206,6 +234,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayPlaneSurfaceKHR(
 	modeset_create_surface_for_mode(controlFd, mode.connectorID, mode.modeID, surface);
 
 	*pSurface = surface;
+
+	PROFILEEND(rpi_vkCreateDisplayPlaneSurfaceKHR);
 }
 
 /*
@@ -219,6 +249,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
 		VkSurfaceKHR                                surface,
 		const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroySurfaceKHR);
+
 	assert(instance);
 
 	if(surface)
@@ -227,6 +259,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
 	}
 
 	FREE(surface);
+
+	PROFILEEND(rpi_vkDestroySurfaceKHR);
 }
 
 /*
@@ -244,6 +278,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
 		VkSurfaceKHR                                surface,
 		VkSurfaceCapabilitiesKHR*                   pSurfaceCapabilities)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+
 	assert(physicalDevice);
 	assert(surface);
 	assert(pSurfaceCapabilities);
@@ -270,6 +306,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT |  //for clears
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT;  //for screenshots
 
+	PROFILEEND(rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
 	return VK_SUCCESS;
 }
 
@@ -288,6 +325,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
 		uint32_t*                                   pSurfaceFormatCount,
 		VkSurfaceFormatKHR*                         pSurfaceFormats)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceSurfaceFormatsKHR);
+
 	assert(physicalDevice);
 	assert(surface);
 	assert(pSurfaceFormatCount);
@@ -297,6 +336,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
 	if(!pSurfaceFormats)
 	{
 		*pSurfaceFormatCount = numFormats;
+
+		PROFILEEND(rpi_vkGetPhysicalDeviceSurfaceFormatsKHR);
 		return VK_SUCCESS;
 	}
 
@@ -312,9 +353,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
 
 	if(elementsWritten < numFormats)
 	{
+		PROFILEEND(rpi_vkGetPhysicalDeviceSurfaceFormatsKHR);
 		return VK_INCOMPLETE;
 	}
 
+	PROFILEEND(rpi_vkGetPhysicalDeviceSurfaceFormatsKHR);
 	return VK_SUCCESS;
 }
 
@@ -333,6 +376,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
 		uint32_t*                                   pPresentModeCount,
 		VkPresentModeKHR*                           pPresentModes)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceSurfacePresentModesKHR);
+
 	assert(physicalDevice);
 	assert(surface);
 	assert(pPresentModeCount);
@@ -340,6 +385,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
 	if(!pPresentModes)
 	{
 		*pPresentModeCount = numSupportedPresentModes;
+
+		PROFILEEND(rpi_vkGetPhysicalDeviceSurfacePresentModesKHR);
 		return VK_SUCCESS;
 	}
 
@@ -356,9 +403,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
 
 	if(elementsWritten < numSupportedPresentModes)
 	{
+		PROFILEEND(rpi_vkGetPhysicalDeviceSurfacePresentModesKHR);
 		return VK_INCOMPLETE;
 	}
 
+	PROFILEEND(rpi_vkGetPhysicalDeviceSurfacePresentModesKHR);
 	return VK_SUCCESS;
 }
 
@@ -371,6 +420,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 		const VkAllocationCallbacks*                pAllocator,
 		VkSwapchainKHR*                             pSwapchain)
 {
+	PROFILESTART(rpi_vkCreateSwapchainKHR);
+
 	assert(device);
 	assert(pCreateInfo);
 	assert(pSwapchain);
@@ -378,6 +429,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 	*pSwapchain = ALLOCATE(sizeof(_swapchain), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!*pSwapchain)
 	{
+		PROFILEEND(rpi_vkCreateSwapchainKHR);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -389,6 +441,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 	s->images = ALLOCATE(sizeof(_image) * pCreateInfo->minImageCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!s->images)
 	{
+		PROFILEEND(rpi_vkCreateSwapchainKHR);
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -451,6 +504,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 		modeset_create_fb_for_surface(controlFd, &s->images[c], pCreateInfo->surface); assert(s->images[c].fb);
 	}
 
+	PROFILEEND(rpi_vkCreateSwapchainKHR);
 	return VK_SUCCESS;
 }
 
@@ -469,6 +523,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetSwapchainImagesKHR(
 		uint32_t*                                   pSwapchainImageCount,
 		VkImage*                                    pSwapchainImages)
 {
+	PROFILESTART(rpi_vkGetSwapchainImagesKHR);
+
 	assert(device);
 	assert(swapchain);
 	assert(pSwapchainImageCount);
@@ -478,6 +534,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetSwapchainImagesKHR(
 	if(!pSwapchainImages)
 	{
 		*pSwapchainImageCount = s->numImages;
+
+		PROFILEEND(rpi_vkGetSwapchainImagesKHR);
 		return VK_SUCCESS;
 	}
 
@@ -493,9 +551,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetSwapchainImagesKHR(
 
 	if(elementsWritten < s->numImages)
 	{
+		PROFILEEND(rpi_vkGetSwapchainImagesKHR);
 		return VK_INCOMPLETE;
 	}
 
+	PROFILEEND(rpi_vkGetSwapchainImagesKHR);
 	return VK_SUCCESS;
 }
 
@@ -510,6 +570,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireNextImageKHR(
 		VkFence                                     fence,
 		uint32_t*                                   pImageIndex)
 {
+	PROFILESTART(rpi_vkAcquireNextImageKHR);
+
 	assert(device);
 	assert(swapchain);
 
@@ -533,6 +595,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireNextImageKHR(
 		f->signaled = 1;
 	}
 
+	PROFILEEND(rpi_vkAcquireNextImageKHR);
 	return VK_SUCCESS;
 }
 
@@ -553,6 +616,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueuePresentKHR(
 		VkQueue                                     queue,
 		const VkPresentInfoKHR*                     pPresentInfo)
 {
+	PROFILESTART(rpi_vkQueuePresentKHR);
+
 	assert(queue);
 	assert(pPresentInfo);
 
@@ -569,6 +634,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueuePresentKHR(
 		s->backbufferIdx = (s->backbufferIdx + 1) % s->numImages;
 	}
 
+	PROFILEEND(rpi_vkQueuePresentKHR);
 	return VK_SUCCESS;
 }
 
@@ -580,6 +646,8 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
 		VkSwapchainKHR                              swapchain,
 		const VkAllocationCallbacks*                pAllocator)
 {
+	PROFILESTART(rpi_vkDestroySwapchainKHR);
+
 	assert(device);
 
 	//TODO flush all ops
@@ -598,6 +666,10 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
 	}
 
 	FREE(s);
+
+	PROFILEEND(rpi_vkDestroySwapchainKHR);
+
+	profilePrintResults();
 }
 
 /*
@@ -610,6 +682,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceSupportKHR(
 		VkSurfaceKHR                                surface,
 		VkBool32*                                   pSupported)
 {
+	PROFILESTART(rpi_vkGetPhysicalDeviceSurfaceSupportKHR);
+
 	assert(pSupported);
 	assert(surface);
 	assert(physicalDevice);
@@ -620,6 +694,8 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceSupportKHR(
 	//one using /dev/dri/card0 which has modesetting
 	//other using /dev/dri/renderD128 which does not support modesetting, this would say false here
 	*pSupported = VK_TRUE;
+
+	PROFILEEND(rpi_vkGetPhysicalDeviceSurfaceSupportKHR);
 	return VK_SUCCESS;
 }
 
