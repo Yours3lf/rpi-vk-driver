@@ -1,4 +1,15 @@
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #include "profiler.h"
+
+/*
+#define _POSIX_C_SOURCE 199309L
+
+#include <time.h>
+#include <unistd.h>
+*/
 
 #include <stdlib.h>
 #include <string.h>
@@ -26,6 +37,7 @@ void initProfiler()
 
 void startMeasure(void* func, const char* funcName)
 {
+	/**
 	initProfiler();
 
 	while(globalProfilerGuard);
@@ -55,10 +67,12 @@ void startMeasure(void* func, const char* funcName)
 
 		globalProfilerGuard = 0;
 	}
+	/**/
 }
 
-void endMeasure(void* func)
+void endMeasure(uint32_t func)
 {
+	/**
 	struct timespec end;
 	clock_gettime(CLOCK_REALTIME, &end);
 
@@ -78,6 +92,7 @@ void endMeasure(void* func)
 
 		globalProfilerGuard = 0;
 	}
+	/**/
 }
 
 
@@ -159,3 +174,8 @@ void profilePrintResults()
 		}
 	}
 }
+
+#if defined (__cplusplus)
+}
+#endif
+

@@ -288,8 +288,6 @@ void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
 
 void modeset_destroy_surface(int fd, modeset_display_surface *surface)
 {
-	return;
-
 	//restore old state
 	drmModeSetCrtc(fd, modeset_saved_states[surface->savedState].crtc->crtc_id,
 			modeset_saved_states[surface->savedState].crtc->buffer_id,
