@@ -1,13 +1,15 @@
 #include "common.h"
 
+#include "declarations.h"
+
 #include "kernel/vc4_packet.h"
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBeginRenderPass
  */
-void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents)
+void RPIFUNC(vkCmdBeginRenderPass)(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents)
 {
-	PROFILESTART(rpi_vkCmdBeginRenderPass);
+	PROFILESTART(RPIFUNC(vkCmdBeginRenderPass));
 
 	assert(commandBuffer);
 	assert(pRenderPassBegin);
@@ -286,15 +288,15 @@ void rpi_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassB
 
 	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
-	PROFILEEND(rpi_vkCmdBeginRenderPass);
+	PROFILEEND(RPIFUNC(vkCmdBeginRenderPass));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdEndRenderPass
  */
-void rpi_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
+void RPIFUNC(vkCmdEndRenderPass)(VkCommandBuffer commandBuffer)
 {
-	PROFILESTART(rpi_vkCmdEndRenderPass);
+	PROFILESTART(RPIFUNC(vkCmdEndRenderPass));
 
 	assert(commandBuffer);
 
@@ -316,15 +318,15 @@ void rpi_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
 
 	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
-	PROFILEEND(rpi_vkCmdEndRenderPass);
+	PROFILEEND(RPIFUNC(vkCmdEndRenderPass));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateRenderPass
  */
-VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
+VkResult RPIFUNC(vkCreateRenderPass)(VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
 {
-	PROFILESTART(rpi_vkCreateRenderPass);
+	PROFILESTART(RPIFUNC(vkCreateRenderPass));
 
 	assert(device);
 	assert(pCreateInfo);
@@ -336,7 +338,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 	_renderpass* rp = ALLOCATE(sizeof(_renderpass), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp)
 	{
-		PROFILEEND(rpi_vkCreateRenderPass);
+		PROFILEEND(RPIFUNC(vkCreateRenderPass));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -344,7 +346,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 	rp->attachments = ALLOCATE(sizeof(VkAttachmentDescription)*rp->numAttachments, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp->attachments)
 	{
-		PROFILEEND(rpi_vkCreateRenderPass);
+		PROFILEEND(RPIFUNC(vkCreateRenderPass));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -354,7 +356,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 	rp->subpasses = ALLOCATE(sizeof(VkSubpassDescription)*rp->numSubpasses, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp->subpasses)
 	{
-		PROFILEEND(rpi_vkCreateRenderPass);
+		PROFILEEND(RPIFUNC(vkCreateRenderPass));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -371,7 +373,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 			rp->subpasses[c].pInputAttachments = ALLOCATE(sizeof(VkAttachmentReference)*rp->subpasses[c].inputAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pInputAttachments)
 			{
-				PROFILEEND(rpi_vkCreateRenderPass);
+				PROFILEEND(RPIFUNC(vkCreateRenderPass));
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -387,7 +389,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 			rp->subpasses[c].pColorAttachments = ALLOCATE(sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pColorAttachments)
 			{
-				PROFILEEND(rpi_vkCreateRenderPass);
+				PROFILEEND(RPIFUNC(vkCreateRenderPass));
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -403,7 +405,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 			rp->subpasses[c].pResolveAttachments = ALLOCATE(sizeof(VkAttachmentReference)*rp->subpasses[c].colorAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pResolveAttachments)
 			{
-				PROFILEEND(rpi_vkCreateRenderPass);
+				PROFILEEND(RPIFUNC(vkCreateRenderPass));
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -419,7 +421,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 			rp->subpasses[c].pDepthStencilAttachment = ALLOCATE(sizeof(VkAttachmentReference), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pDepthStencilAttachment)
 			{
-				PROFILEEND(rpi_vkCreateRenderPass);
+				PROFILEEND(RPIFUNC(vkCreateRenderPass));
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -435,7 +437,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 			rp->subpasses[c].pPreserveAttachments = ALLOCATE(sizeof(uint32_t)*rp->subpasses[c].preserveAttachmentCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 			if(!rp->subpasses[c].pPreserveAttachments)
 			{
-				PROFILEEND(rpi_vkCreateRenderPass);
+				PROFILEEND(RPIFUNC(vkCreateRenderPass));
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -451,7 +453,7 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 	rp->subpassDependencies = ALLOCATE(sizeof(VkSubpassDependency)*rp->numSubpassDependencies, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!rp->subpassDependencies)
 	{
-		PROFILEEND(rpi_vkCreateRenderPass);
+		PROFILEEND(RPIFUNC(vkCreateRenderPass));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -459,13 +461,13 @@ VkResult rpi_vkCreateRenderPass(VkDevice device, const VkRenderPassCreateInfo* p
 
 	*pRenderPass = rp;
 
-	PROFILEEND(rpi_vkCreateRenderPass);
+	PROFILEEND(RPIFUNC(vkCreateRenderPass));
 	return VK_SUCCESS;
 }
 
-void rpi_vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
+void RPIFUNC(vkDestroyRenderPass)(VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator)
 {
-	PROFILESTART(rpi_vkDestroyRenderPass);
+	PROFILESTART(RPIFUNC(vkDestroyRenderPass));
 
 	assert(device);
 
@@ -491,15 +493,15 @@ void rpi_vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, const VkA
 		FREE(rp);
 	}
 
-	PROFILEEND(rpi_vkDestroyRenderPass);
+	PROFILEEND(RPIFUNC(vkDestroyRenderPass));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateFramebuffer
  */
-VkResult rpi_vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
+VkResult RPIFUNC(vkCreateFramebuffer)(VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
 {
-	PROFILESTART(rpi_vkCreateFramebuffer);
+	PROFILESTART(RPIFUNC(vkCreateFramebuffer));
 
 	assert(device);
 	assert(pCreateInfo);
@@ -509,7 +511,7 @@ VkResult rpi_vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo*
 
 	if(!fb)
 	{
-		PROFILEEND(rpi_vkCreateFramebuffer);
+		PROFILEEND(RPIFUNC(vkCreateFramebuffer));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -520,7 +522,7 @@ VkResult rpi_vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo*
 
 	if(!fb->attachmentViews)
 	{
-		PROFILEEND(rpi_vkCreateFramebuffer);
+		PROFILEEND(RPIFUNC(vkCreateFramebuffer));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -535,13 +537,13 @@ VkResult rpi_vkCreateFramebuffer(VkDevice device, const VkFramebufferCreateInfo*
 
 	*pFramebuffer = fb;
 
-	PROFILEEND(rpi_vkCreateFramebuffer);
+	PROFILEEND(RPIFUNC(vkCreateFramebuffer));
 	return VK_SUCCESS;
 }
 
-void rpi_vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator)
+void RPIFUNC(vkDestroyFramebuffer)(VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator)
 {
-	PROFILESTART(rpi_vkDestroyFramebuffer);
+	PROFILESTART(RPIFUNC(vkDestroyFramebuffer));
 
 	assert(device);
 
@@ -552,17 +554,17 @@ void rpi_vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, const 
 		FREE(fb);
 	}
 
-	PROFILEEND(rpi_vkDestroyFramebuffer);
+	PROFILEEND(RPIFUNC(vkDestroyFramebuffer));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdNextSubpass
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdNextSubpass(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdNextSubpass)(
 	VkCommandBuffer                             commandBuffer,
 	VkSubpassContents                           contents)
 {
-	PROFILESTART(rpi_vkCmdNextSubpass);
+	PROFILESTART(RPIFUNC(vkCmdNextSubpass));
 
 	assert(commandBuffer);
 
@@ -571,18 +573,18 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdNextSubpass(
 	_commandBuffer* cb = commandBuffer;
 	//cb->currentSubpass++; //TODO check max subpass?
 
-	PROFILEEND(rpi_vkCmdNextSubpass);
+	PROFILEEND(RPIFUNC(vkCmdNextSubpass));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetRenderAreaGranularity
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetRenderAreaGranularity(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetRenderAreaGranularity)(
 	VkDevice                                    device,
 	VkRenderPass                                renderPass,
 	VkExtent2D*                                 pGranularity)
 {
-	PROFILESTART(rpi_vkGetRenderAreaGranularity);
+	PROFILESTART(RPIFUNC(vkGetRenderAreaGranularity));
 
 	assert(device);
 	assert(renderPass);
@@ -609,5 +611,5 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetRenderAreaGranularity(
 	pGranularity->width = tileSizeW;
 	pGranularity->height = tileSizeH;
 
-	PROFILEEND(rpi_vkGetRenderAreaGranularity);
+	PROFILEEND(RPIFUNC(vkGetRenderAreaGranularity));
 }

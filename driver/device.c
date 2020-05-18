@@ -10,12 +10,12 @@
  * If pPhysicalDeviceCount is smaller than the number of physical devices available, VK_INCOMPLETE will be returned instead of VK_SUCCESS, to indicate that not all the
  * available physical devices were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDevices(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEnumeratePhysicalDevices)(
 		VkInstance                                  instance,
 		uint32_t*                                   pPhysicalDeviceCount,
 		VkPhysicalDevice*                           pPhysicalDevices)
 {
-	PROFILESTART(rpi_vkEnumeratePhysicalDevices);
+	PROFILESTART(RPIFUNC(vkEnumeratePhysicalDevices));
 
 	assert(instance);
 
@@ -26,7 +26,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDevices(
 	if(!pPhysicalDevices)
 	{
 		*pPhysicalDeviceCount = numGPUs;
-		PROFILEEND(rpi_vkEnumeratePhysicalDevices);
+		PROFILEEND(RPIFUNC(vkEnumeratePhysicalDevices));
 		return VK_SUCCESS;
 	}
 
@@ -42,12 +42,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDevices(
 
 	if(arraySize < numGPUs)
 	{
-		PROFILEEND(rpi_vkEnumeratePhysicalDevices);
+		PROFILEEND(RPIFUNC(vkEnumeratePhysicalDevices));
 		return VK_INCOMPLETE;
 	}
 	else
 	{
-		PROFILEEND(rpi_vkEnumeratePhysicalDevices);
+		PROFILEEND(RPIFUNC(vkEnumeratePhysicalDevices));
 		return VK_SUCCESS;
 	}
 }
@@ -55,11 +55,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDevices(
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceProperties
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceProperties(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceProperties)(
 		VkPhysicalDevice                            physicalDevice,
 		VkPhysicalDeviceProperties*                 pProperties)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceProperties);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceProperties));
 
 	assert(physicalDevice);
 	assert(pProperties);
@@ -82,36 +82,36 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceProperties(
 	pProperties->limits = _limits;
 	pProperties->sparseProperties = sparseProps;
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceProperties);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceProperties));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceFeatures
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFeatures(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceFeatures)(
 		VkPhysicalDevice                            physicalDevice,
 		VkPhysicalDeviceFeatures*                   pFeatures)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceFeatures);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceFeatures));
 
 	assert(physicalDevice);
 	assert(pFeatures);
 
 	*pFeatures = _features;
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceFeatures);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceFeatures));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateDeviceExtensionProperties
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceExtensionProperties(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEnumerateDeviceExtensionProperties)(
 		VkPhysicalDevice                            physicalDevice,
 		const char*                                 pLayerName,
 		uint32_t*                                   pPropertyCount,
 		VkExtensionProperties*                      pProperties)
 {
-	PROFILESTART(rpi_vkEnumerateDeviceExtensionProperties);
+	PROFILESTART(RPIFUNC(vkEnumerateDeviceExtensionProperties));
 
 	assert(physicalDevice);
 	assert(pPropertyCount);
@@ -119,7 +119,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceExtensionProperties(
 	if(!pProperties)
 	{
 		*pPropertyCount = numDeviceExtensions;
-		PROFILEEND(rpi_vkEnumerateDeviceExtensionProperties);
+		PROFILEEND(RPIFUNC(vkEnumerateDeviceExtensionProperties));
 		return VK_SUCCESS;
 	}
 
@@ -135,11 +135,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceExtensionProperties(
 
 	if(arraySize < numDeviceExtensions)
 	{
-		PROFILEEND(rpi_vkEnumerateDeviceExtensionProperties);
+		PROFILEEND(RPIFUNC(vkEnumerateDeviceExtensionProperties));
 		return VK_INCOMPLETE;
 	}
 
-	PROFILEEND(rpi_vkEnumerateDeviceExtensionProperties);
+	PROFILEEND(RPIFUNC(vkEnumerateDeviceExtensionProperties));
 	return VK_SUCCESS;
 }
 
@@ -150,12 +150,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceExtensionProperties(
  * and on return the variable is overwritten with the number of structures actually written to pQueueFamilyProperties. If pQueueFamilyPropertyCount
  * is less than the number of queue families available, at most pQueueFamilyPropertyCount structures will be written.
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceQueueFamilyProperties)(
 		VkPhysicalDevice                            physicalDevice,
 		uint32_t*                                   pQueueFamilyPropertyCount,
 		VkQueueFamilyProperties*                    pQueueFamilyProperties)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceQueueFamilyProperties);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceQueueFamilyProperties));
 
 	assert(physicalDevice);
 	assert(pQueueFamilyPropertyCount);
@@ -163,7 +163,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties(
 	if(!pQueueFamilyProperties)
 	{
 		*pQueueFamilyPropertyCount = 1;
-		PROFILEEND(rpi_vkGetPhysicalDeviceQueueFamilyProperties);
+		PROFILEEND(RPIFUNC(vkGetPhysicalDeviceQueueFamilyProperties));
 		return;
 	}
 
@@ -177,17 +177,17 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties(
 
 	*pQueueFamilyPropertyCount = elementsWritten;
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceQueueFamilyProperties);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceQueueFamilyProperties));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR)(
 	VkPhysicalDevice                            physicalDevice,
 	uint32_t                                    queueFamilyIndex,
 	uint32_t*                                   pCounterCount,
 	VkPerformanceCounterKHR*                    pCounters,
 	VkPerformanceCounterDescriptionKHR*         pCounterDescriptions)
 {
-	PROFILESTART(rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR);
+	PROFILESTART(RPIFUNC(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR));
 
 	assert(physicalDevice);
 	assert(pCounterCount);
@@ -195,7 +195,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceQueueFamilyPerforman
 	if(!pCounters && !pCounterDescriptions)
 	{
 		*pCounterCount = numPerformanceCounterTypes;
-		PROFILEEND(rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR);
+		PROFILEEND(RPIFUNC(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR));
 		return VK_SUCCESS;
 	}
 
@@ -212,20 +212,20 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceQueueFamilyPerforman
 
 	if(arraySize < numPerformanceCounterTypes)
 	{
-		PROFILEEND(rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR);
+		PROFILEEND(RPIFUNC(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR));
 		return VK_INCOMPLETE;
 	}
 
-	PROFILEEND(rpi_vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR);
+	PROFILEEND(RPIFUNC(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR)(
 	VkPhysicalDevice                            physicalDevice,
 	const VkQueryPoolPerformanceCreateInfoKHR*  pPerformanceQueryCreateInfo,
 	uint32_t*                                   pNumPasses)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR));
 
 	assert(physicalDevice);
 	assert(pPerformanceQueryCreateInfo);
@@ -233,7 +233,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPas
 
 	*pNumPasses = pPerformanceQueryCreateInfo->counterIndexCount / DRM_VC4_MAX_PERF_COUNTERS + 1;
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR));
 }
 
 /*
@@ -247,13 +247,13 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyPerformanceQueryPas
  * time for the creation to succeed. Multiple logical devices can be created from the same physical device. Logical device creation may
  * fail due to lack of device-specific resources (in addition to the other errors). If that occurs, vkCreateDevice will return VK_ERROR_TOO_MANY_OBJECTS.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDevice)(
 		VkPhysicalDevice                            physicalDevice,
 		const VkDeviceCreateInfo*                   pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
 		VkDevice*                                   pDevice)
 {
-	PROFILESTART(rpi_vkCreateDevice);
+	PROFILESTART(RPIFUNC(vkCreateDevice));
 
 	assert(physicalDevice);
 	assert(pDevice);
@@ -265,7 +265,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 		int findres = findDeviceExtension(pCreateInfo->ppEnabledExtensionNames[c]);
 		if(findres == -1)
 		{
-			PROFILEEND(rpi_vkCreateDevice);
+			PROFILEEND(RPIFUNC(vkCreateDevice));
 			return VK_ERROR_EXTENSION_NOT_PRESENT;
 		}
 	}
@@ -280,7 +280,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 		{
 			if(requestedFeatures[c] && !supportedFeatures[c])
 			{
-				PROFILEEND(rpi_vkCreateDevice);
+				PROFILEEND(RPIFUNC(vkCreateDevice));
 				return VK_ERROR_FEATURE_NOT_PRESENT;
 			}
 		}
@@ -289,7 +289,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 	*pDevice = ALLOCATE(sizeof(_device), 1, VK_SYSTEM_ALLOCATION_SCOPE_DEVICE);
 	if(!*pDevice)
 	{
-		PROFILEEND(rpi_vkCreateDevice);
+		PROFILEEND(RPIFUNC(vkCreateDevice));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -315,7 +315,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 		{
 			if(requestedFeatures[c] && !supportedFeatures[c])
 			{
-				PROFILEEND(rpi_vkCreateDevice);
+				PROFILEEND(RPIFUNC(vkCreateDevice));
 				return VK_ERROR_FEATURE_NOT_PRESENT;
 			}
 		}
@@ -343,7 +343,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 
 			if(!(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex])
 			{
-				PROFILEEND(rpi_vkCreateDevice);
+				PROFILEEND(RPIFUNC(vkCreateDevice));
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
@@ -361,7 +361,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
 	setupEmulationResources(*pDevice);
 	setupClearEmulationResources(*pDevice);
 
-	PROFILEEND(rpi_vkCreateDevice);
+	PROFILEEND(RPIFUNC(vkCreateDevice));
 	return VK_SUCCESS;
 }
 
@@ -370,13 +370,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDevice(
  * vkGetDeviceQueue must only be used to get queues that were created with the flags parameter of VkDeviceQueueCreateInfo set to zero.
  * To get queues that were created with a non-zero flags parameter use vkGetDeviceQueue2.
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetDeviceQueue)(
 		VkDevice                                    device,
 		uint32_t                                    queueFamilyIndex,
 		uint32_t                                    queueIndex,
 		VkQueue*                                    pQueue)
 {
-	PROFILESTART(rpi_vkGetDeviceQueue);
+	PROFILESTART(RPIFUNC(vkGetDeviceQueue));
 
 	assert(device);
 	assert(pQueue);
@@ -386,15 +386,15 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue(
 
 	*pQueue = &device->queues[queueFamilyIndex][queueIndex];
 
-	PROFILEEND(rpi_vkGetDeviceQueue);
+	PROFILEEND(RPIFUNC(vkGetDeviceQueue));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue2(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetDeviceQueue2)(
 	VkDevice                                    device,
 	const VkDeviceQueueInfo2*                   pQueueInfo,
 	VkQueue*                                    pQueue)
 {
-	PROFILESTART(rpi_vkGetDeviceQueue2);
+	PROFILESTART(RPIFUNC(vkGetDeviceQueue2));
 
 	assert(device);
 	assert(pQueueInfo);
@@ -402,9 +402,9 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue2(
 
 	//TODO handle pNext
 
-	rpi_vkGetDeviceQueue(device, pQueueInfo->queueFamilyIndex, pQueueInfo->queueIndex, pQueue);
+	RPIFUNC(vkGetDeviceQueue)(device, pQueueInfo->queueFamilyIndex, pQueueInfo->queueIndex, pQueue);
 
-	PROFILEEND(rpi_vkGetDeviceQueue2);
+	PROFILEEND(RPIFUNC(vkGetDeviceQueue2));
 }
 
 /*
@@ -413,11 +413,11 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceQueue2(
  * Prior to destroying a device, an application is responsible for destroying/freeing any Vulkan objects that were created using that device as the
  * first parameter of the corresponding vkCreate* or vkAllocate* command
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDevice(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroyDevice)(
 		VkDevice                                    device,
 		const VkAllocationCallbacks*                pAllocator)
 {
-	PROFILESTART(rpi_vkDestroyDevice);
+	PROFILESTART(RPIFUNC(vkDestroyDevice));
 
 	_device* dev = device;
 
@@ -433,18 +433,18 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyDevice(
 		FREE(dev);
 	}
 
-	PROFILEEND(rpi_vkDestroyDevice);
+	PROFILEEND(RPIFUNC(vkDestroyDevice));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumeratePhysicalDeviceGroups
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceGroups(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEnumeratePhysicalDeviceGroups)(
 	VkInstance                                  instance,
 	uint32_t*                                   pPhysicalDeviceGroupCount,
 	VkPhysicalDeviceGroupProperties*            pPhysicalDeviceGroupProperties)
 {
-	PROFILESTART(rpi_vkEnumeratePhysicalDeviceGroups);
+	PROFILESTART(RPIFUNC(vkEnumeratePhysicalDeviceGroups));
 
 	assert(instance);
 	assert(pPhysicalDeviceGroupCount);
@@ -452,7 +452,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceGroups(
 	if(!pPhysicalDeviceGroupProperties)
 	{
 		*pPhysicalDeviceGroupCount = 1;
-		PROFILEEND(rpi_vkEnumeratePhysicalDeviceGroups);
+		PROFILEEND(RPIFUNC(vkEnumeratePhysicalDeviceGroups));
 		return VK_SUCCESS;
 	}
 
@@ -469,22 +469,22 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumeratePhysicalDeviceGroups(
 
 	if(c < 1)
 	{
-		PROFILEEND(rpi_vkEnumeratePhysicalDeviceGroups);
+		PROFILEEND(RPIFUNC(vkEnumeratePhysicalDeviceGroups));
 		return VK_INCOMPLETE;
 	}
 
-	PROFILEEND(rpi_vkEnumeratePhysicalDeviceGroups);
+	PROFILEEND(RPIFUNC(vkEnumeratePhysicalDeviceGroups));
 	return VK_SUCCESS;
 }
 
-extern VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(VkInstance                                  instance,
+extern VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL RPIFUNC(vkGetInstanceProcAddr)(VkInstance                                  instance,
 																		  const char*                                 pName);
 
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetDeviceProcAddr(
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL RPIFUNC(vkGetDeviceProcAddr)(
 	VkDevice                                    device,
 	const char*                                 pName)
 {
-	PROFILESTART(rpi_vkGetDeviceProcAddr);
+	PROFILESTART(RPIFUNC(vkGetDeviceProcAddr));
 
 	if(
 	!strcmp("vkDestroyInstance", pName) ||
@@ -512,27 +512,27 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetDeviceProcAddr(
 	!strcmp("vkGetPhysicalDeviceExternalSemaphoreProperties", pName)
 	)
 	{
-		PROFILEEND(rpi_vkGetDeviceProcAddr);
+		PROFILEEND(RPIFUNC(vkGetDeviceProcAddr));
 		return 0;
 	}
 
 
 	//there can't be any other device, so this will do fine...
 	_device* d = device;
-	PFN_vkVoidFunction retval = rpi_vkGetInstanceProcAddr(d->dev->instance, pName);
-	PROFILEEND(rpi_vkGetDeviceProcAddr);
+	PFN_vkVoidFunction retval = RPIFUNC(vkGetInstanceProcAddr)(d->dev->instance, pName);
+	PROFILEEND(RPIFUNC(vkGetDeviceProcAddr));
 	return retval;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceProperties2(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceProperties2)(
 	VkPhysicalDevice                            physicalDevice,
 	VkPhysicalDeviceProperties2*                pProperties)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceProperties2);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceProperties2));
 
 	assert(physicalDevice);
 	assert(pProperties);
-	rpi_vkGetPhysicalDeviceProperties(physicalDevice, &pProperties->properties);
+	RPIFUNC(vkGetPhysicalDeviceProperties)(physicalDevice, &pProperties->properties);
 
 	if(pProperties->pNext)
 	{
@@ -552,15 +552,15 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceProperties2(
 		}
 	}
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceProperties2);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceProperties2));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceFormatProperties)(
 	VkPhysicalDevice                            physicalDevice,
 	VkFormat                                    format,
 	VkFormatProperties*                         pFormatProperties)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceFormatProperties);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceFormatProperties));
 
 	assert(physicalDevice);
 	assert(pFormatProperties);
@@ -680,24 +680,24 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties(
 		break;
 	}
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceFormatProperties);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceFormatProperties));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFormatProperties2(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceFormatProperties2)(
 	VkPhysicalDevice                            physicalDevice,
 	VkFormat                                    format,
 	VkFormatProperties2*                        pFormatProperties)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceFormatProperties2);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceFormatProperties2));
 
 	assert(physicalDevice);
 	assert(pFormatProperties);
-	rpi_vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &pFormatProperties->formatProperties);
+	RPIFUNC(vkGetPhysicalDeviceFormatProperties)(physicalDevice, format, &pFormatProperties->formatProperties);
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceFormatProperties2);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceFormatProperties2));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceImageFormatProperties)(
 	VkPhysicalDevice                            physicalDevice,
 	VkFormat                                    format,
 	VkImageType                                 type,
@@ -706,7 +706,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties(
 	VkImageCreateFlags                          flags,
 	VkImageFormatProperties*                    pImageFormatProperties)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceImageFormatProperties);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceImageFormatProperties));
 
 	assert(physicalDevice);
 	assert(pImageFormatProperties);
@@ -762,7 +762,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties(
 
 	if(!supported)
 	{
-		PROFILEEND(rpi_vkGetPhysicalDeviceImageFormatProperties);
+		PROFILEEND(RPIFUNC(vkGetPhysicalDeviceImageFormatProperties));
 		return VK_ERROR_FORMAT_NOT_SUPPORTED;
 	}
 
@@ -818,16 +818,16 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties(
 	//2^31
 	pImageFormatProperties->maxResourceSize = 1<<31;
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceImageFormatProperties);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceImageFormatProperties));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties2(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceImageFormatProperties2)(
 	VkPhysicalDevice                            physicalDevice,
 	const VkPhysicalDeviceImageFormatInfo2*     pImageFormatInfo,
 	VkImageFormatProperties2*                   pImageFormatProperties)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceImageFormatProperties2);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceImageFormatProperties2));
 
 	assert(physicalDevice);
 	assert(pImageFormatProperties);
@@ -835,52 +835,52 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceImageFormatProperties2(
 
 	//TODO handle pNext
 
-	VkResult retval = rpi_vkGetPhysicalDeviceImageFormatProperties(physicalDevice,
+	VkResult retval = RPIFUNC(vkGetPhysicalDeviceImageFormatProperties)(physicalDevice,
 													pImageFormatInfo->format,
 													pImageFormatInfo->type,
 													pImageFormatInfo->tiling,
 													pImageFormatInfo->usage,
 													pImageFormatInfo->flags,
 													&pImageFormatProperties->imageFormatProperties);
-	PROFILEEND(rpi_vkGetPhysicalDeviceImageFormatProperties2);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceImageFormatProperties2));
 	return retval;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateDeviceLayerProperties(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEnumerateDeviceLayerProperties)(
 	VkPhysicalDevice                            physicalDevice,
 	uint32_t*                                   pPropertyCount,
 	VkLayerProperties*                          pProperties)
 {
-	PROFILESTART(rpi_vkEnumerateDeviceLayerProperties);
+	PROFILESTART(RPIFUNC(vkEnumerateDeviceLayerProperties));
 
 	//deprecated, just return instance layers
-	VkResult retval = rpi_vkEnumerateInstanceLayerProperties(pPropertyCount, pProperties);
-	PROFILEEND(rpi_vkEnumerateDeviceLayerProperties);
+	VkResult retval = RPIFUNC(vkEnumerateInstanceLayerProperties)(pPropertyCount, pProperties);
+	PROFILEEND(RPIFUNC(vkEnumerateDeviceLayerProperties));
 	return retval;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceFeatures2(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceFeatures2)(
 	VkPhysicalDevice                            physicalDevice,
 	VkPhysicalDeviceFeatures2*                  pFeatures)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceFeatures2);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceFeatures2));
 
 	assert(physicalDevice);
 	assert(pFeatures);
-	rpi_vkGetPhysicalDeviceFeatures(physicalDevice, &pFeatures->features);
+	RPIFUNC(vkGetPhysicalDeviceFeatures)(physicalDevice, &pFeatures->features);
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceFeatures2);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceFeatures2));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceQueueFamilyProperties2(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceQueueFamilyProperties2)(
 	VkPhysicalDevice                            physicalDevice,
 	uint32_t*                                   pQueueFamilyPropertyCount,
 	VkQueueFamilyProperties2*                   pQueueFamilyProperties)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceQueueFamilyProperties2);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceQueueFamilyProperties2));
 
 	assert(physicalDevice);
-	rpi_vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
+	RPIFUNC(vkGetPhysicalDeviceQueueFamilyProperties)(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceQueueFamilyProperties2);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceQueueFamilyProperties2));
 }

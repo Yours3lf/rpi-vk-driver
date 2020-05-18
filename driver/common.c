@@ -969,7 +969,7 @@ uint32_t getPow2Pad(uint32_t n)
 ////////////////////////////////////////////////////
 ////////////////////////////////////////////////////
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceExternalBufferProperties(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceExternalBufferProperties)(
 	VkPhysicalDevice                            physicalDevice,
 	const VkPhysicalDeviceExternalBufferInfo*   pExternalBufferInfo,
 	VkExternalBufferProperties*                 pExternalBufferProperties)
@@ -977,7 +977,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceExternalBufferProperties(
 	UNSUPPORTED(vkGetPhysicalDeviceExternalBufferProperties);
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceExternalFenceProperties(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceExternalFenceProperties)(
 	VkPhysicalDevice                            physicalDevice,
 	const VkPhysicalDeviceExternalFenceInfo*    pExternalFenceInfo,
 	VkExternalFenceProperties*                  pExternalFenceProperties)
@@ -986,7 +986,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceExternalFenceProperties(
 }
 
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceExternalSemaphoreProperties(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceExternalSemaphoreProperties)(
 	VkPhysicalDevice                            physicalDevice,
 	const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo,
 	VkExternalSemaphoreProperties*              pExternalSemaphoreProperties)
@@ -994,7 +994,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceExternalSemaphoreProperties(
 	UNSUPPORTED(vkGetPhysicalDeviceExternalSemaphoreProperties);
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceGroupPeerMemoryFeatures(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetDeviceGroupPeerMemoryFeatures)(
 	VkDevice                                    device,
 	uint32_t                                    heapIndex,
 	uint32_t                                    localDeviceIndex,

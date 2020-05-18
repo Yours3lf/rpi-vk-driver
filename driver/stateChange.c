@@ -258,7 +258,7 @@ void createClearShaderModule(VkDevice device, VkShaderModule* blitShaderModule, 
 	smci.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	smci.codeSize = sizeof(uint32_t)*6;
 	smci.pCode = spirv;
-	rpi_vkCreateShaderModule(device, &smci, 0, blitShaderModule);
+	RPIFUNC(vkCreateShaderModule)(device, &smci, 0, blitShaderModule);
 	assert(*blitShaderModule);
 
 	{ //assemble fs code
@@ -272,7 +272,7 @@ void createClearShaderModule(VkDevice device, VkShaderModule* blitShaderModule, 
 		assert(asm_ptrs[2]);
 	}
 
-	rpi_vkCreateShaderModule(device, &smci, 0, blitShaderModuleNoColor);
+	RPIFUNC(vkCreateShaderModule)(device, &smci, 0, blitShaderModuleNoColor);
 	assert(*blitShaderModuleNoColor);
 
 	for(uint32_t c = 0; c < 4; ++c)
@@ -356,7 +356,7 @@ void createClearPipeline(VkDevice device, VkPipelineDepthStencilStateCreateInfo*
 	pipelineLayoutCI.pSetLayouts = &blitDsl;
 	pipelineLayoutCI.pushConstantRangeCount = 2;
 	pipelineLayoutCI.pPushConstantRanges = &pushConstantRanges[0];
-	rpi_vkCreatePipelineLayout(device, &pipelineLayoutCI, 0, blitPipelineLayout);
+	RPIFUNC(vkCreatePipelineLayout)(device, &pipelineLayoutCI, 0, blitPipelineLayout);
 
 	VkDynamicState dynState = VK_DYNAMIC_STATE_VIEWPORT;
 
@@ -386,7 +386,7 @@ void createClearPipeline(VkDevice device, VkPipelineDepthStencilStateCreateInfo*
 	pipelineInfo.pDepthStencilState = dsState;
 	pipelineInfo.layout = *blitPipelineLayout;
 
-	VkResult res = rpi_vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, blitPipeline);
+	VkResult res = RPIFUNC(vkCreateGraphicsPipelines)(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, blitPipeline);
 }
 
 void createClearDescriptorSetLayouts(VkDevice device, VkDescriptorSetLayout* bufferDsl)
@@ -399,7 +399,7 @@ void createClearDescriptorSetLayouts(VkDevice device, VkDescriptorSetLayout* buf
 	descriptorLayoutCI.bindingCount = 0;
 	descriptorLayoutCI.pBindings = 0;
 
-	rpi_vkCreateDescriptorSetLayout(device, &descriptorLayoutCI, 0, bufferDsl);
+	RPIFUNC(vkCreateDescriptorSetLayout)(device, &descriptorLayoutCI, 0, bufferDsl);
 }
 
 void setupClearEmulationResources(VkDevice device)
@@ -414,9 +414,9 @@ void setupClearEmulationResources(VkDevice device)
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetViewport
  */
-void rpi_vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
+void RPIFUNC(vkCmdSetViewport)(VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports)
 {
-	PROFILESTART(rpi_vkCmdSetViewport);
+	PROFILESTART(RPIFUNC(vkCmdSetViewport));
 
 	assert(commandBuffer);
 	assert(firstViewport == 0);
@@ -430,15 +430,15 @@ void rpi_vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32_t firstViewport,
 
 	cb->viewportDirty = 1;
 
-	PROFILEEND(rpi_vkCmdSetViewport);
+	PROFILEEND(RPIFUNC(vkCmdSetViewport));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetScissor
  */
-void rpi_vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors)
+void RPIFUNC(vkCmdSetScissor)(VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors)
 {
-	PROFILESTART(rpi_vkCmdSetScissor);
+	PROFILESTART(RPIFUNC(vkCmdSetScissor));
 
 	assert(commandBuffer);
 	assert(firstScissor == 0);
@@ -452,15 +452,15 @@ void rpi_vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32_t firstScissor, u
 
 	cb->scissorDirty = 1;
 
-	PROFILEEND(rpi_vkCmdSetScissor);
+	PROFILEEND(RPIFUNC(vkCmdSetScissor));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBindVertexBuffers
  */
-void rpi_vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
+void RPIFUNC(vkCmdBindVertexBuffers)(VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets)
 {
-	PROFILESTART(rpi_vkCmdBindVertexBuffers);
+	PROFILESTART(RPIFUNC(vkCmdBindVertexBuffers));
 
 	assert(commandBuffer);
 
@@ -474,7 +474,7 @@ void rpi_vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBin
 
 	cb->vertexBufferDirty = 1;
 
-	PROFILEEND(rpi_vkCmdBindVertexBuffers);
+	PROFILEEND(RPIFUNC(vkCmdBindVertexBuffers));
 }
 
 /*
@@ -482,7 +482,7 @@ void rpi_vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32_t firstBin
  * Color and depth/stencil images can be cleared outside a render pass instance using vkCmdClearColorImage or vkCmdClearDepthStencilImage, respectively.
  * These commands are only allowed outside of a render pass instance.
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearColorImage(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearColorImage)(
 		VkCommandBuffer                             commandBuffer,
 		VkImage                                     image,
 		VkImageLayout                               imageLayout,
@@ -490,7 +490,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearColorImage(
 		uint32_t                                    rangeCount,
 		const VkImageSubresourceRange*              pRanges)
 {
-	PROFILESTART(rpi_vkCmdClearColorImage);
+	PROFILESTART(RPIFUNC(vkCmdClearColorImage));
 
 	assert(commandBuffer);
 	assert(image);
@@ -566,13 +566,13 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearColorImage(
 		assert(((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 	}
 
-	PROFILEEND(rpi_vkCmdClearColorImage);
+	PROFILEEND(RPIFUNC(vkCmdClearColorImage));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdClearDepthStencilImage
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearDepthStencilImage(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearDepthStencilImage)(
 	VkCommandBuffer                             commandBuffer,
 	VkImage                                     image,
 	VkImageLayout                               imageLayout,
@@ -580,7 +580,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearDepthStencilImage(
 	uint32_t                                    rangeCount,
 	const VkImageSubresourceRange*              pRanges)
 {
-	PROFILESTART(rpi_vkCmdClearDepthStencilImage);
+	PROFILESTART(RPIFUNC(vkCmdClearDepthStencilImage));
 
 	assert(commandBuffer);
 	assert(image);
@@ -588,20 +588,20 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearDepthStencilImage(
 
 	//TODO
 
-	PROFILEEND(rpi_vkCmdClearDepthStencilImage);
+	PROFILEEND(RPIFUNC(vkCmdClearDepthStencilImage));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdClearAttachments
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearAttachments)(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    attachmentCount,
 	const VkClearAttachment*                    pAttachments,
 	uint32_t                                    rectCount,
 	const VkClearRect*                          pRects)
 {
-	PROFILESTART(rpi_vkCmdClearAttachments);
+	PROFILESTART(RPIFUNC(vkCmdClearAttachments));
 
 	assert(commandBuffer);
 	assert(pAttachments);
@@ -613,7 +613,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 	if(!cmdBuf->currRenderPass)
 	{
 		//no active render pass
-		PROFILEEND(rpi_vkCmdClearAttachments);
+		PROFILEEND(RPIFUNC(vkCmdClearAttachments));
 		return;
 	}
 
@@ -669,10 +669,10 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 
 		createClearPipeline(device, &dsci, clearColor ? device->emulClearShaderModule : device->emulClearNoColorShaderModule, device->emulClearDsl, &blitPipelineLayout, cmdBuf->currRenderPass, &blitPipeline);
 
-		rpi_vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipeline);
+		RPIFUNC(vkCmdBindPipeline)(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipeline);
 
 		VkDeviceSize offsets = 0;
-		rpi_vkCmdBindVertexBuffers(commandBuffer, 0, 1, &device->emulFsqVertexBuffer, &offsets );
+		RPIFUNC(vkCmdBindVertexBuffers)(commandBuffer, 0, 1, &device->emulFsqVertexBuffer, &offsets );
 
 		uint32_t clearColorValue = 0, stencilSetup = 0, depthClearValue = 0;
 
@@ -687,7 +687,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 		fragConstants[1] = stencilSetup;
 		fragConstants[2] = depthClearValue;
 
-		rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragConstants), &fragConstants);
+		RPIFUNC(vkCmdPushConstants)(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragConstants), &fragConstants);
 
 		for(uint32_t d = 0; d < rectCount; ++d)
 		{
@@ -699,7 +699,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 			vp.minDepth = 0.0f;
 			vp.maxDepth = 1.0f;
 
-			rpi_vkCmdSetViewport(commandBuffer, 0, 1, &vp);
+			RPIFUNC(vkCmdSetViewport)(commandBuffer, 0, 1, &vp);
 
 			float Wcoeff = 1.0f; //1.0f / Wc = 2.0 - Wcoeff
 			float viewportScaleX = (float)(vp.width) * 0.5f * 16.0f;
@@ -712,14 +712,14 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 			vertConstants[2] = *(uint32_t*)&viewportScaleY;
 			vertConstants[3] = *(uint32_t*)&Zs;
 
-			rpi_vkCmdPushConstants(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vertConstants), &vertConstants);
+			RPIFUNC(vkCmdPushConstants)(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vertConstants), &vertConstants);
 
-			rpi_vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+			RPIFUNC(vkCmdDraw)(commandBuffer, 6, 1, 0, 0);
 		}
 
 		//free up resources
-		rpi_vkDestroyPipelineLayout(device, blitPipelineLayout, 0);
-		rpi_vkDestroyPipeline(device, blitPipeline, 0);
+		RPIFUNC(vkDestroyPipelineLayout)(device, blitPipelineLayout, 0);
+		RPIFUNC(vkDestroyPipeline)(device, blitPipeline, 0);
 	}
 
 	//restore state
@@ -729,53 +729,53 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdClearAttachments(
 	memcpy(cmdBuf->pushConstantBufferVertex, oldPushConstantBufferVertex, sizeof(oldPushConstantBufferVertex));
 	memcpy(cmdBuf->pushConstantBufferPixel, oldPushConstantBufferPixel, sizeof(oldPushConstantBufferPixel));
 
-	PROFILEEND(rpi_vkCmdClearAttachments);
+	PROFILEEND(RPIFUNC(vkCmdClearAttachments));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdFillBuffer
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdFillBuffer(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdFillBuffer)(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    dstBuffer,
 	VkDeviceSize                                dstOffset,
 	VkDeviceSize                                size,
 	uint32_t                                    data)
 {
-	PROFILESTART(rpi_vkCmdFillBuffer);
+	PROFILESTART(RPIFUNC(vkCmdFillBuffer));
 
 	//TODO
 
-	PROFILEEND(rpi_vkCmdFillBuffer);
+	PROFILEEND(RPIFUNC(vkCmdFillBuffer));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdUpdateBuffer
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdUpdateBuffer(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdUpdateBuffer)(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    dstBuffer,
 	VkDeviceSize                                dstOffset,
 	VkDeviceSize                                dataSize,
 	const void*                                 pData)
 {
-	PROFILESTART(rpi_vkCmdUpdateBuffer);
+	PROFILESTART(RPIFUNC(vkCmdUpdateBuffer));
 
 	//TODO
 
-	PROFILEEND(rpi_vkCmdUpdateBuffer);
+	PROFILEEND(RPIFUNC(vkCmdUpdateBuffer));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdBindIndexBuffer
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBindIndexBuffer(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBindIndexBuffer)(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    buffer,
 	VkDeviceSize                                offset,
 	VkIndexType                                 indexType)
 {
-	PROFILESTART(rpi_vkCmdBindIndexBuffer);
+	PROFILESTART(RPIFUNC(vkCmdBindIndexBuffer));
 
 	assert(commandBuffer);
 
@@ -791,17 +791,17 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBindIndexBuffer(
 
 	cb->indexBufferDirty = 1;
 
-	PROFILEEND(rpi_vkCmdBindIndexBuffer);
+	PROFILEEND(RPIFUNC(vkCmdBindIndexBuffer));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetLineWidth
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetLineWidth(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdSetLineWidth)(
 	VkCommandBuffer                             commandBuffer,
 	float                                       lineWidth)
 {
-	PROFILESTART(rpi_vkCmdSetLineWidth);
+	PROFILESTART(RPIFUNC(vkCmdSetLineWidth));
 
 	assert(commandBuffer);
 
@@ -810,19 +810,19 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetLineWidth(
 
 	cb->lineWidthDirty = 1;
 
-	PROFILEEND(rpi_vkCmdSetLineWidth);
+	PROFILEEND(RPIFUNC(vkCmdSetLineWidth));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetDepthBias
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDepthBias(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdSetDepthBias)(
 	VkCommandBuffer                             commandBuffer,
 	float                                       depthBiasConstantFactor,
 	float                                       depthBiasClamp,
 	float                                       depthBiasSlopeFactor)
 {
-	PROFILESTART(rpi_vkCmdSetDepthBias);
+	PROFILESTART(RPIFUNC(vkCmdSetDepthBias));
 
 	assert(commandBuffer);
 
@@ -833,17 +833,17 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDepthBias(
 
 	cb->depthBiasDirty = 1;
 
-	PROFILEEND(rpi_vkCmdSetDepthBias);
+	PROFILEEND(RPIFUNC(vkCmdSetDepthBias));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetBlendConstants
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetBlendConstants(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdSetBlendConstants)(
 	VkCommandBuffer                             commandBuffer,
 	const float                                 blendConstants[4])
 {
-	PROFILESTART(rpi_vkCmdSetBlendConstants);
+	PROFILESTART(RPIFUNC(vkCmdSetBlendConstants));
 
 	assert(commandBuffer);
 
@@ -852,18 +852,18 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetBlendConstants(
 
 	cb->blendConstantsDirty = 1;
 
-	PROFILEEND(rpi_vkCmdSetBlendConstants);
+	PROFILEEND(RPIFUNC(vkCmdSetBlendConstants));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetDepthBounds
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDepthBounds(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdSetDepthBounds)(
 	VkCommandBuffer                             commandBuffer,
 	float                                       minDepthBounds,
 	float                                       maxDepthBounds)
 {
-	PROFILESTART(rpi_vkCmdSetDepthBounds);
+	PROFILESTART(RPIFUNC(vkCmdSetDepthBounds));
 
 	assert(commandBuffer);
 
@@ -873,18 +873,18 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDepthBounds(
 
 	cb->depthBoundsDirty = 1;
 
-	PROFILEEND(rpi_vkCmdSetDepthBounds);
+	PROFILEEND(RPIFUNC(vkCmdSetDepthBounds));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetStencilCompareMask
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilCompareMask(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdSetStencilCompareMask)(
 	VkCommandBuffer                             commandBuffer,
 	VkStencilFaceFlags                          faceMask,
 	uint32_t                                    compareMask)
 {
-	PROFILESTART(rpi_vkCmdSetStencilCompareMask);
+	PROFILESTART(RPIFUNC(vkCmdSetStencilCompareMask));
 
 	assert(commandBuffer);
 
@@ -902,18 +902,18 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilCompareMask(
 
 	cb->stencilCompareMaskDirty = 1;
 
-	PROFILEEND(rpi_vkCmdSetStencilCompareMask);
+	PROFILEEND(RPIFUNC(vkCmdSetStencilCompareMask));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetStencilWriteMask
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilWriteMask(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdSetStencilWriteMask)(
 	VkCommandBuffer                             commandBuffer,
 	VkStencilFaceFlags                          faceMask,
 	uint32_t                                    writeMask)
 {
-	PROFILESTART(rpi_vkCmdSetStencilWriteMask);
+	PROFILESTART(RPIFUNC(vkCmdSetStencilWriteMask));
 
 	assert(commandBuffer);
 
@@ -931,18 +931,18 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilWriteMask(
 
 	cb->stencilWriteMaskDirty = 1;
 
-	PROFILEEND(rpi_vkCmdSetStencilWriteMask);
+	PROFILEEND(RPIFUNC(vkCmdSetStencilWriteMask));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdSetStencilReference
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilReference(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdSetStencilReference)(
 	VkCommandBuffer                             commandBuffer,
 	VkStencilFaceFlags                          faceMask,
 	uint32_t                                    reference)
 {
-	PROFILESTART(rpi_vkCmdSetStencilReference);
+	PROFILESTART(RPIFUNC(vkCmdSetStencilReference));
 
 	assert(commandBuffer);
 
@@ -960,5 +960,5 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetStencilReference(
 
 	cb->stencilReferenceDirty = 1;
 
-	PROFILEEND(rpi_vkCmdSetStencilReference);
+	PROFILEEND(RPIFUNC(vkCmdSetStencilReference));
 }

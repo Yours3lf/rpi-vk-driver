@@ -1,13 +1,15 @@
 #include "common.h"
 
+#include "declarations.h"
+
 #include "kernel/vc4_packet.h"
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceMemoryProperties
  */
-void rpi_vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties)
+void RPIFUNC(vkGetPhysicalDeviceMemoryProperties)(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceMemoryProperties);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceMemoryProperties));
 
 	assert(physicalDevice);
 	assert(pMemoryProperties);
@@ -57,15 +59,15 @@ void rpi_vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, Vk
 		pMemoryProperties->memoryHeaps[c] = memoryHeaps[c];
 	}
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceMemoryProperties);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceMemoryProperties));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkAllocateMemory
  */
-VkResult rpi_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
+VkResult RPIFUNC(vkAllocateMemory)(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
 {
-	PROFILESTART(rpi_vkAllocateMemory);
+	PROFILESTART(RPIFUNC(vkAllocateMemory));
 
 	assert(device);
 	assert(pAllocateInfo);
@@ -74,14 +76,14 @@ VkResult rpi_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllo
 	uint32_t bo = vc4_bo_alloc(controlFd, pAllocateInfo->allocationSize, "vkAllocateMemory");
 	if(!bo)
 	{
-		PROFILEEND(rpi_vkAllocateMemory);
+		PROFILEEND(RPIFUNC(vkAllocateMemory));
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
 	}
 
 	_deviceMemory* mem = ALLOCATE(sizeof(_deviceMemory), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!mem)
 	{
-		PROFILEEND(rpi_vkAllocateMemory);
+		PROFILEEND(RPIFUNC(vkAllocateMemory));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -94,16 +96,16 @@ VkResult rpi_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllo
 
 	//TODO max number of allocations
 
-	PROFILEEND(rpi_vkAllocateMemory);
+	PROFILEEND(RPIFUNC(vkAllocateMemory));
 	return VK_SUCCESS;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkMapMemory
  */
-VkResult rpi_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData)
+VkResult RPIFUNC(vkMapMemory)(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData)
 {
-	PROFILESTART(rpi_vkMapMemory);
+	PROFILESTART(RPIFUNC(vkMapMemory));
 
 	assert(device);
 	assert(memory);
@@ -128,7 +130,7 @@ VkResult rpi_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize of
 	void* ptr = vc4_bo_map(controlFd, ((_deviceMemory*)memory)->bo, offset, size);
 	if(!ptr)
 	{
-		PROFILEEND(rpi_vkMapMemory);
+		PROFILEEND(RPIFUNC(vkMapMemory));
 		return VK_ERROR_MEMORY_MAP_FAILED;
 	}
 
@@ -137,16 +139,16 @@ VkResult rpi_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize of
 	((_deviceMemory*)memory)->mappedSize = size;
 	*ppData = ptr;
 
-	PROFILEEND(rpi_vkMapMemory);
+	PROFILEEND(RPIFUNC(vkMapMemory));
 	return VK_SUCCESS;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkUnmapMemory
  */
-void rpi_vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
+void RPIFUNC(vkUnmapMemory)(VkDevice device, VkDeviceMemory memory)
 {
-	PROFILESTART(rpi_vkUnmapMemory);
+	PROFILESTART(RPIFUNC(vkUnmapMemory));
 
 	assert(device);
 	assert(memory);
@@ -156,12 +158,12 @@ void rpi_vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
 	((_deviceMemory*)memory)->mappedSize = 0;
 	((_deviceMemory*)memory)->mappedOffset = 0;
 
-	PROFILEEND(rpi_vkUnmapMemory);
+	PROFILEEND(RPIFUNC(vkUnmapMemory));
 }
 
-void rpi_vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
+void RPIFUNC(vkFreeMemory)(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
-	PROFILESTART(rpi_vkFreeMemory);
+	PROFILESTART(RPIFUNC(vkFreeMemory));
 
 	assert(device);
 
@@ -172,29 +174,29 @@ void rpi_vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocation
 		FREE(mem);
 	}
 
-	PROFILEEND(rpi_vkFreeMemory);
+	PROFILEEND(RPIFUNC(vkFreeMemory));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkFlushMappedMemoryRanges
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkFlushMappedMemoryRanges(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkFlushMappedMemoryRanges)(
 	VkDevice                                    device,
 	uint32_t                                    memoryRangeCount,
 	const VkMappedMemoryRange*                  pMemoryRanges)
 {
-	PROFILESTART(rpi_vkFlushMappedMemoryRanges);
+	PROFILESTART(RPIFUNC(vkFlushMappedMemoryRanges));
 
 	//TODO
 
-	PROFILEEND(rpi_vkFlushMappedMemoryRanges);
+	PROFILEEND(RPIFUNC(vkFlushMappedMemoryRanges));
 	return VK_SUCCESS;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkInvalidateMappedMemoryRanges
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkInvalidateMappedMemoryRanges(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkInvalidateMappedMemoryRanges)(
 	VkDevice                                    device,
 	uint32_t                                    memoryRangeCount,
 	const VkMappedMemoryRange*                  pMemoryRanges)
@@ -204,15 +206,15 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkInvalidateMappedMemoryRanges(
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceMemoryProperties2(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceMemoryProperties2)(
 	VkPhysicalDevice                            physicalDevice,
 	VkPhysicalDeviceMemoryProperties2*          pMemoryProperties)
 {
 	assert(physicalDevice);
-	rpi_vkGetPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties);
+	RPIFUNC(vkGetPhysicalDeviceMemoryProperties)(physicalDevice, pMemoryProperties);
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetDeviceMemoryCommitment(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetDeviceMemoryCommitment)(
 	VkDevice                                    device,
 	VkDeviceMemory                              memory,
 	VkDeviceSize*                               pCommittedMemoryInBytes)

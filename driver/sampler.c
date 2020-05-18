@@ -1,12 +1,14 @@
 #include "common.h"
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSampler(
+#include "declarations.h"
+
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateSampler)(
 	VkDevice                                    device,
 	const VkSamplerCreateInfo*                  pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
 	VkSampler*                                  pSampler)
 {
-	PROFILESTART(rpi_vkCreateSampler);
+	PROFILESTART(RPIFUNC(vkCreateSampler));
 
 	assert(device);
 	assert(pCreateInfo);
@@ -16,7 +18,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSampler(
 
 	if(!s)
 	{
-		PROFILEEND(rpi_vkCreateSampler);
+		PROFILEEND(RPIFUNC(vkCreateSampler));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -39,46 +41,46 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSampler(
 
 	*pSampler = s;
 
-	PROFILEEND(rpi_vkCreateSampler);
+	PROFILEEND(RPIFUNC(vkCreateSampler));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySampler(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroySampler)(
 	VkDevice                                    device,
 	VkSampler                                   sampler,
 	const VkAllocationCallbacks*                pAllocator)
 {
-	PROFILESTART(rpi_vkDestroySampler);
+	PROFILESTART(RPIFUNC(vkDestroySampler));
 
 	assert(device);
 
 	FREE(sampler);
 
-	PROFILEEND(rpi_vkDestroySampler);
+	PROFILEEND(RPIFUNC(vkDestroySampler));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSamplerYcbcrConversion(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateSamplerYcbcrConversion)(
 	VkDevice                                    device,
 	const VkSamplerYcbcrConversionCreateInfo*   pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
 	VkSamplerYcbcrConversion*                   pYcbcrConversion)
 {
-	PROFILESTART(rpi_vkCreateSamplerYcbcrConversion);
+	PROFILESTART(RPIFUNC(vkCreateSamplerYcbcrConversion));
 
 	//TODO
 
-	PROFILEEND(rpi_vkCreateSamplerYcbcrConversion);
+	PROFILEEND(RPIFUNC(vkCreateSamplerYcbcrConversion));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySamplerYcbcrConversion(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroySamplerYcbcrConversion)(
 	VkDevice                                    device,
 	VkSamplerYcbcrConversion                    ycbcrConversion,
 	const VkAllocationCallbacks*                pAllocator)
 {
-	PROFILESTART(rpi_vkDestroySamplerYcbcrConversion);
+	PROFILESTART(RPIFUNC(vkDestroySamplerYcbcrConversion));
 
 	//TODO
 
-	PROFILEEND(rpi_vkDestroySamplerYcbcrConversion);
+	PROFILEEND(RPIFUNC(vkDestroySamplerYcbcrConversion));
 }

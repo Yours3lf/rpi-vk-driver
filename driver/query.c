@@ -1,33 +1,35 @@
 #include "common.h"
 
+#include "declarations.h"
+
 //TODO VkPerformanceQuerySubmitInfoKHR
 //TODO query test
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireProfilingLockKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAcquireProfilingLockKHR)(
 	VkDevice                                    device,
 	const VkAcquireProfilingLockInfoKHR*        pInfo)
 {
-	PROFILESTART(rpi_vkAcquireProfilingLockKHR);
+	PROFILESTART(RPIFUNC(vkAcquireProfilingLockKHR));
 	//TODO
-	PROFILEEND(rpi_vkAcquireProfilingLockKHR);
+	PROFILEEND(RPIFUNC(vkAcquireProfilingLockKHR));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkReleaseProfilingLockKHR(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkReleaseProfilingLockKHR)(
 	VkDevice                                    device)
 {
-	PROFILESTART(rpi_vkReleaseProfilingLockKHR);
+	PROFILESTART(RPIFUNC(vkReleaseProfilingLockKHR));
 	//TODO
-	PROFILEEND(rpi_vkReleaseProfilingLockKHR);
+	PROFILEEND(RPIFUNC(vkReleaseProfilingLockKHR));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateQueryPool(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateQueryPool)(
 	VkDevice                                    device,
 	const VkQueryPoolCreateInfo*                pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
 	VkQueryPool*                                pQueryPool)
 {
-	PROFILESTART(rpi_vkCreateQueryPool);
+	PROFILESTART(RPIFUNC(vkCreateQueryPool));
 
 	assert(device);
 	assert(pQueryPool);
@@ -70,27 +72,27 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateQueryPool(
 		*pQueryPool = qp;
 	}
 
-	PROFILEEND(rpi_vkCreateQueryPool);
+	PROFILEEND(RPIFUNC(vkCreateQueryPool));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdResetQueryPool(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdResetQueryPool)(
 	VkCommandBuffer                             commandBuffer,
 	VkQueryPool                                 queryPool,
 	uint32_t                                    firstQuery,
 	uint32_t                                    queryCount)
 {
-	PROFILESTART(rpi_vkCmdResetQueryPool);
+	PROFILESTART(RPIFUNC(vkCmdResetQueryPool));
 	//TODO
-	PROFILEEND(rpi_vkCmdResetQueryPool);
+	PROFILEEND(RPIFUNC(vkCmdResetQueryPool));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyQueryPool(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroyQueryPool)(
 	VkDevice                                    device,
 	VkQueryPool                                 queryPool,
 	const VkAllocationCallbacks*                pAllocator)
 {
-	PROFILESTART(rpi_vkDestroyQueryPool);
+	PROFILESTART(RPIFUNC(vkDestroyQueryPool));
 
 	assert(device);
 	assert(queryPool);
@@ -107,15 +109,15 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyQueryPool(
 
 	FREE(qp->queryPool);
 
-	PROFILEEND(rpi_vkDestroyQueryPool);
+	PROFILEEND(RPIFUNC(vkDestroyQueryPool));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdEndQuery(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdEndQuery)(
 	VkCommandBuffer                             commandBuffer,
 	VkQueryPool                                 queryPool,
 	uint32_t                                    query)
 {
-	PROFILESTART(rpi_vkCmdEndQuery);
+	PROFILESTART(RPIFUNC(vkCmdEndQuery));
 
 	assert(commandBuffer);
 	assert(queryPool);
@@ -124,16 +126,16 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdEndQuery(
 
 	cmdBuf->perfmonID = 0;
 
-	PROFILEEND(rpi_vkCmdEndQuery);
+	PROFILEEND(RPIFUNC(vkCmdEndQuery));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBeginQuery(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBeginQuery)(
 	VkCommandBuffer                             commandBuffer,
 	VkQueryPool                                 queryPool,
 	uint32_t                                    query,
 	VkQueryControlFlags                         flags)
 {
-	PROFILESTART(rpi_vkCmdBeginQuery);
+	PROFILESTART(RPIFUNC(vkCmdBeginQuery));
 
 	assert(commandBuffer);
 	assert(queryPool);
@@ -147,10 +149,10 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdBeginQuery(
 	//pass id will select the perfmon at submit
 	cmdBuf->perfmonID = qp->queryPool[query].perfmonIDs;
 
-	PROFILEEND(rpi_vkCmdBeginQuery);
+	PROFILEEND(RPIFUNC(vkCmdBeginQuery));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyQueryPoolResults(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyQueryPoolResults)(
 	VkCommandBuffer                             commandBuffer,
 	VkQueryPool                                 queryPool,
 	uint32_t                                    firstQuery,
@@ -160,14 +162,14 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdCopyQueryPoolResults(
 	VkDeviceSize                                stride,
 	VkQueryResultFlags                          flags)
 {
-	PROFILESTART(rpi_vkCmdCopyQueryPoolResults);
+	PROFILESTART(RPIFUNC(vkCmdCopyQueryPoolResults));
 
 	//TODO
 
-	PROFILEEND(rpi_vkCmdCopyQueryPoolResults);
+	PROFILEEND(RPIFUNC(vkCmdCopyQueryPoolResults));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetQueryPoolResults(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetQueryPoolResults)(
 	VkDevice                                    device,
 	VkQueryPool                                 queryPool,
 	uint32_t                                    firstQuery,
@@ -177,7 +179,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetQueryPoolResults(
 	VkDeviceSize                                stride,
 	VkQueryResultFlags                          flags)
 {
-	PROFILESTART(rpi_vkGetQueryPoolResults);
+	PROFILESTART(RPIFUNC(vkGetQueryPoolResults));
 
 	assert(device);
 	assert(queryPool);
@@ -202,11 +204,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetQueryPoolResults(
 		}
 	}
 
-	PROFILEEND(rpi_vkGetQueryPoolResults);
+	PROFILEEND(RPIFUNC(vkGetQueryPoolResults));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdWriteTimestamp(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdWriteTimestamp)(
 	VkCommandBuffer                             commandBuffer,
 	VkPipelineStageFlagBits                     pipelineStage,
 	VkQueryPool                                 queryPool,

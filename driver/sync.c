@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include "declarations.h"
+
 #include "kernel/vc4_packet.h"
 
 //-----------------------------
@@ -52,13 +54,13 @@
  * These mechanisms indirectly enable applications to share semaphore state between two or more semaphores and other synchronization primitives across process and API boundaries.
  * When created, the semaphore is in the unsignaled state.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSemaphore(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateSemaphore)(
 		VkDevice                                    device,
 		const VkSemaphoreCreateInfo*                pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
 		VkSemaphore*                                pSemaphore)
 {
-	PROFILESTART(rpi_vkCreateSemaphore);
+	PROFILESTART(RPIFUNC(vkCreateSemaphore));
 
 	assert(device);
 	assert(pSemaphore);
@@ -67,14 +69,14 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSemaphore(
 	sem_t* s = ALLOCATE(sizeof(sem_t), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!s)
 	{
-		PROFILEEND(rpi_vkCreateSemaphore);
+		PROFILEEND(RPIFUNC(vkCreateSemaphore));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 	sem_init(s, 0, 0); //create semaphore unsignalled, shared between threads
 
 	*pSemaphore = (VkSemaphore)s;
 
-	PROFILEEND(rpi_vkCreateSemaphore);
+	PROFILEEND(RPIFUNC(vkCreateSemaphore));
 	return VK_SUCCESS;
 }
 
@@ -101,7 +103,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSemaphore(
  *
  * If dependencyFlags includes VK_DEPENDENCY_BY_REGION_BIT, then any dependency between framebuffer-space pipeline stages is framebuffer-local - otherwise it is framebuffer-global.
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdPipelineBarrier(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdPipelineBarrier)(
 		VkCommandBuffer                             commandBuffer,
 		VkPipelineStageFlags                        srcStageMask,
 		VkPipelineStageFlags                        dstStageMask,
@@ -113,7 +115,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdPipelineBarrier(
 		uint32_t                                    imageMemoryBarrierCount,
 		const VkImageMemoryBarrier*                 pImageMemoryBarriers)
 {
-	PROFILESTART(rpi_vkCmdPipelineBarrier);
+	PROFILESTART(RPIFUNC(vkCmdPipelineBarrier));
 
 	assert(commandBuffer);
 
@@ -201,17 +203,17 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdPipelineBarrier(
 		i->layout = pImageMemoryBarriers[c].newLayout;
 	}
 
-	PROFILEEND(rpi_vkCmdPipelineBarrier);
+	PROFILEEND(RPIFUNC(vkCmdPipelineBarrier));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDeviceWaitIdle
  * vkDeviceWaitIdle is equivalent to calling vkQueueWaitIdle for all queues owned by device.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkDeviceWaitIdle(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkDeviceWaitIdle)(
 		VkDevice									device)
 {
-	PROFILESTART(rpi_vkDeviceWaitIdle);
+	PROFILESTART(RPIFUNC(vkDeviceWaitIdle));
 
 	assert(device);
 
@@ -225,17 +227,17 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkDeviceWaitIdle(
 		}
 	}
 
-	PROFILEEND(rpi_vkDeviceWaitIdle);
+	PROFILEEND(RPIFUNC(vkDeviceWaitIdle));
 	return VK_SUCCESS;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkQueueWaitIdle
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueWaitIdle(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueWaitIdle)(
 	VkQueue                                     queue)
 {
-	PROFILESTART(rpi_vkQueueWaitIdle);
+	PROFILESTART(RPIFUNC(vkQueueWaitIdle));
 
 	assert(queue);
 
@@ -244,19 +246,19 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueWaitIdle(
 	uint64_t timeout = WAIT_TIMEOUT_INFINITE;
 	vc4_seqno_wait(controlFd, &lastFinishedSeqno, q->lastEmitSeqno, &timeout);
 
-	PROFILEEND(rpi_vkQueueWaitIdle);
+	PROFILEEND(RPIFUNC(vkQueueWaitIdle));
 	return VK_SUCCESS;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroySemaphore
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySemaphore(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroySemaphore)(
 		VkDevice                                    device,
 		VkSemaphore                                 semaphore,
 		const VkAllocationCallbacks*                pAllocator)
 {
-	PROFILESTART(rpi_vkDestroySemaphore);
+	PROFILESTART(RPIFUNC(vkDestroySemaphore));
 
 	assert(device);
 
@@ -266,19 +268,19 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySemaphore(
 		FREE(semaphore);
 	}
 
-	PROFILEEND(rpi_vkDestroySemaphore);
+	PROFILEEND(RPIFUNC(vkDestroySemaphore));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateFence
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateFence(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateFence)(
 	VkDevice                                    device,
 	const VkFenceCreateInfo*                    pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
 	VkFence*                                    pFence)
 {
-	PROFILESTART(rpi_vkCreateFence);
+	PROFILESTART(RPIFUNC(vkCreateFence));
 
 	assert(device);
 	assert(pCreateInfo);
@@ -288,7 +290,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateFence(
 
 	if(!f)
 	{
-		PROFILEEND(rpi_vkCreateFence);
+		PROFILEEND(RPIFUNC(vkCreateFence));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -297,19 +299,19 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateFence(
 
 	*pFence = f;
 
-	PROFILEEND(rpi_vkCreateFence);
+	PROFILEEND(RPIFUNC(vkCreateFence));
 	return VK_SUCCESS;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyFence
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyFence(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroyFence)(
 	VkDevice                                    device,
 	VkFence                                     fence,
 	const VkAllocationCallbacks*                pAllocator)
 {
-	PROFILESTART(rpi_vkDestroyFence);
+	PROFILESTART(RPIFUNC(vkDestroyFence));
 
 	assert(device);
 
@@ -318,17 +320,17 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyFence(
 		FREE(fence);
 	}
 
-	PROFILEEND(rpi_vkDestroyFence);
+	PROFILEEND(RPIFUNC(vkDestroyFence));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetFenceStatus
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetFenceStatus(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetFenceStatus)(
 	VkDevice                                    device,
 	VkFence                                     fence)
 {
-	PROFILESTART(rpi_vkGetFenceStatus);
+	PROFILESTART(RPIFUNC(vkGetFenceStatus));
 
 	assert(device);
 	assert(fence);
@@ -338,19 +340,19 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetFenceStatus(
 	_fence* f = fence;
 	VkResult retval = f->signaled ? VK_SUCCESS : VK_NOT_READY;
 
-	PROFILEEND(rpi_vkGetFenceStatus);
+	PROFILEEND(RPIFUNC(vkGetFenceStatus));
 	return retval;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkResetFences
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetFences(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkResetFences)(
 	VkDevice                                    device,
 	uint32_t                                    fenceCount,
 	const VkFence*                              pFences)
 {
-	PROFILESTART(rpi_vkResetFences);
+	PROFILESTART(RPIFUNC(vkResetFences));
 
 	assert(device);
 	assert(pFences);
@@ -363,21 +365,21 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetFences(
 		f->seqno = 0;
 	}
 
-	PROFILEEND(rpi_vkResetFences);
+	PROFILEEND(RPIFUNC(vkResetFences));
 	return VK_SUCCESS;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkWaitForFences
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkWaitForFences)(
 	VkDevice                                    device,
 	uint32_t                                    fenceCount,
 	const VkFence*                              pFences,
 	VkBool32                                    waitAll,
 	uint64_t                                    timeout)
 {
-	PROFILESTART(rpi_vkWaitForFences);
+	PROFILESTART(RPIFUNC(vkWaitForFences));
 
 	assert(device);
 	assert(pFences);
@@ -392,11 +394,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
 				_fence* f = pFences[c];
 				if(!f->signaled) //if any unsignaled
 				{
-					PROFILEEND(rpi_vkWaitForFences);
+					PROFILEEND(RPIFUNC(vkWaitForFences));
 					return VK_TIMEOUT;
 				}
 
-				PROFILEEND(rpi_vkWaitForFences);
+				PROFILEEND(RPIFUNC(vkWaitForFences));
 				return VK_SUCCESS;
 			}
 		}
@@ -412,7 +414,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
 
 				if(ret < 0)
 				{
-					PROFILEEND(rpi_vkWaitForFences);
+					PROFILEEND(RPIFUNC(vkWaitForFences));
 					return VK_TIMEOUT;
 				}
 
@@ -430,11 +432,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
 				_fence* f = pFences[c];
 				if(f->signaled) //if any signaled
 				{
-					PROFILEEND(rpi_vkWaitForFences);
+					PROFILEEND(RPIFUNC(vkWaitForFences));
 					return VK_SUCCESS;
 				}
 
-				PROFILEEND(rpi_vkWaitForFences);
+				PROFILEEND(RPIFUNC(vkWaitForFences));
 				return VK_TIMEOUT;
 			}
 		}
@@ -455,26 +457,26 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkWaitForFences(
 
 				f->signaled = 1;
 				f->seqno = 0;
-				PROFILEEND(rpi_vkWaitForFences);
+				PROFILEEND(RPIFUNC(vkWaitForFences));
 				return VK_SUCCESS;
 			}
 			else
 			{
 				//already signaled
-				PROFILEEND(rpi_vkWaitForFences);
+				PROFILEEND(RPIFUNC(vkWaitForFences));
 				return VK_SUCCESS;
 			}
 		}
 
-		PROFILEEND(rpi_vkWaitForFences);
+		PROFILEEND(RPIFUNC(vkWaitForFences));
 		return VK_TIMEOUT;
 	}
 
-	PROFILEEND(rpi_vkWaitForFences);
+	PROFILEEND(RPIFUNC(vkWaitForFences));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdWaitEvents(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdWaitEvents)(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    eventCount,
 	const VkEvent*                              pEvents,
@@ -490,7 +492,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdWaitEvents(
 	UNSUPPORTED(vkCmdWaitEvents);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetEventStatus(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetEventStatus)(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
@@ -498,7 +500,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetEventStatus(
 	return UNSUPPORTED_RETURN;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyEvent(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroyEvent)(
 	VkDevice                                    device,
 	VkEvent                                     event,
 	const VkAllocationCallbacks*                pAllocator)
@@ -506,7 +508,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyEvent(
 	UNSUPPORTED(vkDestroyEvent);
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdResetEvent(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdResetEvent)(
 	VkCommandBuffer                             commandBuffer,
 	VkEvent                                     event,
 	VkPipelineStageFlags                        stageMask)
@@ -514,7 +516,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdResetEvent(
 	UNSUPPORTED(vkCmdResetEvent);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateEvent(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateEvent)(
 	VkDevice                                    device,
 	const VkEventCreateInfo*                    pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
@@ -524,7 +526,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateEvent(
 	return UNSUPPORTED_RETURN;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetEvent(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkResetEvent)(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
@@ -532,7 +534,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetEvent(
 	return UNSUPPORTED_RETURN;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkSetEvent(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkSetEvent)(
 	VkDevice                                    device,
 	VkEvent                                     event)
 {
@@ -540,7 +542,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkSetEvent(
 	return UNSUPPORTED_RETURN;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetEvent(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdSetEvent)(
 	VkCommandBuffer                             commandBuffer,
 	VkEvent                                     event,
 	VkPipelineStageFlags                        stageMask)

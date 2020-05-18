@@ -4,7 +4,11 @@
 
 #include "declarations.h"
 
-#define RETFUNC(f) if(!strcmp(pName, #f)) return &rpi_##f
+#if EXPOSE_DRIVER == 0
+	#define RETFUNC(f) if(!strcmp(pName, #f)) return &rpi_##f
+#else
+	#define RETFUNC(f) if(!strcmp(pName, #f)) return &f
+#endif
 
 static uint32_t loaderVersion = -1;
 
@@ -26,7 +30,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(VkInstance in
 		loaderVersion = 1;
 	}
 
-	void* ptr = rpi_vkGetInstanceProcAddr(instance, pName);
+	void* ptr = RPIFUNC(vkGetInstanceProcAddr)(instance, pName);
 
 	return ptr;
 }
@@ -37,7 +41,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetPhysicalDeviceProcAddr(VkInsta
 	void* ptr = 0;
 
 //	if(!strcmp(pName, "vkCreateShaderModuleFromRpiAssemblyEXT"))
-//		ptr = &rpi_vkCreateShaderModuleFromRpiAssemblyEXT;
+//		ptr = &RPIFUNC(vkCreateShaderModuleFromRpiAssemblyEXT);
 
 	return ptr;
 }
@@ -54,19 +58,19 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetPhysicalDeviceProcAddr(VkInsta
  * two calls may retrieve different results if a pLayerName is available in one call but not in another. The extensions supported by a layer may also change between two calls,
  * e.g. if the layer implementation is replaced by a different version between those calls.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceExtensionProperties(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEnumerateInstanceExtensionProperties)(
 		const char*                                 pLayerName,
 		uint32_t*                                   pPropertyCount,
 		VkExtensionProperties*                      pProperties)
 {
-	PROFILESTART(rpi_vkEnumerateInstanceExtensionProperties);
+	PROFILESTART(RPIFUNC(vkEnumerateInstanceExtensionProperties));
 
 	assert(pPropertyCount);
 
 	if(!pProperties)
 	{
 		*pPropertyCount = numInstanceExtensions;
-		PROFILEEND(rpi_vkEnumerateInstanceExtensionProperties);
+		PROFILEEND(RPIFUNC(vkEnumerateInstanceExtensionProperties));
 		return VK_SUCCESS;
 	}
 
@@ -82,12 +86,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceExtensionProperties(
 
 	if(arraySize < numInstanceExtensions)
 	{
-		PROFILEEND(rpi_vkEnumerateInstanceExtensionProperties);
+		PROFILEEND(RPIFUNC(vkEnumerateInstanceExtensionProperties));
 		return VK_INCOMPLETE;
 	}
 	else
 	{
-		PROFILEEND(rpi_vkEnumerateInstanceExtensionProperties);
+		PROFILEEND(RPIFUNC(vkEnumerateInstanceExtensionProperties));
 		return VK_SUCCESS;
 	}
 }
@@ -100,12 +104,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceExtensionProperties(
  * vkCreateInstance must return VK_ERROR_EXTENSION_NOT_PRESENT. After verifying and enabling the instance layers and extensions the VkInstance object is
  * created and returned to the application.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateInstance)(
 		const VkInstanceCreateInfo*                 pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
 		VkInstance*                                 pInstance)
 {
-	PROFILESTART(rpi_vkCreateInstance);
+	PROFILESTART(RPIFUNC(vkCreateInstance));
 
 	assert(pInstance);
 	assert(pCreateInfo);
@@ -114,7 +118,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 
 	if(!*pInstance)
 	{
-		PROFILEEND(rpi_vkCreateInstance);
+		PROFILEEND(RPIFUNC(vkCreateInstance));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -139,7 +143,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 		{
 			FREE(*pInstance);
 			*pInstance = 0;
-			PROFILEEND(rpi_vkCreateInstance);
+			PROFILEEND(RPIFUNC(vkCreateInstance));
 			return VK_ERROR_EXTENSION_NOT_PRESENT;
 		}
 	}
@@ -152,7 +156,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 
 		if(!f)
 		{
-			PROFILEEND(rpi_vkCreateInstance);
+			PROFILEEND(RPIFUNC(vkCreateInstance));
 			return VK_ERROR_INITIALIZATION_FAILED;
 		}
 
@@ -170,7 +174,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 		   strcmp(hw, "BCM2836") &&
 		   strcmp(hw, "BCM2837"))
 		{
-			PROFILEEND(rpi_vkCreateInstance);
+			PROFILEEND(RPIFUNC(vkCreateInstance));
 			return VK_ERROR_INITIALIZATION_FAILED;
 		}
 
@@ -246,7 +250,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
 	assert((*pInstance)->hasThreadedFs);
 	assert((*pInstance)->hasPerfmon);
 
-	PROFILEEND(rpi_vkCreateInstance);
+	PROFILEEND(RPIFUNC(vkCreateInstance));
 	return VK_SUCCESS;
 }
 
@@ -254,41 +258,41 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateInstance(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroyInstance
  *
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyInstance(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroyInstance)(
 		VkInstance                                  instance,
 		const VkAllocationCallbacks*                pAllocator)
 {
-	PROFILESTART(rpi_vkDestroyInstance);
+	PROFILESTART(RPIFUNC(vkDestroyInstance));
 	if(instance)
 	{
 		closeIoctl();
 
 		FREE(instance);
 	}
-	PROFILEEND(rpi_vkDestroyInstance);
+	PROFILEEND(RPIFUNC(vkDestroyInstance));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkEnumerateInstanceVersion
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceVersion(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEnumerateInstanceVersion)(
 	uint32_t*                                   pApiVersion)
 {
-	PROFILESTART(rpi_vkEnumerateInstanceVersion);
+	PROFILESTART(RPIFUNC(vkEnumerateInstanceVersion));
 	assert(pApiVersion);
 	*pApiVersion = VK_DRIVER_VERSION; //
-	PROFILEEND(rpi_vkEnumerateInstanceVersion);
+	PROFILEEND(RPIFUNC(vkEnumerateInstanceVersion));
 	return VK_SUCCESS;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetInstanceProcAddr
  */
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL RPIFUNC(vkGetInstanceProcAddr)(
 	VkInstance                                  instance,
 	const char*                                 pName)
 {
-	PROFILESTART(rpi_vkGetInstanceProcAddr);
+	PROFILESTART(RPIFUNC(vkGetInstanceProcAddr));
 
 	if(!instance && !(
 		   !strcmp(pName, "vkEnumerateInstanceVersion") ||
@@ -297,11 +301,11 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 		   !strcmp(pName, "vkCreateInstance")
 		   ))
 	{
-		PROFILEEND(rpi_vkGetInstanceProcAddr);
+		PROFILEEND(RPIFUNC(vkGetInstanceProcAddr));
 		return 0;
 	}
 
-	PROFILEEND(rpi_vkGetInstanceProcAddr);
+	PROFILEEND(RPIFUNC(vkGetInstanceProcAddr));
 
 	RETFUNC(vkCreateInstance);
 	RETFUNC(vkEnumerateInstanceVersion);
@@ -497,13 +501,13 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL rpi_vkGetInstanceProcAddr(
 	return 0;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEnumerateInstanceLayerProperties(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEnumerateInstanceLayerProperties)(
 	uint32_t*                                   pPropertyCount,
 	VkLayerProperties*                          pProperties)
 {
-	PROFILESTART(rpi_vkEnumerateInstanceLayerProperties);
+	PROFILESTART(RPIFUNC(vkEnumerateInstanceLayerProperties));
 
 
-	PROFILEEND(rpi_vkEnumerateInstanceLayerProperties);
+	PROFILEEND(RPIFUNC(vkEnumerateInstanceLayerProperties));
 	return VK_SUCCESS;
 }

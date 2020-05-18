@@ -9,12 +9,12 @@
 extern "C" {
 #endif
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceDisplayPlanePropertiesKHR)(
 	VkPhysicalDevice                            physicalDevice,
 	uint32_t*                                   pPropertyCount,
 	VkDisplayPlanePropertiesKHR*                pProperties)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceDisplayPlanePropertiesKHR));
 
 	assert(physicalDevice);
 	assert(pPropertyCount);
@@ -26,7 +26,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
 	if(!pProperties)
 	{
 		*pPropertyCount = numPlanes;
-		PROFILEEND(rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
+		PROFILEEND(RPIFUNC(vkGetPhysicalDeviceDisplayPlanePropertiesKHR));
 		return VK_SUCCESS;
 	}
 
@@ -39,17 +39,17 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR(
 		pProperties[c].currentStackIndex = c; //TODO dunno?
 	}
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceDisplayPlanePropertiesKHR));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayPlaneSupportedDisplaysKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetDisplayPlaneSupportedDisplaysKHR)(
 	VkPhysicalDevice                            physicalDevice,
 	uint32_t                                    planeIndex,
 	uint32_t*                                   pDisplayCount,
 	VkDisplayKHR*                               pDisplays)
 {
-	PROFILESTART(rpi_vkGetDisplayPlaneSupportedDisplaysKHR);
+	PROFILESTART(RPIFUNC(vkGetDisplayPlaneSupportedDisplaysKHR));
 
 	assert(physicalDevice);
 	assert(pDisplayCount);
@@ -62,7 +62,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayPlaneSupportedDisplaysKHR(
 	{
 		*pDisplayCount = planes[planeIndex].numPossibleConnectors;
 
-		PROFILEEND(rpi_vkGetDisplayPlaneSupportedDisplaysKHR);
+		PROFILEEND(RPIFUNC(vkGetDisplayPlaneSupportedDisplaysKHR));
 		return VK_SUCCESS;
 	}
 
@@ -78,20 +78,20 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayPlaneSupportedDisplaysKHR(
 
 	if(arraySize < planes[planeIndex].numPossibleConnectors)
 	{
-		PROFILEEND(rpi_vkGetDisplayPlaneSupportedDisplaysKHR);
+		PROFILEEND(RPIFUNC(vkGetDisplayPlaneSupportedDisplaysKHR));
 		return VK_INCOMPLETE;
 	}
 
-	PROFILEEND(rpi_vkGetDisplayPlaneSupportedDisplaysKHR);
+	PROFILEEND(RPIFUNC(vkGetDisplayPlaneSupportedDisplaysKHR));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPropertiesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceDisplayPropertiesKHR)(
 	VkPhysicalDevice                            physicalDevice,
 	uint32_t*                                   pPropertyCount,
 	VkDisplayPropertiesKHR*                     pProperties)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceDisplayPropertiesKHR);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceDisplayPropertiesKHR));
 
 	assert(physicalDevice);
 	assert(pPropertyCount);
@@ -104,7 +104,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPropertiesKHR(
 	{
 		*pPropertyCount = numDisplays;
 
-		PROFILEEND(rpi_vkGetPhysicalDeviceDisplayPropertiesKHR);
+		PROFILEEND(RPIFUNC(vkGetPhysicalDeviceDisplayPropertiesKHR));
 		return VK_SUCCESS;
 	}
 
@@ -128,21 +128,21 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceDisplayPropertiesKHR(
 
 	if(arraySize < numDisplays)
 	{
-		PROFILEEND(rpi_vkGetPhysicalDeviceDisplayPropertiesKHR);
+		PROFILEEND(RPIFUNC(vkGetPhysicalDeviceDisplayPropertiesKHR));
 		return VK_INCOMPLETE;
 	}
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceDisplayPropertiesKHR);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceDisplayPropertiesKHR));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayModePropertiesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetDisplayModePropertiesKHR)(
 	VkPhysicalDevice                            physicalDevice,
 	VkDisplayKHR                                display,
 	uint32_t*                                   pPropertyCount,
 	VkDisplayModePropertiesKHR*                 pProperties)
 {
-	PROFILESTART(rpi_vkGetDisplayModePropertiesKHR);
+	PROFILESTART(RPIFUNC(vkGetDisplayModePropertiesKHR));
 
 	assert(physicalDevice);
 	assert(display);
@@ -156,7 +156,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayModePropertiesKHR(
 	{
 		*pPropertyCount = numModes;
 
-		PROFILEEND(rpi_vkGetDisplayModePropertiesKHR);
+		PROFILEEND(RPIFUNC(vkGetDisplayModePropertiesKHR));
 		return VK_SUCCESS;
 	}
 
@@ -176,22 +176,22 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetDisplayModePropertiesKHR(
 
 	if(arraySize < numModes)
 	{
-		PROFILEEND(rpi_vkGetDisplayModePropertiesKHR);
+		PROFILEEND(RPIFUNC(vkGetDisplayModePropertiesKHR));
 		return VK_INCOMPLETE;
 	}
 
-	PROFILEEND(rpi_vkGetDisplayModePropertiesKHR);
+	PROFILEEND(RPIFUNC(vkGetDisplayModePropertiesKHR));
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayModeKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDisplayModeKHR)(
 	VkPhysicalDevice                            physicalDevice,
 	VkDisplayKHR                                display,
 	const VkDisplayModeCreateInfoKHR*           pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
 	VkDisplayModeKHR*                           pMode)
 {
-	PROFILESTART(rpi_vkCreateDisplayModeKHR);
+	PROFILESTART(RPIFUNC(vkCreateDisplayModeKHR));
 
 	assert(physicalDevice);
 	assert(display);
@@ -213,16 +213,16 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayModeKHR(
 		}
 	}
 
-	PROFILEEND(rpi_vkCreateDisplayModeKHR);
+	PROFILEEND(RPIFUNC(vkCreateDisplayModeKHR));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayPlaneSurfaceKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDisplayPlaneSurfaceKHR)(
 	VkInstance                                  instance,
 	const VkDisplaySurfaceCreateInfoKHR*        pCreateInfo,
 	const VkAllocationCallbacks*                pAllocator,
 	VkSurfaceKHR*                               pSurface)
 {
-	PROFILESTART(rpi_vkCreateDisplayPlaneSurfaceKHR);
+	PROFILESTART(RPIFUNC(vkCreateDisplayPlaneSurfaceKHR));
 
 	assert(instance);
 	assert(pSurface);
@@ -235,7 +235,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayPlaneSurfaceKHR(
 
 	*pSurface = surface;
 
-	PROFILEEND(rpi_vkCreateDisplayPlaneSurfaceKHR);
+	PROFILEEND(RPIFUNC(vkCreateDisplayPlaneSurfaceKHR));
 }
 
 /*
@@ -244,12 +244,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateDisplayPlaneSurfaceKHR(
  * and does not imply destroying the native surface, closing a window, or similar behavior
  * (but we'll do so anyways...)
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroySurfaceKHR)(
 		VkInstance                                  instance,
 		VkSurfaceKHR                                surface,
 		const VkAllocationCallbacks*                pAllocator)
 {
-	PROFILESTART(rpi_vkDestroySurfaceKHR);
+	PROFILESTART(RPIFUNC(vkDestroySurfaceKHR));
 
 	assert(instance);
 
@@ -260,7 +260,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
 
 	FREE(surface);
 
-	PROFILEEND(rpi_vkDestroySurfaceKHR);
+	PROFILEEND(RPIFUNC(vkDestroySurfaceKHR));
 }
 
 /*
@@ -273,12 +273,12 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySurfaceKHR(
  *
  * capabilities the specified device supports for a swapchain created for the surface
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		VkSurfaceCapabilitiesKHR*                   pSurfaceCapabilities)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR));
 
 	assert(physicalDevice);
 	assert(surface);
@@ -306,7 +306,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT |  //for clears
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT;  //for screenshots
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR));
 	return VK_SUCCESS;
 }
 
@@ -319,13 +319,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
  * at most pSurfaceFormatCount structures will be written. If pSurfaceFormatCount is smaller than the number of format pairs supported for the given surface,
  * VK_INCOMPLETE will be returned instead of VK_SUCCESS to indicate that not all the available values were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceSurfaceFormatsKHR)(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		uint32_t*                                   pSurfaceFormatCount,
 		VkSurfaceFormatKHR*                         pSurfaceFormats)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceSurfaceFormatsKHR);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceSurfaceFormatsKHR));
 
 	assert(physicalDevice);
 	assert(surface);
@@ -337,7 +337,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
 	{
 		*pSurfaceFormatCount = numFormats;
 
-		PROFILEEND(rpi_vkGetPhysicalDeviceSurfaceFormatsKHR);
+		PROFILEEND(RPIFUNC(vkGetPhysicalDeviceSurfaceFormatsKHR));
 		return VK_SUCCESS;
 	}
 
@@ -353,11 +353,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
 
 	if(elementsWritten < numFormats)
 	{
-		PROFILEEND(rpi_vkGetPhysicalDeviceSurfaceFormatsKHR);
+		PROFILEEND(RPIFUNC(vkGetPhysicalDeviceSurfaceFormatsKHR));
 		return VK_INCOMPLETE;
 	}
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceSurfaceFormatsKHR);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceSurfaceFormatsKHR));
 	return VK_SUCCESS;
 }
 
@@ -370,13 +370,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceFormatsKHR(
  * If pPresentModeCount is smaller than the number of presentation modes supported for the given surface, VK_INCOMPLETE will be returned instead of
  * VK_SUCCESS to indicate that not all the available values were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR)(
 		VkPhysicalDevice                            physicalDevice,
 		VkSurfaceKHR                                surface,
 		uint32_t*                                   pPresentModeCount,
 		VkPresentModeKHR*                           pPresentModes)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceSurfacePresentModesKHR);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR));
 
 	assert(physicalDevice);
 	assert(surface);
@@ -386,7 +386,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
 	{
 		*pPresentModeCount = numSupportedPresentModes;
 
-		PROFILEEND(rpi_vkGetPhysicalDeviceSurfacePresentModesKHR);
+		PROFILEEND(RPIFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR));
 		return VK_SUCCESS;
 	}
 
@@ -403,24 +403,24 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfacePresentModesKHR(
 
 	if(elementsWritten < numSupportedPresentModes)
 	{
-		PROFILEEND(rpi_vkGetPhysicalDeviceSurfacePresentModesKHR);
+		PROFILEEND(RPIFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR));
 		return VK_INCOMPLETE;
 	}
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceSurfacePresentModesKHR);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR));
 	return VK_SUCCESS;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateSwapchainKHR
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateSwapchainKHR)(
 		VkDevice                                    device,
 		const VkSwapchainCreateInfoKHR*             pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
 		VkSwapchainKHR*                             pSwapchain)
 {
-	PROFILESTART(rpi_vkCreateSwapchainKHR);
+	PROFILESTART(RPIFUNC(vkCreateSwapchainKHR));
 
 	assert(device);
 	assert(pCreateInfo);
@@ -429,7 +429,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 	*pSwapchain = ALLOCATE(sizeof(_swapchain), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!*pSwapchain)
 	{
-		PROFILEEND(rpi_vkCreateSwapchainKHR);
+		PROFILEEND(RPIFUNC(vkCreateSwapchainKHR));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -441,7 +441,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 	s->images = ALLOCATE(sizeof(_image) * pCreateInfo->minImageCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!s->images)
 	{
-		PROFILEEND(rpi_vkCreateSwapchainKHR);
+		PROFILEEND(RPIFUNC(vkCreateSwapchainKHR));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -469,7 +469,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 		imageCreateInfo.extent.depth = 1;
 
 		VkImage img;
-		rpi_vkCreateImage(device, &imageCreateInfo, pAllocator, &img);
+		RPIFUNC(vkCreateImage)(device, &imageCreateInfo, pAllocator, &img);
 
 		s->images[c] = *(_image*)img;
 
@@ -480,7 +480,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 		s->images[c].clipped = pCreateInfo->clipped;
 
 		VkMemoryRequirements mr;
-		rpi_vkGetImageMemoryRequirements(device, &s->images[c], &mr);
+		RPIFUNC(vkGetImageMemoryRequirements)(device, &s->images[c], &mr);
 
 		s->images[c].alignment = mr.alignment;
 
@@ -497,14 +497,14 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
 		}
 
 		VkDeviceMemory mem;
-		rpi_vkAllocateMemory(device, &ai, pAllocator, &mem);
+		RPIFUNC(vkAllocateMemory)(device, &ai, pAllocator, &mem);
 
-		rpi_vkBindImageMemory(device, &s->images[c], mem, 0);
+		RPIFUNC(vkBindImageMemory)(device, &s->images[c], mem, 0);
 
 		modeset_create_fb_for_surface(controlFd, &s->images[c], pCreateInfo->surface); assert(s->images[c].fb);
 	}
 
-	PROFILEEND(rpi_vkCreateSwapchainKHR);
+	PROFILEEND(RPIFUNC(vkCreateSwapchainKHR));
 	return VK_SUCCESS;
 }
 
@@ -517,13 +517,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateSwapchainKHR(
  * If pSwapchainImageCount is smaller than the number of presentable images for swapchain, VK_INCOMPLETE will be returned instead of VK_SUCCESS to
  * indicate that not all the available values were returned.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetSwapchainImagesKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetSwapchainImagesKHR)(
 		VkDevice                                    device,
 		VkSwapchainKHR                              swapchain,
 		uint32_t*                                   pSwapchainImageCount,
 		VkImage*                                    pSwapchainImages)
 {
-	PROFILESTART(rpi_vkGetSwapchainImagesKHR);
+	PROFILESTART(RPIFUNC(vkGetSwapchainImagesKHR));
 
 	assert(device);
 	assert(swapchain);
@@ -535,7 +535,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetSwapchainImagesKHR(
 	{
 		*pSwapchainImageCount = s->numImages;
 
-		PROFILEEND(rpi_vkGetSwapchainImagesKHR);
+		PROFILEEND(RPIFUNC(vkGetSwapchainImagesKHR));
 		return VK_SUCCESS;
 	}
 
@@ -551,18 +551,18 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetSwapchainImagesKHR(
 
 	if(elementsWritten < s->numImages)
 	{
-		PROFILEEND(rpi_vkGetSwapchainImagesKHR);
+		PROFILEEND(RPIFUNC(vkGetSwapchainImagesKHR));
 		return VK_INCOMPLETE;
 	}
 
-	PROFILEEND(rpi_vkGetSwapchainImagesKHR);
+	PROFILEEND(RPIFUNC(vkGetSwapchainImagesKHR));
 	return VK_SUCCESS;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkAcquireNextImageKHR
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireNextImageKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAcquireNextImageKHR)(
 		VkDevice                                    device,
 		VkSwapchainKHR                              swapchain,
 		uint64_t                                    timeout,
@@ -570,7 +570,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireNextImageKHR(
 		VkFence                                     fence,
 		uint32_t*                                   pImageIndex)
 {
-	PROFILESTART(rpi_vkAcquireNextImageKHR);
+	PROFILESTART(RPIFUNC(vkAcquireNextImageKHR));
 
 	assert(device);
 	assert(swapchain);
@@ -595,7 +595,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireNextImageKHR(
 		f->signaled = 1;
 	}
 
-	PROFILEEND(rpi_vkAcquireNextImageKHR);
+	PROFILEEND(RPIFUNC(vkAcquireNextImageKHR));
 	return VK_SUCCESS;
 }
 
@@ -612,11 +612,11 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAcquireNextImageKHR(
  * However, if the presentation request is rejected by the presentation engine with an error VK_ERROR_OUT_OF_DATE_KHR or VK_ERROR_SURFACE_LOST_KHR,
  * the set of queue operations are still considered to be enqueued and thus any semaphore to be waited on gets unsignaled when the corresponding queue operation is complete.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueuePresentKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueuePresentKHR)(
 		VkQueue                                     queue,
 		const VkPresentInfoKHR*                     pPresentInfo)
 {
-	PROFILESTART(rpi_vkQueuePresentKHR);
+	PROFILESTART(RPIFUNC(vkQueuePresentKHR));
 
 	assert(queue);
 	assert(pPresentInfo);
@@ -634,19 +634,19 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueuePresentKHR(
 		s->backbufferIdx = (s->backbufferIdx + 1) % s->numImages;
 	}
 
-	PROFILEEND(rpi_vkQueuePresentKHR);
+	PROFILEEND(RPIFUNC(vkQueuePresentKHR));
 	return VK_SUCCESS;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkDestroySwapchainKHR
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroySwapchainKHR)(
 		VkDevice                                    device,
 		VkSwapchainKHR                              swapchain,
 		const VkAllocationCallbacks*                pAllocator)
 {
-	PROFILESTART(rpi_vkDestroySwapchainKHR);
+	PROFILESTART(RPIFUNC(vkDestroySwapchainKHR));
 
 	assert(device);
 
@@ -658,7 +658,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
 	{
 		for(int c = 0; c < s->numImages; ++c)
 		{
-			rpi_vkFreeMemory(device, s->images[c].boundMem, 0);
+			RPIFUNC(vkFreeMemory)(device, s->images[c].boundMem, 0);
 			modeset_destroy_fb(controlFd, &s->images[c]);
 		}
 
@@ -667,7 +667,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
 
 	FREE(s);
 
-	PROFILEEND(rpi_vkDestroySwapchainKHR);
+	PROFILEEND(RPIFUNC(vkDestroySwapchainKHR));
 
 	//profilePrintResults();
 }
@@ -676,13 +676,13 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkGetPhysicalDeviceSurfaceSupportKHR
  * does this queue family support presentation to this surface?
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceSupportKHR(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceSurfaceSupportKHR)(
 		VkPhysicalDevice                            physicalDevice,
 		uint32_t                                    queueFamilyIndex,
 		VkSurfaceKHR                                surface,
 		VkBool32*                                   pSupported)
 {
-	PROFILESTART(rpi_vkGetPhysicalDeviceSurfaceSupportKHR);
+	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceSurfaceSupportKHR));
 
 	assert(pSupported);
 	assert(surface);
@@ -695,7 +695,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkGetPhysicalDeviceSurfaceSupportKHR(
 	//other using /dev/dri/renderD128 which does not support modesetting, this would say false here
 	*pSupported = VK_TRUE;
 
-	PROFILEEND(rpi_vkGetPhysicalDeviceSurfaceSupportKHR);
+	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceSurfaceSupportKHR));
 	return VK_SUCCESS;
 }
 

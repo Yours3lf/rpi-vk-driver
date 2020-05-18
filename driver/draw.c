@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include "declarations.h"
+
 #include "kernel/vc4_packet.h"
 
 //returns max index
@@ -555,9 +557,9 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCmdDraw
  */
-void rpi_vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+void RPIFUNC(vkCmdDraw)(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
-	PROFILESTART(rpi_vkCmdDraw);
+	PROFILESTART(RPIFUNC(vkCmdDraw));
 
 	assert(commandBuffer);
 
@@ -579,10 +581,10 @@ void rpi_vkCmdDraw(VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t
 
 	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
-	PROFILEEND(rpi_vkCmdDraw);
+	PROFILEEND(RPIFUNC(vkCmdDraw));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdDrawIndexed)(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    indexCount,
 	uint32_t                                    instanceCount,
@@ -590,7 +592,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
 	int32_t                                     vertexOffset,
 	uint32_t                                    firstInstance)
 {
-	PROFILESTART(rpi_vkCmdDrawIndexed);
+	PROFILESTART(RPIFUNC(vkCmdDrawIndexed));
 
 	assert(commandBuffer);
 
@@ -629,10 +631,10 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexed(
 
 	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
-	PROFILEEND(rpi_vkCmdDrawIndexed);
+	PROFILEEND(RPIFUNC(vkCmdDrawIndexed));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexedIndirect(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdDrawIndexedIndirect)(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    buffer,
 	VkDeviceSize                                offset,
@@ -642,7 +644,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndexedIndirect(
 	UNSUPPORTED(vkCmdDrawIndexedIndirect);
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdDrawIndirect(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdDrawIndirect)(
 	VkCommandBuffer                             commandBuffer,
 	VkBuffer                                    buffer,
 	VkDeviceSize                                offset,

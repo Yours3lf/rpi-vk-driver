@@ -18,13 +18,13 @@ static atomic_int lastSeqnoGuard = 0;
  * not be used concurrently in multiple threads. That includes use via recording commands on any command buffers allocated from the pool,
  * as well as operations that allocate, free, and reset command buffers or the pool itself.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateCommandPool)(
 		VkDevice                                    device,
 		const VkCommandPoolCreateInfo*              pCreateInfo,
 		const VkAllocationCallbacks*                pAllocator,
 		VkCommandPool*                              pCommandPool)
 {
-	PROFILESTART(rpi_vkCreateCommandPool);
+	PROFILESTART(RPIFUNC(vkCreateCommandPool));
 
 	assert(device);
 	assert(pCreateInfo);
@@ -40,7 +40,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 
 	if(!cp)
 	{
-		PROFILEEND(rpi_vkCreateCommandPool);
+		PROFILEEND(RPIFUNC(vkCreateCommandPool));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
@@ -67,7 +67,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 		void* pamem = ALLOCATE(numCommandBufs * sizeof(_commandBuffer), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pamem)
 		{
-			PROFILEEND(rpi_vkCreateCommandPool);
+			PROFILEEND(RPIFUNC(vkCreateCommandPool));
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 		cp->pa = createPoolAllocator(pamem, sizeof(_commandBuffer), numCommandBufs * sizeof(_commandBuffer));
@@ -75,7 +75,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 		void* cpamem = ALLOCATE(consecutivePoolSize, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!cpamem)
 		{
-			PROFILEEND(rpi_vkCreateCommandPool);
+			PROFILEEND(RPIFUNC(vkCreateCommandPool));
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
 		cp->cpa = createConsecutivePoolAllocator(cpamem, consecutiveBlockSize, consecutivePoolSize);
@@ -83,7 +83,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
 
 	*pCommandPool = (VkCommandPool)cp;
 
-	PROFILEEND(rpi_vkCreateCommandPool);
+	PROFILEEND(RPIFUNC(vkCreateCommandPool));
 	return VK_SUCCESS;
 }
 
@@ -92,12 +92,12 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkCreateCommandPool(
  * vkAllocateCommandBuffers can be used to create multiple command buffers. If the creation of any of those command buffers fails,
  * the implementation must destroy all successfully created command buffer objects from this command, set all entries of the pCommandBuffers array to NULL and return the error.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateCommandBuffers(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAllocateCommandBuffers)(
 		VkDevice                                    device,
 		const VkCommandBufferAllocateInfo*          pAllocateInfo,
 		VkCommandBuffer*                            pCommandBuffers)
 {
-	PROFILESTART(rpi_vkAllocateCommandBuffers);
+	PROFILESTART(RPIFUNC(vkAllocateCommandBuffers));
 
 	assert(device);
 	assert(pAllocateInfo);
@@ -201,18 +201,18 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkAllocateCommandBuffers(
 		}
 	}
 
-	PROFILEEND(rpi_vkAllocateCommandBuffers);
+	PROFILEEND(RPIFUNC(vkAllocateCommandBuffers));
 	return res;
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkBeginCommandBuffer
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBeginCommandBuffer(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkBeginCommandBuffer)(
 		VkCommandBuffer                             commandBuffer,
 		const VkCommandBufferBeginInfo*             pBeginInfo)
 {
-	PROFILESTART(rpi_vkBeginCommandBuffer);
+	PROFILESTART(RPIFUNC(vkBeginCommandBuffer));
 
 	assert(commandBuffer);
 	assert(pBeginInfo);
@@ -233,10 +233,10 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBeginCommandBuffer(
 	if((pBeginInfo->flags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) &&
 	   commandBuffer->cp->resetAble)
 	{
-		rpi_vkResetCommandBuffer(commandBuffer, 0);
+		RPIFUNC(vkResetCommandBuffer)(commandBuffer, 0);
 	}
 
-	PROFILEEND(rpi_vkBeginCommandBuffer);
+	PROFILEEND(RPIFUNC(vkBeginCommandBuffer));
 	return VK_SUCCESS;
 }
 
@@ -246,16 +246,16 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkBeginCommandBuffer(
  * If the application wishes to further use the command buffer, the command buffer must be reset. The command buffer must have been in the recording state,
  * and is moved to the executable state.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEndCommandBuffer(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEndCommandBuffer)(
 		VkCommandBuffer                             commandBuffer)
 {
-	PROFILESTART(rpi_vkEndCommandBuffer);
+	PROFILESTART(RPIFUNC(vkEndCommandBuffer));
 
 	assert(commandBuffer);
 
 	commandBuffer->state = CMDBUF_STATE_EXECUTABLE;
 
-	PROFILEEND(rpi_vkEndCommandBuffer);
+	PROFILEEND(RPIFUNC(vkEndCommandBuffer));
 	return VK_SUCCESS;
 }
 
@@ -277,13 +277,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkEndCommandBuffer(
  * referenced by pSubmits is unaffected by the call or its failure. If vkQueueSubmit fails in such a way that the implementation is unable to make that guarantee,
  * the implementation must return VK_ERROR_DEVICE_LOST. See Lost Device.
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 		VkQueue                                     queue,
 		uint32_t                                    submitCount,
 		const VkSubmitInfo*                         pSubmits,
 		VkFence                                     fence)
 {
-	PROFILESTART(rpi_vkQueueSubmit);
+	PROFILESTART(RPIFUNC(vkQueueSubmit));
 
 	assert(queue);
 
@@ -679,7 +679,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
 		f->seqno = queue->lastEmitSeqno;
 	}
 
-	PROFILEEND(rpi_vkQueueSubmit);
+	PROFILEEND(RPIFUNC(vkQueueSubmit));
 	return VK_SUCCESS;
 }
 
@@ -687,13 +687,13 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueSubmit(
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkFreeCommandBuffers
  * Any primary command buffer that is in the recording or executable state and has any element of pCommandBuffers recorded into it, becomes invalid.
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkFreeCommandBuffers(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkFreeCommandBuffers)(
 		VkDevice                                    device,
 		VkCommandPool                               commandPool,
 		uint32_t                                    commandBufferCount,
 		const VkCommandBuffer*                      pCommandBuffers)
 {
-	PROFILESTART(rpi_vkFreeCommandBuffers);
+	PROFILESTART(RPIFUNC(vkFreeCommandBuffers));
 
 	assert(device);
 	assert(commandPool);
@@ -713,7 +713,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkFreeCommandBuffers(
 		}
 	}
 
-	PROFILEEND(rpi_vkFreeCommandBuffers);
+	PROFILEEND(RPIFUNC(vkFreeCommandBuffers));
 }
 
 /*
@@ -722,12 +722,12 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkFreeCommandBuffers(
  * Any primary command buffer allocated from another VkCommandPool that is in the recording or executable state and has a secondary command buffer
  * allocated from commandPool recorded into it, becomes invalid.
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyCommandPool(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroyCommandPool)(
 		VkDevice                                    device,
 		VkCommandPool                               commandPool,
 		const VkAllocationCallbacks*                pAllocator)
 {
-	PROFILESTART(rpi_vkDestroyCommandPool);
+	PROFILESTART(RPIFUNC(vkDestroyCommandPool));
 
 	assert(device);
 
@@ -742,18 +742,18 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroyCommandPool(
 		FREE(cp);
 	}
 
-	PROFILEEND(rpi_vkDestroyCommandPool);
+	PROFILEEND(RPIFUNC(vkDestroyCommandPool));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkTrimCommandPool
  */
-VKAPI_ATTR void VKAPI_CALL rpi_vkTrimCommandPool(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkTrimCommandPool)(
 	VkDevice                                    device,
 	VkCommandPool                               commandPool,
 	VkCommandPoolTrimFlags                      flags)
 {
-	PROFILESTART(rpi_vkTrimCommandPool);
+	PROFILESTART(RPIFUNC(vkTrimCommandPool));
 
 	assert(device);
 	assert(commandPool);
@@ -764,18 +764,18 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkTrimCommandPool(
 	//by reallocating to just used size
 	//kinda silly, as if you need memory afterwards we need to reallocate again...
 
-	PROFILEEND(rpi_vkTrimCommandPool);
+	PROFILEEND(RPIFUNC(vkTrimCommandPool));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkResetCommandPool
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandPool(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkResetCommandPool)(
 	VkDevice                                    device,
 	VkCommandPool                               commandPool,
 	VkCommandPoolResetFlags                     flags)
 {
-	PROFILESTART(rpi_vkResetCommandPool);
+	PROFILESTART(RPIFUNC(vkResetCommandPool));
 
 	assert(device);
 	assert(commandPool);
@@ -809,17 +809,17 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandPool(
 
 	//TODO reset flag --> free all pool resources
 
-	PROFILEEND(rpi_vkResetCommandPool);
+	PROFILEEND(RPIFUNC(vkResetCommandPool));
 }
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkResetCommandBuffer
  */
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandBuffer(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkResetCommandBuffer)(
 	VkCommandBuffer                             commandBuffer,
 	VkCommandBufferResetFlags                   flags)
 {
-	PROFILESTART(rpi_vkResetCommandBuffer);
+	PROFILESTART(RPIFUNC(vkResetCommandBuffer));
 
 	assert(commandBuffer);
 
@@ -884,20 +884,20 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkResetCommandBuffer(
 
 	commandBuffer->perfmonID = 0;
 
-	PROFILEEND(rpi_vkResetCommandBuffer);
+	PROFILEEND(RPIFUNC(vkResetCommandBuffer));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdExecuteCommands(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdExecuteCommands)(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    commandBufferCount,
 	const VkCommandBuffer*                      pCommandBuffers)
 {
-	PROFILESTART(rpi_vkCmdExecuteCommands);
+	PROFILESTART(RPIFUNC(vkCmdExecuteCommands));
 
-	PROFILEEND(rpi_vkCmdExecuteCommands);
+	PROFILEEND(RPIFUNC(vkCmdExecuteCommands));
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkCmdSetDeviceMask(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdSetDeviceMask)(
 	VkCommandBuffer                             commandBuffer,
 	uint32_t                                    deviceMask)
 {

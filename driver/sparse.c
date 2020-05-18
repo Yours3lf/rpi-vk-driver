@@ -1,6 +1,8 @@
 #include "common.h"
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceSparseImageFormatProperties(
+#include "declarations.h"
+
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceSparseImageFormatProperties)(
 	VkPhysicalDevice                            physicalDevice,
 	VkFormat                                    format,
 	VkImageType                                 type,
@@ -13,7 +15,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceSparseImageFormatProperties(
 	UNSUPPORTED(vkGetPhysicalDeviceSparseImageFormatProperties);
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageSparseMemoryRequirements(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetImageSparseMemoryRequirements)(
 	VkDevice                                    device,
 	VkImage                                     image,
 	uint32_t*                                   pSparseMemoryRequirementCount,
@@ -22,7 +24,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageSparseMemoryRequirements(
 	UNSUPPORTED(vkGetImageSparseMemoryRequirements);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueBindSparse(
+VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueBindSparse)(
 	VkQueue                                     queue,
 	uint32_t                                    bindInfoCount,
 	const VkBindSparseInfo*                     pBindInfo,
@@ -32,7 +34,7 @@ VKAPI_ATTR VkResult VKAPI_CALL rpi_vkQueueBindSparse(
 	return UNSUPPORTED_RETURN;
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceSparseImageFormatProperties2(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceSparseImageFormatProperties2)(
 	VkPhysicalDevice                            physicalDevice,
 	const VkPhysicalDeviceSparseImageFormatInfo2* pFormatInfo,
 	uint32_t*                                   pPropertyCount,
@@ -41,7 +43,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkGetPhysicalDeviceSparseImageFormatProperties2(
 	UNSUPPORTED(vkGetPhysicalDeviceSparseImageFormatProperties2);
 }
 
-VKAPI_ATTR void VKAPI_CALL rpi_vkGetImageSparseMemoryRequirements2(
+VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetImageSparseMemoryRequirements2)(
 	VkDevice                                    device,
 	const VkImageSparseMemoryRequirementsInfo2* pInfo,
 	uint32_t*                                   pSparseMemoryRequirementCount,
