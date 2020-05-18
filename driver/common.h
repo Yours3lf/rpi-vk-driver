@@ -37,8 +37,8 @@
 
 #include "vkCaps.h"
 
-#define PROFILESTART(x)// startMeasure((&x), (#x))
-#define PROFILEEND(x) endMeasure((&x))
+#define PROFILESTART(x)// startMeasure((&\x), (#x))
+#define PROFILEEND(x) endMeasure((x))
 
 /**
 //scope

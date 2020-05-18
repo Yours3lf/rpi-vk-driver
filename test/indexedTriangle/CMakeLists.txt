@@ -5,7 +5,7 @@ file(GLOB testSrc
 
 add_executable(indexedTriangle ${testSrc} )
 target_compile_options(indexedTriangle PRIVATE -Wall -std=c++11
-	-march=${RPI_ARCH}
+	-march=${RPI_ARCH} -fPIC
 	)
 
 target_link_libraries(indexedTriangle vulkan $<TARGET_OBJECTS:QPUassembler>)

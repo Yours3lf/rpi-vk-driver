@@ -669,7 +669,7 @@ VKAPI_ATTR void VKAPI_CALL rpi_vkDestroySwapchainKHR(
 
 	PROFILEEND(rpi_vkDestroySwapchainKHR);
 
-	profilePrintResults();
+	//profilePrintResults();
 }
 
 /*

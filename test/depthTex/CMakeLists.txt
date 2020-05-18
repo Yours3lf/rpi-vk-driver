@@ -5,7 +5,7 @@ file(GLOB testSrc
 
 add_executable(depthTex ${testSrc} )
 target_compile_options(depthTex PRIVATE -Wall -std=c++11
-	-march=${RPI_ARCH}
+	-march=${RPI_ARCH} -fPIC
 	)
 
 target_link_libraries(depthTex vulkan $<TARGET_OBJECTS:QPUassembler>)

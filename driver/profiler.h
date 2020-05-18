@@ -2,6 +2,7 @@
 extern "C" {
 #endif
 
+/**
 #include "map.h"
 
 #define MILLION 1000000.0
@@ -24,13 +25,13 @@ typedef struct
 void initProfiler();
 
 void startMeasure(void* func, const char* funcName);
-
-void endMeasure(uint32_t func);
-
+/**/
+void endMeasure(unsigned func);
+/**
 double getTimeSpent(void* func);
 
 void profilePrintResults();
-
+/**/
 #if defined (__cplusplus)
 }
 #endif

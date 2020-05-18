@@ -5,7 +5,7 @@ file(GLOB testSrc
 
 add_executable(blending ${testSrc} )
 target_compile_options(blending PRIVATE -Wall -std=c++11
-	-march=${RPI_ARCH}
+	-march=${RPI_ARCH} -fPIC
 	)
 
 target_link_libraries(blending vulkan  $<TARGET_OBJECTS:QPUassembler>)
