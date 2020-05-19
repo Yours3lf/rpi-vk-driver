@@ -636,8 +636,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueuePresentKHR)(
 	for(int c = 0; c < pPresentInfo->swapchainCount; ++c)
 	{
 		_swapchain* s = pPresentInfo->pSwapchains[c];
-		modeset_present(controlFd, &s->images[s->backbufferIdx], s->surface);
-		s->backbufferIdx = (s->backbufferIdx + 1) % s->numImages;
+		modeset_present(controlFd, &s->images[pPresentInfo->pImageIndices[c]], s->surface);
+		s->backbufferIdx = (pPresentInfo->pImageIndices[c] + 1) % s->numImages;
 	}
 
 	PROFILEEND(RPIFUNC(vkQueuePresentKHR));
