@@ -97,6 +97,8 @@ int vc4_get_chip_info(int fd,
 			/* Backwards compatibility with 2835 kernels which
 						 * only do V3D 2.1.
 						 */
+			fprintf(stderr, "Couldn't get V3D IDENT0: %s\n",
+				   strerror(errno));
 			return 0; //21
 		} else {
 			fprintf(stderr, "Couldn't get V3D IDENT0: %s\n",
@@ -219,8 +221,8 @@ int vc4_bo_set_tiling(int fd, uint32_t bo, uint64_t mod)
 					   &set_tiling);
 	if (ret != 0)
 	{
-		fprintf(stderr, "Couldn't set tiling: %s\n",
-			   strerror(errno));
+		fprintf(stderr, "Couldn't set tiling: %s, bo %u, mod %llu\n",
+			   strerror(errno), bo, mod);
 		return 0;
 	}
 
@@ -244,8 +246,8 @@ uint32_t vc4_set_madvise(int fd, uint32_t bo, uint32_t needed, int hasMadvise)
 
 	if (drmIoctl(fd, DRM_IOCTL_VC4_GEM_MADVISE, &arg))
 	{
-		fprintf(stderr, "BO madvise failed: %s\n",
-			   strerror(errno));
+		fprintf(stderr, "BO madvise failed: %s, bo %u, needed %u\n",
+			   strerror(errno), bo, needed);
 		return 0;
 	}
 
@@ -260,15 +262,12 @@ void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t offset, uint32_t s
 
 	int ret;
 
-	//if (bo->map)
-	//		return bo->map;
-
 	struct drm_vc4_mmap_bo map;
 	memset(&map, 0, sizeof(map));
 	map.handle = bo;
 	ret = drmIoctl(fd, DRM_IOCTL_VC4_MMAP_BO, &map);
 	if (ret != 0) {
-		fprintf(stderr, "Couldn't map unsync: %s\n", strerror(errno));
+		fprintf(stderr, "Couldn't map unsync: %s, bo %u, offset %u, size %u\n", strerror(errno), bo, offset, size);
 		return 0;
 	}
 
@@ -279,7 +278,6 @@ void* vc4_bo_map_unsynchronized(int fd, uint32_t bo, uint32_t offset, uint32_t s
 			   bo, (long long)map.offset + offset, size);
 		return 0;
 	}
-	//VG(VALGRIND_MALLOCLIKE_BLOCK(bo->map, bo->size, 0, false));
 
 	return mapPtr;
 }
@@ -308,8 +306,8 @@ int vc4_bo_wait(int fd, uint32_t bo, uint64_t timeout_ns)
 	int ret = drmIoctl(fd, DRM_IOCTL_VC4_WAIT_BO, &wait);
 	if (ret) {
 		if (ret != -ETIME) {
-			fprintf(stderr, "BO wait failed: %s\n",
-				   strerror(errno));
+			fprintf(stderr, "BO wait failed: %s, bo %u, timeout %llu\n",
+				   strerror(errno), bo, timeout_ns);
 		}
 
 		return 0;
@@ -340,8 +338,8 @@ int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t
 	int ret = drmIoctl(fd, DRM_IOCTL_VC4_WAIT_SEQNO, &wait);
 	if (ret) {
 		if (ret != -ETIME) {
-			fprintf(stderr, "Seqno wait failed: %s\n",
-				   strerror(errno));
+			fprintf(stderr, "Seqno wait failed: %s, seqno %llu, timeout %llu\n",
+				   strerror(errno), seqno, *timeout_ns);
 			vc4_print_hang_state(controlFd);
 		}
 		else
@@ -373,7 +371,6 @@ int vc4_bo_flink(int fd, uint32_t bo, uint32_t *name)
 	if (ret) {
 		fprintf(stderr, "Failed to flink bo %d: %s\n",
 			   bo, strerror(errno));
-		//free(bo);
 		return 0;
 	}
 
@@ -408,8 +405,8 @@ uint32_t vc4_bo_alloc_shader(int fd, const void *data, uint32_t* size)
 				   &create);
 
 	if (ret != 0) {
-		fprintf(stderr, "Couldn't create shader: %s\n",
-			   strerror(errno));
+		fprintf(stderr, "Couldn't create shader: %s, size %u\n",
+			   strerror(errno), *size);
 		return 0;
 	}
 
@@ -444,16 +441,6 @@ uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
 	struct drm_vc4_create_bo create;
 	int ret;
 
-	/*bo = vc4_bo_from_cache(screen, size, name);
-		if (bo) {
-				if (dump_stats) {
-						fprintf(stderr, "Allocated %s %dkb from cache:\n",
-								name, size / 1024);
-						vc4_bo_dump_stats(screen);
-				}
-				return bo;
-		}*/
-
 	memset(&create, 0, sizeof(create));
 	create.size = size;
 
@@ -461,17 +448,8 @@ uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
 	uint32_t handle = create.handle;
 
 	if (ret != 0) {
-		fprintf(stderr, "Couldn't alloc BO: %s\n",
-			   strerror(errno));
-
-		/*if (!list_empty(&screen->bo_cache.time_list) &&
-					!cleared_and_retried) {
-						cleared_and_retried = true;
-						vc4_bo_cache_free_all(&screen->bo_cache);
-						goto retry;
-				}
-
-				free(bo);*/
+		fprintf(stderr, "Couldn't alloc BO: %s, size %u\n",
+			   strerror(errno), size);
 		return 0;
 	}
 
@@ -492,7 +470,6 @@ void vc4_bo_free(int fd, uint32_t bo, void* mappedAddr, uint32_t size)
 
 	if (mappedAddr) {
 		vc4_bo_unmap_unsynchronized(fd, mappedAddr, size);
-		//VG(VALGRIND_FREELIKE_BLOCK(bo->map, 0));
 	}
 
 	struct drm_gem_close c;
@@ -523,8 +500,8 @@ void vc4_bo_label(int fd, uint32_t bo, const char* name)
 	int ret = drmIoctl(fd, DRM_IOCTL_VC4_LABEL_BO, &label);
 	if(ret)
 	{
-		fprintf(stderr, "BO label failed: %s\n",
-			   strerror(errno));
+		fprintf(stderr, "BO label failed: %s, bo %u\n",
+			   strerror(errno), bo);
 	}
 }
 
@@ -556,7 +533,7 @@ void* vc4_bo_map(int fd, uint32_t bo, uint32_t offset, uint32_t size)
 	//wait infinitely
 	int ok = vc4_bo_wait(fd, bo, WAIT_TIMEOUT_INFINITE);
 	if (!ok) {
-		fprintf(stderr, "BO wait for map failed: %s\n", strerror(errno));
+		fprintf(stderr, "BO wait for map failed: %s, bo %u, offset %u, size %u\n", strerror(errno), bo, offset, size);
 		return 0;
 	}
 
