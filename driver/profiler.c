@@ -14,6 +14,8 @@ extern "C" {
 static profiler* globalProfiler = 0;
 static atomic_int globalProfilerGuard = 0;
 
+#define SKIPPED_FRAMES 100
+
 void initProfiler()
 {
 	if(!globalProfiler)
@@ -81,13 +83,16 @@ void endMeasure(void* func)
 		assert(data->inProgress);
 		data->inProgress = 0;
 
-		if((end.tv_nsec - data->start.tv_nsec) < 0)
+		if(globalProfiler->frameCounter > SKIPPED_FRAMES)
 		{
-			data->timeSpent += (end.tv_sec - data->start.tv_sec - 1) * 0.001 + (1000000000 + end.tv_nsec - data->start.tv_nsec) / MILLION;
-		}
-		else
-		{
-			data->timeSpent += (end.tv_sec - data->start.tv_sec) * 0.001 + (end.tv_nsec - data->start.tv_nsec) / MILLION;
+			if((end.tv_nsec - data->start.tv_nsec) < 0)
+			{
+				data->timeSpent += (end.tv_sec - data->start.tv_sec - 1) * 0.001 + (1000000000 + end.tv_nsec - data->start.tv_nsec) / MILLION;
+			}
+			else
+			{
+				data->timeSpent += (end.tv_sec - data->start.tv_sec) * 0.001 + (end.tv_nsec - data->start.tv_nsec) / MILLION;
+			}
 		}
 
 		globalProfilerGuard = 0;
@@ -117,7 +122,7 @@ double getTimeSpent(void* func)
 		return 0;
 	}
 
-	return data->timeSpent / (double)globalProfiler->frameCounter;
+	return data->timeSpent / (double)(globalProfiler->frameCounter - SKIPPED_FRAMES);
 }
 
 void profilePrintResults()
@@ -173,11 +178,24 @@ void profilePrintResults()
 	}
 
 	//print most time spent first
+	fprintf(stderr, "\nNum frames: %u\n", globalProfiler->frameCounter - SKIPPED_FRAMES);
 	fprintf(stderr, "Num functions touched: %u\n", numFunctions);
+	double overHead = 0.0;
+	for(int32_t c = numFunctions - 1; c >= 0; --c)
+	{
+		overHead += profileResults[c].timeSpent;
+	}
+	//
+	fprintf(stderr, "Total driver overhead: %lf ms\n", (overHead - profileResults[numFunctions - 1].timeSpent) / (double)(globalProfiler->frameCounter - SKIPPED_FRAMES));
+
 	uint32_t counter = 0;
 	for(int32_t c = numFunctions - 1; c >= 0; --c)
 	{
-		fprintf(stderr, "#%u %-30s: %lf ms\n", ++counter, profileResults[c].funcName, profileResults[c].timeSpent / (double)globalProfiler->frameCounter);
+		double timeSpent = profileResults[c].timeSpent / (double)(globalProfiler->frameCounter - SKIPPED_FRAMES);
+
+		if(timeSpent < 0.0001) continue;
+
+		fprintf(stderr, "#%u %-30s: %lf ms\n", ++counter, profileResults[c].funcName, timeSpent);
 		if(counter >= 10)
 		{
 			//break;

@@ -618,6 +618,12 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueuePresentKHR)(
 {
 	PROFILESTART(RPIFUNC(vkQueuePresentKHR));
 
+	static unsigned frameProfile = 0;
+	if(frameProfile)
+	{
+		PROFILEEND(&frameProfile);
+	}
+
 	assert(queue);
 	assert(pPresentInfo);
 
@@ -635,6 +641,9 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueuePresentKHR)(
 	}
 
 	PROFILEEND(RPIFUNC(vkQueuePresentKHR));
+
+	PROFILESTART(&frameProfile);
+	frameProfile = 1;
 
 	endFrame();
 

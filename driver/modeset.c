@@ -149,6 +149,65 @@ void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes
 		tmpModes[tmpNumModes].resWidth = connPtr->modes[c].hdisplay;
 		tmpModes[tmpNumModes].resHeight = connPtr->modes[c].vdisplay;
 
+//		char* typestr = 0;
+//		switch(connPtr->modes[c].type)
+//		{
+//		case DRM_MODE_TYPE_BUILTIN:
+//			typestr = "DRM_MODE_TYPE_BUILTIN";
+//			break;
+//		case DRM_MODE_TYPE_CLOCK_C:
+//			typestr = "DRM_MODE_TYPE_CLOCK_C";
+//			break;
+//		case DRM_MODE_TYPE_CRTC_C:
+//			typestr = "DRM_MODE_TYPE_CRTC_C";
+//			break;
+//		case DRM_MODE_TYPE_PREFERRED:
+//			typestr = "DRM_MODE_TYPE_PREFERRED";
+//			break;
+//		case DRM_MODE_TYPE_DEFAULT:
+//			typestr = "DRM_MODE_TYPE_DEFAULT";
+//			break;
+//		case DRM_MODE_TYPE_USERDEF:
+//			typestr = "DRM_MODE_TYPE_USERDEF";
+//			break;
+//		case DRM_MODE_TYPE_DRIVER:
+//			typestr = "DRM_MODE_TYPE_DRIVER";
+//			break;
+//		default:
+//			typestr = "UNKNOWN";
+//			break;
+//		}
+
+//		fprintf(stderr, "\nflags ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_PHSYNC) fprintf(stderr, "DRM_MODE_FLAG_PHSYNC ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_NHSYNC) fprintf(stderr, "DRM_MODE_FLAG_NHSYNC ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_PVSYNC) fprintf(stderr, "DRM_MODE_FLAG_PVSYNC ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_NVSYNC) fprintf(stderr, "DRM_MODE_FLAG_NVSYNC ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_INTERLACE) fprintf(stderr, "DRM_MODE_FLAG_INTERLACE ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_DBLSCAN) fprintf(stderr, "DRM_MODE_FLAG_DBLSCAN ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_CSYNC) fprintf(stderr, "DRM_MODE_FLAG_CSYNC ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_PCSYNC) fprintf(stderr, "DRM_MODE_FLAG_PCSYNC ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_NCSYNC) fprintf(stderr, "DRM_MODE_FLAG_NCSYNC ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_HSKEW) fprintf(stderr, "DRM_MODE_FLAG_HSKEW ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_BCAST) fprintf(stderr, "DRM_MODE_FLAG_BCAST ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_PIXMUX) fprintf(stderr, "DRM_MODE_FLAG_PIXMUX ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_DBLCLK) fprintf(stderr, "DRM_MODE_FLAG_DBLCLK ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_CLKDIV2) fprintf(stderr, "DRM_MODE_FLAG_CLKDIV2 ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_3D_MASK) fprintf(stderr, "DRM_MODE_FLAG_3D_MASK ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_3D_NONE) fprintf(stderr, "DRM_MODE_FLAG_3D_NONE ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_3D_FRAME_PACKING) fprintf(stderr, "DRM_MODE_FLAG_3D_FRAME_PACKING ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_3D_FIELD_ALTERNATIVE) fprintf(stderr, "DRM_MODE_FLAG_3D_FIELD_ALTERNATIVE ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_3D_LINE_ALTERNATIVE) fprintf(stderr, "DRM_MODE_FLAG_3D_LINE_ALTERNATIVE ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_3D_SIDE_BY_SIDE_FULL) fprintf(stderr, "DRM_MODE_FLAG_3D_SIDE_BY_SIDE_FULL ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_3D_L_DEPTH) fprintf(stderr, "DRM_MODE_FLAG_3D_L_DEPTH ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_3D_L_DEPTH_GFX_GFX_DEPTH) fprintf(stderr, "DRM_MODE_FLAG_3D_L_DEPTH_GFX_GFX_DEPTH ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_3D_TOP_AND_BOTTOM) fprintf(stderr, "DRM_MODE_FLAG_3D_TOP_AND_BOTTOM ");
+//		if(connPtr->modes[c].flags & DRM_MODE_FLAG_3D_SIDE_BY_SIDE_HALF) fprintf(stderr, "DRM_MODE_FLAG_3D_SIDE_BY_SIDE_HALF ");
+
+//		fprintf(stderr, "\nclock %u vrefresh %u type %s\n", connPtr->modes[c].clock, connPtr->modes[c].vrefresh, typestr);
+//		fprintf(stderr, "hdisplay %u hsync_start %u hsync_end %u htotal %u hskew %u\n", connPtr->modes[c].hdisplay, connPtr->modes[c].hsync_start, connPtr->modes[c].hsync_end, connPtr->modes[c].htotal, connPtr->modes[c].hskew);
+//		fprintf(stderr, "vdisplay %u vsync_start %u vsync_end %u vtotal %u vscan %u\n", connPtr->modes[c].vdisplay, connPtr->modes[c].vsync_start, connPtr->modes[c].vsync_end, connPtr->modes[c].vtotal, connPtr->modes[c].vscan);
+
 		tmpNumModes++;
 
 		assert(tmpNumModes < 1024);
@@ -272,16 +331,18 @@ void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
 			}
 		}
 
+		int ret = drmModeSetCrtc(fd, surface->crtc->crtc_id, buf->fb, 0, 0, &surface->connector->connector_id, 1, &surface->connector->modes[surface->modeID]);
+		if(ret)
+		{
+			fprintf(stderr, "cannot flip CRTC for connector %u (%d): %m\n",
+				   surface->connector->connector_id, errno);
+		}
+
 		saved_state_guard = 0;
 	}
 
-	//fprintf(stderr, "present connector id %i, crtc id %i, fb %i\n", surface->connector->connector_id, surface->crtc->crtc_id, buf->fb);
-	int ret = drmModeSetCrtc(fd, surface->crtc->crtc_id, buf->fb, 0, 0, &surface->connector->connector_id, 1, &surface->connector->modes[surface->modeID]);
-	if(ret)
-	{
-		fprintf(stderr, "cannot flip CRTC for connector %u (%d): %m\n",
-			   surface->connector->connector_id, errno);
-	}
+	//TODO add vsync support eventually
+	drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, 0, 0);
 
 	//modeset_debug_print(fd);
 }
