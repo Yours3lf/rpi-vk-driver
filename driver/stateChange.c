@@ -627,8 +627,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearAttachments)(
 	oldPipeline = cmdBuf->graphicsPipeline;
 	memcpy(oldVertexBufferOffsets, cmdBuf->vertexBufferOffsets, sizeof(oldVertexBufferOffsets));
 	memcpy(oldVertexBuffers, cmdBuf->vertexBuffers, sizeof(oldVertexBuffers));
-	memcpy(oldPushConstantBufferVertex, cmdBuf->pushConstantBufferVertex, sizeof(oldPushConstantBufferVertex));
-	memcpy(oldPushConstantBufferPixel, cmdBuf->pushConstantBufferPixel, sizeof(oldPushConstantBufferPixel));
+	memcpy(oldPushConstantBufferVertex, cmdBuf->pushConstantBufferVertex, sizeof(uint32_t) * 10);
+	memcpy(oldPushConstantBufferPixel, cmdBuf->pushConstantBufferPixel, sizeof(uint32_t) * 10);
 
 	for(uint32_t c = 0; c < attachmentCount; ++c)
 	{
@@ -667,6 +667,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearAttachments)(
 		dsci.front.passOp = VK_STENCIL_OP_REPLACE;
 		dsci.back = dsci.front;
 
+		//TODO cache pipeline, don't create it each occasion
 		createClearPipeline(device, &dsci, clearColor ? device->emulClearShaderModule : device->emulClearNoColorShaderModule, device->emulClearDsl, &blitPipelineLayout, cmdBuf->currRenderPass, &blitPipeline);
 
 		RPIFUNC(vkCmdBindPipeline)(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipeline);
@@ -726,8 +727,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearAttachments)(
 	cmdBuf->graphicsPipeline = oldPipeline;
 	memcpy(cmdBuf->vertexBufferOffsets, oldVertexBufferOffsets, sizeof(oldVertexBufferOffsets));
 	memcpy(cmdBuf->vertexBuffers, oldVertexBuffers, sizeof(oldVertexBuffers));
-	memcpy(cmdBuf->pushConstantBufferVertex, oldPushConstantBufferVertex, sizeof(oldPushConstantBufferVertex));
-	memcpy(cmdBuf->pushConstantBufferPixel, oldPushConstantBufferPixel, sizeof(oldPushConstantBufferPixel));
+	memcpy(cmdBuf->pushConstantBufferVertex, oldPushConstantBufferVertex, sizeof(uint32_t) * 10);
+	memcpy(cmdBuf->pushConstantBufferPixel, oldPushConstantBufferPixel, sizeof(uint32_t) * 10);
 
 	PROFILEEND(RPIFUNC(vkCmdClearAttachments));
 }
