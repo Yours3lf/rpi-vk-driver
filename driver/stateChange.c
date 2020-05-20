@@ -562,8 +562,6 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearColorImage)(
 
 		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->width = i->width;
 		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->height = i->height;
-
-		assert(((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 	}
 
 	PROFILEEND(RPIFUNC(vkCmdClearColorImage));

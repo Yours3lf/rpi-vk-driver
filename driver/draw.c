@@ -37,6 +37,9 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	//uint32_t descriptorSetDirty;
 	//uint32_t pushConstantDirty;
 
+	static uint32_t drawCommon1;
+	PROFILESTART(&drawCommon1);
+
 	//TODO multiple viewports
 	VkViewport vp;
 	vp = cb->graphicsPipeline->viewports[0];
@@ -113,8 +116,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		cb->depthBoundsDirty = 0;
 	}
 
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
-
 	//Point size
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_POINT_SIZE_length);
 	clInsertPointSize(&commandBuffer->binCl, 1.0f);
@@ -161,6 +162,11 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	assert(vertModule->bos[VK_RPI_ASSEMBLY_TYPE_VERTEX]);
 	assert(vertModule->bos[VK_RPI_ASSEMBLY_TYPE_COORDINATE]);
 
+	PROFILEEND(&drawCommon1);
+
+	static uint32_t drawCommon2;
+	PROFILESTART(&drawCommon2);
+
 	//emit shader record
 	ControlListAddress fragCode = {
 		.handle = fragModule->bos[VK_RPI_ASSEMBLY_TYPE_FRAGMENT],
@@ -200,8 +206,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	//VPM offsets: these would be how many vpm reads were before a specific attrib (x4 bytes)
 	//we don't really have that info, so we have to play with strides/formats
 
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
-
 	uint32_t vertexAttribSize = 0, coordAttribSize = 0;
 	for(uint32_t c = 0; c < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++c)
 	{
@@ -216,16 +220,12 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	assert(vertModule->numVertVPMreads == vertexAttribSize >> 2);
 	assert(vertModule->numCoordVPMreads == coordAttribSize >> 2);
 
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
-
 	//number of attribs
 	//3 is the number of type of possible shaders
 	for(int c = 0; c < (3 + attribCount)*4; ++c)
 	{
 		clInsertNop(&commandBuffer->shaderRecCl);
 	}
-
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
 	clFit(commandBuffer, &commandBuffer->handlesCl, (3 + 8)*4);
 	clInsertShaderRecord(&commandBuffer->shaderRecCl,
@@ -254,8 +254,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 						 coordCode  //coordinate shader code address
 						 );
 
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
-
 	uint32_t vertexAttribOffsets[8] = {};
 	uint32_t coordAttribOffsets[8] = {};
 	for(uint32_t c = 1; c < 8; ++c)
@@ -273,8 +271,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	{
 		coordAttribOffsets[c] = vertexAttribOffsets[1];
 	}
-
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
 	uint32_t maxIndex = 0xffff;
 	for(uint32_t c = 0 ; c < cb->graphicsPipeline->vertexAttributeDescriptionCount; ++c)
@@ -322,7 +318,10 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		}
 	}
 
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+	PROFILEEND(&drawCommon2);
+
+	static uint32_t drawCommon3;
+	PROFILESTART(&drawCommon3);
 
 	//write uniforms
 	_pipelineLayout* pl = cb->graphicsPipeline->layout;
@@ -402,8 +401,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 			}
 		}
 	}
-
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
 	assert(numTextureSamples == fragModule->numTextureSamples);
 
@@ -489,6 +486,11 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 	assert(numFragUniformReads == fragModule->numFragUniformReads);
 
+	PROFILEEND(&drawCommon3);
+
+	static uint32_t drawCommon4;
+	PROFILESTART(&drawCommon4);
+
 	uint32_t numVertUniformReads = 0;
 
 	//vertex and then coordinate
@@ -512,8 +514,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 			assert(0); //shouldn't happen
 		}
 	}
-
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
 	assert(numVertUniformReads == vertModule->numVertUniformReads);
 
@@ -549,7 +549,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 	assert(numCoordUniformReads == vertModule->numCoordUniformReads);
 
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
+	PROFILEEND(&drawCommon4);
 
 	return maxIndex;
 }
@@ -579,8 +579,6 @@ void RPIFUNC(vkCmdDraw)(VkCommandBuffer commandBuffer, uint32_t vertexCount, uin
 
 	cb->numDrawCallsSubmitted++;
 
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
-
 	PROFILEEND(RPIFUNC(vkCmdDraw));
 }
 
@@ -606,19 +604,13 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdDrawIndexed)(
 
 	_commandBuffer* cb = commandBuffer;
 
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
-
 	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
 	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, cb->indexBuffer->boundMem->bo);
 
 	clInsertGEMRelocations(&commandBuffer->binCl, idx, 0);
 
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
-
 	//Submit draw call: vertex Array Primitives
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
-
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
 	clInsertIndexedPrimitiveList(&commandBuffer->binCl,
 								 maxIndex, //max index
@@ -628,8 +620,6 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdDrawIndexed)(
 								 getPrimitiveMode(cb->graphicsPipeline->topology));
 
 	cb->numDrawCallsSubmitted++;
-
-	assert(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->memGuard == 0xDDDDDDDD);
 
 	PROFILEEND(RPIFUNC(vkCmdDrawIndexed));
 }
