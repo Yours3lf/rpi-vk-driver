@@ -74,6 +74,8 @@ void handleInput()
 {
 	assert(li);
 
+	libinput_dispatch(li);
+
 	struct libinput_event* event = 0;
 	while ((event = libinput_get_event(li)) != 0)
 	{
