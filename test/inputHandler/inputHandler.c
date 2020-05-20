@@ -96,11 +96,18 @@ void handleInput()
 			printf("Keypress keycode %u state %u\n", keyCode, keyState);
 			break;
 		}
+		case LIBINPUT_EVENT_POINTER_MOTION:
+		{
+			double xCoord = libinput_event_pointer_get_dx(libinput_event_get_pointer_event(event));
+			double yCoord = libinput_event_pointer_get_dy(libinput_event_get_pointer_event(event));
+			printf("Pointer relative motion xcoord %lf ycoord %lf\n", xCoord, yCoord);
+			break;
+		}
 		case LIBINPUT_EVENT_POINTER_MOTION_ABSOLUTE:
 		{
 			double xCoord = libinput_event_pointer_get_absolute_x(libinput_event_get_pointer_event(event));
 			double yCoord = libinput_event_pointer_get_absolute_y(libinput_event_get_pointer_event(event));
-			printf("Pointer motion xcoord %lf ycoord %lf\n", xCoord, yCoord);
+			printf("Pointer absolute motion xcoord %lf ycoord %lf\n", xCoord, yCoord);
 			break;
 		}
 		case LIBINPUT_EVENT_POINTER_BUTTON:
