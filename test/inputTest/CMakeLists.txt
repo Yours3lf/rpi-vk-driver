@@ -1,6 +1,7 @@
 file(GLOB testSrc
 	"*.h"
 	"*.cpp"
+	"../inputHandler/inputHandler.c"
 )
 
 add_executable(inputTest ${testSrc})

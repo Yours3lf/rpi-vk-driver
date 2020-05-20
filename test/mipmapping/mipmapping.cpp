@@ -10,6 +10,8 @@
 #include "driver/vkExt.h"
 #include "QPUassembler/qpu_assembler.h"
 
+#include "../inputHandler/inputHandler.h"
+
 //#define GLFW_INCLUDE_VULKAN
 //#define VK_USE_PLATFORM_WIN32_KHR
 //#include <GLFW/glfw3.h>
@@ -177,26 +179,7 @@ void cleanup() {
 	vkDestroyInstance(instance, nullptr);
 }
 
-void run() {
-	// Note: dynamically loading loader may be a better idea to fail gracefully when Vulkan is not supported
-
-	// Create window for Vulkan
-	//glfwInit();
-
-	//glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-	//window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "The 630 line cornflower blue window", nullptr, nullptr);
-
-	// Use Vulkan
-	setupVulkan();
-
-	mainLoop();
-
-	cleanup();
-}
-
-void setupVulkan() {
+void setupVulkan() {	
 	createInstance();
 	findPhysicalDevice();
 	createWindowSurface();
@@ -217,11 +200,11 @@ void setupVulkan() {
 }
 
 void mainLoop() {
-	//while (!glfwWindowShouldClose(window)) {
-	for(int c = 0; c < 300; ++c){
+	while(true)
+	{
 		draw();
 
-		//glfwPollEvents();
+		handleInput();
 	}
 }
 
@@ -804,7 +787,7 @@ void draw() {
 		assert(0);
 	}
 
-	std::cout << "acquired image" << std::endl;
+	//std::cout << "acquired image" << std::endl;
 
 	// Wait for image to be available and draw
 	VkSubmitInfo submitInfo = {};
@@ -824,7 +807,7 @@ void draw() {
 		assert(0);
 	}
 
-	std::cout << "submitted draw command buffer" << std::endl;
+	//std::cout << "submitted draw command buffer" << std::endl;
 
 	// Present drawn image
 	// Note: semaphore here is not strictly necessary, because commands are processed in submission order within a single queue
@@ -844,7 +827,7 @@ void draw() {
 		assert(0);
 	}
 
-	std::cout << "submitted presentation command buffer" << std::endl;
+	//std::cout << "submitted presentation command buffer" << std::endl;
 }
 
 void CreateRenderPass()
@@ -1805,15 +1788,7 @@ void CreateVertexBuffer()
 }
 
 int main() {
-	// Note: dynamically loading loader may be a better idea to fail gracefully when Vulkan is not supported
-
-	// Create window for Vulkan
-	//glfwInit();
-
-	//glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-	//window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "The 630 line cornflower blue window", nullptr, nullptr);
+	initInputHandler();
 
 	// Use Vulkan
 	setupVulkan();
@@ -1821,6 +1796,8 @@ int main() {
 	mainLoop();
 
 	cleanup();
+
+	uninitInputHandler();
 
 
 	return 0;
