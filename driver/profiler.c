@@ -101,6 +101,8 @@ void endMeasure(void* func)
 
 void endFrame()
 {
+	if(!globalProfiler) return;
+
 	while(globalProfilerGuard);
 	{
 		globalProfilerGuard = 1;
@@ -127,7 +129,7 @@ double getTimeSpent(void* func)
 
 void profilePrintResults()
 {
-	assert(globalProfiler);
+	if(!globalProfiler) return;
 
 	funcData profileResults[MAX_FUNCTIONS];
 	memset(profileResults, 0, sizeof(profileResults));

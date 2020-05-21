@@ -42,6 +42,8 @@ void initInputHandler()
 	li = libinput_udev_create_context(&interface, NULL, _udev); assert(li);
 	uint32_t res = libinput_udev_assign_seat(li, "seat0"); assert(res == 0);
 
+
+
 	libinput_dispatch(li);
 
 	//configure devices
@@ -120,8 +122,18 @@ void handleInput()
 		case LIBINPUT_EVENT_POINTER_AXIS:
 		{
 			enum libinput_pointer_axis_source axisSource = libinput_event_pointer_get_axis_source(libinput_event_get_pointer_event(event));
-			double axisValueVertical = libinput_event_pointer_get_axis_value(libinput_event_get_pointer_event(event), LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL);
-			double axisValueHorizontal = libinput_event_pointer_get_axis_value(libinput_event_get_pointer_event(event), LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL);
+			double axisValueVertical = 1, axisValueHorizontal = 0;
+
+			if(libinput_event_pointer_has_axis(event, LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL))
+			{
+				axisValueVertical = libinput_event_pointer_get_axis_value(libinput_event_get_pointer_event(event), LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL);
+			}
+
+			if(libinput_event_pointer_has_axis(event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL))
+			{
+				axisValueHorizontal = libinput_event_pointer_get_axis_value(libinput_event_get_pointer_event(event), LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL);
+			}
+
 			printf("Pointer axis  source %u, value vertical %lf, value horizontal %lf\n", axisSource, axisValueVertical, axisValueHorizontal);
 			break;
 		}
