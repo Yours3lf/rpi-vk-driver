@@ -104,13 +104,30 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 		//TODO Depth Offset
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_DEPTH_OFFSET_length);
-		clInsertDepthOffset(&commandBuffer->binCl, cb->graphicsPipeline->depthBiasConstantFactor, cb->graphicsPipeline->depthBiasSlopeFactor);
+
+		float depthBiasConstant = cb->graphicsPipeline->depthBiasConstantFactor;
+		float depthBiasSlope = cb->graphicsPipeline->depthBiasSlopeFactor;
+
+		for(uint32_t c = 0; c < cb->graphicsPipeline->dynamicStateCount; ++c)
+		{
+			if(cb->graphicsPipeline->dynamicStates[c] == VK_DYNAMIC_STATE_DEPTH_BIAS)
+			{
+				depthBiasConstant = cb->depthBiasConstantFactor;
+				depthBiasSlope = cb->depthBiasSlopeFactor;
+				break;
+			}
+		}
+
+		clInsertDepthOffset(&commandBuffer->binCl, depthBiasConstant, depthBiasSlope);
 
 		//Vulkan conventions, we expect the resulting NDC space Z axis to be in range [0...1] close->far
 		//cb->graphicsPipeline->minDepthBounds;
 		//Clipper Z Scale and Offset
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_Z_SCALE_AND_OFFSET_length);
-		clInsertClipperZScaleOffset(&commandBuffer->binCl, 0.0f, 1.0f);
+		//offset, scale
+		float scale = vp.maxDepth - vp.minDepth;
+		float offset = vp.minDepth;
+		clInsertClipperZScaleOffset(&commandBuffer->binCl, offset, scale);
 
 		cb->vertexBufferDirty = 0;
 		cb->depthBoundsDirty = 0;

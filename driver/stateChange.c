@@ -620,8 +620,10 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearAttachments)(
 	_buffer* oldVertexBuffers[8];
 	char oldPushConstantBufferVertex[256];
 	char oldPushConstantBufferPixel[256];
+	VkViewport oldViewport;
 
 	//save the state that we'll modify
+	oldViewport = cmdBuf->viewport;
 	oldPipeline = cmdBuf->graphicsPipeline;
 	memcpy(oldVertexBufferOffsets, cmdBuf->vertexBufferOffsets, sizeof(oldVertexBufferOffsets));
 	memcpy(oldVertexBuffers, cmdBuf->vertexBuffers, sizeof(oldVertexBuffers));
@@ -722,6 +724,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearAttachments)(
 	}
 
 	//restore state
+	cmdBuf->viewport = oldViewport;
 	cmdBuf->graphicsPipeline = oldPipeline;
 	memcpy(cmdBuf->vertexBufferOffsets, oldVertexBufferOffsets, sizeof(oldVertexBufferOffsets));
 	memcpy(cmdBuf->vertexBuffers, oldVertexBuffers, sizeof(oldVertexBuffers));

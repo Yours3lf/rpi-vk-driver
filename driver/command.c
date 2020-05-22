@@ -540,7 +540,11 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 
 			/**
 			printf("BCL:\n");
-			clDump(((uint8_t*)marker) + sizeof(CLMarker), marker->size);
+			uint8_t* mem = malloc(marker->size);
+			memcpy(mem, marker+1, marker->size);
+			clDump(mem, marker->size);
+			free(mem);
+
 			printf("BO handles: ");
 			for(int d = 0; d < marker->handlesSize / 4; ++d)
 			{
