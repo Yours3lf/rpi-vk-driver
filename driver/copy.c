@@ -1269,7 +1269,78 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyImageToBuffer)(
 	const VkBufferImageCopy*                    pRegions)
 {
 	PROFILESTART(RPIFUNC(vkCmdCopyImageToBuffer));
-	//TODO
+	//what if we use smaller batches to copy to LT layout
+	//so one batch has to be less than 4kb
+	//with a height of 1 (essentially 1D images)
+	//we should be getting raster order
+	//we can't write to more than a width of 2048, so we'll need to
+	//work with 2048 * 1 * 32bits each batch
+
+	_commandBuffer* cmdbuf = commandBuffer;
+	_device* device = cmdbuf->dev;
+	_image* img = srcImage;
+	_buffer* buf = dstBuffer;
+
+	for(uint32_t c = 0; c < regionCount; ++c)
+	{
+		//TODO support this
+		assert(!pRegions[c].bufferRowLength);
+		assert(!pRegions[c].bufferImageHeight);
+
+		uint32_t size = pRegions[c].imageExtent.width * pRegions[c].imageExtent.height;
+
+		uint32_t pixelBpp = getFormatBpp(img->format);
+
+		for(uint32_t d = 0, offsetX = 0, offsetY = 0; d < size; d += 2048)
+		{
+			uint32_t width = size - d;
+			width = width < 2048 ? width : 2048;
+
+			VkImageCreateInfo ici = {};
+			ici.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+			ici.extent.width = width;
+			ici.extent.height = 1;
+			ici.arrayLayers = 1;
+			ici.format = VK_FORMAT_R8G8B8A8_UNORM;
+			ici.imageType = VK_IMAGE_TYPE_2D;
+			ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			ici.mipLevels = 1;
+			ici.tiling = VK_IMAGE_TILING_OPTIMAL;
+			ici.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+			VkImage dstDummyImage;
+			vkCreateImage(device, &ici, 0, &dstDummyImage);
+
+			//working with 32 bits per pixel
+			vkBindImageMemory(device, dstDummyImage, buf->boundMem, buf->boundOffset + d * 4);
+
+			VkImageBlit blit;
+			blit.srcOffsets[0] = pRegions[c].imageOffset;
+			blit.srcOffsets[0].x += offsetX;
+			blit.srcOffsets[0].y += offsetY;
+			blit.srcOffsets[1].x = pRegions[c].imageExtent.width;
+			blit.srcOffsets[1].y = pRegions[c].imageExtent.height;
+			blit.srcOffsets[1].z = pRegions[c].imageExtent.depth;
+			blit.srcSubresource = pRegions[c].imageSubresource;
+			blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.dstSubresource.baseArrayLayer = 0;
+			blit.dstSubresource.mipLevel = 0;
+			blit.dstSubresource.layerCount = 1;
+			blit.dstOffsets[0].x = 0;
+			blit.dstOffsets[0].y = 0;
+			blit.dstOffsets[0].z = 0;
+			blit.dstOffsets[1].x = width;
+			blit.dstOffsets[1].y = 1;
+			blit.dstOffsets[1].z = 1;
+			RPIFUNC(vkCmdBlitImage)(commandBuffer, srcImage, srcImageLayout, dstDummyImage, ici.initialLayout, 1, &blit, VK_FILTER_NEAREST);
+
+			RPIFUNC(vkDestroyImage)(device, dstDummyImage, 0);
+
+			//TODO??
+			//offsetY += (offsetX + 2048)
+		}
+	}
+
 	PROFILEEND(RPIFUNC(vkCmdCopyImageToBuffer));
 }
 
