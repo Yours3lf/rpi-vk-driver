@@ -1079,6 +1079,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyBufferToImage)(
 
 	img->layout = dstImageLayout;
 
+	assert(((CLMarker*)getCPAptrFromOffset(cmdBuf->binCl.CPA, cmdBuf->binCl.offset))->memGuard == 0xDDDDDDDD);
+
 	PROFILEEND(RPIFUNC(vkCmdCopyBufferToImage));
 }
 
@@ -1243,6 +1245,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		RPIFUNC(vkDestroyFramebuffer)(device, offscreenFramebuffer, 0);
 	}
 
+	assert(((CLMarker*)getCPAptrFromOffset(cmdBuf->binCl.CPA, cmdBuf->binCl.offset))->memGuard == 0xDDDDDDDD);
+
 	PROFILEEND(RPIFUNC(vkCmdBlitImage));
 }
 
@@ -1281,24 +1285,22 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyImageToBuffer)(
 	_image* img = srcImage;
 	_buffer* buf = dstBuffer;
 
+	uint32_t srcPixelBpp = getFormatBpp(img->format);
+
 	for(uint32_t c = 0; c < regionCount; ++c)
 	{
 		//TODO support this
 		assert(!pRegions[c].bufferRowLength);
 		assert(!pRegions[c].bufferImageHeight);
 
-		uint32_t size = pRegions[c].imageExtent.width * pRegions[c].imageExtent.height;
-
-		uint32_t pixelBpp = getFormatBpp(img->format);
-
-		for(uint32_t d = 0, offsetX = 0, offsetY = 0; d < size; d += 2048)
+		//copy image to buffer line by line
+		for(uint32_t offsetY = 0; offsetY < pRegions[c].imageExtent.height; offsetY++)
 		{
-			uint32_t width = size - d;
-			width = width < 2048 ? width : 2048;
+			fprintf(stderr, "copying offsetY: %u\n", offsetY);
 
 			VkImageCreateInfo ici = {};
 			ici.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-			ici.extent.width = width;
+			ici.extent.width = pRegions[c].imageExtent.width;
 			ici.extent.height = 1;
 			ici.arrayLayers = 1;
 			ici.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -1309,14 +1311,13 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyImageToBuffer)(
 			ici.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 			VkImage dstDummyImage;
-			vkCreateImage(device, &ici, 0, &dstDummyImage);
+			RPIFUNC(vkCreateImage)(device, &ici, 0, &dstDummyImage);
 
 			//working with 32 bits per pixel
-			vkBindImageMemory(device, dstDummyImage, buf->boundMem, buf->boundOffset + d * 4);
+			RPIFUNC(vkBindImageMemory)(device, dstDummyImage, buf->boundMem, buf->boundOffset + (offsetY * pRegions[c].imageExtent.width * srcPixelBpp) >> 3);
 
 			VkImageBlit blit;
 			blit.srcOffsets[0] = pRegions[c].imageOffset;
-			blit.srcOffsets[0].x += offsetX;
 			blit.srcOffsets[0].y += offsetY;
 			blit.srcOffsets[1].x = pRegions[c].imageExtent.width;
 			blit.srcOffsets[1].y = pRegions[c].imageExtent.height;
@@ -1329,17 +1330,16 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyImageToBuffer)(
 			blit.dstOffsets[0].x = 0;
 			blit.dstOffsets[0].y = 0;
 			blit.dstOffsets[0].z = 0;
-			blit.dstOffsets[1].x = width;
+			blit.dstOffsets[1].x = pRegions[c].imageExtent.width;
 			blit.dstOffsets[1].y = 1;
 			blit.dstOffsets[1].z = 1;
 			RPIFUNC(vkCmdBlitImage)(commandBuffer, srcImage, srcImageLayout, dstDummyImage, ici.initialLayout, 1, &blit, VK_FILTER_NEAREST);
 
 			RPIFUNC(vkDestroyImage)(device, dstDummyImage, 0);
-
-			//TODO??
-			//offsetY += (offsetX + 2048)
 		}
 	}
+
+	assert(((CLMarker*)getCPAptrFromOffset(cmdbuf->binCl.CPA, cmdbuf->binCl.offset))->memGuard == 0xDDDDDDDD);
 
 	PROFILEEND(RPIFUNC(vkCmdCopyImageToBuffer));
 }

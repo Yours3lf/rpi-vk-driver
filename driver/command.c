@@ -316,8 +316,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 		//first entry is assumed to be a marker
 		CLMarker* marker = getCPAptrFromOffset(cmdbuf->binCl.CPA, cmdbuf->binCl.offset);
 
-		assert(marker->memGuard == 0xDDDDDDDD);
-
 		//a command buffer may contain multiple render passes
 		//and commands outside render passes such as clear commands
 		//each of these corresponds to a control list submit
@@ -325,6 +323,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 		//submit each separate control list
 		while(marker)
 		{
+			assert(marker->memGuard == 0xDDDDDDDD);
+
 			struct drm_vc4_submit_cl submitCl =
 			{
 				.color_read.hindex = ~0,
@@ -643,6 +643,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 
 			assert(submitCl.bo_handle_count > 0);
 
+			fprintf(stderr, "submit bincl size: %u\n", submitCl.bin_cl_size);
+
 			//TODO
 			while(lastSeqnoGuard);
 			{
@@ -651,6 +653,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 				vc4_cl_submit(controlFd, &submitCl, &queue->lastEmitSeqno, &lastFinishedSeqno);
 				lastSeqnoGuard = 0;
 			}
+
+			assert(marker->memGuard == 0xDDDDDDDD);
 
 			//advance in linked list
 			marker = marker->nextMarkerOffset == -1 ? 0 : getCPAptrFromOffset(cmdbuf->binCl.CPA, marker->nextMarkerOffset);
