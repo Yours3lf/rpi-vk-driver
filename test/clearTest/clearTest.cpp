@@ -158,7 +158,7 @@ void setupVulkan() {
 
 void mainLoop() {
 	//while (!glfwWindowShouldClose(window)) {
-	for(int c = 0; c < 300; ++c){
+	for(int c = 0; c < 600; ++c){
 		draw();
 
 		//glfwPollEvents();
@@ -841,12 +841,16 @@ void recordCommandBuffers()
 		clearRect.rect.extent.height = 108;
 		vkCmdClearAttachments(presentCommandBuffers[i], 2, clearAttachment, 1, &clearRect);
 
+		vkCmdSetDepthBias(presentCommandBuffers[i], 0.0, 0.0, 0.0);
+
 		VkDeviceSize offsets = 0;
 		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer1, &offsets );
 		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
 
 		fragColor = 0xffafcd02; //yellow
 		vkCmdPushConstants(presentCommandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragColor), &fragColor);
+
+		vkCmdSetDepthBias(presentCommandBuffers[i], 100.0, 0.0, 100.0);
 
 		vkCmdBindVertexBuffers(presentCommandBuffers[i], 0, 1, &vertexBuffer2, &offsets );
 		vkCmdDraw(presentCommandBuffers[i], 3, 1, 0, 0);
@@ -1350,8 +1354,8 @@ void CreatePipeline()
 	rastCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rastCreateInfo.lineWidth = 1.0f;
 	rastCreateInfo.depthBiasEnable = 1;
-	rastCreateInfo.depthBiasConstantFactor = -2.0f;
-	rastCreateInfo.depthBiasSlopeFactor = -1.0f;
+	rastCreateInfo.depthBiasConstantFactor = 0.0f;
+	rastCreateInfo.depthBiasSlopeFactor = 0.0f;
 
 	VkPipelineMultisampleStateCreateInfo pipelineMSCreateInfo = {};
 	pipelineMSCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -1371,6 +1375,11 @@ void CreatePipeline()
 	depthStencilState.depthWriteEnable = true;
 	depthStencilState.stencilTestEnable = false;
 
+	VkDynamicState states[] = {VK_DYNAMIC_STATE_DEPTH_BIAS};
+	VkPipelineDynamicStateCreateInfo dynamicState = {};
+	dynamicState.dynamicStateCount = 1;
+	dynamicState.pDynamicStates = states;
+
 	VkGraphicsPipelineCreateInfo pipelineInfo = {};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.stageCount = 2;
@@ -1385,6 +1394,7 @@ void CreatePipeline()
 	pipelineInfo.basePipelineIndex = -1;
 	pipelineInfo.pDepthStencilState = &depthStencilState;
 	pipelineInfo.layout = pipelineLayout;
+	pipelineInfo.pDynamicState = &dynamicState;
 
 	VkResult res = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &pipeline);
 
@@ -1434,9 +1444,9 @@ void CreateVertexBuffer()
 
 		float vertices[] =
 		{
-			-1, 1, 0.2,
-			 1, 1, 0.2,
-			 0,  -1, 0.2
+			-1, 1, 0.5,
+			 1, 1, 0.5,
+			 0,  -1, 0.5
 		};
 
 		void* data;

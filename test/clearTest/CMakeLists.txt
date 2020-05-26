@@ -9,3 +9,4 @@ target_compile_options(clearTest PRIVATE -Wall -std=c++11
 	)
 
 target_link_libraries(clearTest vulkan $<TARGET_OBJECTS:QPUassembler>)
+#target_link_libraries(clearTest rpi-vk-driver)

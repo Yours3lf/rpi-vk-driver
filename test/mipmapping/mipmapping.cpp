@@ -10,8 +10,6 @@
 #include "driver/vkExt.h"
 #include "QPUassembler/qpu_assembler.h"
 
-#include "../inputHandler/inputHandler.h"
-
 //#define GLFW_INCLUDE_VULKAN
 //#define VK_USE_PLATFORM_WIN32_KHR
 //#include <GLFW/glfw3.h>
@@ -200,11 +198,9 @@ void setupVulkan() {
 }
 
 void mainLoop() {
-	while(true)
+	for(int c = 0; c < 300; ++c)
 	{
 		draw();
-
-		handleInput();
 	}
 }
 
@@ -1788,16 +1784,12 @@ void CreateVertexBuffer()
 }
 
 int main() {
-	initInputHandler();
-
 	// Use Vulkan
 	setupVulkan();
 
 	mainLoop();
 
 	cleanup();
-
-	uninitInputHandler();
 
 
 	return 0;

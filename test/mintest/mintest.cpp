@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <vulkan/vulkan.h>
@@ -32,6 +33,15 @@ int main() {
 	vkGetDisplayModePropertiesKHR(physicalDevice, displayProperties[0].display, &modeCount, 0);
 	VkDisplayModePropertiesKHR* displayModeProperties = (VkDisplayModePropertiesKHR*)malloc(sizeof(VkDisplayModePropertiesKHR)*modeCount);
 	vkGetDisplayModePropertiesKHR(physicalDevice, displayProperties[0].display, &modeCount, displayModeProperties);
+
+//	printf("\nEnumerated modes\n");
+//	for(uint32_t c = 0; c < modeCount; ++c)
+//	{
+//		printf("Mode refresh rate %i\n", displayModeProperties[c].parameters.refreshRate);
+//		printf("Mode width %i\n", displayModeProperties[c].parameters.visibleRegion.width);
+//		printf("Mode height %i\n\n", displayModeProperties[c].parameters.visibleRegion.height);
+//	}
+
 
 	VkDisplaySurfaceCreateInfoKHR dsci = {};
 	dsci.sType = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR;

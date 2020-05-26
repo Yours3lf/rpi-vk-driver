@@ -1,7 +1,6 @@
 file(GLOB testSrc
 	"*.h"
 	"*.cpp"
-	../inputHandler/inputHandler.c
 )
 
 add_executable(mipmapping ${testSrc} )
@@ -9,5 +8,5 @@ target_compile_options(mipmapping PRIVATE -Wall -std=c++11
 	-march=${RPI_ARCH} -fPIC
 	)
 
-#target_link_libraries(mipmapping vulkan $<TARGET_OBJECTS:QPUassembler>)
-target_link_libraries(mipmapping rpi-vk-driver mtdev evdev udev input)
+target_link_libraries(mipmapping vulkan $<TARGET_OBJECTS:QPUassembler>)
+#target_link_libraries(mipmapping rpi-vk-driver)
