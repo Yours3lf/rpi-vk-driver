@@ -17,7 +17,7 @@
   - [x] cube mapping
   - [x] shadow mapping / depth texture sampling
   - [ ] Cubemaps with mipmaps
-  - [ ] Multi threaded cmdbuf generation test
+  - [ ] Multi threaded cmdbuf generation test (secondary cmdbufs)
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
 - [x] Resources
@@ -37,7 +37,6 @@
   - [x] Performance counters
 - [ ] Synchronization
   - [ ] vkCmdPipelineBarrier support
-- [ ] Secondary command buffers
 - [x] WSI
   - [x] Direct to display support
 - [ ] Fixes
