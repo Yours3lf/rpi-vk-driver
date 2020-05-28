@@ -792,7 +792,7 @@ void draw() {
 		assert(0);
 	}
 
-	std::cout << "acquired image" << std::endl;
+	//std::cout << "acquired image" << std::endl;
 
 	// Wait for image to be available and draw
 	VkSubmitInfo submitInfo = {};
@@ -812,7 +812,7 @@ void draw() {
 		assert(0);
 	}
 
-	std::cout << "submitted draw command buffer" << std::endl;
+	//std::cout << "submitted draw command buffer" << std::endl;
 
 	// Present drawn image
 	// Note: semaphore here is not strictly necessary, because commands are processed in submission order within a single queue
@@ -832,7 +832,7 @@ void draw() {
 		assert(0);
 	}
 
-	std::cout << "submitted presentation command buffer" << std::endl;
+	//std::cout << "submitted presentation command buffer" << std::endl;
 }
 
 void CreateRenderPass()
@@ -1331,59 +1331,6 @@ void CreateTexture()
 		vkBindBufferMemory(device, stagingBuffer, stagingMemory, 0);
 	}
 
-	VkDeviceMemory tmpImageMemory, tmpBufferMemory;
-	VkImage tmpImage;
-	VkBuffer tmpBuffer;
-
-	{ //create tmp buffer for image to buffer copy
-		VkBufferCreateInfo bufferCreateInfo = {};
-		bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferCreateInfo.size = width * height * 4;
-		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		vkCreateBuffer(device, &bufferCreateInfo, 0, &tmpBuffer);
-
-		VkMemoryRequirements mr;
-		vkGetBufferMemoryRequirements(device, tmpBuffer, &mr);
-
-		VkMemoryAllocateInfo mai = {};
-		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		mai.allocationSize = mr.size;
-		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-		vkAllocateMemory(device, &mai, 0, &tmpBufferMemory);
-
-		vkBindBufferMemory(device, tmpBuffer, tmpBufferMemory, 0);
-	}
-
-	{ //create tmp image for image to buffer copy
-		VkImageCreateInfo imageCreateInfo = {};
-		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = format;
-		imageCreateInfo.mipLevels = mipLevels;
-		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-		imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageCreateInfo.extent = { width, height, 1 };
-		vkCreateImage(device, &imageCreateInfo, 0, &tmpImage);
-
-		VkMemoryRequirements mr;
-		vkGetImageMemoryRequirements(device, tmpImage, &mr);
-
-		VkMemoryAllocateInfo mai = {};
-		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		mai.allocationSize = mr.size;
-		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		vkAllocateMemory(device, &mai, 0, &tmpImageMemory);
-
-		vkBindImageMemory(device, tmpImage, tmpImageMemory, 0);
-	}
-
 	{ //create final texture
 		VkImageCreateInfo imageCreateInfo = {};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1435,7 +1382,7 @@ void CreateTexture()
 		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		imageMemoryBarrier.image = tmpImage;
+		imageMemoryBarrier.image = textureImage;
 		imageMemoryBarrier.subresourceRange = subresourceRange;
 
 		VkCommandBufferBeginInfo beginInfo = {};
@@ -1463,40 +1410,6 @@ void CreateTexture()
 		vkCmdCopyBufferToImage(
 						copyCommandBuffer,
 						stagingBuffer,
-						tmpImage,
-						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-						1,
-						&bufferCopyRegion);
-
-		imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-
-		vkCmdPipelineBarrier(copyCommandBuffer,
-							 VK_PIPELINE_STAGE_TRANSFER_BIT,
-							 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-							 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-
-		//test image to buffer copies, copy tmpimage to tmpbuf
-		vkCmdCopyImageToBuffer(copyCommandBuffer, tmpImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-							   tmpBuffer, 1, &bufferCopyRegion);
-
-
-		imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-		vkCmdPipelineBarrier(copyCommandBuffer,
-							 VK_PIPELINE_STAGE_TRANSFER_BIT,
-							 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-							 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-
-		//copy from tmpbuf to final texture
-		vkCmdCopyBufferToImage(
-						copyCommandBuffer,
-						tmpBuffer,
 						textureImage,
 						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 						1,

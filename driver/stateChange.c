@@ -744,11 +744,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdFillBuffer)(
 	VkDeviceSize                                size,
 	uint32_t                                    data)
 {
-	PROFILESTART(RPIFUNC(vkCmdFillBuffer));
-
-	//TODO
-
-	PROFILEEND(RPIFUNC(vkCmdFillBuffer));
+	//TODO need kernel linear format support
+	UNSUPPORTED(vkCmdFillBuffer);
 }
 
 /*
@@ -761,11 +758,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdUpdateBuffer)(
 	VkDeviceSize                                dataSize,
 	const void*                                 pData)
 {
-	PROFILESTART(RPIFUNC(vkCmdUpdateBuffer));
-
-	//TODO
-
-	PROFILEEND(RPIFUNC(vkCmdUpdateBuffer));
+	//TODO need kernel linear format support
+	UNSUPPORTED(vkCmdFillBuffer);
 }
 
 /*

@@ -994,6 +994,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyBufferToImage)(
 	_buffer* buf = srcBuffer;
 	_image* img = dstImage;
 
+	//TODO handle pRegions offset etc.
+
 	for(uint32_t c = 0; c < regionCount; ++c)
 	{
 		//TODO support this
@@ -1135,7 +1137,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 	_image* srcImg = srcImage;
 	_image* dstImg = dstImage;
 
-	//TODO handle offsets
+	//TODO handle layers
 
 	for(uint32_t c = 0; c < regionCount; ++c)
 	{
