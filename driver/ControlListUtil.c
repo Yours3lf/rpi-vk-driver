@@ -80,7 +80,7 @@ void clInsertNewCLMarker(ControlList* cl,
 	*(CLMarker*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = marker;
 	if(cl->currMarkerOffset != -1)
 	{
-		((CLMarker*)getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset))->nextMarkerOffset = cl->nextFreeByteOffset;
+		((CLMarker*)getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset))->nextMarkerOffset = (cl->nextFreeByteOffset - cl->offset);
 	}
 	cl->currMarkerOffset = cl->nextFreeByteOffset;
 	cl->nextFreeByteOffset += sizeof(CLMarker);

@@ -775,6 +775,10 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 			"sig_none ; r2 = fadd.always(r0, r5, pay_zw, vary) ; r0 = fmul.always(a, b) ;"
 			///r3 = r0 + r5 (C)
 			"sig_none ; r3 = fadd.pm.always(r0, r5, nop, uni) ; r0 = v8min.always(b, b) ;"
+			"sig_none ; nop = nop(r0, r0, nop, uni) ; r2 = fmul.always(r2, b) ;" //texcoord scale
+			"sig_none ; nop = nop(r0, r0, nop, uni) ; r3 = fmul.always(r3, b) ;"
+			"sig_none ; r2 = fadd.always(r2, b, nop, uni) ; nop = nop(r0, r0) ;" //texcoord bias
+			"sig_none ; r3 = fadd.always(r3, b, nop, uni) ; nop = nop(r0, r0) ;"
 			///write texture addresses (x, y)
 			///writing tmu0_s signals that all coordinates are written
 			"sig_none ; tmu0_b = or.always(r0, r0) ; nop = nop(r0, r0) ;"
@@ -849,6 +853,38 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 			0, //descriptor binding #
 			0, //descriptor array element #
 			0, //resource offset
+		},
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			4, //resource offset
+		},
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			8, //resource offset
+		},
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			12, //resource offset
+		},
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			16, //resource offset
 		},
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
@@ -1079,8 +1115,6 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyBufferToImage)(
 
 	img->layout = dstImageLayout;
 
-	assert(((CLMarker*)getCPAptrFromOffset(cmdBuf->binCl.CPA, cmdBuf->binCl.offset))->memGuard == 0xDDDDDDDD);
-
 	PROFILEEND(RPIFUNC(vkCmdCopyBufferToImage));
 }
 
@@ -1173,7 +1207,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		RPIFUNC(vkUpdateDescriptorSets)(device, 1, &writeDescriptorSet, 0, 0);
 
 		createRendertarget(device, pRegions[c].dstSubresource.baseArrayLayer, dstMipLevel, dstWidth, dstHeight, dstImage, &dstTextureView, &offscreenRenderPass, &offscreenFramebuffer);
-		createPipeline(device, 1, 4, 2, device->emulTextureToTextureShaderModule, device->emulTextureDsl, &blitPipelineLayout, offscreenRenderPass, &blitPipeline);
+		createPipeline(device, 1, 4, 6, device->emulTextureToTextureShaderModule, device->emulTextureDsl, &blitPipelineLayout, offscreenRenderPass, &blitPipeline);
 
 		//offscreen rendering
 		VkClearValue offscreenClearValues =
@@ -1197,8 +1231,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		RPIFUNC(vkCmdBindPipeline)(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipeline);
 
 		VkViewport vp = {};
-		vp.x = 0.0f;
-		vp.y = 0.0f;
+		vp.x = (float)pRegions[c].dstOffsets[0].x;
+		vp.y = (float)pRegions[c].dstOffsets[0].y;
 		vp.width = (float)dstWidth;
 		vp.height = (float)dstHeight;
 		vp.minDepth = 0.0f;
@@ -1225,8 +1259,17 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		RPIFUNC(vkCmdPushConstants)(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vertConstants), &vertConstants);
 
 		float mipBias = srcMipLevel;
-		uint32_t fragConstants[1];
+		float texCoordXoffset = ((float)pRegions[c].srcOffsets[0].x) / srcImg->width;
+		float texCoordYoffset = ((float)pRegions[c].srcOffsets[0].y) / srcImg->height;
+		float texCoordXscale = ((float)srcWidth) / (srcImg->width >> srcMipLevel);
+		float texCoordYscale = ((float)srcHeight) / (srcImg->height >> srcMipLevel);
+
+		uint32_t fragConstants[5];
 		fragConstants[0] = *(uint32_t*)&mipBias;
+		fragConstants[1] = *(uint32_t*)&texCoordXscale;
+		fragConstants[2] = *(uint32_t*)&texCoordYscale;
+		fragConstants[3] = *(uint32_t*)&texCoordXoffset;
+		fragConstants[4] = *(uint32_t*)&texCoordYoffset;
 
 		RPIFUNC(vkCmdPushConstants)(commandBuffer, blitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragConstants), &fragConstants);
 
@@ -1244,8 +1287,6 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		RPIFUNC(vkDestroyRenderPass)(device, offscreenRenderPass, 0);
 		RPIFUNC(vkDestroyFramebuffer)(device, offscreenFramebuffer, 0);
 	}
-
-	assert(((CLMarker*)getCPAptrFromOffset(cmdBuf->binCl.CPA, cmdBuf->binCl.offset))->memGuard == 0xDDDDDDDD);
 
 	PROFILEEND(RPIFUNC(vkCmdBlitImage));
 }
@@ -1272,76 +1313,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyImageToBuffer)(
 	uint32_t                                    regionCount,
 	const VkBufferImageCopy*                    pRegions)
 {
-	PROFILESTART(RPIFUNC(vkCmdCopyImageToBuffer));
-	//what if we use smaller batches to copy to LT layout
-	//so one batch has to be less than 4kb
-	//with a height of 1 (essentially 1D images)
-	//we should be getting raster order
-	//we can't write to more than a width of 2048, so we'll need to
-	//work with 2048 * 1 * 32bits each batch
-
-	_commandBuffer* cmdbuf = commandBuffer;
-	_device* device = cmdbuf->dev;
-	_image* img = srcImage;
-	_buffer* buf = dstBuffer;
-
-	uint32_t srcPixelBpp = getFormatBpp(img->format);
-
-	for(uint32_t c = 0; c < regionCount; ++c)
-	{
-		//TODO support this
-		assert(!pRegions[c].bufferRowLength);
-		assert(!pRegions[c].bufferImageHeight);
-
-		//copy image to buffer line by line
-		for(uint32_t offsetY = 0; offsetY < pRegions[c].imageExtent.height; offsetY++)
-		{
-			fprintf(stderr, "copying offsetY: %u\n", offsetY);
-
-			VkImageCreateInfo ici = {};
-			ici.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-			ici.extent.width = pRegions[c].imageExtent.width;
-			ici.extent.height = 1;
-			ici.arrayLayers = 1;
-			ici.format = VK_FORMAT_R8G8B8A8_UNORM;
-			ici.imageType = VK_IMAGE_TYPE_2D;
-			ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			ici.mipLevels = 1;
-			ici.tiling = VK_IMAGE_TILING_OPTIMAL;
-			ici.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-			VkImage dstDummyImage;
-			RPIFUNC(vkCreateImage)(device, &ici, 0, &dstDummyImage);
-
-			//working with 32 bits per pixel
-			RPIFUNC(vkBindImageMemory)(device, dstDummyImage, buf->boundMem, buf->boundOffset + (offsetY * pRegions[c].imageExtent.width * srcPixelBpp) >> 3);
-
-			VkImageBlit blit;
-			blit.srcOffsets[0] = pRegions[c].imageOffset;
-			blit.srcOffsets[0].y += offsetY;
-			blit.srcOffsets[1].x = pRegions[c].imageExtent.width;
-			blit.srcOffsets[1].y = pRegions[c].imageExtent.height;
-			blit.srcOffsets[1].z = pRegions[c].imageExtent.depth;
-			blit.srcSubresource = pRegions[c].imageSubresource;
-			blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			blit.dstSubresource.baseArrayLayer = 0;
-			blit.dstSubresource.mipLevel = 0;
-			blit.dstSubresource.layerCount = 1;
-			blit.dstOffsets[0].x = 0;
-			blit.dstOffsets[0].y = 0;
-			blit.dstOffsets[0].z = 0;
-			blit.dstOffsets[1].x = pRegions[c].imageExtent.width;
-			blit.dstOffsets[1].y = 1;
-			blit.dstOffsets[1].z = 1;
-			RPIFUNC(vkCmdBlitImage)(commandBuffer, srcImage, srcImageLayout, dstDummyImage, ici.initialLayout, 1, &blit, VK_FILTER_NEAREST);
-
-			RPIFUNC(vkDestroyImage)(device, dstDummyImage, 0);
-		}
-	}
-
-	assert(((CLMarker*)getCPAptrFromOffset(cmdbuf->binCl.CPA, cmdbuf->binCl.offset))->memGuard == 0xDDDDDDDD);
-
-	PROFILEEND(RPIFUNC(vkCmdCopyImageToBuffer));
+	//TODO needs linear format support from kernel side
+	UNSUPPORTED(vkCmdCopyImageToBuffer);
 }
 
 VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyImage)(
@@ -1365,7 +1338,6 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyBuffer)(
 	uint32_t                                    regionCount,
 	const VkBufferCopy*                         pRegions)
 {
-	PROFILESTART(RPIFUNC(vkCmdCopyBuffer));
-	//TODO
-	PROFILEEND(RPIFUNC(vkCmdCopyImage));
+	//TODO needs linear format support from kernel side
+	UNSUPPORTED(vkCmdCopyImageToBuffer);
 }

@@ -643,8 +643,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 
 			assert(submitCl.bo_handle_count > 0);
 
-			fprintf(stderr, "submit bincl size: %u\n", submitCl.bin_cl_size);
-
 			//TODO
 			while(lastSeqnoGuard);
 			{
@@ -654,10 +652,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 				lastSeqnoGuard = 0;
 			}
 
-			assert(marker->memGuard == 0xDDDDDDDD);
-
 			//advance in linked list
-			marker = marker->nextMarkerOffset == -1 ? 0 : getCPAptrFromOffset(cmdbuf->binCl.CPA, marker->nextMarkerOffset);
+			marker = marker->nextMarkerOffset == -1 ? 0 : getCPAptrFromOffset(cmdbuf->binCl.CPA, marker->nextMarkerOffset + cmdbuf->binCl.offset);
 		}
 	}
 
