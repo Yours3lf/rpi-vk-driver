@@ -749,9 +749,6 @@ void recordCommandBuffers()
 
 			vkCmdPushConstants(presentCommandBuffers[i], samplePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
 
-			//TODO some miplevels are small enough to fall
-			//into LT sizes (eg. < 4096bytes overall)
-			//and that doesn't work for some reason
 			float mipBias = 6.0f;
 			uint32_t fragPushConstants[1];
 			fragPushConstants[0] = *(uint32_t*)&mipBias;

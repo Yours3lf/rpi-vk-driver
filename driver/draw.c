@@ -102,7 +102,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 								  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_BACK_BIT), //enable back facing primitives
 								  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_FRONT_BIT)); //enable front facing primitives
 
-		//TODO Depth Offset
 		clFit(commandBuffer, &commandBuffer->binCl, V3D21_DEPTH_OFFSET_length);
 
 		float depthBiasConstant = cb->graphicsPipeline->depthBiasConstantFactor;
@@ -200,7 +199,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		.offset = 0,
 	};
 
-	//TODO
 	commandBuffer->shaderRecCount++;
 	clFit(commandBuffer, &commandBuffer->shaderRecCl, 12 * sizeof(uint32_t) + 104 + 8 * 32);
 	ControlList relocCl = commandBuffer->shaderRecCl;

@@ -145,8 +145,8 @@ typedef struct VkDevice_T
 	VkSampler emulLinearTextureSampler;
 	VkShaderModule emulBufferToTextureShaderModule;
 	VkShaderModule emulTextureToTextureShaderModule;
-	VkShaderModule emulTextureToBufferShaderModule; //TODO
-	VkShaderModule emulBufferToBufferShaderModule; //TODO
+	//VkShaderModule emulTextureToBufferShaderModule; //TODO
+	//VkShaderModule emulBufferToBufferShaderModule; //TODO
 	VkShaderModule emulClearShaderModule;
 	VkShaderModule emulClearNoColorShaderModule;
 } _device;

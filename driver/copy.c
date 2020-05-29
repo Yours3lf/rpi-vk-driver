@@ -616,8 +616,7 @@ void createBufferToTextureShaderModule(VkDevice device, VkShaderModule* blitShad
 	{ //assemble cs code
 		asm_sizes[0] = get_num_instructions(cs_asm_code);
 		uint32_t size = sizeof(uint64_t)*asm_sizes[0];
-		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
-		//why not map kernel space mem to user space instead?
+		//TODO this alloc feels kinda useless
 		asm_ptrs[0] = (uint64_t*)malloc(size);
 		assemble_qpu_asm(cs_asm_code, asm_ptrs[0]);
 	}
@@ -625,8 +624,7 @@ void createBufferToTextureShaderModule(VkDevice device, VkShaderModule* blitShad
 	{ //assemble vs code
 		asm_sizes[1] = get_num_instructions(vs_asm_code);
 		uint32_t size = sizeof(uint64_t)*asm_sizes[1];
-		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
-		//why not map kernel space mem to user space instead?
+		//TODO this alloc feels kinda useless
 		asm_ptrs[1] = (uint64_t*)malloc(size);
 		assemble_qpu_asm(vs_asm_code, asm_ptrs[1]);
 	}
@@ -634,8 +632,7 @@ void createBufferToTextureShaderModule(VkDevice device, VkShaderModule* blitShad
 	{ //assemble fs code
 		asm_sizes[2] = get_num_instructions(blit_fs_asm_code);
 		uint32_t size = sizeof(uint64_t)*asm_sizes[2];
-		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
-		//why not map kernel space mem to user space instead?
+		//TODO this alloc feels kinda useless
 		asm_ptrs[2] = (uint64_t*)malloc(size);
 		assemble_qpu_asm(blit_fs_asm_code, asm_ptrs[2]);
 	}
@@ -921,8 +918,7 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 	{ //assemble cs code
 		asm_sizes[0] = get_num_instructions(cs_asm_code);
 		uint32_t size = sizeof(uint64_t)*asm_sizes[0];
-		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
-		//why not map kernel space mem to user space instead?
+		//TODO this alloc feels kinda useless
 		asm_ptrs[0] = (uint64_t*)malloc(size);
 		assemble_qpu_asm(cs_asm_code, asm_ptrs[0]);
 	}
@@ -930,8 +926,7 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 	{ //assemble vs code
 		asm_sizes[1] = get_num_instructions(vs_asm_code);
 		uint32_t size = sizeof(uint64_t)*asm_sizes[1];
-		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
-		//why not map kernel space mem to user space instead?
+		//TODO this alloc feels kinda useless
 		asm_ptrs[1] = (uint64_t*)malloc(size);
 		assemble_qpu_asm(vs_asm_code, asm_ptrs[1]);
 	}
@@ -939,8 +934,7 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 	{ //assemble fs code
 		asm_sizes[2] = get_num_instructions(sample_fs_asm_code);
 		uint32_t size = sizeof(uint64_t)*asm_sizes[2];
-		//TODO this alloc feels kinda useless, we just copy the data anyway to kernel space
-		//why not map kernel space mem to user space instead?
+		//TODO this alloc feels kinda useless
 		asm_ptrs[2] = (uint64_t*)malloc(size);
 		assemble_qpu_asm(sample_fs_asm_code, asm_ptrs[2]);
 	}

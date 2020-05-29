@@ -183,8 +183,6 @@ int vc4_test_tiling(int fd)
 	return 0;
 }
 
-//TODO what is this supposed to do?
-//ask the kernel what is the buffer's tiling?
 uint64_t vc4_bo_get_tiling(int fd, uint32_t bo, uint64_t mod)
 {
 	assert(fd);
