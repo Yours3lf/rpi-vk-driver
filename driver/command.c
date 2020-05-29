@@ -655,6 +655,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 			//advance in linked list
 			marker = marker->nextMarkerOffset == -1 ? 0 : getCPAptrFromOffset(cmdbuf->binCl.CPA, marker->nextMarkerOffset + cmdbuf->binCl.offset);
 		}
+
+		//CPAdebugPrint(cmdbuf->binCl.CPA);
 	}
 
 	for(int c = 0; c < pSubmits->commandBufferCount; ++c)

@@ -14,6 +14,7 @@ typedef struct ConsecutivePoolAllocator
 	uint32_t* nextFreeBlock;
 	unsigned blockSize;
 	unsigned size; //size is exact multiple of block size
+	unsigned numFreeBlocks;
 } ConsecutivePoolAllocator;
 
 ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, unsigned s);

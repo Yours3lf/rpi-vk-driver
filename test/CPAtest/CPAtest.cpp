@@ -121,9 +121,6 @@ void reallocTest()
 	consecutivePoolFree(&cpa,  getCPAptrFromOffset(&cpa, mem4), 1);
 	CPAdebugPrint(&cpa);
 
-	consecutivePoolFree(&cpa,  getCPAptrFromOffset(&cpa, mem5), 1);
-	CPAdebugPrint(&cpa);
-
 	//mem2 = consecutivePoolReAllocate(&cpa, getCPAptrFromOffset(&cpa, mem2), 1);
 	//CPAdebugPrint(&cpa);
 

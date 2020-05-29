@@ -17,7 +17,8 @@ ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, un
 		.buf = b,
 		.nextFreeBlock = (uint32_t*)b,
 		.blockSize = bs,
-		.size = s
+		.size = s,
+		.numFreeBlocks = s / bs
 	};
 
 	//initialize linked list of free pointers
@@ -118,6 +119,8 @@ uint32_t consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlock
 	//TODO debug stuff, not for release
 	if(ptr) memset(ptr, 0, numBlocks * pa->blockSize);
 
+	pa->numFreeBlocks -= numBlocks;
+
 	return (char*)ptr - pa->buf;
 }
 
@@ -194,6 +197,8 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 			*(uint32_t*)listPtr = tmp;
 		}
 	}
+
+	pa->numFreeBlocks += numBlocks;
 }
 
 uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks)
@@ -221,6 +226,8 @@ uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMe
 				pa->nextFreeBlock = *listPtr;
 			}
 
+			pa->numFreeBlocks -= 1;
+
 			return (char*)currentMem - pa->buf;
 		}
 
@@ -235,6 +242,9 @@ uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMe
 		{
 			return -1;
 		}
+
+		pa->numFreeBlocks -= 1;
+
 		//copy over old content
 		memcpy(pa->buf + newMemOffset, currentMem, currNumBlocks * pa->blockSize);
 		//free current element
@@ -258,17 +268,18 @@ void CPAdebugPrint(ConsecutivePoolAllocator* pa)
 	fprintf(stderr, "\nCPA Debug Print\n");
 	fprintf(stderr, "pa->buf %p\n", pa->buf);
 	fprintf(stderr, "pa->nextFreeBlock %p\n", pa->nextFreeBlock);
+	fprintf(stderr, "pa->numFreeBlocks %u\n", pa->numFreeBlocks);
 
-	fprintf(stderr, "Linear walk:\n");
+	//fprintf(stderr, "Linear walk:\n");
 	for(char* ptr = pa->buf; ptr != pa->buf + pa->size; ptr += pa->blockSize)
 	{
-		fprintf(stderr, "%p: %p, ", ptr, *(uint32_t*)ptr);
+		//fprintf(stderr, "%p: %p, ", ptr, *(uint32_t*)ptr);
 	}
 
-	fprintf(stderr, "\nLinked List walk:\n");
+	//fprintf(stderr, "\nLinked List walk:\n");
 	for(uint32_t* ptr = pa->nextFreeBlock; ptr; ptr = *ptr)
 	{
-		fprintf(stderr, "%p: %p, ", ptr, *ptr);
+		//fprintf(stderr, "%p: %p, ", ptr, *ptr);
 	}
 	fprintf(stderr, "\n");
 }
