@@ -60,8 +60,6 @@ uint32_t consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlock
 		return -1; //no free blocks
 	}
 
-	//TODO change strategy to search for the blocks that are located closest to the start of the buffer
-	//but still are big enough in size
 	for(; ptr; ptr = *ptr)
 	{
 		uint32_t found = 1;
@@ -84,7 +82,30 @@ uint32_t consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlock
 		if(found)
 		{
 			//set the next free block to the one that the last block we allocated points to
-			pa->nextFreeBlock = *(uint32_t*)((char*)ptr + (numBlocks - 1) * pa->blockSize);
+			uint32_t* nextFreeBlockCandidate = *(uint32_t*)((char*)ptr + (numBlocks - 1) * pa->blockSize);
+
+			if(pa->nextFreeBlock == ptr)
+			{
+				pa->nextFreeBlock = nextFreeBlockCandidate;
+				break;
+			}
+
+			uint32_t* prevPtr = pa->nextFreeBlock;
+			uint32_t* currPtr = prevPtr;
+			for(; currPtr; currPtr = *currPtr)
+			{
+				if(currPtr == ptr)
+				{
+					break;
+				}
+
+				prevPtr = currPtr;
+			}
+
+			assert(currPtr);
+
+			*prevPtr = nextFreeBlockCandidate;
+
 			break;
 		}
 
