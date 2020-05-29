@@ -28,17 +28,17 @@
   - [x] Layer support
 - [ ] Emulated features
   - [ ] Clear command support
-  - [ ] Copy command support
+  - [x] Copy command support
 - [x] Render to texture features
   - [x] VkRenderPass support
   - [x] Subpass support
   - [x] MSAA support
 - [x] Performance
   - [x] Performance counters
-- [ ] Synchronization
-  - [ ] vkCmdPipelineBarrier support
-- [x] WSI
+- [ ] WSI
   - [x] Direct to display support
+  - [ ] Vsync support
+  - [ ] Present modes support
 - [ ] Fixes
   - [ ] Hardware bug workarounds
   - [ ] Handle offsets wherever required
