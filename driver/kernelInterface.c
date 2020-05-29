@@ -455,9 +455,10 @@ uint32_t vc4_bo_alloc(int fd, uint32_t size, const char *name)
 
 	vc4_bo_label(fd, handle, name);
 
-	//TODO debug stuff, not for release
+#ifdef DEBUG_BUILD
 	void* ptr = vc4_bo_map(fd, handle, 0, size);
 	memset(ptr, 0, size);
+#endif
 
 	return handle;
 }
@@ -484,13 +485,12 @@ void vc4_bo_free(int fd, uint32_t bo, void* mappedAddr, uint32_t size)
 
 void vc4_bo_label(int fd, uint32_t bo, const char* name)
 {
+#ifdef DEBUG_BUILD
 	assert(fd);
 	assert(bo);
 
 	char* str = name;
 	if(!str) str = "";
-
-	//TODO don't use in release!
 
 	struct drm_vc4_label_bo label = {
 		.handle = bo,
@@ -503,6 +503,7 @@ void vc4_bo_label(int fd, uint32_t bo, const char* name)
 		fprintf(stderr, "BO label failed: %s, bo %u\n",
 			   strerror(errno), bo);
 	}
+#endif
 }
 
 int vc4_bo_get_dmabuf(int fd, uint32_t bo)

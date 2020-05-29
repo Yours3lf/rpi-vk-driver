@@ -624,6 +624,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueuePresentKHR)(
 		PROFILEEND(&frameProfile);
 	}
 
+	//TODO vsync flip modes etc.
+
 	assert(queue);
 	assert(pPresentInfo);
 

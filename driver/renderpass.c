@@ -45,6 +45,8 @@ void RPIFUNC(vkCmdBeginRenderPass)(VkCommandBuffer commandBuffer, const VkRender
 	uint32_t writeMSAAimageOffset = 0;
 	uint32_t writeMSAAdepthStencilImageOffset = 0;
 
+	//TODO render area
+
 	//TODO handle multiple subpasses
 	//TODO subpass contents ignored
 	//TODO input attachments ignored

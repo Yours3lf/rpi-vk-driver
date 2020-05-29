@@ -190,9 +190,13 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateInstance)(
 
 	set_loader_magic_value(&(*pInstance)->dev.loaderData);
 
-	int ret = openIoctl(); assert(ret != -1);
+	int ret = openIoctl();
+	if(ret == -1)
+	{
+		return VK_ERROR_INITIALIZATION_FAILED;
+	}
 
-	assert(vc4_get_chip_info(controlFd,
+	ret = vc4_get_chip_info(controlFd,
 					  &(*pInstance)->technologyVersion,
 					  &(*pInstance)->IDstrUINT,
 					  &(*pInstance)->vpmMemorySize,
@@ -204,7 +208,11 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateInstance)(
 					  &(*pInstance)->v3dRevision,
 					  &(*pInstance)-> tileBufferDoubleBufferModeSupported,
 					  &(*pInstance)->tileBufferSize,
-					  &(*pInstance)->vriMemorySize));
+					  &(*pInstance)->vriMemorySize);
+	if(!ret)
+	{
+		return VK_ERROR_INITIALIZATION_FAILED;
+	}
 
 	(*pInstance)->hasTiling = vc4_test_tiling(controlFd);
 

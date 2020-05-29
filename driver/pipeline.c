@@ -24,6 +24,8 @@ void RPIFUNC(vkCmdBindPipeline)(VkCommandBuffer commandBuffer, VkPipelineBindPoi
 		cb->computePipeline = pipeline;
 	}
 
+	//TODO check that dynamic states are respected around the driver
+
 	PROFILEEND(RPIFUNC(vkCmdBindPipeline));
 }
 
@@ -192,7 +194,6 @@ VkResult RPIFUNC(vkCreateGraphicsPipelines)(VkDevice device, VkPipelineCache pip
 		UNSUPPORTED(pipelineCache);
 	}
 
-	//TODO pipeline caches
 	//TODO flags
 
 	for(int c = 0; c < createInfoCount; ++c)

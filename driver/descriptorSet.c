@@ -21,7 +21,9 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDescriptorPool)(
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
+#ifdef DEBUG_BUILD
 	memset(dp, 0, sizeof(_descriptorPool));
+#endif
 
 	uint32_t imageDescriptorCount = 0, bufferDescriptorCount = 0, texelBufferDescriptorCount = 0;
 	for(uint32_t c = 0; c < pCreateInfo->poolSizeCount; ++c)
@@ -130,8 +132,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAllocateDescriptorSets)(
 
 		_descriptorSetLayout* dsl = pAllocateInfo->pSetLayouts[c];
 
-		//TODO dsl flags
-
 		uint32_t imageDescriptorCount = 0, bufferDescriptorCount = 0, texelBufferDescriptorCount = 0;
 		for(uint32_t d = 0; d < dsl->bindingsCount; ++d)
 		{
@@ -238,8 +238,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDescriptorSetLayout)(
 	assert(device);
 	assert(pCreateInfo);
 
-	//TODO flags
-
 	_descriptorSetLayout* dsl = ALLOCATE(sizeof(_descriptorSetLayout), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
 	if(!dsl)
@@ -257,6 +255,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDescriptorSetLayout)(
 	}
 
 	memcpy(dsl->bindings, pCreateInfo->pBindings, sizeof(VkDescriptorSetLayoutBinding)*pCreateInfo->bindingCount);
+
+	//TODO immutable samplers
 
 	dsl->flags = pCreateInfo->flags;
 	dsl->bindingsCount = pCreateInfo->bindingCount;

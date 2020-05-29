@@ -52,8 +52,6 @@ uint32_t consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlock
 	assert(pa->buf);
 	assert(numBlocks);
 
-	//CPAdebugPrint(pa);
-
 	uint32_t* ptr = pa->nextFreeBlock;
 
 	if(!ptr)
@@ -116,8 +114,9 @@ uint32_t consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlock
 		}
 	}
 
-	//TODO debug stuff, not for release
+#ifdef DEBUG_BUILD
 	if(ptr) memset(ptr, 0, numBlocks * pa->blockSize);
+#endif
 
 	pa->numFreeBlocks -= numBlocks;
 
@@ -132,8 +131,9 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 	assert(p);
 	assert(numBlocks);
 
-	//TODO debug stuff, not for release
+#ifdef DEBUG_BUILD
 	memset(p, 0, numBlocks * pa->blockSize);
+#endif
 
 	//if linked list of free entries is empty
 	if(!pa->nextFreeBlock)
@@ -270,16 +270,16 @@ void CPAdebugPrint(ConsecutivePoolAllocator* pa)
 	fprintf(stderr, "pa->nextFreeBlock %p\n", pa->nextFreeBlock);
 	fprintf(stderr, "pa->numFreeBlocks %u\n", pa->numFreeBlocks);
 
-	//fprintf(stderr, "Linear walk:\n");
+	fprintf(stderr, "Linear walk:\n");
 	for(char* ptr = pa->buf; ptr != pa->buf + pa->size; ptr += pa->blockSize)
 	{
-		//fprintf(stderr, "%p: %p, ", ptr, *(uint32_t*)ptr);
+		fprintf(stderr, "%p: %p, ", ptr, *(uint32_t*)ptr);
 	}
 
-	//fprintf(stderr, "\nLinked List walk:\n");
+	fprintf(stderr, "\nLinked List walk:\n");
 	for(uint32_t* ptr = pa->nextFreeBlock; ptr; ptr = *ptr)
 	{
-		//fprintf(stderr, "%p: %p, ", ptr, *ptr);
+		fprintf(stderr, "%p: %p, ", ptr, *ptr);
 	}
 	fprintf(stderr, "\n");
 }

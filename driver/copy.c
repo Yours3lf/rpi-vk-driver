@@ -1315,7 +1315,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyImageToBuffer)(
 	uint32_t                                    regionCount,
 	const VkBufferImageCopy*                    pRegions)
 {
-	//TODO needs linear format support from kernel side
+	//needs linear format support from kernel side
 	UNSUPPORTED(vkCmdCopyImageToBuffer);
 }
 
@@ -1340,6 +1340,6 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyBuffer)(
 	uint32_t                                    regionCount,
 	const VkBufferCopy*                         pRegions)
 {
-	//TODO needs linear format support from kernel side
+	//needs linear format support from kernel side
 	UNSUPPORTED(vkCmdCopyImageToBuffer);
 }

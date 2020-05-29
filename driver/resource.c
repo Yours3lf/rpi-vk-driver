@@ -116,7 +116,7 @@ VkResult RPIFUNC(vkBindBufferMemory)(VkDevice device, VkBuffer buffer, VkDeviceM
 
 	assert(!buf->boundMem);
 	assert(memoryOffset < mem->size);
-	//assert(memoryOffset % buf->alignment == 0);
+	assert(memoryOffset % buf->alignment == 0);
 	assert(buf->alignedSize <= mem->size - memoryOffset);
 
 	buf->boundMem = mem;
@@ -450,7 +450,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkBindImageMemory)(
 
 	assert(!i->boundMem);
 	assert(memoryOffset < m->size);
-	//assert(memoryOffset % i->alignment == 0);
+	assert(memoryOffset % i->alignment == 0);
 	assert(i->size <= m->size - memoryOffset);
 
 	i->boundMem = m;

@@ -34,7 +34,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateCommandPool)(
 	//This flag may be used by the implementation to control memory allocation behavior within the pool.
 	//--> definitely use pool allocator
 
-	//TODO pool family ignored for now
+	//TODO queue family index ignored for now
 
 	_commandPool* cp = ALLOCATE(sizeof(_commandPool), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
@@ -51,12 +51,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateCommandPool)(
 
 	//initial number of command buffers to hold
 	int numCommandBufs = 128;
-	//TODO uniforms might need to realloc, which should be handled properly
-	int consecutiveBlockSize = ARM_PAGE_SIZE;// * 20;
+	int consecutiveBlockSize = ARM_PAGE_SIZE;
 	int consecutiveBlockNumber = 64;
-	//int numCommandBufs = 30;
-	//int consecutiveBlockSize = getCPABlockSize(256);
-	//int consecutiveBlockNumber = 30;
 	int consecutivePoolSize = consecutiveBlockNumber * consecutiveBlockSize;
 
 	static int counter = 0;
@@ -224,6 +220,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkBeginCommandBuffer)(
 
 	//TODO VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
 	//specifies that a command buffer can be resubmitted to a queue while it is in the pending state, and recorded into multiple primary command buffers
+
+	//TODO inheritance info
 
 	//When a command buffer begins recording, all state in that command buffer is undefined
 
@@ -768,7 +766,6 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkTrimCommandPool)(
 
 	//TODO trim cp's pool allocator and consecutive pool allocator
 	//by reallocating to just used size
-	//kinda silly, as if you need memory afterwards we need to reallocate again...
 
 	PROFILEEND(RPIFUNC(vkTrimCommandPool));
 }
@@ -844,6 +841,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkResetCommandBuffer)(
 		cb->state = CMDBUF_STATE_INITIAL;
 	}
 
+	//TODO secondary cmdbufs
+
 	if(flags & VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT)
 	{
 		//TODO release resources
@@ -899,7 +898,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdExecuteCommands)(
 	const VkCommandBuffer*                      pCommandBuffers)
 {
 	PROFILESTART(RPIFUNC(vkCmdExecuteCommands));
-
+	//TODO
 	PROFILEEND(RPIFUNC(vkCmdExecuteCommands));
 }
 

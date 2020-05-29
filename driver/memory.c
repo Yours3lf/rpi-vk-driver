@@ -119,13 +119,11 @@ VkResult RPIFUNC(vkMapMemory)(VkDevice device, VkDeviceMemory memory, VkDeviceSi
 	{
 		assert(size > 0);
 		assert(size <= ((_deviceMemory*)memory)->size - offset);
-	}else
+	}
+	else
 	{
 		size = ((_deviceMemory*)memory)->size;
 	}
-
-	//TODO check ppdata alignment
-	//TODO multiple instances?
 
 	void* ptr = vc4_bo_map(controlFd, ((_deviceMemory*)memory)->bo, offset, size);
 	if(!ptr)
@@ -170,6 +168,7 @@ void RPIFUNC(vkFreeMemory)(VkDevice device, VkDeviceMemory memory, const VkAlloc
 	_deviceMemory* mem = memory;
 	if(mem)
 	{
+		vc4_set_madvise(controlFd, mem->bo, 0, device->dev->instance->hasMadvise);
 		vc4_bo_free(controlFd, mem->bo, mem->mappedPtr, mem->size);
 		FREE(mem);
 	}
