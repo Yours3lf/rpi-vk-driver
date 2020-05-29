@@ -91,7 +91,7 @@ void freeOneTest(uint32_t which)
 void reallocTest()
 {
 	uint32_t blocksize = 16;
-	uint32_t numblocks = 3;
+	uint32_t numblocks = 5;
 	uint32_t size = numblocks * blocksize;
 
 	ConsecutivePoolAllocator cpa = createConsecutivePoolAllocator((char*)malloc(size), blocksize, size);
@@ -103,13 +103,32 @@ void reallocTest()
 	uint32_t mem2 = consecutivePoolAllocate(&cpa, 1);
 	CPAdebugPrint(&cpa);
 
+	uint32_t mem3 = consecutivePoolAllocate(&cpa, 1);
+	CPAdebugPrint(&cpa);
+
+	uint32_t mem4 = consecutivePoolAllocate(&cpa, 1);
+	CPAdebugPrint(&cpa);
+
+	uint32_t mem5 = consecutivePoolAllocate(&cpa, 1);
+	CPAdebugPrint(&cpa);
+
 	consecutivePoolFree(&cpa,  getCPAptrFromOffset(&cpa, mem1), 1);
 	CPAdebugPrint(&cpa);
 
-	mem2 = consecutivePoolReAllocate(&cpa, getCPAptrFromOffset(&cpa, mem2), 1);
+	consecutivePoolFree(&cpa,  getCPAptrFromOffset(&cpa, mem2), 1);
 	CPAdebugPrint(&cpa);
 
-	uint32_t mem0 = consecutivePoolAllocate(&cpa, 1);
+	consecutivePoolFree(&cpa,  getCPAptrFromOffset(&cpa, mem4), 1);
+	CPAdebugPrint(&cpa);
+
+	consecutivePoolFree(&cpa,  getCPAptrFromOffset(&cpa, mem5), 1);
+	CPAdebugPrint(&cpa);
+
+	//mem2 = consecutivePoolReAllocate(&cpa, getCPAptrFromOffset(&cpa, mem2), 1);
+	//CPAdebugPrint(&cpa);
+
+	uint32_t mem0 = consecutivePoolAllocate(&cpa, 2);
+	CPAdebugPrint(&cpa);
 	fprintf(stderr, "\n%p\n", mem0);
 }
 
