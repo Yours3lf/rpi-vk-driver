@@ -26,8 +26,8 @@
   - [x] Push constant support
 - [x] Platform features
   - [x] Layer support
-- [ ] Emulated features
-  - [ ] Clear command support
+- [x] Emulated features
+  - [x] Clear command support
   - [x] Copy command support
 - [x] Render to texture features
   - [x] VkRenderPass support
