@@ -382,10 +382,20 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 
 			if(writeMSAAimage)
 			{
+				uint32_t tiling = writeMSAAimage->tiling;
+
+				if(marker->mipLevel > 0)
+				{
+					tiling = writeMSAAimage->levelTiling[marker->mipLevel];
+				}
+
 				submitCl.msaa_color_write.hindex = writeMSAAimageIdx;
 				submitCl.msaa_color_write.offset = marker->writeMSAAimageOffset + writeMSAAimage->boundOffset;
 				submitCl.msaa_color_write.flags = 0;
-				submitCl.msaa_color_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X;
+				submitCl.msaa_color_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X |
+						VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_COLOR, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+						VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING) |
+						VC4_SET_FIELD(getRenderTargetFormatVC4(writeMSAAimage->format), VC4_LOADSTORE_TILE_BUFFER_FORMAT);
 			}
 
 			if(readImage)
@@ -400,8 +410,10 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 				submitCl.color_read.hindex = readImageIdx;
 				submitCl.color_read.offset = marker->readImageOffset + readImage->boundOffset;
 				submitCl.color_read.flags = readMSAAimage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0;
-				submitCl.color_read.bits = VC4_SET_FIELD(getRenderTargetFormatVC4(readImage->format), VC4_RENDER_CONFIG_FORMAT) |
-						VC4_SET_FIELD(tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
+				submitCl.color_read.bits =
+						VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_COLOR, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+						VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING) |
+						VC4_SET_FIELD(getRenderTargetFormatVC4(readImage->format), VC4_LOADSTORE_TILE_BUFFER_FORMAT);
 			}
 
 			if(writeDepthStencilImage)
@@ -416,16 +428,26 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 				submitCl.zs_write.hindex = writeDepthStencilImageIdx;
 				submitCl.zs_write.offset = marker->writeDepthStencilImageOffset + writeDepthStencilImage->boundOffset;
 				submitCl.zs_write.flags = 0;
-				submitCl.zs_write.bits = VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
-										 VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
+				submitCl.zs_write.bits =
+						VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+						VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
 			}
 
 			if(writeMSAAdepthStencilImage)
 			{
+				uint32_t tiling = writeMSAAdepthStencilImage->tiling;
+
+				if(marker->mipLevel > 0)
+				{
+					tiling = writeMSAAdepthStencilImage->levelTiling[marker->mipLevel];
+				}
+
 				submitCl.msaa_zs_write.hindex = writeMSAAdepthStencilImageIdx;
 				submitCl.msaa_zs_write.offset = marker->writeMSAAdepthStencilImageOffset + writeMSAAdepthStencilImage->boundOffset;
 				submitCl.msaa_zs_write.flags = 0;
-				submitCl.msaa_zs_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X;
+				submitCl.msaa_zs_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X |
+						VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+						VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
 			}
 
 			if(readDepthStencilImage)
@@ -439,9 +461,10 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 
 				submitCl.zs_read.hindex = readDepthStencilImageIdx;
 				submitCl.zs_read.offset = marker->readDepthStencilImageOffset + readDepthStencilImage->boundOffset;
-				submitCl.zs_read.flags = readMSAAdepthStencilImage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0; //TODO is this valid?
-				submitCl.zs_read.bits = VC4_SET_FIELD(getRenderTargetFormatVC4(readDepthStencilImage->format), VC4_RENDER_CONFIG_FORMAT) |
-						VC4_SET_FIELD(tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
+				submitCl.zs_read.flags = readMSAAdepthStencilImage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0;
+				submitCl.zs_read.bits =
+						VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+						VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
 			}
 
 			submitCl.clear_color[0] = marker->clearColor[0];
