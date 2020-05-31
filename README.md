@@ -26,12 +26,11 @@
   - [x] Push constant support
 - [x] Platform features
   - [x] Layer support
-- [ ] Emulated features
-  - [ ] Clear command support
+- [x] Emulated features
+  - [x] Clear command support
   - [x] Copy command support
 - [x] Render to texture features
   - [x] VkRenderPass support
-  - [x] Subpass support
   - [x] MSAA support
 - [x] Performance
   - [x] Performance counters
@@ -48,11 +47,12 @@
   - [ ] Clean up compile time warnings
   - [ ] Profile and optimise the driver code
   - [ ] Run Clang static analysis
-- [ ] Try to pass as much of the VK CTS as possible with existing feature set
-- [ ] Github pages
-- [ ] Wiki
+- [ ] Documentation
+  - [ ] Github pages
+  - [ ] Wiki
   - [ ] Performance recommendations
   - [ ] How to do blending, depth/stencil testing, attributes
+- [ ] Try to pass as much of the VK CTS as possible with existing feature set
 
 ## VK CTS progress
 - Passed:        7894/67979 (11.6%) 
