@@ -48,8 +48,8 @@
   - [ ] Profile and optimise the driver code
   - [ ] Run Clang static analysis
 - [ ] Try to pass as much of the VK CTS as possible with existing feature set
-- [ ] Github pages
 - [ ] Documentation
+  - [ ] Github pages
   - [ ] Wiki
   - [ ] Performance recommendations
   - [ ] How to do blending, depth/stencil testing, attributes
