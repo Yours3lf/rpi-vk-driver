@@ -581,10 +581,8 @@ static VkPerformanceCounterDescriptionKHR performanceCounterDescriptions[] =
 
 static VkPresentModeKHR supportedPresentModes[] =
 {
-	//VK_PRESENT_MODE_IMMEDIATE_KHR,
-	//VK_PRESENT_MODE_MAILBOX_KHR,
-	VK_PRESENT_MODE_FIFO_KHR,
-	//VK_PRESENT_MODE_FIFO_RELAXED_KHR
+	VK_PRESENT_MODE_IMMEDIATE_KHR,
+	VK_PRESENT_MODE_FIFO_KHR
 };
 
 #define numSupportedPresentModes (sizeof(supportedPresentModes)/sizeof(VkPresentModeKHR))

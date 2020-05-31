@@ -253,6 +253,23 @@ void modeset_destroy_fb(int fd, _image* buf)
 	drmModeRmFB(fd, buf->fb);
 }
 
+typedef struct vsyncData
+{
+	_image* i;
+	modeset_display_surface* s;
+} vsyncData;
+
+static void modeset_page_flip_event(int fd, unsigned int frame,
+					unsigned int sec, unsigned int usec,
+					void *data)
+{
+	if(data)
+	{
+		vsyncData* d = data;
+		//TODO image is now available for rendering
+	}
+}
+
 void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
 {
 	if(!surface->savedState)
@@ -277,15 +294,26 @@ void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
 		int ret = drmModeSetCrtc(fd, surface->crtc->crtc_id, buf->fb, 0, 0, &surface->connector->connector_id, 1, &surface->connector->modes[surface->modeID]);
 		if(ret)
 		{
-			fprintf(stderr, "cannot flip CRTC for connector %u (%d): %m\n",
+			fprintf(stderr, "cannot set CRTC for connector %u: %m\n",
 				   surface->connector->connector_id, errno);
 		}
 
 		saved_state_guard = 0;
 	}
 
-	//TODO add vsync support eventually
-	drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, 0, 0);
+	//TODO use DRM_MODE_PAGE_FLIP_EVENT to catch when an image can be used again (eg. for acquireimagekhr)
+
+	if(buf->presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+	{
+		drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, DRM_MODE_PAGE_FLIP_ASYNC, 0);
+	}
+	else if(buf->presentMode == VK_PRESENT_MODE_FIFO_KHR)
+	{
+		vsyncData d;
+		d.i = buf;
+		d.s = surface;
+		drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, DRM_MODE_PAGE_FLIP_EVENT, 0);
+	}
 
 	//modeset_debug_print(fd);
 }

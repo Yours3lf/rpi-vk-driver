@@ -184,14 +184,14 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR
 	pSurfaceCapabilities->maxImageCount = 2; //TODO max 2 for double buffering for now...
 	pSurfaceCapabilities->currentExtent.width = width;
 	pSurfaceCapabilities->currentExtent.height = height;
-	pSurfaceCapabilities->minImageExtent.width = width; //TODO
-	pSurfaceCapabilities->minImageExtent.height = height; //TODO
-	pSurfaceCapabilities->maxImageExtent.width = width; //TODO
-	pSurfaceCapabilities->maxImageExtent.height = height; //TODO
+	pSurfaceCapabilities->minImageExtent.width = width;
+	pSurfaceCapabilities->minImageExtent.height = height;
+	pSurfaceCapabilities->maxImageExtent.width = width;
+	pSurfaceCapabilities->maxImageExtent.height = height;
 	pSurfaceCapabilities->maxImageArrayLayers = 1;
-	pSurfaceCapabilities->supportedTransforms = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR; //TODO no rotation for now
-	pSurfaceCapabilities->currentTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR; //TODO get this from dev
-	pSurfaceCapabilities->supportedCompositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; //TODO no alpha compositing for now
+	pSurfaceCapabilities->supportedTransforms = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+	pSurfaceCapabilities->currentTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+	pSurfaceCapabilities->supportedCompositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	pSurfaceCapabilities->supportedUsageFlags =
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | //well we want to draw on the screen right
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT |  //for clears
@@ -286,7 +286,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR
 
 	for(int c = 0; c < elementsWritten; ++c)
 	{
-		//TODO
 		pPresentModes[c] = supportedPresentModes[c];
 	}
 
@@ -327,7 +326,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateSwapchainKHR)(
 	_swapchain* s = *pSwapchain;
 
 	//TODO flags, layers, queue sharing, pretransform, composite alpha..., clipped, oldswapchain
-	//TODO present mode
 
 	s->images = ALLOCATE(sizeof(_image) * pCreateInfo->minImageCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 	if(!s->images)
@@ -514,8 +512,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueuePresentKHR)(
 	{
 		PROFILEEND(&frameProfile);
 	}
-
-	//TODO vsync flip modes etc.
 
 	assert(queue);
 	assert(pPresentInfo);
