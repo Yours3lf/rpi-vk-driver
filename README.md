@@ -31,7 +31,6 @@
   - [x] Copy command support
 - [x] Render to texture features
   - [x] VkRenderPass support
-  - [x] Subpass support
   - [x] MSAA support
 - [x] Performance
   - [x] Performance counters
