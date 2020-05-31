@@ -930,6 +930,7 @@ uint32_t getRenderTargetFormatVC4(VkFormat format)
 	{
 		case VK_FORMAT_R16G16B16A16_SFLOAT: //HDR mode set in tile binning config mode, so just return a valid format
 		case VK_FORMAT_R8G8B8A8_UNORM:
+		case VK_FORMAT_B8G8R8A8_UNORM:
 		//only here so we can do emulated buffer copies to depth textures
 		case VK_FORMAT_X8_D24_UNORM_PACK32:
 		//only here so we can copy ETC1 textures to optimal format
@@ -937,6 +938,7 @@ uint32_t getRenderTargetFormatVC4(VkFormat format)
 		case VK_FORMAT_D24_UNORM_S8_UINT:
 			return VC4_RENDER_CONFIG_FORMAT_RGBA8888;
 		case VK_FORMAT_B5G6R5_UNORM_PACK16:
+		case VK_FORMAT_R5G6B5_UNORM_PACK16:
 		//TODO
 		//case VK_FORMAT_R5G5B5A1_UNORM_PACK16:
 		//case VK_FORMAT_R4G4B4A4_UNORM_PACK16:

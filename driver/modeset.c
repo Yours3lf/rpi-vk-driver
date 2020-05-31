@@ -237,7 +237,8 @@ void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, mo
 
 void modeset_create_fb_for_surface(int fd, _image* buf, modeset_display_surface* surface)
 {
-	int ret = drmModeAddFB(fd, buf->width, buf->height, 24, 32, buf->stride, buf->boundMem->bo, &buf->fb);
+	int bpp = buf->format == VK_FORMAT_B8G8R8A8_UNORM ? 32 : 16;
+	int ret = drmModeAddFB(fd, buf->width, buf->height, bpp, bpp, buf->stride, buf->boundMem->bo, &buf->fb);
 
 	if(ret)
 	{
