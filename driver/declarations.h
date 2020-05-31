@@ -1039,13 +1039,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetDisplayModePropertiesKHR)(
 	uint32_t*                                   pPropertyCount,
 	VkDisplayModePropertiesKHR*                 pProperties);
 
-VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDisplayModeKHR)(
-	VkPhysicalDevice                            physicalDevice,
-	VkDisplayKHR                                display,
-	const VkDisplayModeCreateInfoKHR*           pCreateInfo,
-	const VkAllocationCallbacks*                pAllocator,
-	VkDisplayModeKHR*                           pMode);
-
 VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDisplayPlaneSurfaceKHR)(
 	VkInstance                                  instance,
 	const VkDisplaySurfaceCreateInfoKHR*        pCreateInfo,
@@ -1056,17 +1049,6 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroySwapchainKHR)(
 	VkDevice                                    device,
 	VkSwapchainKHR                              swapchain,
 	const VkAllocationCallbacks*                pAllocator);
-
-VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetDisplayPlaneSupportedDisplaysKHR)(
-	VkPhysicalDevice                            physicalDevice,
-	uint32_t                                    planeIndex,
-	uint32_t*                                   pDisplayCount,
-	VkDisplayKHR*                               pDisplays);
-
-VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceDisplayPlanePropertiesKHR)(
-	VkPhysicalDevice                            physicalDevice,
-	uint32_t*                                   pPropertyCount,
-	VkDisplayPlanePropertiesKHR*                pProperties);
 
 #ifdef __cplusplus
 }

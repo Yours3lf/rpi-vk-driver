@@ -499,10 +499,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL RPIFUNC(vkGetInstanceProcAddr)(
 
 	RETFUNC(vkGetPhysicalDeviceDisplayPropertiesKHR);
 	RETFUNC(vkGetDisplayModePropertiesKHR);
-	RETFUNC(vkCreateDisplayModeKHR);
 	RETFUNC(vkCreateDisplayPlaneSurfaceKHR);
-	RETFUNC(vkGetDisplayPlaneSupportedDisplaysKHR);
-	RETFUNC(vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
 
 	RETFUNC(vkDestroySwapchainKHR);
 

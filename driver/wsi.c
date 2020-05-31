@@ -9,83 +9,6 @@
 extern "C" {
 #endif
 
-VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceDisplayPlanePropertiesKHR)(
-	VkPhysicalDevice                            physicalDevice,
-	uint32_t*                                   pPropertyCount,
-	VkDisplayPlanePropertiesKHR*                pProperties)
-{
-	PROFILESTART(RPIFUNC(vkGetPhysicalDeviceDisplayPlanePropertiesKHR));
-
-	assert(physicalDevice);
-	assert(pPropertyCount);
-
-	uint32_t numPlanes;
-	modeset_plane planes[32];
-	modeset_enum_planes(controlFd, &numPlanes, planes);
-
-	if(!pProperties)
-	{
-		*pPropertyCount = numPlanes;
-		PROFILEEND(RPIFUNC(vkGetPhysicalDeviceDisplayPlanePropertiesKHR));
-		return VK_SUCCESS;
-	}
-
-	int arraySize = *pPropertyCount;
-	int elementsWritten = min(numPlanes, arraySize);
-
-	for(uint32_t c = 0; c < elementsWritten; ++c)
-	{
-		pProperties[c].currentDisplay = planes[c].currentConnectorID;
-		pProperties[c].currentStackIndex = c; //TODO dunno?
-	}
-
-	PROFILEEND(RPIFUNC(vkGetPhysicalDeviceDisplayPlanePropertiesKHR));
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetDisplayPlaneSupportedDisplaysKHR)(
-	VkPhysicalDevice                            physicalDevice,
-	uint32_t                                    planeIndex,
-	uint32_t*                                   pDisplayCount,
-	VkDisplayKHR*                               pDisplays)
-{
-	PROFILESTART(RPIFUNC(vkGetDisplayPlaneSupportedDisplaysKHR));
-
-	assert(physicalDevice);
-	assert(pDisplayCount);
-
-	uint32_t numPlanes;
-	modeset_plane planes[32];
-	modeset_enum_planes(controlFd, &numPlanes, planes);
-
-	if(!pDisplays)
-	{
-		*pDisplayCount = planes[planeIndex].numPossibleConnectors;
-
-		PROFILEEND(RPIFUNC(vkGetDisplayPlaneSupportedDisplaysKHR));
-		return VK_SUCCESS;
-	}
-
-	int arraySize = *pDisplayCount;
-	int elementsWritten = min(planes[planeIndex].numPossibleConnectors, arraySize);
-
-	for(int c = 0; c < elementsWritten; ++c)
-	{
-		pDisplays[c] = planes[planeIndex].possibleConnectors[c];
-	}
-
-	*pDisplayCount = elementsWritten;
-
-	if(arraySize < planes[planeIndex].numPossibleConnectors)
-	{
-		PROFILEEND(RPIFUNC(vkGetDisplayPlaneSupportedDisplaysKHR));
-		return VK_INCOMPLETE;
-	}
-
-	PROFILEEND(RPIFUNC(vkGetDisplayPlaneSupportedDisplaysKHR));
-	return VK_SUCCESS;
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceDisplayPropertiesKHR)(
 	VkPhysicalDevice                            physicalDevice,
 	uint32_t*                                   pPropertyCount,
@@ -182,38 +105,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetDisplayModePropertiesKHR)(
 
 	PROFILEEND(RPIFUNC(vkGetDisplayModePropertiesKHR));
 	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDisplayModeKHR)(
-	VkPhysicalDevice                            physicalDevice,
-	VkDisplayKHR                                display,
-	const VkDisplayModeCreateInfoKHR*           pCreateInfo,
-	const VkAllocationCallbacks*                pAllocator,
-	VkDisplayModeKHR*                           pMode)
-{
-	PROFILESTART(RPIFUNC(vkCreateDisplayModeKHR));
-
-	assert(physicalDevice);
-	assert(display);
-
-	uint32_t numModes;
-	modeset_display_mode modes[1024];
-	modeset_enum_modes_for_display(controlFd, display, &numModes, &modes);
-
-	for(uint32_t c = 0; c < numModes; ++c)
-	{
-		if(modes[c].refreshRate == pCreateInfo->parameters.refreshRate &&
-		   modes[c].resWidth == pCreateInfo->parameters.visibleRegion.width &&
-		   modes[c].resHeight == pCreateInfo->parameters.visibleRegion.height)
-		{
-			_displayMode mode = { modes[c].connectorID, modes[c].modeID };
-
-			memcpy(pMode, &mode, sizeof(_displayMode));
-			break;
-		}
-	}
-
-	PROFILEEND(RPIFUNC(vkCreateDisplayModeKHR));
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDisplayPlaneSurfaceKHR)(
