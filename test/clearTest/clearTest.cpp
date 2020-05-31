@@ -589,7 +589,7 @@ void createDepthBuffer()
 	imageCreateInfo.arrayLayers = 1;
 	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	imageCreateInfo.extent = { swapChainExtent.width, swapChainExtent.height, 1 };
@@ -801,6 +801,17 @@ void recordCommandBuffers()
 
 		renderPassInfo.framebuffer = fbs[i];
 
+		VkClearDepthStencilValue dsv;
+		dsv.depth = 1.0f;
+		dsv.stencil = 0xff;
+		VkImageSubresourceRange srr;
+		srr.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		srr.baseArrayLayer = 0;
+		srr.baseMipLevel = 0;
+		srr.layerCount = 1;
+		srr.levelCount = 1;
+		vkCmdClearDepthStencilImage(presentCommandBuffers[i], depthImage, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, &dsv, 1, &srr);
+
 		vkCmdBeginRenderPass(presentCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		vkCmdBindPipeline(presentCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
@@ -839,7 +850,7 @@ void recordCommandBuffers()
 		clearRect.rect.offset.y = 972;
 		clearRect.rect.extent.width = 144;
 		clearRect.rect.extent.height = 108;
-		vkCmdClearAttachments(presentCommandBuffers[i], 2, clearAttachment, 1, &clearRect);
+		//vkCmdClearAttachments(presentCommandBuffers[i], 2, clearAttachment, 1, &clearRect);
 
 		vkCmdSetDepthBias(presentCommandBuffers[i], 0.0, 0.0, 0.0);
 
@@ -939,7 +950,7 @@ void CreateRenderPass()
 	VkAttachmentDescription attachDesc[2];
 	attachDesc[0] = {};
 	attachDesc[0].format = swapchainFormat.format; //
-	attachDesc[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	attachDesc[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachDesc[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	attachDesc[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachDesc[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -949,7 +960,7 @@ void CreateRenderPass()
 
 	attachDesc[1] = {};
 	attachDesc[1].format = depthFormat;
-	attachDesc[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	attachDesc[1].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	attachDesc[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachDesc[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachDesc[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;

@@ -503,10 +503,6 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearColorImage)(
 
 	//TODO ranges support
 
-	assert(imageLayout == VK_IMAGE_LAYOUT_GENERAL ||
-		   imageLayout == VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR ||
-		   imageLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
 	assert(commandBuffer->state	 == CMDBUF_STATE_RECORDING);
 	assert(_queueFamilyProperties[commandBuffer->cp->queueFamilyIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT || _queueFamilyProperties[commandBuffer->cp->queueFamilyIndex].queueFlags & VK_QUEUE_COMPUTE_BIT);
 
@@ -581,7 +577,70 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearDepthStencilImage)(
 	assert(image);
 	assert(pDepthStencil);
 
-	//TODO
+	//TODO this should only flag an image for clearing. This can only be called outside a renderpass
+	//actual clearing would only happen:
+	// -if image is rendered to (insert clear before first draw call)
+	// -if the image is bound for sampling (submit a CL with a clear)
+	// -if a command buffer is submitted without any rendering (insert clear)
+	// -etc.
+	//we shouldn't clear an image if noone uses it
+
+	//TODO ranges support
+
+	assert(commandBuffer->state	 == CMDBUF_STATE_RECORDING);
+	assert(_queueFamilyProperties[commandBuffer->cp->queueFamilyIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT || _queueFamilyProperties[commandBuffer->cp->queueFamilyIndex].queueFlags & VK_QUEUE_COMPUTE_BIT);
+
+	_image* i = image;
+
+	assert(i->usageBits & VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	{ //Simplest case: just submit a job to clear the image
+		clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
+		clInsertNewCLMarker(&commandBuffer->binCl, &commandBuffer->handlesCl, &commandBuffer->shaderRecCl, commandBuffer->shaderRecCount, &commandBuffer->uniformsCl);
+
+		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->writeDepthStencilImage = i;
+
+		//insert reloc for render target
+		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->handlesBufOffset + commandBuffer->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->handlesSize, i->boundMem->bo);
+
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
+		clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
+											 0, //double buffer in non ms mode
+											 0, //tile allocation block size
+											 0, //tile allocation initial block size
+											 0, //auto initialize tile state data array
+											 0, //64 bit color mode
+											 i->samples > 1, //msaa
+											 i->width, i->height,
+											 0, //tile state data array address
+											 0, //tile allocation memory size
+											 0); //tile allocation memory address
+
+		//START_TILE_BINNING resets the statechange counters in the hardware,
+		//which are what is used when a primitive is binned to a tile to
+		//figure out what new state packets need to be written to that tile's
+		//command list.
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
+		clInsertStartTileBinning(&commandBuffer->binCl);
+
+		//Increment the semaphore indicating that binning is done and
+		//unblocking the render thread.  Note that this doesn't act
+		//until the FLUSH completes.
+		//The FLUSH caps all of our bin lists with a
+		//VC4_PACKET_RETURN.
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_INCREMENT_SEMAPHORE_length);
+		clInsertIncrementSemaphore(&commandBuffer->binCl);
+		clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLUSH_length);
+		clInsertFlush(&commandBuffer->binCl);
+
+		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->clearDepth = (uint32_t)(pDepthStencil->depth * 0xffffff) & 0xffffff;
+		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->clearStencil = pDepthStencil->stencil & 0xff;
+		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+
+		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->width = i->width;
+		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->height = i->height;
+	}
 
 	PROFILEEND(RPIFUNC(vkCmdClearDepthStencilImage));
 }
