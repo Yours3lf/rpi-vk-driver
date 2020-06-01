@@ -257,7 +257,11 @@ typedef struct vsyncData
 {
 	_image* i;
 	modeset_display_surface* s;
+	uint32_t pending;
 } vsyncData;
+
+static vsyncData flipQueue[2] = {};
+atomic_int flip_queue_guard = 0;
 
 static void modeset_page_flip_event(int fd, unsigned int frame,
 					unsigned int sec, unsigned int usec,
@@ -266,8 +270,32 @@ static void modeset_page_flip_event(int fd, unsigned int frame,
 	if(data)
 	{
 		vsyncData* d = data;
-		//TODO image is now available for rendering
+
+		while(flip_queue_guard);
+		flip_queue_guard = 1;
+
+		flipQueue[0].pending = 0;
+
+		flip_queue_guard = 0;
 	}
+}
+
+void modeset_acquire_image(int fd, _image* buf, modeset_display_surface* surface)
+{
+	while(flip_queue_guard);
+	flip_queue_guard = 1;
+
+	//TODO
+	//try to find any image that's not pending
+	//call handle event until that happens
+	//then find a non-pending image
+	drmEventContext ev;
+	memset(&ev, 0, sizeof(ev));
+	ev.version = 2;
+	ev.page_flip_handler = modeset_page_flip_event;
+	drmHandleEvent(fd, &ev);
+
+	flip_queue_guard = 0;
 }
 
 void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
@@ -312,7 +340,18 @@ void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
 		vsyncData d;
 		d.i = buf;
 		d.s = surface;
-		drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, DRM_MODE_PAGE_FLIP_EVENT, 0);
+		d.pending = 1;
+
+		while(flipQueue[0].pending);
+
+		while(flip_queue_guard);
+		flip_queue_guard = 1;
+
+		flipQueue[0] = d;
+		drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, DRM_MODE_PAGE_FLIP_EVENT, &flipQueue[0]);
+
+		flip_queue_guard = 0;
+
 	}
 
 	//modeset_debug_print(fd);
