@@ -389,10 +389,34 @@ void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
 		saved_state_guard = 0;
 	}
 
-	//TODO use DRM_MODE_PAGE_FLIP_EVENT to catch when an image can be used again (eg. for acquireimagekhr)
+	//TODO presenting needs to happen *after* the gpu is done with rendering to an image
+	//then immediate mode flips the page immediately, but fifo will post it for next vblank
+	//otherwise fifo would tear too
+	//so we should add images to the flip queue
+	//then wait for the first submitted (first out) seqno to finish
+	//then perform pageflip for that image
+	//
 
 	if(buf->presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
 	{
+		vsyncData d;
+		d.i = buf;
+		d.s = surface;
+		d.pending = 0;
+
+		uint32_t added = 0;
+
+		while(!added)
+		{
+			while(flip_queue_guard);
+			flip_queue_guard = 1;
+
+			//try to add request to queue
+			added = fifoAdd(&flipQueueFifo, &d);
+
+			flip_queue_guard = 0;
+		}
+
 		drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, DRM_MODE_PAGE_FLIP_ASYNC, 0);
 	}
 	else if(buf->presentMode == VK_PRESENT_MODE_FIFO_KHR)
