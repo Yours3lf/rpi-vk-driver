@@ -466,17 +466,38 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAcquireNextImageKHR)(
 
 	assert(semaphore != VK_NULL_HANDLE || fence != VK_NULL_HANDLE);
 
-	sem_t* s = semaphore;
+	sem_t* sem = semaphore;
+	_swapchain* sc = swapchain;
 
 	//TODO we need to keep track of currently acquired images?
 
 	//TODO wait timeout?
 
-	*pImageIndex = ((_swapchain*)swapchain)->backbufferIdx; //return back buffer index
+	_image* i;
+	modeset_display_surface* surf;
+	modeset_acquire_image(controlFd, &i, &surf);
+
+	if(i && surf)
+	{
+		for(uint32_t c = 0; c < sc->numImages; ++c)
+		{
+			if(&sc->images[c] == i && sc->surface == surf)
+			{
+				sc->backbufferIdx = c;
+				break;
+			}
+		}
+	}
+	else
+	{
+		sc->backbufferIdx = 0;
+	}
+
+	*pImageIndex = sc->backbufferIdx; //return back buffer index
 
 	//signal semaphore
-	int semVal; sem_getvalue(s, &semVal); assert(semVal <= 0); //make sure semaphore is unsignalled
-	sem_post(s);
+	int semVal; sem_getvalue(sem, &semVal); assert(semVal <= 0); //make sure semaphore is unsignalled
+	sem_post(sem);
 
 	_fence* f = fence;
 	if(f)
@@ -526,7 +547,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueuePresentKHR)(
 	{
 		_swapchain* s = pPresentInfo->pSwapchains[c];
 		modeset_present(controlFd, &s->images[pPresentInfo->pImageIndices[c]], s->surface);
-		s->backbufferIdx = (pPresentInfo->pImageIndices[c] + 1) % s->numImages;
 	}
 
 	PROFILEEND(RPIFUNC(vkQueuePresentKHR));

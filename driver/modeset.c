@@ -1,7 +1,21 @@
 #include "modeset.h"
 
+#include "fifo.h"
+
 #include <stdatomic.h>
 atomic_int saved_state_guard = 0;
+
+typedef struct vsyncData
+{
+	_image* i;
+	modeset_display_surface* s;
+	uint32_t pending;
+} vsyncData;
+
+static Fifo flipQueueFifo = {};
+static vsyncData dataMem[5];
+static FifoElem fifoMem[5];
+atomic_int flip_queue_guard = 0;
 
 void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display* displays)
 {
@@ -166,6 +180,16 @@ void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, mo
 {
 //	modeset_debug_print(fd);
 
+	while(flip_queue_guard);
+	flip_queue_guard = 1;
+
+	if(!flipQueueFifo.maxElems)
+	{
+		flipQueueFifo = createFifo(dataMem, fifoMem, 5, sizeof(vsyncData));
+	}
+
+	flip_queue_guard = 0;
+
 	surface->savedState = 0;
 
 	drmModeResPtr resPtr = drmModeGetResources(fd);
@@ -253,49 +277,85 @@ void modeset_destroy_fb(int fd, _image* buf)
 	drmModeRmFB(fd, buf->fb);
 }
 
-typedef struct vsyncData
-{
-	_image* i;
-	modeset_display_surface* s;
-	uint32_t pending;
-} vsyncData;
-
-static vsyncData flipQueue[2] = {};
-atomic_int flip_queue_guard = 0;
-
 static void modeset_page_flip_event(int fd, unsigned int frame,
 					unsigned int sec, unsigned int usec,
 					void *data)
 {
 	if(data)
 	{
-		vsyncData* d = data;
-
 		while(flip_queue_guard);
 		flip_queue_guard = 1;
 
-		flipQueue[0].pending = 0;
+		if(data)
+		{
+			vsyncData* d = data;
+
+			d->pending = 0;
+		}
 
 		flip_queue_guard = 0;
 	}
 }
 
-void modeset_acquire_image(int fd, _image* buf, modeset_display_surface* surface)
+void modeset_acquire_image(int fd, _image** buf, modeset_display_surface** surface)
 {
+	uint32_t pending = 1;
+
 	while(flip_queue_guard);
 	flip_queue_guard = 1;
 
-	//TODO
-	//try to find any image that's not pending
-	//call handle event until that happens
-	//then find a non-pending image
-	drmEventContext ev;
-	memset(&ev, 0, sizeof(ev));
-	ev.version = 2;
-	ev.page_flip_handler = modeset_page_flip_event;
-	drmHandleEvent(fd, &ev);
+	vsyncData* last = fifoGetLast(&flipQueueFifo);
+
+	if(last)
+	{
+		pending = last->pending;
+	}
+	else
+	{
+		//fifo empty, just use any image
+		*buf = 0;
+		*surface = 0;
+
+		flip_queue_guard = 0;
+
+		return;
+	}
 
 	flip_queue_guard = 0;
+
+	while(pending)
+	{
+		drmEventContext ev;
+		memset(&ev, 0, sizeof(ev));
+		ev.version = 2;
+		ev.page_flip_handler = modeset_page_flip_event;
+		drmHandleEvent(fd, &ev);
+
+		while(flip_queue_guard);
+		flip_queue_guard = 1;
+
+		vsyncData* d = fifoGetLast(&flipQueueFifo);
+
+		//a frame must be in flight
+		//so fifo must contain something
+		assert(d);
+
+		pending = d->pending;
+
+		flip_queue_guard = 0;
+	}
+
+	vsyncData d;
+
+	while(flip_queue_guard);
+	flip_queue_guard = 1;
+
+	fifoRemove(&flipQueueFifo, &d);
+
+	flip_queue_guard = 0;
+
+	*buf = d.i;
+	*surface = d.s;
 }
 
 void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
@@ -342,16 +402,29 @@ void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
 		d.s = surface;
 		d.pending = 1;
 
-		while(flipQueue[0].pending);
+		uint32_t added = 0;
+
+		while(!added)
+		{
+			while(flip_queue_guard);
+			flip_queue_guard = 1;
+
+			//try to add request to queue
+			added = fifoAdd(&flipQueueFifo, &d);
+
+			flip_queue_guard = 0;
+		}
+
+		void* first = 0;
 
 		while(flip_queue_guard);
 		flip_queue_guard = 1;
 
-		flipQueue[0] = d;
-		drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, DRM_MODE_PAGE_FLIP_EVENT, &flipQueue[0]);
+		first = fifoGetFirst(&flipQueueFifo);
 
 		flip_queue_guard = 0;
 
+		drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, DRM_MODE_PAGE_FLIP_EVENT, first);
 	}
 
 	//modeset_debug_print(fd);

@@ -30,7 +30,9 @@ typedef struct Fifo
 Fifo createFifo(void* dataMem, void* fifoElemMem, uint32_t maxElems, uint32_t dataSize);
 void destroyFifo(Fifo* f);
 uint32_t fifoAdd(Fifo* f, void* data);
-void fifoRemove(Fifo* f, void* data);
+uint32_t fifoRemove(Fifo* f, void* data);
+void* fifoGetLast(Fifo* f);
+void* fifoGetFirst(Fifo* f);
 void debugPrintFifo(Fifo* f);
 
 #if defined (__cplusplus)

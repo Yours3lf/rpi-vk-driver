@@ -64,9 +64,34 @@ uint32_t fifoAdd(Fifo* f, void* data)
 	return 1;
 }
 
-void fifoRemove(Fifo* f, void* data)
+void* fifoGetLast(Fifo* f)
 {
 	assert(f);
+
+	if(f->last)
+	{
+		return f->last->data;
+	}
+
+	return 0;
+}
+
+void* fifoGetFirst(Fifo* f)
+{
+	assert(f);
+
+	if(f->first)
+	{
+		return f->first->data;
+	}
+
+	return 0;
+}
+
+uint32_t fifoRemove(Fifo* f, void* data)
+{
+	assert(f);
+	assert(data);
 
 	if(f->last)
 	{
@@ -87,7 +112,11 @@ void fifoRemove(Fifo* f, void* data)
 
 		poolFree(&f->dataBuf, tmp->data);
 		poolFree(&f->fifoElemBuf, tmp);
+
+		return 1;
 	}
+
+	return 0;
 }
 
 void debugPrintFifo(Fifo* f)
