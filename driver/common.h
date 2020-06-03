@@ -236,6 +236,7 @@ typedef struct VkImageView_T
 typedef struct VkSwapchain_T
 {
 	_image* images;
+	uint32_t* inFlight;
 	uint32_t numImages;
 	uint32_t backbufferIdx;
 	VkSurfaceKHR surface;

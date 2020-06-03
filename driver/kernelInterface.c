@@ -335,7 +335,7 @@ int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t
 
 	int ret = drmIoctl(fd, DRM_IOCTL_VC4_WAIT_SEQNO, &wait);
 	if (ret) {
-		if (ret != -ETIME) {
+		if (errno != ETIME) {
 			fprintf(stderr, "Seqno wait failed: %s, seqno %llu, timeout %llu\n",
 				   strerror(errno), seqno, *timeout_ns);
 			vc4_print_hang_state(controlFd);
@@ -343,7 +343,6 @@ int vc4_seqno_wait(int fd, uint64_t* lastFinishedSeqno, uint64_t seqno, uint64_t
 		else
 		{
 			//Timeout happened
-			vc4_print_hang_state(controlFd);
 			*timeout_ns = -1;
 			return -1;
 		}

@@ -61,7 +61,7 @@ void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes
 void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, modeset_display_surface* surface);
 void modeset_create_fb_for_surface(int fd, _image* buf, modeset_display_surface* surface);
 void modeset_destroy_fb(int fd, _image* buf);
-void modeset_present(int fd, _image* buf, modeset_display_surface* surface);
+void modeset_present(int fd, _image* buf, modeset_display_surface* surface, uint64_t seqno);
 void modeset_acquire_image(int fd, _image** buf, modeset_display_surface** surface);
 void modeset_destroy_surface(int fd, modeset_display_surface* surface);
 void modeset_debug_print(int fd);

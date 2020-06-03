@@ -3,19 +3,74 @@
 #include "fifo.h"
 
 #include <stdatomic.h>
+#include <unistd.h>
+#include <pthread.h>
 atomic_int saved_state_guard = 0;
 
 typedef struct vsyncData
 {
 	_image* i;
 	modeset_display_surface* s;
-	uint32_t pending;
+	uint32_t flipPending;
+	uint64_t seqno;
 } vsyncData;
 
+#define FLIP_FIFO_SIZE 2
+
+static uint32_t refCount = 0;
+static pthread_t flipQueueThread = 0;
 static Fifo flipQueueFifo = {};
-static vsyncData dataMem[5];
-static FifoElem fifoMem[5];
-atomic_int flip_queue_guard = 0;
+static vsyncData dataMem[FLIP_FIFO_SIZE];
+static FifoElem fifoMem[FLIP_FIFO_SIZE];
+static atomic_int flip_queue_guard = 0;
+
+static void flipQueueThreadFunction(void* vargp)
+{
+	uint32_t run = 1;
+	uint64_t lastFinishedSeqno = 0;
+	int fd = *(int*)vargp;
+
+	while(run)
+	{
+		vsyncData* d = 0;
+
+		while(flip_queue_guard);
+		flip_queue_guard = 1;
+
+		d = fifoGetLast(&flipQueueFifo);
+
+		run = refCount;
+
+		flip_queue_guard = 0;
+
+		if(d && d->seqno)
+		{
+			uint64_t timeOut = 1000000; //1 ms in ns
+			int ret = vc4_seqno_wait(controlFd, &lastFinishedSeqno, d->seqno, &timeOut);
+
+			if(ret > 0)
+			{
+				while(flip_queue_guard);
+				flip_queue_guard = 1;
+
+				fprintf(stderr, "seqno  finished, flipping %llu image %p\n", d->seqno, d->i);
+
+				d->seqno = 0; //done!
+
+				flip_queue_guard = 0;
+
+				if(d->i->presentMode == VK_PRESENT_MODE_FIFO_KHR)
+				{
+					drmModePageFlip(fd, d->s->crtc->crtc_id, d->i->fb, DRM_MODE_PAGE_FLIP_EVENT, d);
+				}
+				else if(d->i->presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+				{
+					drmModePageFlip(fd, d->s->crtc->crtc_id, d->i->fb, DRM_MODE_PAGE_FLIP_ASYNC, 0);
+				}
+			}
+		}
+	}
+}
 
 void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display* displays)
 {
@@ -183,10 +238,13 @@ void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, mo
 	while(flip_queue_guard);
 	flip_queue_guard = 1;
 
-	if(!flipQueueFifo.maxElems)
+	if(!refCount)
 	{
-		flipQueueFifo = createFifo(dataMem, fifoMem, 5, sizeof(vsyncData));
+		flipQueueFifo = createFifo(dataMem, fifoMem, FLIP_FIFO_SIZE, sizeof(vsyncData));
+		pthread_create(&flipQueueThread, 0, flipQueueThreadFunction, &fd);
 	}
+
+	refCount++;
 
 	flip_queue_guard = 0;
 
@@ -290,7 +348,7 @@ static void modeset_page_flip_event(int fd, unsigned int frame,
 		{
 			vsyncData* d = data;
 
-			d->pending = 0;
+			d->flipPending = 0;
 		}
 
 		flip_queue_guard = 0;
@@ -299,7 +357,7 @@ static void modeset_page_flip_event(int fd, unsigned int frame,
 
 void modeset_acquire_image(int fd, _image** buf, modeset_display_surface** surface)
 {
-	uint32_t pending = 1;
+	uint32_t pending = 1, gpuprocessing = 1;
 
 	while(flip_queue_guard);
 	flip_queue_guard = 1;
@@ -308,7 +366,8 @@ void modeset_acquire_image(int fd, _image** buf, modeset_display_surface** surfa
 
 	if(last)
 	{
-		pending = last->pending;
+		pending = last->flipPending;
+		gpuprocessing = last->seqno > 0;
 	}
 	else
 	{
@@ -323,7 +382,7 @@ void modeset_acquire_image(int fd, _image** buf, modeset_display_surface** surfa
 
 	flip_queue_guard = 0;
 
-	while(pending)
+	while(pending || gpuprocessing)
 	{
 		drmEventContext ev;
 		memset(&ev, 0, sizeof(ev));
@@ -340,7 +399,8 @@ void modeset_acquire_image(int fd, _image** buf, modeset_display_surface** surfa
 		//so fifo must contain something
 		assert(d);
 
-		pending = d->pending;
+		pending = d->flipPending;
+		gpuprocessing = d->seqno > 0;
 
 		flip_queue_guard = 0;
 	}
@@ -352,13 +412,15 @@ void modeset_acquire_image(int fd, _image** buf, modeset_display_surface** surfa
 
 	fifoRemove(&flipQueueFifo, &d);
 
+	fprintf(stderr, "remove image flipped %p\n", d.i);
+
 	flip_queue_guard = 0;
 
 	*buf = d.i;
 	*surface = d.s;
 }
 
-void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
+void modeset_present(int fd, _image *buf, modeset_display_surface* surface, uint64_t seqno)
 {
 	if(!surface->savedState)
 	{
@@ -396,59 +458,28 @@ void modeset_present(int fd, _image *buf, modeset_display_surface* surface)
 	//then wait for the first submitted (first out) seqno to finish
 	//then perform pageflip for that image
 	//
+	//drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, DRM_MODE_PAGE_FLIP_EVENT, first);
+	//drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, DRM_MODE_PAGE_FLIP_ASYNC, 0);
 
-	if(buf->presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+	vsyncData d;
+	d.i = buf;
+	d.s = surface;
+	d.flipPending = 0;
+	d.seqno = seqno;
+
+	uint32_t added = 0;
+
+	while(!added)
 	{
-		vsyncData d;
-		d.i = buf;
-		d.s = surface;
-		d.pending = 0;
-
-		uint32_t added = 0;
-
-		while(!added)
-		{
-			while(flip_queue_guard);
-			flip_queue_guard = 1;
-
-			//try to add request to queue
-			added = fifoAdd(&flipQueueFifo, &d);
-
-			flip_queue_guard = 0;
-		}
-
-		drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, DRM_MODE_PAGE_FLIP_ASYNC, 0);
-	}
-	else if(buf->presentMode == VK_PRESENT_MODE_FIFO_KHR)
-	{
-		vsyncData d;
-		d.i = buf;
-		d.s = surface;
-		d.pending = 1;
-
-		uint32_t added = 0;
-
-		while(!added)
-		{
-			while(flip_queue_guard);
-			flip_queue_guard = 1;
-
-			//try to add request to queue
-			added = fifoAdd(&flipQueueFifo, &d);
-
-			flip_queue_guard = 0;
-		}
-
-		void* first = 0;
-
 		while(flip_queue_guard);
 		flip_queue_guard = 1;
 
-		first = fifoGetFirst(&flipQueueFifo);
+		//try to add request to queue
+		added = fifoAdd(&flipQueueFifo, &d);
+
+		fprintf(stderr, "present added seqno %llu image %p\n", seqno, buf);
 
 		flip_queue_guard = 0;
-
-		drmModePageFlip(fd, surface->crtc->crtc_id, buf->fb, DRM_MODE_PAGE_FLIP_EVENT, first);
 	}
 
 	//modeset_debug_print(fd);
@@ -469,9 +500,17 @@ void modeset_destroy_surface(int fd, modeset_display_surface *surface)
 		while(saved_state_guard);
 		saved_state_guard = 1;
 
+		refCount--;
+
 		drmModeFreeConnector(modeset_saved_states[surface->savedState].conn);
 		drmModeFreeCrtc(modeset_saved_states[surface->savedState].crtc);
 		modeset_saved_states[surface->savedState].used = 0;
+
+		if(!refCount)
+		{
+			destroyFifo(&flipQueueFifo);
+			pthread_join(flipQueueThread, 0);
+		}
 
 		saved_state_guard = 0;
 	}

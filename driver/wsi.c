@@ -334,12 +334,21 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateSwapchainKHR)(
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
+	s->inFlight = ALLOCATE(sizeof(uint32_t) * pCreateInfo->minImageCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+	if(!s->inFlight)
+	{
+		PROFILEEND(RPIFUNC(vkCreateSwapchainKHR));
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
+	}
+
 	s->backbufferIdx = 0;
 	s->numImages = pCreateInfo->minImageCount;
 	s->surface = pCreateInfo->surface;
 
 	for(int c = 0; c < pCreateInfo->minImageCount; ++c)
 	{
+		s->inFlight[c] = 0;
+
 		VkImageCreateInfo imageCreateInfo = {};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -483,15 +492,22 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAcquireNextImageKHR)(
 		{
 			if(&sc->images[c] == i && sc->surface == surf)
 			{
-				sc->backbufferIdx = c;
+				sc->inFlight[c] = 0;
 				break;
 			}
 		}
 	}
-	else
+
+	for(uint32_t c = 0; c < sc->numImages; ++c)
 	{
-		sc->backbufferIdx = 0;
+		if(!sc->inFlight[c])
+		{
+			sc->backbufferIdx = c;
+			break;
+		}
 	}
+
+	fprintf(stderr, "acquire backbufferIdx %u\n", sc->backbufferIdx);
 
 	*pImageIndex = sc->backbufferIdx; //return back buffer index
 
@@ -546,7 +562,9 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueuePresentKHR)(
 	for(int c = 0; c < pPresentInfo->swapchainCount; ++c)
 	{
 		_swapchain* s = pPresentInfo->pSwapchains[c];
-		modeset_present(controlFd, &s->images[pPresentInfo->pImageIndices[c]], s->surface);
+		modeset_present(controlFd, &s->images[pPresentInfo->pImageIndices[c]], s->surface, queue->lastEmitSeqno);
+		s->inFlight[pPresentInfo->pImageIndices[c]] = 1;
+		fprintf(stderr, "present backbufferIdx %u image %p\n", pPresentInfo->pImageIndices[c], &s->images[pPresentInfo->pImageIndices[c]]);
 	}
 
 	PROFILEEND(RPIFUNC(vkQueuePresentKHR));
