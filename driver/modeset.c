@@ -19,39 +19,49 @@ typedef struct vsyncData
 
 static uint32_t refCount = 0;
 static pthread_t flipQueueThread = 0;
-static Fifo flipQueueFifo = {};
+static Fifo flipQueueFifo;
 static vsyncData dataMem[FLIP_FIFO_SIZE];
 static FifoElem fifoMem[FLIP_FIFO_SIZE];
 static atomic_int flip_queue_guard = 0;
 
-static void flipQueueThreadFunction(void* vargp)
+static void* flipQueueThreadFunction(void* vargp)
 {
 	uint32_t run = 1;
 	uint64_t lastFinishedSeqno = 0;
-	int fd = *(int*)vargp;
+	int threadFD = *(int*)vargp;
 
 	while(run)
 	{
-		vsyncData* d = 0;
 
-		while(flip_queue_guard);
-		flip_queue_guard = 1;
 
-		d = fifoGetLast(&flipQueueFifo);
+		uint64_t seqno = 0;
 
-		run = refCount;
+		{
+			while(flip_queue_guard);
+			flip_queue_guard = 1;
 
-		flip_queue_guard = 0;
+			vsyncData* d = fifoGetLast(&flipQueueFifo);
+			if(d)
+			{
+				seqno = d->seqno;
+			}
 
-		if(d && d->seqno)
+			run = refCount;
+
+			flip_queue_guard = 0;
+		}
+
+		if(seqno)
 		{
 			uint64_t timeOut = 1000000; //1 ms in ns
-			int ret = vc4_seqno_wait(controlFd, &lastFinishedSeqno, d->seqno, &timeOut);
+			int ret = vc4_seqno_wait(threadFD, &lastFinishedSeqno, seqno, &timeOut);
 
 			if(ret > 0)
 			{
 				while(flip_queue_guard);
 				flip_queue_guard = 1;
+
+				vsyncData* d = fifoGetLast(&flipQueueFifo);
 
 				fprintf(stderr, "seqno  finished, flipping %llu image %p\n", d->seqno, d->i);
 
@@ -61,15 +71,17 @@ static void flipQueueThreadFunction(void* vargp)
 
 				if(d->i->presentMode == VK_PRESENT_MODE_FIFO_KHR)
 				{
-					drmModePageFlip(fd, d->s->crtc->crtc_id, d->i->fb, DRM_MODE_PAGE_FLIP_EVENT, d);
+					drmModePageFlip(threadFD, d->s->crtc->crtc_id, d->i->fb, DRM_MODE_PAGE_FLIP_EVENT, d);
 				}
 				else if(d->i->presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
 				{
-					drmModePageFlip(fd, d->s->crtc->crtc_id, d->i->fb, DRM_MODE_PAGE_FLIP_ASYNC, 0);
+					drmModePageFlip(threadFD, d->s->crtc->crtc_id, d->i->fb, DRM_MODE_PAGE_FLIP_ASYNC, 0);
 				}
 			}
 		}
 	}
+
+	return 0;
 }
 
 void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display* displays)
