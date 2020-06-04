@@ -34,10 +34,10 @@
   - [x] MSAA support
 - [x] Performance
   - [x] Performance counters
-- [ ] WSI
+- [x] WSI
   - [x] Direct to display support
-  - [ ] Vsync support
-  - [ ] Present modes support
+  - [x] Vsync support
+  - [x] Present modes support
 - [ ] Fixes
   - [ ] Hardware bug workarounds
   - [ ] Handle offsets wherever required
