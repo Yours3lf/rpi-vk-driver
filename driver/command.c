@@ -52,7 +52,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateCommandPool)(
 	//initial number of command buffers to hold
 	int numCommandBufs = 128;
 	int consecutiveBlockSize = ARM_PAGE_SIZE;
-	int consecutiveBlockNumber = 64;
+	int consecutiveBlockNumber = 256;
 	int consecutivePoolSize = consecutiveBlockNumber * consecutiveBlockSize;
 
 	static int counter = 0;
