@@ -498,16 +498,17 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAcquireNextImageKHR)(
 		}
 	}
 
+	uint32_t candidateIdx = (sc->backbufferIdx + 1) % sc->numImages;
 	for(uint32_t c = 0; c < sc->numImages; ++c)
 	{
-		if(!sc->inFlight[c])
+		if(!sc->inFlight[candidateIdx])
 		{
-			sc->backbufferIdx = c;
+			sc->backbufferIdx = candidateIdx;
 			break;
 		}
-	}
 
-	fprintf(stderr, "acquire backbufferIdx %u\n", sc->backbufferIdx);
+		candidateIdx = (sc->backbufferIdx + 1) % sc->numImages;
+	}
 
 	*pImageIndex = sc->backbufferIdx; //return back buffer index
 
@@ -564,7 +565,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueuePresentKHR)(
 		_swapchain* s = pPresentInfo->pSwapchains[c];
 		modeset_present(controlFd, &s->images[pPresentInfo->pImageIndices[c]], s->surface, queue->lastEmitSeqno);
 		s->inFlight[pPresentInfo->pImageIndices[c]] = 1;
-		fprintf(stderr, "present backbufferIdx %u image %p\n", pPresentInfo->pImageIndices[c], &s->images[pPresentInfo->pImageIndices[c]]);
 	}
 
 	PROFILEEND(RPIFUNC(vkQueuePresentKHR));
