@@ -34,7 +34,7 @@
   - [x] MSAA support
 - [x] Performance
   - [x] Performance counters
-- [ ] WSI
+- [x] WSI
   - [x] Direct to display support
   - [x] Vsync support
   - [x] Present modes support
