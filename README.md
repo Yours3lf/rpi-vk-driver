@@ -36,8 +36,8 @@
   - [x] Performance counters
 - [ ] WSI
   - [x] Direct to display support
-  - [ ] Vsync support
-  - [ ] Present modes support
+  - [x] Vsync support
+  - [x] Present modes support
 - [ ] Fixes
   - [ ] Hardware bug workarounds
   - [ ] Handle offsets wherever required
