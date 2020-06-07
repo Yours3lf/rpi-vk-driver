@@ -9,10 +9,10 @@ extern "C" {
 #include <stdlib.h>
 #include <string.h>
 
-#include <stdatomic.h>
+#include <semaphore.h>
 
 static profiler* globalProfiler = 0;
-static atomic_int globalProfilerGuard = 0;
+static sem_t globalProfilerSem;
 
 #define SKIPPED_FRAMES 100
 
@@ -20,16 +20,12 @@ void initProfiler()
 {
 	if(!globalProfiler)
 	{
-		while(globalProfilerGuard);
-		{
-			globalProfilerGuard = 1;
+		sem_init(&globalProfilerSem, 0, 0);
+		sem_post(&globalProfilerSem);
 
-			globalProfiler = (profiler*)malloc(sizeof(profiler));
-			globalProfiler->funcDatabase = createMap(malloc(sizeof(mapElem) * MAX_FUNCTIONS), MAX_FUNCTIONS);
-			globalProfiler->frameCounter = 0;
-
-			globalProfilerGuard = 0;
-		}
+		globalProfiler = (profiler*)malloc(sizeof(profiler));
+		globalProfiler->funcDatabase = createMap(malloc(sizeof(mapElem) * MAX_FUNCTIONS), MAX_FUNCTIONS);
+		globalProfiler->frameCounter = 0;
 	}
 }
 
@@ -37,10 +33,8 @@ void startMeasure(void* func, const char* funcName)
 {
 	initProfiler();
 
-	while(globalProfilerGuard);
+	sem_wait(&globalProfilerSem);
 	{
-		globalProfilerGuard = 1;
-
 		assert(globalProfiler);
 		assert(func);
 		assert(funcName);
@@ -61,9 +55,8 @@ void startMeasure(void* func, const char* funcName)
 		assert(!data->inProgress);
 		data->inProgress = 1;
 		clock_gettime(CLOCK_REALTIME, &data->start);
-
-		globalProfilerGuard = 0;
 	}
+	sem_post(&globalProfilerSem);
 }
 
 void endMeasure(void* func)
@@ -71,10 +64,8 @@ void endMeasure(void* func)
 	struct timespec end;
 	clock_gettime(CLOCK_REALTIME, &end);
 
-	while(globalProfilerGuard);
+	sem_wait(&globalProfilerSem);
 	{
-		globalProfilerGuard = 1;
-
 		assert(globalProfiler);
 		assert(func);
 
@@ -94,23 +85,19 @@ void endMeasure(void* func)
 				data->timeSpent += (end.tv_sec - data->start.tv_sec) * 0.001 + (end.tv_nsec - data->start.tv_nsec) / MILLION;
 			}
 		}
-
-		globalProfilerGuard = 0;
 	}
+	sem_post(&globalProfilerSem);
 }
 
 void endFrame()
 {
 	if(!globalProfiler) return;
 
-	while(globalProfilerGuard);
+	sem_wait(&globalProfilerSem);
 	{
-		globalProfilerGuard = 1;
-
 		globalProfiler->frameCounter++;
-
-		globalProfilerGuard = 0;
 	}
+	sem_post(&globalProfilerSem);
 }
 
 double getTimeSpent(void* func)

@@ -163,12 +163,23 @@ void cleanup() {
 
 	vkDestroyRenderPass(device, renderPass, 0);
 
-	//vkDestroyShaderModule(device, shaderModule, 0);
+	vkDestroyShaderModule(device, sampleShaderModule, 0);
 
-	//vkDestroyPipeline(device, pipeline, 0);
+	vkDestroyPipeline(device, samplePipeline, 0);
 
 	// Note: implicitly destroys images (in fact, we're not allowed to do that explicitly)
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
+
+	vkDestroyBuffer(device, triangleVertexBuffer, 0);
+	vkFreeMemory(device, triangleVertexBufferMemory, 0);
+
+	vkDestroyDescriptorPool(device, descriptorPool, 0);
+	vkDestroyDescriptorSetLayout(device, sampleDsl, 0);
+	vkDestroyPipelineLayout(device, samplePipelineLayout, 0);
+
+	vkDestroyImageView(device, textureView, 0);
+	vkDestroyImage(device, textureImage, 0);
+	vkDestroySampler(device, textureSampler, 0);
 
 	vkDestroyDevice(device, nullptr);
 

@@ -349,9 +349,16 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDevice)(
 
 			for(int d = 0; d < pCreateInfo->pQueueCreateInfos[c].queueCount; ++d)
 			{
-				(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex][d].lastEmitSeqno = 0;
-				(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex][d].dev = *pDevice;
-				set_loader_magic_value(&(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex][d].loaderData);
+				_queue* q = &(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex][d];
+				q->lastEmitSeqno = 0;
+				q->lastFinishedSeqno = 0;
+				q->dev = *pDevice;
+
+				q->seqnoSem = ALLOCATE(sizeof(sem_t), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+				sem_init(q->seqnoSem, 0, 0);
+				sem_post(q->seqnoSem);
+
+				set_loader_magic_value(&q->loaderData);
 			}
 
 			(*pDevice)->numQueues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex] = pCreateInfo->pQueueCreateInfos[c].queueCount;
@@ -427,6 +434,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroyDevice)(
 		{
 			for(int d = 0; d < dev->numQueues[c]; ++d)
 			{
+				FREE(dev->queues[d]->seqnoSem);
 				FREE(dev->queues[d]);
 			}
 		}

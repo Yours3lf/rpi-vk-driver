@@ -61,7 +61,9 @@ typedef struct VkQueue_T
 {
 	VK_LOADER_DATA loaderData;
 	uint64_t lastEmitSeqno;
+	uint64_t lastFinishedSeqno;
 	_device* dev;
+	struct sem_t* seqnoSem;
 } _queue;
 
 typedef struct VkCommandPool_T

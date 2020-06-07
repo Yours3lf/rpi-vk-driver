@@ -2,12 +2,9 @@
 
 #include "fifo.h"
 
-#include <stdatomic.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
-
-atomic_int saved_state_guard = 0;
 
 typedef struct vsyncData
 {
@@ -25,6 +22,8 @@ static Fifo flipQueueFifo;
 static vsyncData dataMem[FLIP_FIFO_SIZE];
 static FifoElem fifoMem[FLIP_FIFO_SIZE];
 static sem_t flipQueueSem;
+
+static sem_t savedStateSem;
 
 static void* flipQueueThreadFunction(void* vargp)
 {
@@ -250,6 +249,9 @@ void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, mo
 		pthread_create(&flipQueueThread, 0, flipQueueThreadFunction, &fd);
 		sem_init(&flipQueueSem, 0, 0);
 		sem_post(&flipQueueSem);
+
+		sem_init(&savedStateSem, 0, 0);
+		sem_post(&savedStateSem);
 	}
 
 	refCount++;
@@ -427,31 +429,30 @@ void modeset_present(int fd, _image *buf, modeset_display_surface* surface, uint
 {
 	if(!surface->savedState)
 	{
-		while(saved_state_guard);
-		saved_state_guard = 1;
-
-		for(uint32_t c = 0; c < 32; ++c)
+		sem_wait(&savedStateSem);
 		{
-			if(!modeset_saved_states[c].used)
+			for(uint32_t c = 0; c < 32; ++c)
 			{
-				drmModeConnectorPtr tmpConnPtr = drmModeGetConnector(fd, surface->connector->connector_id);
-				drmModeCrtcPtr tmpCrtcPtr = drmModeGetCrtc(fd, surface->crtc->crtc_id);
-				modeset_saved_states[c].used = 1;
-				modeset_saved_states[c].conn = tmpConnPtr;
-				modeset_saved_states[c].crtc = tmpCrtcPtr;
-				surface->savedState = c;
-				break;
+				if(!modeset_saved_states[c].used)
+				{
+					drmModeConnectorPtr tmpConnPtr = drmModeGetConnector(fd, surface->connector->connector_id);
+					drmModeCrtcPtr tmpCrtcPtr = drmModeGetCrtc(fd, surface->crtc->crtc_id);
+					modeset_saved_states[c].used = 1;
+					modeset_saved_states[c].conn = tmpConnPtr;
+					modeset_saved_states[c].crtc = tmpCrtcPtr;
+					surface->savedState = c;
+					break;
+				}
+			}
+
+			int ret = drmModeSetCrtc(fd, surface->crtc->crtc_id, buf->fb, 0, 0, &surface->connector->connector_id, 1, &surface->connector->modes[surface->modeID]);
+			if(ret)
+			{
+				fprintf(stderr, "cannot set CRTC for connector %u: %m\n",
+					   surface->connector->connector_id, errno);
 			}
 		}
-
-		int ret = drmModeSetCrtc(fd, surface->crtc->crtc_id, buf->fb, 0, 0, &surface->connector->connector_id, 1, &surface->connector->modes[surface->modeID]);
-		if(ret)
-		{
-			fprintf(stderr, "cannot set CRTC for connector %u: %m\n",
-				   surface->connector->connector_id, errno);
-		}
-
-		saved_state_guard = 0;
+		sem_post(&savedStateSem);
 	}
 
 	//TODO presenting needs to happen *after* the gpu is done with rendering to an image
@@ -497,22 +498,21 @@ void modeset_destroy_surface(int fd, modeset_display_surface *surface)
 			&modeset_saved_states[surface->savedState].crtc->mode);
 
 	{
-		while(saved_state_guard);
-		saved_state_guard = 1;
-
 		refCount--;
 
-		drmModeFreeConnector(modeset_saved_states[surface->savedState].conn);
-		drmModeFreeCrtc(modeset_saved_states[surface->savedState].crtc);
-		modeset_saved_states[surface->savedState].used = 0;
+		sem_wait(&savedStateSem);
+		{
+			drmModeFreeConnector(modeset_saved_states[surface->savedState].conn);
+			drmModeFreeCrtc(modeset_saved_states[surface->savedState].crtc);
+			modeset_saved_states[surface->savedState].used = 0;
+		}
+		sem_post(&savedStateSem);
 
 		if(!refCount)
 		{
 			destroyFifo(&flipQueueFifo);
 			pthread_join(flipQueueThread, 0);
 		}
-
-		saved_state_guard = 0;
 	}
 
 	drmModeFreeConnector(surface->connector);

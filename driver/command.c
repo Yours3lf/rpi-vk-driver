@@ -6,10 +6,7 @@
 
 #include "declarations.h"
 
-#include <stdatomic.h>
-
-static uint64_t lastFinishedSeqno = 0;
-static atomic_int lastSeqnoGuard = 0;
+#include <semaphore.h>
 
 #define VC4_HW_2116_COUNT		0x1ef0
 
@@ -667,14 +664,12 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 
 			assert(submitCl.bo_handle_count > 0);
 
-			//TODO
-			while(lastSeqnoGuard);
+			sem_wait(queue->seqnoSem);
 			{
-				lastSeqnoGuard = 1;
 				//submit ioctl
-				vc4_cl_submit(controlFd, &submitCl, &queue->lastEmitSeqno, &lastFinishedSeqno);
-				lastSeqnoGuard = 0;
+				vc4_cl_submit(controlFd, &submitCl, &queue->lastEmitSeqno, &queue->lastFinishedSeqno);
 			}
+			sem_post(queue->seqnoSem);
 
 			//see if it's a sync bug
 			//uint64_t timeout = WAIT_TIMEOUT_INFINITE;
