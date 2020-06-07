@@ -42,6 +42,8 @@ typedef struct CLMarker
 	uint32_t width, height; //render w/h
 	uint32_t mipLevel;
 
+	uint32_t numDrawCallsSubmitted;
+
 	//pointers that point to where all the other CL data is
 	//plus sizes
 	//uint8_t* handlesBuf; //

@@ -60,6 +60,7 @@ void clInsertNewCLMarker(ControlList* cl,
 	marker.shaderRecBufOffset = 0;
 	marker.uniformsBufOffset = 0;
 	marker.nextMarkerOffset = -1;
+	marker.numDrawCallsSubmitted = 0;
 
 	//close current marker
 	if(cl->currMarkerOffset != -1 && !((CLMarker*)getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset))->size)

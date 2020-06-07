@@ -382,8 +382,6 @@ typedef struct VkCommandBuffer_T
 
 	_renderpass* currRenderPass;
 
-	uint32_t numDrawCallsSubmitted;
-
 	VkViewport viewport;
 	VkRect2D scissor;
 	float lineWidth;

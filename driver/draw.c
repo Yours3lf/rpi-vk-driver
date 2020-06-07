@@ -584,6 +584,8 @@ void RPIFUNC(vkCmdDraw)(VkCommandBuffer commandBuffer, uint32_t vertexCount, uin
 		UNSUPPORTED(instancing);
 	}
 
+	assert((firstVertex + vertexCount) <= ((1<<16) - 1));
+
 	drawCommon(commandBuffer, 0);
 
 	_commandBuffer* cb = commandBuffer;
@@ -592,7 +594,7 @@ void RPIFUNC(vkCmdDraw)(VkCommandBuffer commandBuffer, uint32_t vertexCount, uin
 	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
 	clInsertVertexArrayPrimitives(&commandBuffer->binCl, firstVertex, vertexCount, getPrimitiveMode(cb->graphicsPipeline->topology));
 
-	cb->numDrawCallsSubmitted++;
+	((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->numDrawCallsSubmitted++;
 
 	PROFILEEND(RPIFUNC(vkCmdDraw));
 }
@@ -615,6 +617,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdDrawIndexed)(
 		UNSUPPORTED(instancing);
 	}
 
+	assert((firstIndex + indexCount) <= ((1<<16) - 1));
+
 	uint32_t maxIndex = drawCommon(commandBuffer, vertexOffset);
 
 	_commandBuffer* cb = commandBuffer;
@@ -634,7 +638,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdDrawIndexed)(
 								 1, //we only support 16 bit indices
 								 getPrimitiveMode(cb->graphicsPipeline->topology));
 
-	cb->numDrawCallsSubmitted++;
+	((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->numDrawCallsSubmitted++;
 
 	PROFILEEND(RPIFUNC(vkCmdDrawIndexed));
 }

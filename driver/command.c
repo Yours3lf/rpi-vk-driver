@@ -11,6 +11,8 @@
 static uint64_t lastFinishedSeqno = 0;
 static atomic_int lastSeqnoGuard = 0;
 
+#define VC4_HW_2116_COUNT		0x1ef0
+
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#commandbuffers-pools
  * Command pools are opaque objects that command buffer memory is allocated from, and which allow the implementation to amortize the
@@ -132,7 +134,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAllocateCommandBuffers)(
 
 			pCommandBuffers[c]->graphicsPipeline = 0;
 			pCommandBuffers[c]->computePipeline = 0;
-			pCommandBuffers[c]->numDrawCallsSubmitted = 0;
 			pCommandBuffers[c]->indexBuffer = 0;
 			pCommandBuffers[c]->indexBufferOffset = 0;
 			pCommandBuffers[c]->vertexBufferDirty = 1;
@@ -662,6 +663,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 			printf("perfmonID %u\n", submitCl.perfmonid);
 			/**/
 
+			assert(marker->numDrawCallsSubmitted <= VC4_HW_2116_COUNT);
+
 			assert(submitCl.bo_handle_count > 0);
 
 			//TODO
@@ -672,6 +675,10 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 				vc4_cl_submit(controlFd, &submitCl, &queue->lastEmitSeqno, &lastFinishedSeqno);
 				lastSeqnoGuard = 0;
 			}
+
+			//see if it's a sync bug
+			//uint64_t timeout = WAIT_TIMEOUT_INFINITE;
+			//vc4_seqno_wait(controlFd, &lastFinishedSeqno, queue->lastEmitSeqno, &timeout);
 
 			//advance in linked list
 			marker = marker->nextMarkerOffset == -1 ? 0 : getCPAptrFromOffset(cmdbuf->binCl.CPA, marker->nextMarkerOffset + cmdbuf->binCl.offset);
@@ -889,7 +896,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkResetCommandBuffer)(
 
 	commandBuffer->graphicsPipeline = 0;
 	commandBuffer->computePipeline = 0;
-	commandBuffer->numDrawCallsSubmitted = 0;
 	commandBuffer->indexBuffer = 0;
 	commandBuffer->indexBufferOffset = 0;
 	commandBuffer->vertexBufferDirty = 1;
