@@ -507,7 +507,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAcquireNextImageKHR)(
 			break;
 		}
 
-		candidateIdx = (sc->backbufferIdx + 1) % sc->numImages;
+		candidateIdx = (candidateIdx + 1) % sc->numImages;
 	}
 
 	*pImageIndex = sc->backbufferIdx; //return back buffer index
