@@ -567,6 +567,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreatePipelineLayout)(
 		pl->setLayouts = ALLOCATE(sizeof(VkDescriptorSetLayout)*pCreateInfo->setLayoutCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pl->setLayouts)
 		{
+			FREE(pl);
 			PROFILEEND(RPIFUNC(vkCreatePipelineLayout));
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
@@ -579,6 +580,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreatePipelineLayout)(
 		pl->pushConstantRanges = ALLOCATE(sizeof(VkPushConstantRange)*pCreateInfo->pushConstantRangeCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pl->pushConstantRanges)
 		{
+			FREE(pl);
 			PROFILEEND(RPIFUNC(vkCreatePipelineLayout));
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}

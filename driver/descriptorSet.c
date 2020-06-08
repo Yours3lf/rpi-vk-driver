@@ -259,6 +259,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDescriptorSetLayout)(
 
 	if(!dsl->bindings)
 	{
+		FREE(dsl);
 		PROFILEEND(RPIFUNC(vkCreateDescriptorSetLayout));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}

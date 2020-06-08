@@ -11,7 +11,7 @@ uint32_t divRoundUp(uint32_t n, uint32_t d)
 //move bits to offset, mask rest to 0
 uint32_t moveBits(uint32_t d, uint32_t bits, uint32_t offset)
 {
-	return (d << offset) & (~(~0 << bits) << offset);
+	return (d << offset) & (~(~0u << bits) << offset);
 }
 
 uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size)

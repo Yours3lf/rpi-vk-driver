@@ -279,6 +279,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateImage)(
 		i->queueFamiliesWithAccess = ALLOCATE(sizeof(uint32_t) * i->numQueueFamiliesWithAccess, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!i->queueFamiliesWithAccess)
 		{
+			FREE(i)
 			PROFILEEND(RPIFUNC(vkCreateImage));
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}

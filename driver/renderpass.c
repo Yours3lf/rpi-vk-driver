@@ -524,6 +524,7 @@ VkResult RPIFUNC(vkCreateFramebuffer)(VkDevice device, const VkFramebufferCreate
 
 	if(!fb->attachmentViews)
 	{
+		FREE(fb);
 		PROFILEEND(RPIFUNC(vkCreateFramebuffer));
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}

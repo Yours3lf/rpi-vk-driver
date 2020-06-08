@@ -60,6 +60,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateCommandPool)(
 		void* pamem = ALLOCATE(numCommandBufs * sizeof(_commandBuffer), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pamem)
 		{
+			FREE(cp);
 			PROFILEEND(RPIFUNC(vkCreateCommandPool));
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
@@ -68,6 +69,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateCommandPool)(
 		void* cpamem = ALLOCATE(consecutivePoolSize, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!cpamem)
 		{
+			FREE(cp);
 			PROFILEEND(RPIFUNC(vkCreateCommandPool));
 			return VK_ERROR_OUT_OF_HOST_MEMORY;
 		}
