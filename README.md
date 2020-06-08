@@ -44,9 +44,9 @@
   - [ ] Handle subresource ranges properly
   - [ ] Handle allocation scopes properly
 - [ ] Code cleanup
-  - [ ] Clean up compile time warnings
+  - [x] Clean up compile time warnings
   - [ ] Profile and optimise the driver code
-  - [ ] Run Clang static analysis
+  - [x] Run Clang static analysis
 - [ ] Documentation
   - [ ] Github pages
   - [ ] Wiki
