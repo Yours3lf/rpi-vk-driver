@@ -182,9 +182,9 @@ uint32_t packVec4IntoABGR8(const float rgba[4])
 	return res;
 }
 
-int findInstanceExtension(char* name)
+int findInstanceExtension(const char* name)
 {
-	for(int c = 0; c < numInstanceExtensions; ++c)
+	for(uint32_t c = 0; c < numInstanceExtensions; ++c)
 	{
 		if(strcmp(instanceExtensions[c].extensionName, name) == 0)
 		{
@@ -195,9 +195,9 @@ int findInstanceExtension(char* name)
 	return -1;
 }
 
-int findDeviceExtension(char* name)
+int findDeviceExtension(const char* name)
 {
-	for(int c = 0; c < numDeviceExtensions; ++c)
+	for(uint32_t c = 0; c < numDeviceExtensions; ++c)
 	{
 		if(strcmp(deviceExtensions[c].extensionName, name) == 0)
 		{
@@ -531,17 +531,17 @@ uint32_t ulog2(uint32_t v)
 	return ret;
 }
 
-void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize)
+void clFit(ControlList* cl, uint32_t commandSize)
 {
 	if(!clHasEnoughSpace(cl, commandSize))
 	{
 		uint32_t currSize = cl->nextFreeByteOffset - cl->offset;
 		uint32_t currMarkerOffset = cl->currMarkerOffset - cl->offset;
-		cl->offset = consecutivePoolReAllocate(cl->CPA, getCPAptrFromOffset(cl->CPA, cl->offset), cl->numBlocks); assert(cl->offset != -1);
+		cl->offset = consecutivePoolReAllocate(cl->CPA, getCPAptrFromOffset(cl->CPA, cl->offset), cl->numBlocks); assert(cl->offset != ~0u);
 		cl->nextFreeByteOffset = cl->offset + currSize;
 		cl->numBlocks++;
-		cl->currMarkerOffset = cl->currMarkerOffset == -1 ? -1 : cl->offset + currMarkerOffset;
-		if(cl->currMarkerOffset != -1)
+		cl->currMarkerOffset = cl->currMarkerOffset == ~0u ? ~0u : cl->offset + currMarkerOffset;
+		if(cl->currMarkerOffset != ~0u)
 		{
 			assert(((CLMarker*)getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset))->memGuard == 0xDDDDDDDD);
 		}

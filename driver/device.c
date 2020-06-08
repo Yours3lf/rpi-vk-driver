@@ -123,10 +123,10 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEnumerateDeviceExtensionProperties)(
 		return VK_SUCCESS;
 	}
 
-	int arraySize = *pPropertyCount;
-	int elementsWritten = min(numDeviceExtensions, arraySize);
+	uint32_t arraySize = *pPropertyCount;
+	uint32_t elementsWritten = min(numDeviceExtensions, arraySize);
 
-	for(int c = 0; c < elementsWritten; ++c)
+	for(uint32_t c = 0; c < elementsWritten; ++c)
 	{
 		pProperties[c] = deviceExtensions[c];
 	}
@@ -199,10 +199,10 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEnumeratePhysicalDeviceQueueFamilyPerfo
 		return VK_SUCCESS;
 	}
 
-	int arraySize = *pCounterCount;
-	int elementsWritten = min(numPerformanceCounterTypes, arraySize);
+	uint32_t arraySize = *pCounterCount;
+	uint32_t elementsWritten = min(numPerformanceCounterTypes, arraySize);
 
-	for(int c = 0; c < elementsWritten; ++c)
+	for(uint32_t c = 0; c < elementsWritten; ++c)
 	{
 		pCounters[c] = performanceCounterTypes[c];
 		pCounterDescriptions[c] = performanceCounterDescriptions[c];
@@ -260,7 +260,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDevice)(
 	assert(pCreateInfo);
 
 	//check for enabled extensions
-	for(int c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
+	for(uint32_t c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
 	{
 		int findres = findDeviceExtension(pCreateInfo->ppEnabledExtensionNames[c]);
 		if(findres == -1)
@@ -276,7 +276,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDevice)(
 
 	if(requestedFeatures)
 	{
-		for(int c = 0; c < numFeatures; ++c)
+		for(uint32_t c = 0; c < numFeatures; ++c)
 		{
 			if(requestedFeatures[c] && !supportedFeatures[c])
 			{
@@ -299,7 +299,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDevice)(
 
 	(*pDevice)->numEnabledExtensions = 0;
 
-	for(int c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
+	for(uint32_t c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
 	{
 		int findres = findDeviceExtension(pCreateInfo->ppEnabledExtensionNames[c]);
 		if(findres > -1)
@@ -311,7 +311,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDevice)(
 
 	if(requestedFeatures)
 	{
-		for(int c = 0; c < numFeatures; ++c)
+		for(uint32_t c = 0; c < numFeatures; ++c)
 		{
 			if(requestedFeatures[c] && !supportedFeatures[c])
 			{
@@ -330,14 +330,14 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDevice)(
 	//layers ignored per spec
 	//pCreateInfo->enabledLayerCount
 
-	for(int c = 0; c < numQueueFamilies; ++c)
+	for(uint32_t c = 0; c < numQueueFamilies; ++c)
 	{
 		(*pDevice)->queues[c] = 0;
 	}
 
 	if(pCreateInfo->queueCreateInfoCount > 0)
 	{
-		for(int c = 0; c < pCreateInfo->queueCreateInfoCount; ++c)
+		for(uint32_t c = 0; c < pCreateInfo->queueCreateInfoCount; ++c)
 		{
 			(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex] = ALLOCATE(sizeof(_queue)*pCreateInfo->pQueueCreateInfos[c].queueCount, 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 
@@ -347,16 +347,12 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDevice)(
 				return VK_ERROR_OUT_OF_HOST_MEMORY;
 			}
 
-			for(int d = 0; d < pCreateInfo->pQueueCreateInfos[c].queueCount; ++d)
+			for(uint32_t d = 0; d < pCreateInfo->pQueueCreateInfos[c].queueCount; ++d)
 			{
 				_queue* q = &(*pDevice)->queues[pCreateInfo->pQueueCreateInfos[c].queueFamilyIndex][d];
 				q->lastEmitSeqno = 0;
 				q->lastFinishedSeqno = 0;
 				q->dev = *pDevice;
-
-				q->seqnoSem = ALLOCATE(sizeof(sem_t), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
-				sem_init(q->seqnoSem, 0, 0);
-				sem_post(q->seqnoSem);
 
 				set_loader_magic_value(&q->loaderData);
 			}
@@ -430,11 +426,10 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroyDevice)(
 
 	if(dev)
 	{
-		for(int c = 0; c < numQueueFamilies; ++c)
+		for(uint32_t c = 0; c < numQueueFamilies; ++c)
 		{
-			for(int d = 0; d < dev->numQueues[c]; ++d)
+			for(uint32_t d = 0; d < dev->numQueues[c]; ++d)
 			{
-				FREE(dev->queues[d]->seqnoSem);
 				FREE(dev->queues[d]);
 			}
 		}
@@ -547,7 +542,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceProperties2)(
 		VkPhysicalDeviceDriverPropertiesKHR* ptr = pProperties->pNext;
 		if(ptr->sType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR)
 		{
-			ptr->driverID = 0x525049564b; //RPIVK in hex
+			ptr->driverID = 0x5250564b; //RPVK in hex
 			const char* driverName = "RPi VK";
 			const char* driverInfo = ""; //TODO maybe version number, git info?
 			strcpy(ptr->driverName, driverName);

@@ -203,7 +203,7 @@ void createClearShaderModule(VkDevice device, VkShaderModule* blitShaderModule, 
 	VkRpiAssemblyMappingEXT* asm_mappings[4] = {};
 	uint32_t asm_mappings_sizes[4] = {};
 
-	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {};
+	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {0};
 	shaderModuleCreateInfo.instructions = asm_ptrs;
 	shaderModuleCreateInfo.numInstructions = asm_sizes;
 	shaderModuleCreateInfo.mappings = asm_mappings;
@@ -251,7 +251,7 @@ void createClearShaderModule(VkDevice device, VkShaderModule* blitShaderModule, 
 	//words start here
 	spirv[5] = 1 << 16;
 
-	VkShaderModuleCreateInfo smci = {};
+	VkShaderModuleCreateInfo smci = {0};
 	smci.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	smci.codeSize = sizeof(uint32_t)*6;
 	smci.pCode = spirv;
@@ -296,32 +296,32 @@ void createClearPipeline(VkDevice device, VkPipelineDepthStencilStateCreateInfo*
 		vertexInputAttributeDescription[0].format = VK_FORMAT_R32G32_SFLOAT;
 	}
 
-	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {0};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.vertexAttributeDescriptionCount = 1;
 	vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttributeDescription;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
 
-	VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {};
+	VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {0};
 	pipelineIACreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	pipelineIACreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-	VkPipelineRasterizationStateCreateInfo rastCreateInfo = {};
+	VkPipelineRasterizationStateCreateInfo rastCreateInfo = {0};
 	rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
 	rastCreateInfo.cullMode = VK_CULL_MODE_NONE;
 	rastCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rastCreateInfo.lineWidth = 1.0f;
 
-	VkPipelineMultisampleStateCreateInfo pipelineMSCreateInfo = {};
+	VkPipelineMultisampleStateCreateInfo pipelineMSCreateInfo = {0};
 	pipelineMSCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 
-	VkPipelineColorBlendAttachmentState blendAttachState = {};
+	VkPipelineColorBlendAttachmentState blendAttachState = {0};
 	blendAttachState.colorWriteMask = 0xf;
 	blendAttachState.blendEnable = false;
 
-	VkPipelineColorBlendStateCreateInfo blendCreateInfo = {};
+	VkPipelineColorBlendStateCreateInfo blendCreateInfo = {0};
 	blendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	blendCreateInfo.attachmentCount = 1;
 	blendCreateInfo.pAttachments = &blendAttachState;
@@ -347,7 +347,7 @@ void createClearPipeline(VkDevice device, VkPipelineDepthStencilStateCreateInfo*
 	shaderStageCreateInfo[1].module = blitShaderModule;
 	shaderStageCreateInfo[1].pName = "main";
 
-	VkPipelineLayoutCreateInfo pipelineLayoutCI = {};
+	VkPipelineLayoutCreateInfo pipelineLayoutCI = {0};
 	pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutCI.setLayoutCount = 1;
 	pipelineLayoutCI.pSetLayouts = &blitDsl;
@@ -357,17 +357,17 @@ void createClearPipeline(VkDevice device, VkPipelineDepthStencilStateCreateInfo*
 
 	VkDynamicState dynState = VK_DYNAMIC_STATE_VIEWPORT;
 
-	VkPipelineDynamicStateCreateInfo pdsci = {};
+	VkPipelineDynamicStateCreateInfo pdsci = {0};
 	pdsci.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	pdsci.dynamicStateCount = 1;
 	pdsci.pDynamicStates = &dynState;
 
-	VkPipelineViewportStateCreateInfo pvsci = {};
+	VkPipelineViewportStateCreateInfo pvsci = {0};
 	pvsci.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	pvsci.viewportCount = 0;
 	pvsci.scissorCount = 0;
 
-	VkGraphicsPipelineCreateInfo pipelineInfo = {};
+	VkGraphicsPipelineCreateInfo pipelineInfo = {0};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.stageCount = 2;
 	pipelineInfo.pStages = &shaderStageCreateInfo[0];
@@ -383,7 +383,7 @@ void createClearPipeline(VkDevice device, VkPipelineDepthStencilStateCreateInfo*
 	pipelineInfo.pDepthStencilState = dsState;
 	pipelineInfo.layout = *blitPipelineLayout;
 
-	VkResult res = RPIFUNC(vkCreateGraphicsPipelines)(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, blitPipeline);
+	RPIFUNC(vkCreateGraphicsPipelines)(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, blitPipeline);
 }
 
 void createClearDescriptorSetLayouts(VkDevice device, VkDescriptorSetLayout* bufferDsl)
@@ -391,7 +391,7 @@ void createClearDescriptorSetLayouts(VkDevice device, VkDescriptorSetLayout* buf
 	assert(device);
 	assert(bufferDsl);
 
-	VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {};
+	VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {0};
 	descriptorLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	descriptorLayoutCI.bindingCount = 0;
 	descriptorLayoutCI.pBindings = 0;
@@ -463,7 +463,7 @@ void RPIFUNC(vkCmdBindVertexBuffers)(VkCommandBuffer commandBuffer, uint32_t fir
 
 	_commandBuffer* cb = commandBuffer;
 
-	for(int c = 0; c < bindingCount; ++c)
+	for(uint32_t c = 0; c < bindingCount; ++c)
 	{
 		cb->vertexBuffers[firstBinding + c] = pBuffers[c];
 		cb->vertexBufferOffsets[firstBinding + c] = pOffsets[c];
@@ -511,16 +511,16 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearColorImage)(
 	assert(i->usageBits & VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	{ //Simplest case: just submit a job to clear the image
-		clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
+		clFit(&commandBuffer->binCl, sizeof(CLMarker));
 		clInsertNewCLMarker(&commandBuffer->binCl, &commandBuffer->handlesCl, &commandBuffer->shaderRecCl, commandBuffer->shaderRecCount, &commandBuffer->uniformsCl);
 
 		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->writeImage = i;
 
 		//insert reloc for render target
-		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clFit(&commandBuffer->handlesCl, 4);
 		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->handlesBufOffset + commandBuffer->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->handlesSize, i->boundMem->bo);
 
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
+		clFit(&commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
 		clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
 											 0, //double buffer in non ms mode
 											 0, //tile allocation block size
@@ -537,7 +537,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearColorImage)(
 		//which are what is used when a primitive is binned to a tile to
 		//figure out what new state packets need to be written to that tile's
 		//command list.
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
+		clFit(&commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
 		clInsertStartTileBinning(&commandBuffer->binCl);
 
 		//Increment the semaphore indicating that binning is done and
@@ -545,9 +545,9 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearColorImage)(
 		//until the FLUSH completes.
 		//The FLUSH caps all of our bin lists with a
 		//VC4_PACKET_RETURN.
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_INCREMENT_SEMAPHORE_length);
+		clFit(&commandBuffer->binCl, V3D21_INCREMENT_SEMAPHORE_length);
 		clInsertIncrementSemaphore(&commandBuffer->binCl);
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLUSH_length);
+		clFit(&commandBuffer->binCl, V3D21_FLUSH_length);
 		clInsertFlush(&commandBuffer->binCl);
 
 		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->clearColor[0] = ((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->clearColor[1] = packVec4IntoABGR8(pColor->float32);
@@ -595,16 +595,16 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearDepthStencilImage)(
 	assert(i->usageBits & VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 	{ //Simplest case: just submit a job to clear the image
-		clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
+		clFit(&commandBuffer->binCl, sizeof(CLMarker));
 		clInsertNewCLMarker(&commandBuffer->binCl, &commandBuffer->handlesCl, &commandBuffer->shaderRecCl, commandBuffer->shaderRecCount, &commandBuffer->uniformsCl);
 
 		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->writeDepthStencilImage = i;
 
 		//insert reloc for render target
-		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clFit(&commandBuffer->handlesCl, 4);
 		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->handlesBufOffset + commandBuffer->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->handlesSize, i->boundMem->bo);
 
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
+		clFit(&commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
 		clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
 											 0, //double buffer in non ms mode
 											 0, //tile allocation block size
@@ -621,7 +621,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearDepthStencilImage)(
 		//which are what is used when a primitive is binned to a tile to
 		//figure out what new state packets need to be written to that tile's
 		//command list.
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
+		clFit(&commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
 		clInsertStartTileBinning(&commandBuffer->binCl);
 
 		//Increment the semaphore indicating that binning is done and
@@ -629,9 +629,9 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearDepthStencilImage)(
 		//until the FLUSH completes.
 		//The FLUSH caps all of our bin lists with a
 		//VC4_PACKET_RETURN.
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_INCREMENT_SEMAPHORE_length);
+		clFit(&commandBuffer->binCl, V3D21_INCREMENT_SEMAPHORE_length);
 		clInsertIncrementSemaphore(&commandBuffer->binCl);
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLUSH_length);
+		clFit(&commandBuffer->binCl, V3D21_FLUSH_length);
 		clInsertFlush(&commandBuffer->binCl);
 
 		((CLMarker*)getCPAptrFromOffset(commandBuffer->binCl.CPA, commandBuffer->binCl.currMarkerOffset))->clearDepth = (uint32_t)(pDepthStencil->depth * 0xffffff) & 0xffffff;
@@ -708,7 +708,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearAttachments)(
 		VkPipeline blitPipeline;
 		VkPipelineLayout blitPipelineLayout;
 
-		VkPipelineDepthStencilStateCreateInfo dsci = {};
+		VkPipelineDepthStencilStateCreateInfo dsci = {0};
 		dsci.depthCompareOp = VK_COMPARE_OP_ALWAYS;
 		dsci.depthTestEnable = 1;
 		dsci.depthWriteEnable = clearDepth;
@@ -748,7 +748,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdClearAttachments)(
 
 		for(uint32_t d = 0; d < rectCount; ++d)
 		{
-			VkViewport vp = {};
+			VkViewport vp = {0};
 			vp.x = pRects[d].rect.offset.x;
 			vp.y = pRects[d].rect.offset.y;
 			vp.width = pRects[d].rect.extent.width;

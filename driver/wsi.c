@@ -31,10 +31,10 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceDisplayPropertiesKHR)(
 		return VK_SUCCESS;
 	}
 
-	int arraySize = *pPropertyCount;
-	int elementsWritten = min(numDisplays, arraySize);
+	uint32_t arraySize = *pPropertyCount;
+	uint32_t elementsWritten = min(numDisplays, arraySize);
 
-	for(int c = 0; c < elementsWritten; ++c)
+	for(uint32_t c = 0; c < elementsWritten; ++c)
 	{
 		pProperties[c].display = displays[c].connectorID;
 		//fprintf(stderr, "display id %i\n", pProperties[c].display );
@@ -83,10 +83,10 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetDisplayModePropertiesKHR)(
 		return VK_SUCCESS;
 	}
 
-	int arraySize = *pPropertyCount;
-	int elementsWritten = min(numModes, arraySize);
+	uint32_t arraySize = *pPropertyCount;
+	uint32_t elementsWritten = min(numModes, arraySize);
 
-	for(int c = 0; c < elementsWritten; ++c)
+	for(uint32_t c = 0; c < elementsWritten; ++c)
 	{
 		_displayMode mode = { modes[c].connectorID, modes[c].modeID };
 		memcpy(&pProperties[c].displayMode, &mode, sizeof(_displayMode));
@@ -127,6 +127,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDisplayPlaneSurfaceKHR)(
 	*pSurface = surface;
 
 	PROFILEEND(RPIFUNC(vkCreateDisplayPlaneSurfaceKHR));
+
+	return VK_SUCCESS;
 }
 
 /*
@@ -281,10 +283,10 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR
 		return VK_SUCCESS;
 	}
 
-	int arraySize = *pPresentModeCount;
-	int elementsWritten = min(numSupportedPresentModes, arraySize);
+	uint32_t arraySize = *pPresentModeCount;
+	uint32_t elementsWritten = min(numSupportedPresentModes, arraySize);
 
-	for(int c = 0; c < elementsWritten; ++c)
+	for(uint32_t c = 0; c < elementsWritten; ++c)
 	{
 		pPresentModes[c] = supportedPresentModes[c];
 	}
@@ -345,11 +347,11 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateSwapchainKHR)(
 	s->numImages = pCreateInfo->minImageCount;
 	s->surface = pCreateInfo->surface;
 
-	for(int c = 0; c < pCreateInfo->minImageCount; ++c)
+	for(uint32_t c = 0; c < pCreateInfo->minImageCount; ++c)
 	{
 		s->inFlight[c] = 0;
 
-		VkImageCreateInfo imageCreateInfo = {};
+		VkImageCreateInfo imageCreateInfo = {0};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.format = pCreateInfo->imageFormat;
@@ -385,7 +387,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateSwapchainKHR)(
 		VkMemoryAllocateInfo ai;
 		ai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		ai.allocationSize = mr.size;
-		for(int d = 0; d < numMemoryTypes; ++d)
+		for(uint32_t d = 0; d < numMemoryTypes; ++d)
 		{
 			if(memoryTypes[d].propertyFlags == mr.memoryTypeBits)
 			{
@@ -437,10 +439,10 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkGetSwapchainImagesKHR)(
 		return VK_SUCCESS;
 	}
 
-	int arraySize = *pSwapchainImageCount;
-	int elementsWritten = min(s->numImages, arraySize);
+	uint32_t arraySize = *pSwapchainImageCount;
+	uint32_t elementsWritten = min(s->numImages, arraySize);
 
-	for(int c = 0; c < elementsWritten; ++c)
+	for(uint32_t c = 0; c < elementsWritten; ++c)
 	{
 		pSwapchainImages[c] = &s->images[c];
 	}
@@ -555,12 +557,12 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueuePresentKHR)(
 	assert(pPresentInfo);
 
 	//wait for semaphore in present info set by submit ioctl to make sure cls are flushed
-	for(int c = 0; c < pPresentInfo->waitSemaphoreCount; ++c)
+	for(uint32_t c = 0; c < pPresentInfo->waitSemaphoreCount; ++c)
 	{
 		sem_wait((sem_t*)pPresentInfo->pWaitSemaphores[c]);
 	}
 
-	for(int c = 0; c < pPresentInfo->swapchainCount; ++c)
+	for(uint32_t c = 0; c < pPresentInfo->swapchainCount; ++c)
 	{
 		_swapchain* s = pPresentInfo->pSwapchains[c];
 		modeset_present(controlFd, &s->images[pPresentInfo->pImageIndices[c]], s->surface, queue->lastEmitSeqno);
@@ -595,7 +597,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroySwapchainKHR)(
 
 	if(s)
 	{
-		for(int c = 0; c < s->numImages; ++c)
+		for(uint32_t c = 0; c < s->numImages; ++c)
 		{
 			RPIFUNC(vkFreeMemory)(device, s->images[c].boundMem, 0);
 			modeset_destroy_fb(controlFd, &s->images[c]);

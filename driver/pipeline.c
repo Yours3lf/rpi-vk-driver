@@ -29,6 +29,7 @@ void RPIFUNC(vkCmdBindPipeline)(VkCommandBuffer commandBuffer, VkPipelineBindPoi
 	PROFILEEND(RPIFUNC(vkCmdBindPipeline));
 }
 
+/**
 //multiple attachments
 void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, const VkPipelineDepthStencilStateCreateInfo* dsi, const VkPipelineColorBlendAttachmentState* bas, const VkAllocationCallbacks* pAllocator)
 {
@@ -176,6 +177,7 @@ void patchShaderDepthStencilBlending(uint64_t** instructions, uint32_t* size, co
 	*instructions = tmp;
 	*size = newSize;
 }
+/**/
 
 /*
  * https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#vkCreateGraphicsPipelines
@@ -196,7 +198,7 @@ VkResult RPIFUNC(vkCreateGraphicsPipelines)(VkDevice device, VkPipelineCache pip
 
 	//TODO flags
 
-	for(int c = 0; c < createInfoCount; ++c)
+	for(uint32_t c = 0; c < createInfoCount; ++c)
 	{
 		_pipeline* pip = ALLOCATE(sizeof(_pipeline), 1, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
 		if(!pip)
@@ -208,7 +210,7 @@ VkResult RPIFUNC(vkCreateGraphicsPipelines)(VkDevice device, VkPipelineCache pip
 		memset(pip->names, 0, sizeof(char*)*6);
 		memset(pip->modules, 0, sizeof(_shaderModule*)*6);
 
-		for(int d = 0; d < pCreateInfos[c].stageCount; ++d)
+		for(uint32_t d = 0; d < pCreateInfos[c].stageCount; ++d)
 		{
 			uint32_t idx = ulog2(pCreateInfos[c].pStages[d].stage);
 			pip->modules[idx] = pCreateInfos[c].pStages[d].module;

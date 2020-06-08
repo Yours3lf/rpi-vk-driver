@@ -42,24 +42,24 @@ void createFullscreenQuad(VkDevice device, VkBuffer* fsqVertexBuffer, VkDeviceMe
 	{ //create fsq vertex buffer
 		unsigned vboSize = sizeof(float) * 4 * 3 * 2; //4 * 3 x vec2
 
-		VkBufferCreateInfo ci = {};
+		VkBufferCreateInfo ci = {0};
 		ci.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		ci.size = vboSize;
 		ci.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-		VkResult res = RPIFUNC(vkCreateBuffer)(device, &ci, 0, fsqVertexBuffer);
+		RPIFUNC(vkCreateBuffer)(device, &ci, 0, fsqVertexBuffer);
 
 		RPIFUNC(vkGetBufferMemoryRequirements)(device, *fsqVertexBuffer, &mr);
 
 		VkPhysicalDeviceMemoryProperties pdmp;
 		RPIFUNC(vkGetPhysicalDeviceMemoryProperties)(((_device*)device)->dev, &pdmp);
 
-		VkMemoryAllocateInfo mai = {};
+		VkMemoryAllocateInfo mai = {0};
 		mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		mai.allocationSize = mr.size;
 		mai.memoryTypeIndex = getMemoryTypeIndex(pdmp, mr.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-		res = RPIFUNC(vkAllocateMemory)(device, &mai, 0, fsqVertexBufferMemory);
+		RPIFUNC(vkAllocateMemory)(device, &mai, 0, fsqVertexBufferMemory);
 
 		float vertices[] =
 		{
@@ -73,11 +73,11 @@ void createFullscreenQuad(VkDevice device, VkBuffer* fsqVertexBuffer, VkDeviceMe
 		};
 
 		void* data;
-		res = RPIFUNC(vkMapMemory)(device, *fsqVertexBufferMemory, 0, mr.size, 0, &data);
+		RPIFUNC(vkMapMemory)(device, *fsqVertexBufferMemory, 0, mr.size, 0, &data);
 		memcpy(data, vertices, vboSize);
 		RPIFUNC(vkUnmapMemory)(device, *fsqVertexBufferMemory);
 
-		res = RPIFUNC(vkBindBufferMemory)(device, *fsqVertexBuffer, *fsqVertexBufferMemory, 0);
+		RPIFUNC(vkBindBufferMemory)(device, *fsqVertexBuffer, *fsqVertexBufferMemory, 0);
 	}
 }
 
@@ -89,7 +89,7 @@ void createDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool)
 	descriptorPoolSizes[1].descriptorCount = 2048;
 	descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
-	VkDescriptorPoolCreateInfo descriptorPoolCI = {};
+	VkDescriptorPoolCreateInfo descriptorPoolCI = {0};
 	descriptorPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	descriptorPoolCI.poolSizeCount = 2;
 	descriptorPoolCI.pPoolSizes = descriptorPoolSizes;
@@ -106,13 +106,13 @@ void createDescriptorSetLayouts(VkDevice device, VkDescriptorSetLayout* bufferDs
 	assert(textureDsl);
 
 	//create blit dsl
-	VkDescriptorSetLayoutBinding setLayoutBinding = {};
+	VkDescriptorSetLayoutBinding setLayoutBinding = {0};
 	setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
 	setLayoutBinding.binding = 0;
 	setLayoutBinding.descriptorCount = 1;
 	setLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {};
+	VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {0};
 	descriptorLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	descriptorLayoutCI.bindingCount = 1;
 	descriptorLayoutCI.pBindings = &setLayoutBinding;
@@ -125,7 +125,7 @@ void createDescriptorSetLayouts(VkDevice device, VkDescriptorSetLayout* bufferDs
 
 void createSampler(VkDevice device, VkSampler* nearestTextureSampler, VkSampler* linearTextureSampler)
 {
-	VkSamplerCreateInfo sampler = {};
+	VkSamplerCreateInfo sampler = {0};
 	sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	sampler.magFilter = VK_FILTER_NEAREST;
 	sampler.minFilter = VK_FILTER_NEAREST;
@@ -160,7 +160,7 @@ void createRendertarget(VkDevice device, uint32_t baseLayer, uint32_t baseMip, u
 		format = VK_FORMAT_R8G8B8A8_UNORM;
 	}
 
-	VkImageViewCreateInfo view = {};
+	VkImageViewCreateInfo view = {0};
 	view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	view.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	view.format = format;
@@ -176,7 +176,7 @@ void createRendertarget(VkDevice device, uint32_t baseLayer, uint32_t baseMip, u
 	view.image = textureImage;
 	RPIFUNC(vkCreateImageView)(device, &view, 0, textureView);
 
-	VkAttachmentDescription attachmentDescription = {};
+	VkAttachmentDescription attachmentDescription = {0};
 	attachmentDescription.format = format;
 	attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -188,7 +188,7 @@ void createRendertarget(VkDevice device, uint32_t baseLayer, uint32_t baseMip, u
 
 	VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 
-	VkSubpassDescription subpassDescription = {};
+	VkSubpassDescription subpassDescription = {0};
 	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpassDescription.colorAttachmentCount = 1;
 	subpassDescription.pColorAttachments = &colorReference;
@@ -210,7 +210,7 @@ void createRendertarget(VkDevice device, uint32_t baseLayer, uint32_t baseMip, u
 	dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-	VkRenderPassCreateInfo renderPassInfo = {};
+	VkRenderPassCreateInfo renderPassInfo = {0};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	renderPassInfo.attachmentCount = 1;
 	renderPassInfo.pAttachments = &attachmentDescription;
@@ -223,7 +223,7 @@ void createRendertarget(VkDevice device, uint32_t baseLayer, uint32_t baseMip, u
 
 	VkImageView attachments = *textureView;
 
-	VkFramebufferCreateInfo framebufferCreateInfo = {};
+	VkFramebufferCreateInfo framebufferCreateInfo = {0};
 	framebufferCreateInfo.renderPass = *offscreenRenderPass;
 	framebufferCreateInfo.attachmentCount = 1;
 	framebufferCreateInfo.pAttachments = &attachments;
@@ -265,32 +265,32 @@ void createPipeline(VkDevice device, uint32_t needTexcoords, uint32_t numVertUni
 		vertexInputAttributeDescription[1].format = VK_FORMAT_R32G32_SFLOAT;
 	}
 
-	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {0};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.vertexAttributeDescriptionCount = needTexcoords ? 2 : 1;
 	vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttributeDescription;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
 
-	VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {};
+	VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {0};
 	pipelineIACreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	pipelineIACreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-	VkPipelineRasterizationStateCreateInfo rastCreateInfo = {};
+	VkPipelineRasterizationStateCreateInfo rastCreateInfo = {0};
 	rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
 	rastCreateInfo.cullMode = VK_CULL_MODE_NONE;
 	rastCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rastCreateInfo.lineWidth = 1.0f;
 
-	VkPipelineMultisampleStateCreateInfo pipelineMSCreateInfo = {};
+	VkPipelineMultisampleStateCreateInfo pipelineMSCreateInfo = {0};
 	pipelineMSCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 
-	VkPipelineColorBlendAttachmentState blendAttachState = {};
+	VkPipelineColorBlendAttachmentState blendAttachState = {0};
 	blendAttachState.colorWriteMask = 0xf;
 	blendAttachState.blendEnable = false;
 
-	VkPipelineColorBlendStateCreateInfo blendCreateInfo = {};
+	VkPipelineColorBlendStateCreateInfo blendCreateInfo = {0};
 	blendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	blendCreateInfo.attachmentCount = 1;
 	blendCreateInfo.pAttachments = &blendAttachState;
@@ -320,7 +320,7 @@ void createPipeline(VkDevice device, uint32_t needTexcoords, uint32_t numVertUni
 	shaderStageCreateInfo[1].module = blitShaderModule;
 	shaderStageCreateInfo[1].pName = "main";
 
-	VkPipelineLayoutCreateInfo pipelineLayoutCI = {};
+	VkPipelineLayoutCreateInfo pipelineLayoutCI = {0};
 	pipelineLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutCI.setLayoutCount = 1;
 	pipelineLayoutCI.pSetLayouts = &blitDsl;
@@ -330,17 +330,17 @@ void createPipeline(VkDevice device, uint32_t needTexcoords, uint32_t numVertUni
 
 	VkDynamicState dynState = VK_DYNAMIC_STATE_VIEWPORT;
 
-	VkPipelineDynamicStateCreateInfo pdsci = {};
+	VkPipelineDynamicStateCreateInfo pdsci = {0};
 	pdsci.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	pdsci.dynamicStateCount = 1;
 	pdsci.pDynamicStates = &dynState;
 
-	VkPipelineViewportStateCreateInfo pvsci = {};
+	VkPipelineViewportStateCreateInfo pvsci = {0};
 	pvsci.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	pvsci.viewportCount = 0;
 	pvsci.scissorCount = 0;
 
-	VkGraphicsPipelineCreateInfo pipelineInfo = {};
+	VkGraphicsPipelineCreateInfo pipelineInfo = {0};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.stageCount = 2;
 	pipelineInfo.pStages = &shaderStageCreateInfo[0];
@@ -356,7 +356,7 @@ void createPipeline(VkDevice device, uint32_t needTexcoords, uint32_t numVertUni
 	pipelineInfo.pDepthStencilState = &depthStencilState;
 	pipelineInfo.layout = *blitPipelineLayout;
 
-	VkResult res = RPIFUNC(vkCreateGraphicsPipelines)(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, blitPipeline);
+	RPIFUNC(vkCreateGraphicsPipelines)(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, blitPipeline);
 }
 
 void createBufferToTextureShaderModule(VkDevice device, VkShaderModule* blitShaderModule)
@@ -507,11 +507,6 @@ void createBufferToTextureShaderModule(VkDevice device, VkShaderModule* blitShad
 			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 				"\0";
 
-	char* blit_asm_strings[] =
-	{
-		(char*)cs_asm_code, (char*)vs_asm_code, (char*)blit_fs_asm_code, 0
-	};
-
 	VkRpiAssemblyMappingEXT vertexMappings[] = {
 		//vertex shader uniforms
 		{
@@ -600,7 +595,7 @@ void createBufferToTextureShaderModule(VkDevice device, VkShaderModule* blitShad
 	VkRpiAssemblyMappingEXT* asm_mappings[4] = {};
 	uint32_t asm_mappings_sizes[4] = {};
 
-	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {};
+	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {0};
 	shaderModuleCreateInfo.instructions = asm_ptrs;
 	shaderModuleCreateInfo.numInstructions = asm_sizes;
 	shaderModuleCreateInfo.mappings = asm_mappings;
@@ -645,7 +640,7 @@ void createBufferToTextureShaderModule(VkDevice device, VkShaderModule* blitShad
 	//words start here
 	spirv[5] = 1 << 16;
 
-	VkShaderModuleCreateInfo smci = {};
+	VkShaderModuleCreateInfo smci = {0};
 	smci.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	smci.codeSize = sizeof(uint32_t)*6;
 	smci.pCode = spirv;
@@ -800,11 +795,6 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 			"sig_unlock_score ; nop = nop(r0, r0) ; nop = nop(r0, r0) ;"
 				"\0";
 
-	char* blit_asm_strings[] =
-	{
-		(char*)cs_asm_code, (char*)vs_asm_code, (char*)sample_fs_asm_code, 0
-	};
-
 	VkRpiAssemblyMappingEXT vertexMappings[] = {
 		//vertex shader uniforms
 		{
@@ -902,7 +892,7 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 	VkRpiAssemblyMappingEXT* asm_mappings[4] = {};
 	uint32_t asm_mappings_sizes[4] = {};
 
-	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {};
+	VkRpiShaderModuleAssemblyCreateInfoEXT shaderModuleCreateInfo = {0};
 	shaderModuleCreateInfo.instructions = asm_ptrs;
 	shaderModuleCreateInfo.numInstructions = asm_sizes;
 	shaderModuleCreateInfo.mappings = asm_mappings;
@@ -947,7 +937,7 @@ void createTextureToTextureShaderModule(VkDevice device, VkShaderModule* blitSha
 	//words start here
 	spirv[5] = 1 << 16;
 
-	VkShaderModuleCreateInfo smci = {};
+	VkShaderModuleCreateInfo smci = {0};
 	smci.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	smci.codeSize = sizeof(uint32_t)*6;
 	smci.pCode = spirv;
@@ -1001,7 +991,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyBufferToImage)(
 		uint32_t pixelBpp = getFormatBpp(img->format);
 
 		VkBufferView texelBufferView;
-		VkBufferViewCreateInfo bvci = {};
+		VkBufferViewCreateInfo bvci = {0};
 		bvci.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
 		bvci.buffer = buf;
 		bvci.format = img->format;
@@ -1017,14 +1007,14 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyBufferToImage)(
 		VkPipelineLayout blitPipelineLayout;
 
 		//create blit descriptor set
-		VkDescriptorSetAllocateInfo allocInfo = {};
+		VkDescriptorSetAllocateInfo allocInfo = {0};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = device->emulDescriptorPool;
 		allocInfo.descriptorSetCount = 1;
 		allocInfo.pSetLayouts = &device->emulBufferDsl;
 		RPIFUNC(vkAllocateDescriptorSets)(device, &allocInfo, &blitDescriptorSet);
 
-		VkWriteDescriptorSet writeDescriptorSet = {};
+		VkWriteDescriptorSet writeDescriptorSet = {0};
 		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writeDescriptorSet.dstSet = blitDescriptorSet;
 		writeDescriptorSet.dstBinding = 0;
@@ -1042,7 +1032,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyBufferToImage)(
 			.color = { 1.0f, 0.0f, 1.0f, 1.0f }
 		};
 
-		VkRenderPassBeginInfo renderPassInfo = {};
+		VkRenderPassBeginInfo renderPassInfo = {0};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderArea.offset.x = 0;
 		renderPassInfo.renderArea.offset.y = 0;
@@ -1057,7 +1047,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyBufferToImage)(
 
 		RPIFUNC(vkCmdBindPipeline)(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipeline);
 
-		VkViewport vp = {};
+		VkViewport vp = {0};
 		vp.x = 0.0f;
 		vp.y = 0.0f;
 		vp.width = (float)width;
@@ -1154,7 +1144,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		VkPipelineLayout blitPipelineLayout;
 
 		VkSampler mipSampler;
-		VkSamplerCreateInfo samplerCI = {};
+		VkSamplerCreateInfo samplerCI = {0};
 		samplerCI.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		samplerCI.magFilter = filter == VK_FILTER_LINEAR ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
 		samplerCI.minFilter = filter == VK_FILTER_LINEAR ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
@@ -1166,9 +1156,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		samplerCI.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCI.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 		RPIFUNC(vkCreateSampler)(device, &samplerCI, 0, &mipSampler);
-		_sampler* s = mipSampler;
 
-		VkImageViewCreateInfo view = {};
+		VkImageViewCreateInfo view = {0};
 		view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		view.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		view.format = srcImg->format;
@@ -1181,7 +1170,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		RPIFUNC(vkCreateImageView)(device, &view, 0, &srcTextureView);
 
 		//create blit descriptor set
-		VkDescriptorSetAllocateInfo allocInfo = {};
+		VkDescriptorSetAllocateInfo allocInfo = {0};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = device->emulDescriptorPool;
 		allocInfo.descriptorSetCount = 1;
@@ -1193,7 +1182,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageInfo.sampler = mipSampler;
 
-		VkWriteDescriptorSet writeDescriptorSet = {};
+		VkWriteDescriptorSet writeDescriptorSet = {0};
 		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writeDescriptorSet.dstSet = blitDescriptorSet;
 		writeDescriptorSet.dstBinding = 0;
@@ -1211,7 +1200,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 			.color = { 1.0f, 0.0f, 1.0f, 1.0f }
 		};
 
-		VkRenderPassBeginInfo renderPassInfo = {};
+		VkRenderPassBeginInfo renderPassInfo = {0};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderArea.offset.x = 0;
 		renderPassInfo.renderArea.offset.y = 0;
@@ -1226,7 +1215,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 
 		RPIFUNC(vkCmdBindPipeline)(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, blitPipeline);
 
-		VkViewport vp = {};
+		VkViewport vp = {0};
 		vp.x = (float)pRegions[c].dstOffsets[0].x;
 		vp.y = (float)pRegions[c].dstOffsets[0].y;
 		vp.width = (float)dstWidth;

@@ -93,7 +93,7 @@ void clInsertNewCLMarker(ControlList* cl,
 						 uint32_t shaderRecCount,
 						 ControlList* uniformsCL);
 void clCloseCurrentMarker(ControlList* cl, ControlList* handlesCL, ControlList* shaderRecCL, uint32_t shaderRecCount, ControlList* uniformsCL);
-void clInsertData(ControlList* cl, uint32_t size, uint8_t* data);
+void clInsertData(ControlList* cl, uint32_t size, void* data);
 void clInsertUniformConstant(ControlList* cl, uint32_t data);
 void clInsertUniformXYScale(ControlList* cl, float data);
 void clInsertUniformZOffset(ControlList* cl, float data);

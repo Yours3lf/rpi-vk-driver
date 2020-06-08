@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-PoolAllocator createPoolAllocator(char* b, unsigned bs, unsigned s)
+PoolAllocator createPoolAllocator(void* b, unsigned bs, unsigned s)
 {
 	assert(b); //only allocated memory
 	assert(bs >= sizeof(void*)); //we need to be able to store
@@ -14,7 +14,7 @@ PoolAllocator createPoolAllocator(char* b, unsigned bs, unsigned s)
 	PoolAllocator pa =
 	{
 		.buf = b,
-		.nextFreeBlock = (uint32_t*)b,
+		.nextFreeBlock = b,
 		.blockSize = bs,
 		.size = s
 	};
@@ -55,7 +55,7 @@ void* poolAllocate(PoolAllocator* pa)
 	void* ret = pa->nextFreeBlock;
 
 	//set next free block to the one the current next points to
-	pa->nextFreeBlock = (uint32_t*)*pa->nextFreeBlock;
+	pa->nextFreeBlock = *(uint32_t*)pa->nextFreeBlock;
 
 	return ret;
 }

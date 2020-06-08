@@ -179,17 +179,17 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdPipelineBarrier)(
 	//VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
 	//VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR
 
-	for(int c = 0; c < memoryBarrierCount; ++c)
+	for(uint32_t c = 0; c < memoryBarrierCount; ++c)
 	{
 		//TODO
 	}
 
-	for(int c = 0; c < bufferMemoryBarrierCount; ++c)
+	for(uint32_t c = 0; c < bufferMemoryBarrierCount; ++c)
 	{
 		//TODO
 	}
 
-	for(int c = 0; c < imageMemoryBarrierCount; ++c)
+	for(uint32_t c = 0; c < imageMemoryBarrierCount; ++c)
 	{
 		_image* i = pImageMemoryBarriers[c].image;
 
@@ -217,9 +217,9 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkDeviceWaitIdle)(
 
 	assert(device);
 
-	for(int c = 0; c < numQueueFamilies; ++c)
+	for(uint32_t c = 0; c < numQueueFamilies; ++c)
 	{
-		for(int d = 0; d < device->numQueues[c]; ++d)
+		for(uint32_t d = 0; d < device->numQueues[c]; ++d)
 		{
 			uint64_t lastFinishedSeqno;
 			uint64_t timeout = WAIT_TIMEOUT_INFINITE;

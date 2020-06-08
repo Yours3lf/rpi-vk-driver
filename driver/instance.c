@@ -5,9 +5,9 @@
 #include "declarations.h"
 
 #if EXPOSE_DRIVER == 0
-	#define RETFUNC(f) if(!strcmp(pName, #f)) return &rpi_##f
+	#define RETFUNC(f) if(!strcmp(pName, #f)) return (PFN_vkVoidFunction)&rpi_##f
 #else
-	#define RETFUNC(f) if(!strcmp(pName, #f)) return &f
+	#define RETFUNC(f) if(!strcmp(pName, #f)) return (PFN_vkVoidFunction)&f
 #endif
 
 static uint32_t loaderVersion = -1;
@@ -24,7 +24,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vk_icdNegotiateLoaderICDInterfaceVersion(uint32_t
 
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(VkInstance instance, const char* pName)
 {
-	if(loaderVersion == -1)
+	if(loaderVersion == ~0u)
 	{
 		//dealing with legacy ICD loader, as vk_icdNegotiateLoaderICDInterfaceVersion has not been called
 		loaderVersion = 1;
@@ -74,10 +74,10 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkEnumerateInstanceExtensionProperties)(
 		return VK_SUCCESS;
 	}
 
-	int arraySize = *pPropertyCount;
-	int elementsWritten = min(numInstanceExtensions, arraySize);
+	uint32_t arraySize = *pPropertyCount;
+	uint32_t elementsWritten = min(numInstanceExtensions, arraySize);
 
-	for(int c = 0; c < elementsWritten; ++c)
+	for(uint32_t c = 0; c < elementsWritten; ++c)
 	{
 		pProperties[c] = instanceExtensions[c];
 	}
@@ -131,7 +131,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateInstance)(
 		assert(pCreateInfo->ppEnabledExtensionNames);
 	}
 
-	for(int c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
+	for(uint32_t c = 0; c < pCreateInfo->enabledExtensionCount; ++c)
 	{
 		int findres = findInstanceExtension(pCreateInfo->ppEnabledExtensionNames[c]);
 		if(findres > -1)

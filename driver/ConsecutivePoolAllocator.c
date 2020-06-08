@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
-ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, unsigned s)
+ConsecutivePoolAllocator createConsecutivePoolAllocator(void* b, unsigned bs, unsigned s)
 {
 	assert(b); //only allocated memory
 	assert(bs >= sizeof(void*)); //we need to be able to store
@@ -15,7 +15,7 @@ ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, un
 	ConsecutivePoolAllocator pa =
 	{
 		.buf = b,
-		.nextFreeBlock = (uint32_t*)b,
+		.nextFreeBlock = b,
 		.blockSize = bs,
 		.size = s,
 		.numFreeBlocks = s / bs
@@ -120,7 +120,7 @@ uint32_t consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlock
 
 	pa->numFreeBlocks -= numBlocks;
 
-	return (char*)ptr - pa->buf;
+	return (char*)ptr - (char*)pa->buf;
 }
 
 //free numBlocks consecutive memory
@@ -228,7 +228,7 @@ uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMe
 
 			pa->numFreeBlocks -= 1;
 
-			return (char*)currentMem - pa->buf;
+			return (char*)currentMem - (char*)pa->buf;
 		}
 
 		prevPtr = listPtr;

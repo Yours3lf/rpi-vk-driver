@@ -54,7 +54,7 @@ void clInsertNewCLMarker(ControlList* cl,
 	assert(shaderRecCL);
 	assert(uniformsCL);
 
-	CLMarker marker = {};
+	CLMarker marker = {0};
 	marker.memGuard = 0xDDDDDDDD;
 	marker.handlesBufOffset = 0;
 	marker.shaderRecBufOffset = 0;
@@ -63,13 +63,13 @@ void clInsertNewCLMarker(ControlList* cl,
 	marker.numDrawCallsSubmitted = 0;
 
 	//close current marker
-	if(cl->currMarkerOffset != -1 && !((CLMarker*)getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset))->size)
+	if(cl->currMarkerOffset != ~0u && !((CLMarker*)getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset))->size)
 	{
 		clCloseCurrentMarker(cl, handlesCL, shaderRecCL, shaderRecCount, uniformsCL);
 	}
 
 	//if this is not the first marker
-	if(cl->currMarkerOffset != -1)
+	if(cl->currMarkerOffset != ~0u)
 	{
 		CLMarker* currMarker = getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset);
 		marker.handlesBufOffset = currMarker->handlesBufOffset + currMarker->handlesSize;
@@ -79,7 +79,7 @@ void clInsertNewCLMarker(ControlList* cl,
 	}
 
 	*(CLMarker*)getCPAptrFromOffset(cl->CPA, cl->nextFreeByteOffset) = marker;
-	if(cl->currMarkerOffset != -1)
+	if(cl->currMarkerOffset != ~0u)
 	{
 		((CLMarker*)getCPAptrFromOffset(cl->CPA, cl->currMarkerOffset))->nextMarkerOffset = (cl->nextFreeByteOffset - cl->offset);
 	}
@@ -102,7 +102,7 @@ void clCloseCurrentMarker(ControlList* cl, ControlList* handlesCL, ControlList* 
 	currMarker->shaderRecCount = shaderRecCount - currMarker->shaderRecCount; //update shader rec count to reflect added shader recs
 }
 
-void clInsertData(ControlList* cl, uint32_t size, uint8_t* data)
+void clInsertData(ControlList* cl, uint32_t size, void* data)
 {
 	assert(cl);
 	assert(cl->CPA);

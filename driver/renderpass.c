@@ -131,7 +131,7 @@ void RPIFUNC(vkCmdBeginRenderPass)(VkCommandBuffer commandBuffer, const VkRender
 	}
 
 
-	clFit(commandBuffer, &commandBuffer->binCl, sizeof(CLMarker));
+	clFit(&commandBuffer->binCl, sizeof(CLMarker));
 	clInsertNewCLMarker(&commandBuffer->binCl, &cb->handlesCl, &cb->shaderRecCl, cb->shaderRecCount, &cb->uniformsCl);
 	CLMarker* currMarker = getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset);
 	currMarker->writeImage = writeImage;
@@ -199,37 +199,37 @@ void RPIFUNC(vkCmdBeginRenderPass)(VkCommandBuffer commandBuffer, const VkRender
 
 	if(writeImage)
 	{
-		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clFit(&commandBuffer->handlesCl, 4);
 		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeImage->boundMem->bo);
 	}
 
 	if(readImage)
 	{
-		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clFit(&commandBuffer->handlesCl, 4);
 		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, readImage->boundMem->bo);
 	}
 
 	if(writeDepthStencilImage)
 	{
-		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clFit(&commandBuffer->handlesCl, 4);
 		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeDepthStencilImage->boundMem->bo);
 	}
 
 	if(readDepthStencilImage)
 	{
-		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clFit(&commandBuffer->handlesCl, 4);
 		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, readDepthStencilImage->boundMem->bo);
 	}
 
 	if(writeMSAAimage)
 	{
-		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clFit(&commandBuffer->handlesCl, 4);
 		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeMSAAimage->boundMem->bo);
 	}
 
 	if(writeMSAAdepthStencilImage)
 	{
-		clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+		clFit(&commandBuffer->handlesCl, 4);
 		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeMSAAdepthStencilImage->boundMem->bo);
 	}
 
@@ -264,7 +264,7 @@ void RPIFUNC(vkCmdBeginRenderPass)(VkCommandBuffer commandBuffer, const VkRender
 		width = width < 4 ? 4 : width;
 	}
 
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
+	clFit(&commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
 	clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
 										 0, //double buffer in non ms mode
 										 0, //tile allocation block size
@@ -281,7 +281,7 @@ void RPIFUNC(vkCmdBeginRenderPass)(VkCommandBuffer commandBuffer, const VkRender
 	//which are what is used when a primitive is binned to a tile to
 	//figure out what new state packets need to be written to that tile's
 	//command list.
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
+	clFit(&commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
 	clInsertStartTileBinning(&commandBuffer->binCl);
 
 	((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->perfmonID = cb->perfmonID;
@@ -311,9 +311,9 @@ void RPIFUNC(vkCmdEndRenderPass)(VkCommandBuffer commandBuffer)
 	//until the FLUSH completes.
 	//The FLUSH caps all of our bin lists with a
 	//VC4_PACKET_RETURN.
-	clFit(commandBuffer, &cb->binCl, V3D21_INCREMENT_SEMAPHORE_length);
+	clFit(&cb->binCl, V3D21_INCREMENT_SEMAPHORE_length);
 	clInsertIncrementSemaphore(&cb->binCl);
-	clFit(commandBuffer, &cb->binCl, V3D21_FLUSH_length);
+	clFit(&cb->binCl, V3D21_FLUSH_length);
 	clInsertFlush(&cb->binCl);
 
 	cb->currRenderPass = 0;
@@ -362,7 +362,7 @@ VkResult RPIFUNC(vkCreateRenderPass)(VkDevice device, const VkRenderPassCreateIn
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
-	for(int c = 0; c < rp->numSubpasses; ++c)
+	for(uint32_t c = 0; c < rp->numSubpasses; ++c)
 	{
 		rp->subpasses[c].flags = pCreateInfo->pSubpasses[c].flags;
 		rp->subpasses[c].pipelineBindPoint = pCreateInfo->pSubpasses[c].pipelineBindPoint;
@@ -479,7 +479,7 @@ void RPIFUNC(vkDestroyRenderPass)(VkDevice device, VkRenderPass renderPass, cons
 	{
 		FREE(rp->subpassDependencies);
 
-		for(int c = 0; c < rp->numSubpasses; ++c)
+		for(uint32_t c = 0; c < rp->numSubpasses; ++c)
 		{
 			FREE(rp->subpasses[c].pInputAttachments);
 			FREE(rp->subpasses[c].pColorAttachments);

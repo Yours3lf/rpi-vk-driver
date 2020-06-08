@@ -713,7 +713,7 @@ void parse_op(char** str, qpu_alu_type* type, qpu_op_add* op_add, qpu_op_mul* op
 	*str += 1;
 }
 
-void parse_args_alu(char** str, qpu_mux* in_a, qpu_mux* in_b, uint8_t* raddr_a, uint8_t* raddr_b, uint8_t is_si)
+void parse_args_alu(char** str, qpu_mux* in_a, qpu_mux* in_b, qpu_raddr* raddr_a, qpu_raddr* raddr_b, uint8_t is_si)
 {
 	char* arg = strtok(*str, " \n\v\f\r\t,");
 
@@ -835,7 +835,7 @@ void parse_args_sem(char** str, uint8_t* sem, uint32_t* imm32)
 	*str += 1;
 }
 
-void parse_args_branch(char** str, uint32_t* imm32, qpu_branch_cond* branch_cond, uint8_t* raddr_a)
+void parse_args_branch(char** str, uint32_t* imm32, qpu_branch_cond* branch_cond, qpu_raddr* raddr_a)
 {
 	char* arg = strtok(*str, " \n\v\f\r\t,");
 
@@ -973,8 +973,8 @@ void assemble_qpu_asm(char* str, uint64_t* instructions)
 		qpu_cond cond_add = QPU_COND_NEVER;
 		qpu_waddr waddr_add = QPU_W_NOP;
 		qpu_waddr waddr_mul = QPU_W_NOP;
-		qpu_waddr raddr_a = QPU_R_NOP;
-		qpu_waddr raddr_b = QPU_R_NOP;
+		qpu_raddr raddr_a = QPU_R_NOP;
+		qpu_raddr raddr_b = QPU_R_NOP;
 		uint8_t pack_unpack_select = 0;
 		uint8_t pack_mode = QPU_PACK_A_NOP;
 		qpu_unpack unpack_mode = QPU_UNPACK_NOP;

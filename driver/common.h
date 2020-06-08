@@ -63,7 +63,6 @@ typedef struct VkQueue_T
 	uint64_t lastEmitSeqno;
 	uint64_t lastFinishedSeqno;
 	_device* dev;
-	struct sem_t* seqnoSem;
 } _queue;
 
 typedef struct VkCommandPool_T
@@ -134,7 +133,7 @@ typedef struct VkDevice_T
 	VkPhysicalDeviceFeatures enabledFeatures;
 	_physicalDevice* dev;
 	_queue* queues[numQueueFamilies];
-	int numQueues[numQueueFamilies];
+	uint32_t numQueues[numQueueFamilies];
 
 	//emulation resources
 	VkBuffer emulFsqVertexBuffer;
@@ -548,8 +547,8 @@ typedef struct VkDisplayModeKHR_T
 uint32_t getFormatBpp(VkFormat f);
 uint32_t packVec4IntoABGR8(const float rgba[4]);
 void createImageBO(_image* i);
-int findInstanceExtension(char* name);
-int findDeviceExtension(char* name);
+int findInstanceExtension(const char* name);
+int findDeviceExtension(const char* name);
 uint32_t isLTformat(uint32_t bpp, uint32_t width, uint32_t height);
 void getUTileDimensions(uint32_t bpp, uint32_t* tileW, uint32_t* tileH);
 uint32_t roundUp(uint32_t numToRound, uint32_t multiple);
@@ -583,7 +582,7 @@ uint8_t getTextureDataType(VkFormat format);
 uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter);//, float maxLod);
 uint8_t getWrapMode(VkSamplerAddressMode mode);
 uint32_t getRenderTargetFormatVC4(VkFormat format);
-void clFit(VkCommandBuffer cb, ControlList* cl, uint32_t commandSize);
+void clFit(ControlList* cl, uint32_t commandSize);
 void clDump(void* cl, uint32_t size);
 void setupEmulationResources(VkDevice device);
 void setupClearEmulationResources(VkDevice device);

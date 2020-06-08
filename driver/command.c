@@ -54,8 +54,6 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateCommandPool)(
 	int consecutiveBlockNumber = 512;
 	int consecutivePoolSize = consecutiveBlockNumber * consecutiveBlockSize;
 
-	static int counter = 0;
-
 	//if(pCreateInfo->flags & VK_COMMAND_POOL_CREATE_TRANSIENT_BIT)
 	{
 		//use pool allocator
@@ -106,7 +104,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAllocateCommandBuffers)(
 
 	//if(cp->usePoolAllocator)
 	{
-		for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
+		for(uint32_t c = 0; c < pAllocateInfo->commandBufferCount; ++c)
 		{
 			pCommandBuffers[c] = poolAllocate(&cp->pa);
 
@@ -153,25 +151,25 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAllocateCommandBuffers)(
 
 			pCommandBuffers[c]->perfmonID = 0;
 
-			if(pCommandBuffers[c]->binCl.offset == -1)
+			if(pCommandBuffers[c]->binCl.offset == ~0u)
 			{
 				res = VK_ERROR_OUT_OF_HOST_MEMORY;
 				break;
 			}
 
-			if(pCommandBuffers[c]->handlesCl.offset == -1)
+			if(pCommandBuffers[c]->handlesCl.offset == ~0u)
 			{
 				res = VK_ERROR_OUT_OF_HOST_MEMORY;
 				break;
 			}
 
-			if(pCommandBuffers[c]->shaderRecCl.offset == -1)
+			if(pCommandBuffers[c]->shaderRecCl.offset == ~0u)
 			{
 				res = VK_ERROR_OUT_OF_HOST_MEMORY;
 				break;
 			}
 
-			if(pCommandBuffers[c]->uniformsCl.offset == -1)
+			if(pCommandBuffers[c]->uniformsCl.offset == ~0u)
 			{
 				res = VK_ERROR_OUT_OF_HOST_MEMORY;
 				break;
@@ -183,7 +181,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAllocateCommandBuffers)(
 	{
 		//if(cp->usePoolAllocator)
 		{
-			for(int c = 0; c < pAllocateInfo->commandBufferCount; ++c)
+			for(uint32_t c = 0; c < pAllocateInfo->commandBufferCount; ++c)
 			{
 				consecutivePoolFree(&cp->cpa, getCPAptrFromOffset(&cp->cpa, pCommandBuffers[c]->binCl.offset), pCommandBuffers[c]->binCl.numBlocks);
 				consecutivePoolFree(&cp->cpa, getCPAptrFromOffset(&cp->cpa, pCommandBuffers[c]->handlesCl.offset), pCommandBuffers[c]->handlesCl.numBlocks);
@@ -283,423 +281,426 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 
 	assert(queue);
 
-	//TODO this is incorrect
-	//see sync.c
-	//TODO: deal with pSubmits->pWaitDstStageMask
-	for(int c = 0; c < pSubmits->waitSemaphoreCount; ++c)
+	for(uint32_t z = 0; z < submitCount; ++z)
 	{
-		sem_wait((sem_t*)pSubmits->pWaitSemaphores[c]);
-	}
+		const VkSubmitInfo* submitInfo = &pSubmits[z];
 
-	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
-	{
-		if(pSubmits->pCommandBuffers[c]->state == CMDBUF_STATE_EXECUTABLE)
+		//TODO this is incorrect
+		//see sync.c
+		//TODO: deal with pSubmits->pWaitDstStageMask
+		for(uint32_t c = 0; c < submitInfo->waitSemaphoreCount; ++c)
 		{
-			pSubmits->pCommandBuffers[c]->state = CMDBUF_STATE_PENDING;
-		}
-	}
-
-	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
-	{
-		VkCommandBuffer cmdbuf = pSubmits->pCommandBuffers[c];
-
-		if(cmdbuf->binCl.currMarkerOffset == -1)
-		{
-			//no markers recorded yet, skip
-			continue;
+			sem_wait((sem_t*)submitInfo->pWaitSemaphores[c]);
 		}
 
-		//first entry is assumed to be a marker
-		CLMarker* marker = getCPAptrFromOffset(cmdbuf->binCl.CPA, cmdbuf->binCl.offset);
-
-		//a command buffer may contain multiple render passes
-		//and commands outside render passes such as clear commands
-		//each of these corresponds to a control list submit
-
-		//submit each separate control list
-		while(marker)
+		for(uint32_t c = 0; c < submitInfo->commandBufferCount; ++c)
 		{
-			assert(marker->memGuard == 0xDDDDDDDD);
-
-			struct drm_vc4_submit_cl submitCl =
+			if(submitInfo->pCommandBuffers[c]->state == CMDBUF_STATE_EXECUTABLE)
 			{
-				.color_read.hindex = ~0,
-				.zs_read.hindex = ~0,
-				.color_write.hindex = ~0,
-				.msaa_color_write.hindex = ~0,
-				.zs_write.hindex = ~0,
-				.msaa_zs_write.hindex = ~0,
-			};
-
-			_image* writeImage = marker->writeImage;
-			_image* readImage = marker->readImage;
-			_image* writeDepthStencilImage = marker->writeDepthStencilImage;
-			_image* readDepthStencilImage = marker->readDepthStencilImage;
-			_image* writeMSAAimage = marker->writeMSAAimage;
-			_image* writeMSAAdepthStencilImage = marker->writeMSAAdepthStencilImage;
-			uint32_t performResolve = marker->performResolve;
-			uint32_t readMSAAimage = marker->readMSAAimage;
-			uint32_t readMSAAdepthStencilImage = marker->readMSAAdepthStencilImage;
-
-			//This should not result in an insertion!
-			clFit(cmdbuf, &cmdbuf->handlesCl, 4 * 6); //just to be safe
-			uint32_t writeImageIdx = writeImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, writeImage->boundMem->bo) : 0;
-			uint32_t readImageIdx = readImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, readImage->boundMem->bo) : 0;
-			uint32_t writeDepthStencilImageIdx = writeDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, writeDepthStencilImage->boundMem->bo) : 0;
-			uint32_t readDepthStencilImageIdx = readDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, readDepthStencilImage->boundMem->bo) : 0;
-			uint32_t writeMSAAimageIdx = writeMSAAimage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, marker->handlesBufOffset + cmdbuf->handlesCl.offset, writeMSAAimage->boundMem->bo) : 0;
-			uint32_t writeMSAAdepthStencilImageIdx = writeMSAAdepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo) : 0;
-
-			submitCl.clear_color[0] = 0;
-			submitCl.clear_color[1] = 0;
-			submitCl.clear_z = 0;
-			submitCl.clear_s = 0;
-
-			//fill out submit cl fields
-			if(writeImage)
-			{
-				uint32_t tiling = writeImage->tiling;
-
-				if(marker->mipLevel > 0)
-				{
-					tiling = writeImage->levelTiling[marker->mipLevel];
-				}
-
-				submitCl.color_write.hindex = writeImageIdx;
-				submitCl.color_write.offset = marker->writeImageOffset + writeImage->boundOffset;
-				submitCl.color_write.flags = 0;
-				submitCl.color_write.bits =
-						VC4_SET_FIELD(getRenderTargetFormatVC4(writeImage->format), VC4_RENDER_CONFIG_FORMAT) |
-						VC4_SET_FIELD(tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
-
-				if(performResolve)
-				{
-					submitCl.color_write.bits |= VC4_RENDER_CONFIG_MS_MODE_4X | VC4_RENDER_CONFIG_DECIMATE_MODE_4X;
-				}
+				submitInfo->pCommandBuffers[c]->state = CMDBUF_STATE_PENDING;
 			}
-
-			if(writeMSAAimage)
-			{
-				uint32_t tiling = writeMSAAimage->tiling;
-
-				if(marker->mipLevel > 0)
-				{
-					tiling = writeMSAAimage->levelTiling[marker->mipLevel];
-				}
-
-				submitCl.msaa_color_write.hindex = writeMSAAimageIdx;
-				submitCl.msaa_color_write.offset = marker->writeMSAAimageOffset + writeMSAAimage->boundOffset;
-				submitCl.msaa_color_write.flags = 0;
-				submitCl.msaa_color_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X |
-						VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_COLOR, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
-						VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING) |
-						VC4_SET_FIELD(getRenderTargetFormatVC4(writeMSAAimage->format), VC4_LOADSTORE_TILE_BUFFER_FORMAT);
-			}
-
-			if(readImage)
-			{
-				uint32_t tiling = readImage->tiling;
-
-				if(marker->mipLevel > 0)
-				{
-					tiling = readImage->levelTiling[marker->mipLevel];
-				}
-
-				submitCl.color_read.hindex = readImageIdx;
-				submitCl.color_read.offset = marker->readImageOffset + readImage->boundOffset;
-				submitCl.color_read.flags = readMSAAimage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0;
-				submitCl.color_read.bits =
-						VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_COLOR, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
-						VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING) |
-						VC4_SET_FIELD(getRenderTargetFormatVC4(readImage->format), VC4_LOADSTORE_TILE_BUFFER_FORMAT);
-			}
-
-			if(writeDepthStencilImage)
-			{
-				uint32_t tiling = writeDepthStencilImage->tiling;
-
-				if(marker->mipLevel > 0)
-				{
-					tiling = writeDepthStencilImage->levelTiling[marker->mipLevel];
-				}
-
-				submitCl.zs_write.hindex = writeDepthStencilImageIdx;
-				submitCl.zs_write.offset = marker->writeDepthStencilImageOffset + writeDepthStencilImage->boundOffset;
-				submitCl.zs_write.flags = 0;
-				submitCl.zs_write.bits =
-						VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
-						VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
-			}
-
-			if(writeMSAAdepthStencilImage)
-			{
-				uint32_t tiling = writeMSAAdepthStencilImage->tiling;
-
-				if(marker->mipLevel > 0)
-				{
-					tiling = writeMSAAdepthStencilImage->levelTiling[marker->mipLevel];
-				}
-
-				submitCl.msaa_zs_write.hindex = writeMSAAdepthStencilImageIdx;
-				submitCl.msaa_zs_write.offset = marker->writeMSAAdepthStencilImageOffset + writeMSAAdepthStencilImage->boundOffset;
-				submitCl.msaa_zs_write.flags = 0;
-				submitCl.msaa_zs_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X |
-						VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
-						VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
-			}
-
-			if(readDepthStencilImage)
-			{
-				uint32_t tiling = readDepthStencilImage->tiling;
-
-				if(marker->mipLevel > 0)
-				{
-					tiling = readDepthStencilImage->levelTiling[marker->mipLevel];
-				}
-
-				submitCl.zs_read.hindex = readDepthStencilImageIdx;
-				submitCl.zs_read.offset = marker->readDepthStencilImageOffset + readDepthStencilImage->boundOffset;
-				submitCl.zs_read.flags = readMSAAdepthStencilImage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0;
-				submitCl.zs_read.bits =
-						VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
-						VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
-			}
-
-			submitCl.clear_color[0] = marker->clearColor[0];
-			submitCl.clear_color[1] = marker->clearColor[1];
-
-			submitCl.clear_z = marker->clearDepth; //0...1 -> 0...0xffffff
-			submitCl.clear_s = marker->clearStencil; //0...0xff
-
-
-//			fprintf(stderr, "submitCl.clear_color[0]: %u\n", submitCl.clear_color[0]);
-//			fprintf(stderr, "submitCl.clear_color[1]: %u\n", submitCl.clear_color[1]);
-//			fprintf(stderr, "submitCl.clear_z: %u\n", submitCl.clear_z);
-//			fprintf(stderr, "submitCl.clear_s: %u\n", submitCl.clear_s);
-
-			submitCl.min_x_tile = 0;
-			submitCl.min_y_tile = 0;
-
-			uint32_t tileSizeW = 64;
-			uint32_t tileSizeH = 64;
-
-			uint32_t widthInTiles = 0, heightInTiles = 0;
-			uint32_t width = 0, height = 0, bpp = 0;
-
-			width = marker->width;
-			height = marker->height;
-
-			if(writeImage)
-			{
-				bpp = getFormatBpp(writeImage->format);
-			}
-			else if(writeMSAAimage)
-			{
-				bpp = getFormatBpp(writeMSAAimage->format);
-			}
-
-			if(bpp == 64)
-			{
-				tileSizeH >>= 1;
-			}
-
-			if(performResolve || writeMSAAimage || writeMSAAdepthStencilImage)
-			{
-				tileSizeW >>= 1;
-				tileSizeH >>= 1;
-			}
-
-			widthInTiles = divRoundUp(width, tileSizeW);
-			heightInTiles = divRoundUp(height, tileSizeH);
-
-			//pad width if rendering to miplevel
-			if(marker->mipLevel > 0)
-			{
-				width = getPow2Pad(width);
-				width = width < 4 ? 4 : width;
-			}
-
-			submitCl.max_x_tile = widthInTiles - 1;
-			submitCl.max_y_tile = heightInTiles - 1;
-			submitCl.width = width;
-			submitCl.height = height;
-			submitCl.flags |= marker->flags;
-
-			submitCl.bo_handles = getCPAptrFromOffset(cmdbuf->handlesCl.CPA, marker->handlesBufOffset + cmdbuf->handlesCl.offset);
-			submitCl.bin_cl = ((uint8_t*)marker) + sizeof(CLMarker);
-			submitCl.shader_rec = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset + cmdbuf->shaderRecCl.offset);
-			submitCl.uniforms = getCPAptrFromOffset(cmdbuf->uniformsCl.CPA, marker->uniformsBufOffset + cmdbuf->uniformsCl.offset);
-
-			if(marker->perfmonID)
-			{
-				uint32_t perfmonSelector = 0;
-				uint32_t* perfmonIDptr = (uint32_t*)marker->perfmonID;
-
-				if(pSubmits->pNext)
-				{
-					VkPerformanceQuerySubmitInfoKHR* perfQuerySubmitInfo = pSubmits->pNext;
-					perfmonSelector = perfQuerySubmitInfo->counterPassIndex;
-				}
-
-				submitCl.perfmonid = *(perfmonIDptr + perfmonSelector);
-			}
-
-			//marker not closed yet
-			//close here
-			if(!marker->size)
-			{
-				clCloseCurrentMarker(&cmdbuf->binCl, &cmdbuf->handlesCl, &cmdbuf->shaderRecCl, cmdbuf->shaderRecCount, &cmdbuf->uniformsCl);
-			}
-
-			submitCl.bo_handle_count = marker->handlesSize / 4;
-			submitCl.bin_cl_size = marker->size;
-			submitCl.shader_rec_size = marker->shaderRecSize;
-			submitCl.shader_rec_count = marker->shaderRecCount;
-			submitCl.uniforms_size = marker->uniformsSize;
-
-			/**
-			printf("BCL:\n");
-			uint8_t* mem = malloc(marker->size);
-			memcpy(mem, marker+1, marker->size);
-			clDump(mem, marker->size);
-			free(mem);
-
-			printf("BO handles: ");
-			for(int d = 0; d < marker->handlesSize / 4; ++d)
-			{
-				printf("%u ", *(((uint32_t*)getCPAptrFromOffset(cmdbuf->handlesCl.CPA, marker->handlesBufOffset + cmdbuf->handlesCl.offset))+d));
-			}
-			printf("\nUniforms: ");
-			for(int d = 0; d < marker->uniformsSize / 4; ++d)
-			{
-				printf("%i ", *(((uint32_t*)getCPAptrFromOffset(cmdbuf->uniformsCl.CPA, marker->uniformsBufOffset + cmdbuf->uniformsCl.offset))+d));
-			}
-			printf("\nShader recs: ");
-			uint8_t* ptr = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset + cmdbuf->shaderRecCl.offset + (3 + 3) * 4);
-			for(int d = 0; d < marker->shaderRecCount; ++d)
-			{
-				uint8_t flags = *ptr;
-				uint8_t fragmentShaderIsSingleThreaded = flags & (1 << 0);
-				uint8_t pointSizeIncludedInShadedVertexData = (flags & (1 << 1)) >> 1;
-				uint8_t enableClipping = (flags & (1 << 2)) >> 2;
-				ptr += 2;
-
-				uint8_t fragmentNumberOfUniforms = *ptr; ptr++;
-				uint8_t fragmentNumberOfVaryings = *ptr; ptr++;
-				uint32_t fragmentShaderCodeAddress = *(uint32_t*)ptr; ptr+=4;
-				uint32_t fragmentShaderUniformAddress = *(uint32_t*)ptr; ptr+=4;
-
-				uint16_t vertexNumberOfUniforms = *(uint16_t*)ptr; ptr+=2;
-				uint8_t vertexAttribSelectBits = *ptr; ptr++;
-				uint8_t vertexAttribTotalSize = *ptr; ptr++;
-				uint32_t vertexShaderCodeAddress = *(uint32_t*)ptr; ptr+=4;
-				uint32_t vertexShaderUniformAddress = *(uint32_t*)ptr; ptr+=4;
-
-				uint16_t coordNumberOfUniforms = *(uint16_t*)ptr; ptr+=2;
-				uint8_t coordAttribSelectBits = *ptr; ptr++;
-				uint8_t coordAttribTotalSize = *ptr; ptr++;
-				uint32_t coordShaderCodeAddress = *(uint32_t*)ptr; ptr+=4;
-				uint32_t coordShaderUniformAddress = *(uint32_t*)ptr; ptr+=4;
-
-				printf("\nfragmentShaderIsSingleThreaded: %i", fragmentShaderIsSingleThreaded);
-				printf("\npointSizeIncludedInShadedVertexData: %i", pointSizeIncludedInShadedVertexData);
-				printf("\nenableClipping: %i", enableClipping);
-
-				printf("\nfragmentNumberOfUniforms: %i", fragmentNumberOfUniforms);
-				printf("\nfragmentNumberOfVaryings: %i", fragmentNumberOfVaryings);
-				printf("\nfragmentShaderCodeAddress: %i", fragmentShaderCodeAddress);
-				printf("\nfragmentShaderUniformAddress: %i", fragmentShaderUniformAddress);
-
-				printf("\nvertexNumberOfUniforms: %i", vertexNumberOfUniforms);
-				printf("\nvertexAttribSelectBits: %i", vertexAttribSelectBits);
-				printf("\nvertexAttribTotalSize: %i", vertexAttribTotalSize);
-				printf("\nvertexShaderCodeAddress: %i", vertexShaderCodeAddress);
-				printf("\nvertexShaderUniformAddress: %i", vertexShaderUniformAddress);
-
-				printf("\ncoordNumberOfUniforms: %i", coordNumberOfUniforms);
-				printf("\ncoordAttribSelectBits: %i", coordAttribSelectBits);
-				printf("\ncoordAttribTotalSize: %i", coordAttribTotalSize);
-				printf("\ncoordShaderCodeAddress: %i", coordShaderCodeAddress);
-				printf("\ncoordShaderUniformAddress: %i", coordShaderUniformAddress);
-
-				uint8_t numAttribs = 0;
-				for(uint8_t e = 0; e < 8; ++e)
-				{
-					numAttribs += (vertexAttribSelectBits & (1 << e)) >> e;
-				}
-
-				printf("\nnumattribs: %i", numAttribs);
-				for(uint8_t e = 0; e < numAttribs; ++e)
-				{
-					uint32_t attribBaseAddress = *(uint32_t*)ptr; ptr+=4;
-					uint8_t attribNumBytes = *ptr; ptr++;
-					uint8_t attribStride = *ptr; ptr++;
-					uint8_t attribVsVPMOffset = *ptr; ptr++;
-					uint8_t attribCsVPMOffset = *ptr; ptr++;
-
-					printf("\nattrib \#%i", e);
-					printf("\nattribBaseAddress: %i", attribBaseAddress);
-					printf("\nattribNumBytes: %i", attribNumBytes);
-					printf("\nattribStride: %i", attribStride);
-					printf("\nattribVsVPMOffset: %i", attribVsVPMOffset);
-					printf("\nattribCsVPMOffset: %i", attribCsVPMOffset);
-				}
-			}
-			printf("\nwidth height: %u, %u\n", submitCl.width, submitCl.height);
-			printf("tile min/max: %u,%u %u,%u\n", submitCl.min_x_tile, submitCl.min_y_tile, submitCl.max_x_tile, submitCl.max_y_tile);
-			printf("color read surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.color_read.hindex, submitCl.color_read.offset, submitCl.color_read.bits, submitCl.color_read.flags);
-			printf("color write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.color_write.hindex, submitCl.color_write.offset, submitCl.color_write.bits, submitCl.color_write.flags);
-			printf("zs read surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.zs_read.hindex, submitCl.zs_read.offset, submitCl.zs_read.bits, submitCl.zs_read.flags);
-			printf("zs write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.zs_write.hindex, submitCl.zs_write.offset, submitCl.zs_write.bits, submitCl.zs_write.flags);
-			printf("msaa color write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.msaa_color_write.hindex, submitCl.msaa_color_write.offset, submitCl.msaa_color_write.bits, submitCl.msaa_color_write.flags);
-			printf("msaa zs write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.msaa_zs_write.hindex, submitCl.msaa_zs_write.offset, submitCl.msaa_zs_write.bits, submitCl.msaa_zs_write.flags);
-			printf("clear color packed rgba %u %u\n", submitCl.clear_color[0], submitCl.clear_color[1]);
-			printf("clear z %u\n", submitCl.clear_z);
-			printf("clear s %u\n", submitCl.clear_s);
-			printf("flags %u\n", submitCl.flags);
-			printf("perfmonID %u\n", submitCl.perfmonid);
-			/**/
-
-			assert(marker->numDrawCallsSubmitted <= VC4_HW_2116_COUNT);
-
-			assert(submitCl.bo_handle_count > 0);
-
-			sem_wait(queue->seqnoSem);
-			{
-				//submit ioctl
-				vc4_cl_submit(controlFd, &submitCl, &queue->lastEmitSeqno, &queue->lastFinishedSeqno);
-			}
-			sem_post(queue->seqnoSem);
-
-			//see if it's a sync bug
-			//uint64_t timeout = WAIT_TIMEOUT_INFINITE;
-			//vc4_seqno_wait(controlFd, &lastFinishedSeqno, queue->lastEmitSeqno, &timeout);
-
-			//advance in linked list
-			marker = marker->nextMarkerOffset == -1 ? 0 : getCPAptrFromOffset(cmdbuf->binCl.CPA, marker->nextMarkerOffset + cmdbuf->binCl.offset);
 		}
 
-		//CPAdebugPrint(cmdbuf->binCl.CPA);
-	}
-
-	for(int c = 0; c < pSubmits->commandBufferCount; ++c)
-	{
-		if(pSubmits->pCommandBuffers[c]->state == CMDBUF_STATE_PENDING)
+		for(uint32_t c = 0; c < submitInfo->commandBufferCount; ++c)
 		{
-			if(pSubmits->pCommandBuffers[c]->usageFlags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)
+			VkCommandBuffer cmdbuf = submitInfo->pCommandBuffers[c];
+
+			if(cmdbuf->binCl.currMarkerOffset == ~0u)
 			{
-				pSubmits->pCommandBuffers[c]->state = CMDBUF_STATE_INVALID;
+				//no markers recorded yet, skip
+				continue;
 			}
-			else
+
+			//first entry is assumed to be a marker
+			CLMarker* marker = getCPAptrFromOffset(cmdbuf->binCl.CPA, cmdbuf->binCl.offset);
+
+			//a command buffer may contain multiple render passes
+			//and commands outside render passes such as clear commands
+			//each of these corresponds to a control list submit
+
+			//submit each separate control list
+			while(marker)
 			{
-				pSubmits->pCommandBuffers[c]->state = CMDBUF_STATE_EXECUTABLE;
+				assert(marker->memGuard == 0xDDDDDDDD);
+
+				struct drm_vc4_submit_cl submitCl =
+				{
+					.color_read.hindex = ~0,
+					.zs_read.hindex = ~0,
+					.color_write.hindex = ~0,
+					.msaa_color_write.hindex = ~0,
+					.zs_write.hindex = ~0,
+					.msaa_zs_write.hindex = ~0,
+				};
+
+				_image* writeImage = marker->writeImage;
+				_image* readImage = marker->readImage;
+				_image* writeDepthStencilImage = marker->writeDepthStencilImage;
+				_image* readDepthStencilImage = marker->readDepthStencilImage;
+				_image* writeMSAAimage = marker->writeMSAAimage;
+				_image* writeMSAAdepthStencilImage = marker->writeMSAAdepthStencilImage;
+				uint32_t performResolve = marker->performResolve;
+				uint32_t readMSAAimage = marker->readMSAAimage;
+				uint32_t readMSAAdepthStencilImage = marker->readMSAAdepthStencilImage;
+
+				//This should not result in an insertion!
+				clFit(&cmdbuf->handlesCl, 4 * 6); //just to be safe
+				uint32_t writeImageIdx = writeImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, writeImage->boundMem->bo) : 0;
+				uint32_t readImageIdx = readImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, readImage->boundMem->bo) : 0;
+				uint32_t writeDepthStencilImageIdx = writeDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, writeDepthStencilImage->boundMem->bo) : 0;
+				uint32_t readDepthStencilImageIdx = readDepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, readDepthStencilImage->boundMem->bo) : 0;
+				uint32_t writeMSAAimageIdx = writeMSAAimage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesSize, marker->handlesBufOffset + cmdbuf->handlesCl.offset, writeMSAAimage->boundMem->bo) : 0;
+				uint32_t writeMSAAdepthStencilImageIdx = writeMSAAdepthStencilImage ? clGetHandleIndex(&cmdbuf->handlesCl, marker->handlesBufOffset + cmdbuf->handlesCl.offset, marker->handlesSize, writeMSAAdepthStencilImage->boundMem->bo) : 0;
+
+				submitCl.clear_color[0] = 0;
+				submitCl.clear_color[1] = 0;
+				submitCl.clear_z = 0;
+				submitCl.clear_s = 0;
+
+				//fill out submit cl fields
+				if(writeImage)
+				{
+					uint32_t tiling = writeImage->tiling;
+
+					if(marker->mipLevel > 0)
+					{
+						tiling = writeImage->levelTiling[marker->mipLevel];
+					}
+
+					submitCl.color_write.hindex = writeImageIdx;
+					submitCl.color_write.offset = marker->writeImageOffset + writeImage->boundOffset;
+					submitCl.color_write.flags = 0;
+					submitCl.color_write.bits =
+							VC4_SET_FIELD(getRenderTargetFormatVC4(writeImage->format), VC4_RENDER_CONFIG_FORMAT) |
+							VC4_SET_FIELD(tiling, VC4_RENDER_CONFIG_MEMORY_FORMAT);
+
+					if(performResolve)
+					{
+						submitCl.color_write.bits |= VC4_RENDER_CONFIG_MS_MODE_4X | VC4_RENDER_CONFIG_DECIMATE_MODE_4X;
+					}
+				}
+
+				if(writeMSAAimage)
+				{
+					uint32_t tiling = writeMSAAimage->tiling;
+
+					if(marker->mipLevel > 0)
+					{
+						tiling = writeMSAAimage->levelTiling[marker->mipLevel];
+					}
+
+					submitCl.msaa_color_write.hindex = writeMSAAimageIdx;
+					submitCl.msaa_color_write.offset = marker->writeMSAAimageOffset + writeMSAAimage->boundOffset;
+					submitCl.msaa_color_write.flags = 0;
+					submitCl.msaa_color_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X |
+							VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_COLOR, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+							VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING) |
+							VC4_SET_FIELD(getRenderTargetFormatVC4(writeMSAAimage->format), VC4_LOADSTORE_TILE_BUFFER_FORMAT);
+				}
+
+				if(readImage)
+				{
+					uint32_t tiling = readImage->tiling;
+
+					if(marker->mipLevel > 0)
+					{
+						tiling = readImage->levelTiling[marker->mipLevel];
+					}
+
+					submitCl.color_read.hindex = readImageIdx;
+					submitCl.color_read.offset = marker->readImageOffset + readImage->boundOffset;
+					submitCl.color_read.flags = readMSAAimage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0;
+					submitCl.color_read.bits =
+							VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_COLOR, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+							VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING) |
+							VC4_SET_FIELD(getRenderTargetFormatVC4(readImage->format), VC4_LOADSTORE_TILE_BUFFER_FORMAT);
+				}
+
+				if(writeDepthStencilImage)
+				{
+					uint32_t tiling = writeDepthStencilImage->tiling;
+
+					if(marker->mipLevel > 0)
+					{
+						tiling = writeDepthStencilImage->levelTiling[marker->mipLevel];
+					}
+
+					submitCl.zs_write.hindex = writeDepthStencilImageIdx;
+					submitCl.zs_write.offset = marker->writeDepthStencilImageOffset + writeDepthStencilImage->boundOffset;
+					submitCl.zs_write.flags = 0;
+					submitCl.zs_write.bits =
+							VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+							VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
+				}
+
+				if(writeMSAAdepthStencilImage)
+				{
+					uint32_t tiling = writeMSAAdepthStencilImage->tiling;
+
+					if(marker->mipLevel > 0)
+					{
+						tiling = writeMSAAdepthStencilImage->levelTiling[marker->mipLevel];
+					}
+
+					submitCl.msaa_zs_write.hindex = writeMSAAdepthStencilImageIdx;
+					submitCl.msaa_zs_write.offset = marker->writeMSAAdepthStencilImageOffset + writeMSAAdepthStencilImage->boundOffset;
+					submitCl.msaa_zs_write.flags = 0;
+					submitCl.msaa_zs_write.bits = VC4_RENDER_CONFIG_MS_MODE_4X |
+							VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+							VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
+				}
+
+				if(readDepthStencilImage)
+				{
+					uint32_t tiling = readDepthStencilImage->tiling;
+
+					if(marker->mipLevel > 0)
+					{
+						tiling = readDepthStencilImage->levelTiling[marker->mipLevel];
+					}
+
+					submitCl.zs_read.hindex = readDepthStencilImageIdx;
+					submitCl.zs_read.offset = marker->readDepthStencilImageOffset + readDepthStencilImage->boundOffset;
+					submitCl.zs_read.flags = readMSAAdepthStencilImage ? VC4_SUBMIT_RCL_SURFACE_READ_IS_FULL_RES : 0;
+					submitCl.zs_read.bits =
+							VC4_SET_FIELD(VC4_LOADSTORE_TILE_BUFFER_ZS, VC4_LOADSTORE_TILE_BUFFER_BUFFER) |
+							VC4_SET_FIELD(tiling, VC4_LOADSTORE_TILE_BUFFER_TILING);
+				}
+
+				submitCl.clear_color[0] = marker->clearColor[0];
+				submitCl.clear_color[1] = marker->clearColor[1];
+
+				submitCl.clear_z = marker->clearDepth; //0...1 -> 0...0xffffff
+				submitCl.clear_s = marker->clearStencil; //0...0xff
+
+
+	//			fprintf(stderr, "submitCl.clear_color[0]: %u\n", submitCl.clear_color[0]);
+	//			fprintf(stderr, "submitCl.clear_color[1]: %u\n", submitCl.clear_color[1]);
+	//			fprintf(stderr, "submitCl.clear_z: %u\n", submitCl.clear_z);
+	//			fprintf(stderr, "submitCl.clear_s: %u\n", submitCl.clear_s);
+
+				submitCl.min_x_tile = 0;
+				submitCl.min_y_tile = 0;
+
+				uint32_t tileSizeW = 64;
+				uint32_t tileSizeH = 64;
+
+				uint32_t widthInTiles = 0, heightInTiles = 0;
+				uint32_t width = 0, height = 0, bpp = 0;
+
+				width = marker->width;
+				height = marker->height;
+
+				if(writeImage)
+				{
+					bpp = getFormatBpp(writeImage->format);
+				}
+				else if(writeMSAAimage)
+				{
+					bpp = getFormatBpp(writeMSAAimage->format);
+				}
+
+				if(bpp == 64)
+				{
+					tileSizeH >>= 1;
+				}
+
+				if(performResolve || writeMSAAimage || writeMSAAdepthStencilImage)
+				{
+					tileSizeW >>= 1;
+					tileSizeH >>= 1;
+				}
+
+				widthInTiles = divRoundUp(width, tileSizeW);
+				heightInTiles = divRoundUp(height, tileSizeH);
+
+				//pad width if rendering to miplevel
+				if(marker->mipLevel > 0)
+				{
+					width = getPow2Pad(width);
+					width = width < 4 ? 4 : width;
+				}
+
+				submitCl.max_x_tile = widthInTiles - 1;
+				submitCl.max_y_tile = heightInTiles - 1;
+				submitCl.width = width;
+				submitCl.height = height;
+				submitCl.flags |= marker->flags;
+
+				submitCl.bo_handles = getCPAptrFromOffset(cmdbuf->handlesCl.CPA, marker->handlesBufOffset + cmdbuf->handlesCl.offset);
+				submitCl.bin_cl = ((uint8_t*)marker) + sizeof(CLMarker);
+				submitCl.shader_rec = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset + cmdbuf->shaderRecCl.offset);
+				submitCl.uniforms = getCPAptrFromOffset(cmdbuf->uniformsCl.CPA, marker->uniformsBufOffset + cmdbuf->uniformsCl.offset);
+
+				if(marker->perfmonID)
+				{
+					uint32_t perfmonSelector = 0;
+					uint32_t* perfmonIDptr = (uint32_t*)marker->perfmonID;
+
+					if(submitInfo->pNext)
+					{
+						const VkPerformanceQuerySubmitInfoKHR* perfQuerySubmitInfo = submitInfo->pNext;
+						perfmonSelector = perfQuerySubmitInfo->counterPassIndex;
+					}
+
+					submitCl.perfmonid = *(perfmonIDptr + perfmonSelector);
+				}
+
+				//marker not closed yet
+				//close here
+				if(!marker->size)
+				{
+					clCloseCurrentMarker(&cmdbuf->binCl, &cmdbuf->handlesCl, &cmdbuf->shaderRecCl, cmdbuf->shaderRecCount, &cmdbuf->uniformsCl);
+				}
+
+				submitCl.bo_handle_count = marker->handlesSize / 4;
+				submitCl.bin_cl_size = marker->size;
+				submitCl.shader_rec_size = marker->shaderRecSize;
+				submitCl.shader_rec_count = marker->shaderRecCount;
+				submitCl.uniforms_size = marker->uniformsSize;
+
+				/**
+				printf("BCL:\n");
+				uint8_t* mem = malloc(marker->size);
+				memcpy(mem, marker+1, marker->size);
+				clDump(mem, marker->size);
+				free(mem);
+
+				printf("BO handles: ");
+				for(int d = 0; d < marker->handlesSize / 4; ++d)
+				{
+					printf("%u ", *(((uint32_t*)getCPAptrFromOffset(cmdbuf->handlesCl.CPA, marker->handlesBufOffset + cmdbuf->handlesCl.offset))+d));
+				}
+				printf("\nUniforms: ");
+				for(int d = 0; d < marker->uniformsSize / 4; ++d)
+				{
+					printf("%i ", *(((uint32_t*)getCPAptrFromOffset(cmdbuf->uniformsCl.CPA, marker->uniformsBufOffset + cmdbuf->uniformsCl.offset))+d));
+				}
+				printf("\nShader recs: ");
+				uint8_t* ptr = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset + cmdbuf->shaderRecCl.offset + (3 + 3) * 4);
+				for(int d = 0; d < marker->shaderRecCount; ++d)
+				{
+					uint8_t flags = *ptr;
+					uint8_t fragmentShaderIsSingleThreaded = flags & (1 << 0);
+					uint8_t pointSizeIncludedInShadedVertexData = (flags & (1 << 1)) >> 1;
+					uint8_t enableClipping = (flags & (1 << 2)) >> 2;
+					ptr += 2;
+
+					uint8_t fragmentNumberOfUniforms = *ptr; ptr++;
+					uint8_t fragmentNumberOfVaryings = *ptr; ptr++;
+					uint32_t fragmentShaderCodeAddress = *(uint32_t*)ptr; ptr+=4;
+					uint32_t fragmentShaderUniformAddress = *(uint32_t*)ptr; ptr+=4;
+
+					uint16_t vertexNumberOfUniforms = *(uint16_t*)ptr; ptr+=2;
+					uint8_t vertexAttribSelectBits = *ptr; ptr++;
+					uint8_t vertexAttribTotalSize = *ptr; ptr++;
+					uint32_t vertexShaderCodeAddress = *(uint32_t*)ptr; ptr+=4;
+					uint32_t vertexShaderUniformAddress = *(uint32_t*)ptr; ptr+=4;
+
+					uint16_t coordNumberOfUniforms = *(uint16_t*)ptr; ptr+=2;
+					uint8_t coordAttribSelectBits = *ptr; ptr++;
+					uint8_t coordAttribTotalSize = *ptr; ptr++;
+					uint32_t coordShaderCodeAddress = *(uint32_t*)ptr; ptr+=4;
+					uint32_t coordShaderUniformAddress = *(uint32_t*)ptr; ptr+=4;
+
+					printf("\nfragmentShaderIsSingleThreaded: %i", fragmentShaderIsSingleThreaded);
+					printf("\npointSizeIncludedInShadedVertexData: %i", pointSizeIncludedInShadedVertexData);
+					printf("\nenableClipping: %i", enableClipping);
+
+					printf("\nfragmentNumberOfUniforms: %i", fragmentNumberOfUniforms);
+					printf("\nfragmentNumberOfVaryings: %i", fragmentNumberOfVaryings);
+					printf("\nfragmentShaderCodeAddress: %i", fragmentShaderCodeAddress);
+					printf("\nfragmentShaderUniformAddress: %i", fragmentShaderUniformAddress);
+
+					printf("\nvertexNumberOfUniforms: %i", vertexNumberOfUniforms);
+					printf("\nvertexAttribSelectBits: %i", vertexAttribSelectBits);
+					printf("\nvertexAttribTotalSize: %i", vertexAttribTotalSize);
+					printf("\nvertexShaderCodeAddress: %i", vertexShaderCodeAddress);
+					printf("\nvertexShaderUniformAddress: %i", vertexShaderUniformAddress);
+
+					printf("\ncoordNumberOfUniforms: %i", coordNumberOfUniforms);
+					printf("\ncoordAttribSelectBits: %i", coordAttribSelectBits);
+					printf("\ncoordAttribTotalSize: %i", coordAttribTotalSize);
+					printf("\ncoordShaderCodeAddress: %i", coordShaderCodeAddress);
+					printf("\ncoordShaderUniformAddress: %i", coordShaderUniformAddress);
+
+					uint8_t numAttribs = 0;
+					for(uint8_t e = 0; e < 8; ++e)
+					{
+						numAttribs += (vertexAttribSelectBits & (1 << e)) >> e;
+					}
+
+					printf("\nnumattribs: %i", numAttribs);
+					for(uint8_t e = 0; e < numAttribs; ++e)
+					{
+						uint32_t attribBaseAddress = *(uint32_t*)ptr; ptr+=4;
+						uint8_t attribNumBytes = *ptr; ptr++;
+						uint8_t attribStride = *ptr; ptr++;
+						uint8_t attribVsVPMOffset = *ptr; ptr++;
+						uint8_t attribCsVPMOffset = *ptr; ptr++;
+
+						printf("\nattrib \#%i", e);
+						printf("\nattribBaseAddress: %i", attribBaseAddress);
+						printf("\nattribNumBytes: %i", attribNumBytes);
+						printf("\nattribStride: %i", attribStride);
+						printf("\nattribVsVPMOffset: %i", attribVsVPMOffset);
+						printf("\nattribCsVPMOffset: %i", attribCsVPMOffset);
+					}
+				}
+				printf("\nwidth height: %u, %u\n", submitCl.width, submitCl.height);
+				printf("tile min/max: %u,%u %u,%u\n", submitCl.min_x_tile, submitCl.min_y_tile, submitCl.max_x_tile, submitCl.max_y_tile);
+				printf("color read surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.color_read.hindex, submitCl.color_read.offset, submitCl.color_read.bits, submitCl.color_read.flags);
+				printf("color write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.color_write.hindex, submitCl.color_write.offset, submitCl.color_write.bits, submitCl.color_write.flags);
+				printf("zs read surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.zs_read.hindex, submitCl.zs_read.offset, submitCl.zs_read.bits, submitCl.zs_read.flags);
+				printf("zs write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.zs_write.hindex, submitCl.zs_write.offset, submitCl.zs_write.bits, submitCl.zs_write.flags);
+				printf("msaa color write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.msaa_color_write.hindex, submitCl.msaa_color_write.offset, submitCl.msaa_color_write.bits, submitCl.msaa_color_write.flags);
+				printf("msaa zs write surf: hindex, offset, bits, flags %u %u %u %u\n", submitCl.msaa_zs_write.hindex, submitCl.msaa_zs_write.offset, submitCl.msaa_zs_write.bits, submitCl.msaa_zs_write.flags);
+				printf("clear color packed rgba %u %u\n", submitCl.clear_color[0], submitCl.clear_color[1]);
+				printf("clear z %u\n", submitCl.clear_z);
+				printf("clear s %u\n", submitCl.clear_s);
+				printf("flags %u\n", submitCl.flags);
+				printf("perfmonID %u\n", submitCl.perfmonid);
+				/**/
+
+				assert(marker->numDrawCallsSubmitted <= VC4_HW_2116_COUNT);
+
+				assert(submitCl.bo_handle_count > 0);
+
+				{
+					//submit ioctl
+					vc4_cl_submit(controlFd, &submitCl, &queue->lastEmitSeqno, &queue->lastFinishedSeqno);
+				}
+
+				//see if it's a sync bug
+				//uint64_t timeout = WAIT_TIMEOUT_INFINITE;
+				//vc4_seqno_wait(controlFd, &lastFinishedSeqno, queue->lastEmitSeqno, &timeout);
+
+				//advance in linked list
+				marker = marker->nextMarkerOffset == ~0u ? 0 : getCPAptrFromOffset(cmdbuf->binCl.CPA, marker->nextMarkerOffset + cmdbuf->binCl.offset);
+			}
+
+			//CPAdebugPrint(cmdbuf->binCl.CPA);
+		}
+
+		for(uint32_t c = 0; c < submitInfo->commandBufferCount; ++c)
+		{
+			if(submitInfo->pCommandBuffers[c]->state == CMDBUF_STATE_PENDING)
+			{
+				if(submitInfo->pCommandBuffers[c]->usageFlags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)
+				{
+					submitInfo->pCommandBuffers[c]->state = CMDBUF_STATE_INVALID;
+				}
+				else
+				{
+					submitInfo->pCommandBuffers[c]->state = CMDBUF_STATE_EXECUTABLE;
+				}
 			}
 		}
-	}
 
-	for(int c = 0; c < pSubmits->signalSemaphoreCount; ++c)
-	{
-		sem_post((sem_t*)pSubmits->pSignalSemaphores[c]);
+		for(uint32_t c = 0; c < submitInfo->signalSemaphoreCount; ++c)
+		{
+			sem_post((sem_t*)submitInfo->pSignalSemaphores[c]);
+		}
 	}
 
 	_fence* f = fence;
@@ -730,7 +731,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkFreeCommandBuffers)(
 
 	_commandPool* cp = (_commandPool*)commandPool;
 
-	for(int c = 0; c < commandBufferCount; ++c)
+	for(uint32_t c = 0; c < commandBufferCount; ++c)
 	{
 		if(pCommandBuffers[c])
 		{
@@ -838,6 +839,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkResetCommandPool)(
 	//TODO reset flag --> free all pool resources
 
 	PROFILEEND(RPIFUNC(vkResetCommandPool));
+
+	return VK_SUCCESS;
 }
 
 /*
@@ -914,6 +917,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkResetCommandBuffer)(
 	commandBuffer->perfmonID = 0;
 
 	PROFILEEND(RPIFUNC(vkResetCommandBuffer));
+
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdExecuteCommands)(

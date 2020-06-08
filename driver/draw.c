@@ -55,7 +55,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	//if(cb->lineWidthDirty)
 	{
 		//Line width
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_LINE_WIDTH_length);
+		clFit(&commandBuffer->binCl, V3D21_LINE_WIDTH_length);
 		clInsertLineWidth(&commandBuffer->binCl, cb->graphicsPipeline->lineWidth);
 
 		cb->lineWidthDirty = 0;
@@ -64,7 +64,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	//if(cb->viewportDirty)
 	{
 		//Clip Window
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
+		clFit(&commandBuffer->binCl, V3D21_CLIP_WINDOW_length);
 		clInsertClipWindow(&commandBuffer->binCl,
 						   vp.width,
 						   vp.height,
@@ -73,11 +73,11 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 		//Vulkan conventions, Y flipped [1...-1] bottom->top
 		//Clipper XY Scaling
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_XY_SCALING_length);
+		clFit(&commandBuffer->binCl, V3D21_CLIPPER_XY_SCALING_length);
 		clInsertClipperXYScaling(&commandBuffer->binCl, (float)(vp.width) * 0.5f * 16.0f, 1.0f * (float)(vp.height) * 0.5f * 16.0f);
 
 		//Viewport Offset
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
+		clFit(&commandBuffer->binCl, V3D21_VIEWPORT_OFFSET_length);
 		clInsertViewPortOffset(&commandBuffer->binCl, vp.width * 0.5f + vp.x, vp.height * 0.5f + vp.y);
 
 		cb->viewportDirty = 0;
@@ -86,7 +86,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	//if(cb->depthBiasDirty || cb->depthBoundsDirty)
 	{
 		//Configuration Bits
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
+		clFit(&commandBuffer->binCl, V3D21_CONFIGURATION_BITS_length);
 		clInsertConfigurationBits(&commandBuffer->binCl,
 								  1, //earlyz updates enable
 								  cb->graphicsPipeline->depthTestEnable, //earlyz enable
@@ -102,7 +102,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 								  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_BACK_BIT), //enable back facing primitives
 								  !(cb->graphicsPipeline->cullMode & VK_CULL_MODE_FRONT_BIT)); //enable front facing primitives
 
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_DEPTH_OFFSET_length);
+		clFit(&commandBuffer->binCl, V3D21_DEPTH_OFFSET_length);
 
 		float depthBiasConstant = cb->graphicsPipeline->depthBiasConstantFactor;
 		float depthBiasSlope = cb->graphicsPipeline->depthBiasSlopeFactor;
@@ -122,7 +122,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		//Vulkan conventions, we expect the resulting NDC space Z axis to be in range [0...1] close->far
 		//cb->graphicsPipeline->minDepthBounds;
 		//Clipper Z Scale and Offset
-		clFit(commandBuffer, &commandBuffer->binCl, V3D21_CLIPPER_Z_SCALE_AND_OFFSET_length);
+		clFit(&commandBuffer->binCl, V3D21_CLIPPER_Z_SCALE_AND_OFFSET_length);
 		//offset, scale
 		float scale = vp.maxDepth - vp.minDepth;
 		float offset = vp.minDepth;
@@ -133,16 +133,16 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	}
 
 	//Point size
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_POINT_SIZE_length);
+	clFit(&commandBuffer->binCl, V3D21_POINT_SIZE_length);
 	clInsertPointSize(&commandBuffer->binCl, 1.0f);
 
 	//TODO?
 	//Flat Shade Flags
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_FLAT_SHADE_FLAGS_length);
+	clFit(&commandBuffer->binCl, V3D21_FLAT_SHADE_FLAGS_length);
 	clInsertFlatShadeFlags(&commandBuffer->binCl, 0);
 
 	//GL Shader State
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
+	clFit(&commandBuffer->binCl, V3D21_GL_SHADER_STATE_length);
 	clInsertShaderState(&commandBuffer->binCl,
 						0, //shader state record address
 						0, //extended shader state record
@@ -200,7 +200,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	};
 
 	commandBuffer->shaderRecCount++;
-	clFit(commandBuffer, &commandBuffer->shaderRecCl, 12 * sizeof(uint32_t) + 104 + 8 * 32);
+	clFit(&commandBuffer->shaderRecCl, 12 * sizeof(uint32_t) + 104 + 8 * 32);
 	ControlList relocCl = commandBuffer->shaderRecCl;
 
 	uint32_t attribCount = 0;
@@ -237,12 +237,12 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 
 	//number of attribs
 	//3 is the number of type of possible shaders
-	for(int c = 0; c < (3 + attribCount)*4; ++c)
+	for(uint32_t c = 0; c < (3 + attribCount)*4; ++c)
 	{
 		clInsertNop(&commandBuffer->shaderRecCl);
 	}
 
-	clFit(commandBuffer, &commandBuffer->handlesCl, (3 + 8)*4);
+	clFit(&commandBuffer->handlesCl, (3 + 8)*4);
 	clInsertShaderRecord(&commandBuffer->shaderRecCl,
 						 &relocCl,
 						 &commandBuffer->handlesCl,
@@ -365,11 +365,11 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 				di += mapping.descriptorArrayElement;
 
 				//emit reloc for texture BO
-				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+				clFit(&commandBuffer->handlesCl, 4);
 				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, di->imageView->image->boundMem->bo);
 
 				//emit tex bo reloc index
-				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+				clFit(&commandBuffer->uniformsCl, 4);
 				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
 
 				numFragUniformReads++;
@@ -384,11 +384,11 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 				db += mapping.descriptorArrayElement;
 
 				//emit reloc for BO
-				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+				clFit(&commandBuffer->handlesCl, 4);
 				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, db->buffer->boundMem->bo);
 
 				//emit bo reloc index
-				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+				clFit(&commandBuffer->uniformsCl, 4);
 				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
 
 				numFragUniformReads++;
@@ -401,11 +401,11 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 				dtb += mapping.descriptorArrayElement;
 
 				//emit reloc for BO
-				clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+				clFit(&commandBuffer->handlesCl, 4);
 				uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, dtb->bufferView->buffer->boundMem->bo);
 
 				//emit bo reloc index
-				clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+				clFit(&commandBuffer->uniformsCl, 4);
 				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
 
 				numFragUniformReads++;
@@ -428,7 +428,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		{
 			numFragUniformReads++;
 
-			clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+			clFit(&commandBuffer->uniformsCl, 4);
 			clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferPixel + mapping.resourceOffset);
 		}
 		else if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
@@ -493,7 +493,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 				numFragUniformReads += size >> 2;
 
 				//emit tex parameters
-				clFit(commandBuffer, &commandBuffer->uniformsCl, size);
+				clFit(&commandBuffer->uniformsCl, size);
 				clInsertData(&commandBuffer->uniformsCl, size, params);
 			}
 		}
@@ -517,7 +517,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		{
 			numVertUniformReads++;
 
-			clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+			clFit(&commandBuffer->uniformsCl, 4);
 			clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferVertex + mapping.resourceOffset);
 		}
 		else if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
@@ -549,7 +549,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		{
 			numCoordUniformReads++;
 
-			clFit(commandBuffer, &commandBuffer->uniformsCl, 4);
+			clFit(&commandBuffer->uniformsCl, 4);
 			clInsertData(&commandBuffer->uniformsCl, 4, cb->pushConstantBufferVertex + mapping.resourceOffset);
 		}
 		else if(mapping.mappingType == VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR)
@@ -591,7 +591,7 @@ void RPIFUNC(vkCmdDraw)(VkCommandBuffer commandBuffer, uint32_t vertexCount, uin
 	_commandBuffer* cb = commandBuffer;
 
 	//Submit draw call: vertex Array Primitives
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
+	clFit(&commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
 	clInsertVertexArrayPrimitives(&commandBuffer->binCl, firstVertex, vertexCount, getPrimitiveMode(cb->graphicsPipeline->topology));
 
 	((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->numDrawCallsSubmitted++;
@@ -623,13 +623,13 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdDrawIndexed)(
 
 	_commandBuffer* cb = commandBuffer;
 
-	clFit(commandBuffer, &commandBuffer->handlesCl, 4);
+	clFit(&commandBuffer->handlesCl, 4);
 	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, cb->indexBuffer->boundMem->bo);
 
 	clInsertGEMRelocations(&commandBuffer->binCl, idx, 0);
 
 	//Submit draw call: vertex Array Primitives
-	clFit(commandBuffer, &commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
+	clFit(&commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);
 
 	clInsertIndexedPrimitiveList(&commandBuffer->binCl,
 								 maxIndex, //max index

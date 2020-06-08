@@ -124,7 +124,7 @@ void profilePrintResults()
 	int32_t numFunctions = 0;
 
 	//insertion sort, linear search
-	for(int32_t c = 0; c < globalProfiler->funcDatabase.maxData; ++c)
+	for(uint32_t c = 0; c < globalProfiler->funcDatabase.maxData; ++c)
 	{
 		if(!globalProfiler->funcDatabase.elements[c].data)
 		{

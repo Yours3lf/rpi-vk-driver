@@ -47,6 +47,9 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDescriptorPool)(
 		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 			texelBufferDescriptorCount += pCreateInfo->pPoolSizes[c].descriptorCount;
 			break;
+		default:
+			assert(0);
+			break;
 		}
 	}
 
@@ -154,6 +157,9 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAllocateDescriptorSets)(
 			case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 				texelBufferDescriptorCount += dsl->bindings[d].descriptorCount;
 				break;
+			default:
+				assert(0);
+				break;
 			}
 		}
 
@@ -218,6 +224,9 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAllocateDescriptorSets)(
 				ds->texelBufferDescriptors[texelBufferDescriptorCounter].type = dsl->bindings[d].descriptorType;
 				ds->texelBufferDescriptors[texelBufferDescriptorCounter].stageFlags = dsl->bindings[d].stageFlags;
 				texelBufferDescriptorCounter += dsl->bindings[d].descriptorCount;
+				break;
+			default:
+				assert(0);
 				break;
 			}
 		}
@@ -324,6 +333,11 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkUpdateDescriptorSets)(
 			{
 				di->bufferView = pDescriptorWrites[c].pTexelBufferView[d];
 			}
+			break;
+		}
+		default:
+		{
+			assert(0);
 			break;
 		}
 		}
@@ -506,6 +520,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateDescriptorUpdateTemplate)(
 	PROFILESTART(RPIFUNC(vkCreateDescriptorUpdateTemplate));
 	//TODO
 	PROFILEEND(RPIFUNC(vkCreateDescriptorUpdateTemplate));
+
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkDestroyDescriptorUpdateTemplate)(

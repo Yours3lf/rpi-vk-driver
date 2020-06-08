@@ -87,7 +87,7 @@ void modeset_enum_displays(int fd, uint32_t* numDisplays, modeset_display* displ
 	 uint32_t tmpNumDisplays = 0;
 	 modeset_display tmpDisplays[16];
 
-	 for(uint32_t c = 0; c < resPtr->count_connectors; ++c)
+	 for(int c = 0; c < resPtr->count_connectors; ++c)
 	 {
 		 drmModeConnectorPtr connPtr = drmModeGetConnector(fd, resPtr->connectors[c]);
 
@@ -138,7 +138,7 @@ void modeset_enum_modes_for_display(int fd, uint32_t display, uint32_t* numModes
 	uint32_t tmpNumModes = 0;
 	modeset_display_mode tmpModes[1024];
 
-	for(uint32_t c = 0; c < connPtr->count_modes; ++c)
+	for(int c = 0; c < connPtr->count_modes; ++c)
 	{
 		uint32_t found = 0;
 		for(uint32_t d = 0; d < tmpNumModes; ++d)
@@ -296,7 +296,7 @@ void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, mo
 //		TODO if we were to output to multiple displays, we'd need to make sure we don't use a CRTC
 //		that we'd be using to drive the other screen
 
-		for(uint32_t c = 0; c < connPtr->count_encoders; ++c)
+		for(int c = 0; c < connPtr->count_encoders; ++c)
 		{
 			drmModeEncoderPtr encPtr = drmModeGetEncoder(fd, connPtr->encoders[c]);
 
@@ -526,7 +526,7 @@ void modeset_debug_print(int fd)
 	printf("res max width %i height %i\n", resPtr->max_width, resPtr->max_height);
 
 	printf("\ncrtc count %i\n", resPtr->count_crtcs);
-	for(uint32_t c = 0; c < resPtr->count_crtcs; ++c)
+	for(int c = 0; c < resPtr->count_crtcs; ++c)
 	{
 		drmModeCrtcPtr tmpCrtcPtr = drmModeGetCrtc(fd, resPtr->crtcs[c]);
 		printf("crtc id %i, buffer id %i\n", tmpCrtcPtr->crtc_id, tmpCrtcPtr->buffer_id);
@@ -534,7 +534,7 @@ void modeset_debug_print(int fd)
 	}
 
 	printf("\nfb count %i\n", resPtr->count_fbs);
-	for(uint32_t c = 0; c < resPtr->count_fbs; ++c)
+	for(int c = 0; c < resPtr->count_fbs; ++c)
 	{
 	   drmModeFBPtr tmpFBptr = drmModeGetFB(fd, resPtr->fbs[c]);
 	   printf("fb id %i, handle %i\n", tmpFBptr->fb_id, tmpFBptr->handle);
@@ -542,7 +542,7 @@ void modeset_debug_print(int fd)
 	}
 
 	printf("\nencoder count %i\n", resPtr->count_encoders);
-	for(uint32_t c = 0; c < resPtr->count_encoders; ++c)
+	for(int c = 0; c < resPtr->count_encoders; ++c)
 	{
 	   drmModeEncoderPtr tmpEncoderPtr = drmModeGetEncoder(fd, resPtr->encoders[c]);
 	   printf("encoder id %i, crtc id %i\n", tmpEncoderPtr->encoder_id, tmpEncoderPtr->crtc_id);
@@ -570,7 +570,7 @@ void modeset_debug_print(int fd)
 	}
 
 	printf("\nconnector count %i\n", resPtr->count_connectors);
-	for(uint32_t c = 0; c < resPtr->count_connectors; ++c)
+	for(int c = 0; c < resPtr->count_connectors; ++c)
 	{
 		drmModeConnectorPtr tmpConnPtr = drmModeGetConnector(fd, resPtr->connectors[c]);
 		printf("connector id %i, encoder id %i\n", tmpConnPtr->connector_id, tmpConnPtr->encoder_id);

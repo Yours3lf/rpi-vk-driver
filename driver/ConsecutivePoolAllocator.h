@@ -10,14 +10,14 @@ extern "C" {
 
 typedef struct ConsecutivePoolAllocator
 {
-	char* buf; //preallocated buffer
-	uint32_t* nextFreeBlock;
+	void* buf; //preallocated buffer
+	void* nextFreeBlock;
 	unsigned blockSize;
 	unsigned size; //size is exact multiple of block size
 	unsigned numFreeBlocks;
 } ConsecutivePoolAllocator;
 
-ConsecutivePoolAllocator createConsecutivePoolAllocator(char* b, unsigned bs, unsigned s);
+ConsecutivePoolAllocator createConsecutivePoolAllocator(void* b, unsigned bs, unsigned s);
 void destroyConsecutivePoolAllocator(ConsecutivePoolAllocator* pa);
 uint32_t consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks);
 void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBlocks);

@@ -2,7 +2,7 @@
 #include "kernelInterface.h"
 #include <stdatomic.h>
 
-atomic_int refCounter = 0;
+static atomic_int refCounter = 0;
 int controlFd = 0;
 //int renderFd = 0;
 
@@ -26,7 +26,7 @@ int openIoctl()
 		}
 	}*/
 
-	++refCounter;
+	refCounter++;
 
 	return 0;
 }
@@ -486,7 +486,7 @@ void vc4_bo_label(int fd, uint32_t bo, const char* name)
 	assert(fd);
 	assert(bo);
 
-	char* str = name;
+	const char* str = name;
 	if(!str) str = "";
 
 	struct drm_vc4_label_bo label = {
@@ -690,12 +690,12 @@ void vc4_print_hang_state(int fd)
 		fprintf(stderr, "ct0ra0: %u, ct1ra0: %u\n", arg.ct0ra0, arg.ct1ra0);
 		fprintf(stderr, "bpca: %u, bpcs: %u\n", arg.bpca, arg.bpcs);
 		fprintf(stderr, "bpoa: %u, bpos: %u\n", arg.bpoa, arg.bpos);
-		fprintf(stderr, "vpmbase: %u: %u\n", arg.vpmbase);
-		fprintf(stderr, "dbge: %u: %u\n", arg.dbge);
-		fprintf(stderr, "fdbgo: %u: %u\n", arg.fdbgo);
-		fprintf(stderr, "fdbgb: %u: %u\n", arg.fdbgb);
-		fprintf(stderr, "fdbgr: %u: %u\n", arg.fdbgr);
-		fprintf(stderr, "fdbgs: %u: %u\n", arg.fdbgs);
-		fprintf(stderr, "errstat: %u: %u\n", arg.errstat);
+		fprintf(stderr, "vpmbase: %u\n", arg.vpmbase);
+		fprintf(stderr, "dbge: %u\n", arg.dbge);
+		fprintf(stderr, "fdbgo: %u\n", arg.fdbgo);
+		fprintf(stderr, "fdbgb: %u\n", arg.fdbgb);
+		fprintf(stderr, "fdbgr: %u\n", arg.fdbgr);
+		fprintf(stderr, "fdbgs: %u\n", arg.fdbgs);
+		fprintf(stderr, "errstat: %u\n", arg.errstat);
 	}
 }

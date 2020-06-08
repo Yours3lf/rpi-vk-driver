@@ -41,20 +41,20 @@ void RPIFUNC(vkGetPhysicalDeviceMemoryProperties)(VkPhysicalDevice physicalDevic
 		//printf("%i\n", amount);
 
 		//all heaps share the same memory
-		for(int c = 0; c < numMemoryHeaps; ++c)
+		for(uint32_t c = 0; c < numMemoryHeaps; ++c)
 		{
 			memoryHeaps[c].size = amount * 1000; //kB to B
 		}
 	}
 
 	pMemoryProperties->memoryTypeCount = numMemoryTypes;
-	for(int c = 0; c < numMemoryTypes; ++c)
+	for(uint32_t c = 0; c < numMemoryTypes; ++c)
 	{
 		pMemoryProperties->memoryTypes[c] = memoryTypes[c];
 	}
 
 	pMemoryProperties->memoryHeapCount = numMemoryHeaps;
-	for(int c = 0; c < numMemoryHeaps; ++c)
+	for(uint32_t c = 0; c < numMemoryHeaps; ++c)
 	{
 		pMemoryProperties->memoryHeaps[c] = memoryHeaps[c];
 	}
