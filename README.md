@@ -74,7 +74,7 @@ There are about 470.000 conformance tests.
 
 ## FAQ
 ### Will this ever be a fully functional VK driver?
-As far as I know the PI is NOT fully VK capable on the hardware level. I can already see that some things will need to be emulated and others won't ever be emulated.
+As far as I know the PI is NOT fully VK capable on the hardware level. Some things will be emulated and others won't ever be supported.
 
 ### What performance should you expect?
 Performance wise, the Pi is quite capable. The specs and architecture is close to the GPU in the iPhone 4s. The only problem I see is bandwidth as you only have about 7GB/s compared to 12-25GB/s on typical mobile phones. So post processing is a huge no and you'd need to be very careful about the techniques that you use. Eg. you'd need to stay on chip at all times. 
@@ -83,29 +83,31 @@ CPU performance (eg. number of draw calls) should be enough on the quad-core PIs
 ### What features will not be supported?
 - 3D textures
 - sparse textures
-- compute shaders (though could be supported to some extent if the kernel side would support it)
 - occlusion queries (https://github.com/anholt/mesa/wiki/VC4-OpenGL-support)
 - pipeline statistics
-- timestamp queries (maybe with kernel support?)
 - indirect draws
-- spirv shaders
 - events
 - proper semaphore support
 - tessellation shaders
 - geometry shaders
 - 32 bit indices
 - instancing
-- pipeline caches (doesn't make sense with assembly shaders)
 - multiple color attachments
+
+### What features could be supported if kernel support was present?
 - HDR render targets and textures (lack of kernel support for 64bpp render target)
 - ETC textures (lack of kernel support for 64bpp render target)
 - linear RGBA8 textures (lack of kernel support)
 - linear YUYV textures https://www.linuxtv.org/downloads/v4l-dvb-apis-old/V4L2-PIX-FMT-YUYV.html (lack of kernel support)
 - timing blocks for profiling (kernel supports interrupts, but data needs to be routed to userspace ie. add tiler/renderer start/end timing to seqnos)
+- compute shaders (though could be supported to some extent if the kernel side would support it)
+
+### What features could be supported given enough time?
+- spirv shaders
+- pipeline caches (currently doesn't make sense with assembly shaders)
 
 ### What additional features will this driver support?
-- I already added support (to be polished) to load shader assembly. This will enable devs to optimise shaders to the last cycle.
-- I'll probably add something to indicate towards the developer that things are emulated or not supported at all.
+- I already added support to load shader assembly. This will enable devs to optimise shaders to the last cycle.
 - Videocore IV provides some performance counters these will be exposed
 - Videocore IV supports some texture formats that are not present in the spec
   - bw1: 1 bit black and white
