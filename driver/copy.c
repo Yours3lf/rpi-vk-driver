@@ -1131,6 +1131,9 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		uint32_t dstHeight = max(pRegions[c].dstOffsets[1].y - pRegions[c].dstOffsets[0].y, 1);
 		uint32_t srcMipLevel = pRegions[c].srcSubresource.mipLevel;
 		uint32_t dstMipLevel = pRegions[c].dstSubresource.mipLevel;
+		uint32_t srcBaseLayer = pRegions[c].srcSubresource.baseArrayLayer;
+		uint32_t dstBaseLayer = pRegions[c].dstSubresource.baseArrayLayer;
+
 
 		uint32_t srcPixelBpp = getFormatBpp(srcImg->format);
 		uint32_t dstPixelBpp = getFormatBpp(dstImg->format);
@@ -1163,8 +1166,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		view.format = srcImg->format;
 		view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		view.subresourceRange.baseMipLevel = srcMipLevel;
-		view.subresourceRange.baseArrayLayer = 0;
-		view.subresourceRange.layerCount = 1;
+		view.subresourceRange.baseArrayLayer = srcBaseLayer;
+		view.subresourceRange.layerCount = 1; //TODO
 		view.subresourceRange.levelCount = srcImg->miplevels;
 		view.image = srcImage;
 		RPIFUNC(vkCreateImageView)(device, &view, 0, &srcTextureView);
@@ -1191,7 +1194,7 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBlitImage)(
 		writeDescriptorSet.descriptorCount = 1;
 		RPIFUNC(vkUpdateDescriptorSets)(device, 1, &writeDescriptorSet, 0, 0);
 
-		createRendertarget(device, pRegions[c].dstSubresource.baseArrayLayer, dstMipLevel, dstWidth, dstHeight, dstImage, &dstTextureView, &offscreenRenderPass, &offscreenFramebuffer);
+		createRendertarget(device, dstBaseLayer, dstMipLevel, dstWidth, dstHeight, dstImage, &dstTextureView, &offscreenRenderPass, &offscreenFramebuffer);
 		createPipeline(device, 1, 4, 6, device->emulTextureToTextureShaderModule, device->emulTextureDsl, &blitPipelineLayout, offscreenRenderPass, &blitPipeline);
 
 		//offscreen rendering

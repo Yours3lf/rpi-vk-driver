@@ -124,6 +124,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAllocateCommandBuffers)(
 			pCommandBuffers[c]->usageFlags = 0;
 			pCommandBuffers[c]->state = CMDBUF_STATE_INITIAL;
 			pCommandBuffers[c]->cp = cp;
+			//TODO maybe use a different kind of allocator
 			clInit(&pCommandBuffers[c]->binCl, &cp->cpa, consecutivePoolAllocate(&cp->cpa, 1), cp->cpa.blockSize);
 			clInit(&pCommandBuffers[c]->handlesCl, &cp->cpa, consecutivePoolAllocate(&cp->cpa, 1), cp->cpa.blockSize);
 			clInit(&pCommandBuffers[c]->shaderRecCl, &cp->cpa, consecutivePoolAllocate(&cp->cpa, 1), cp->cpa.blockSize);

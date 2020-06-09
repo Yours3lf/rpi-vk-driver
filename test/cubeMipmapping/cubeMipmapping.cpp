@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <string.h>
@@ -637,7 +637,8 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities)
 #define max(a, b) (a > b ? a : b)
 		swapChainExtent.width = min(max(640, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
 		swapChainExtent.height = min(max(480, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
-
+#undef min
+#undef max
 		return swapChainExtent;
 	}
 	else {
@@ -768,6 +769,13 @@ void recordCommandBuffers()
 			pushConstants[4] = *(uint32_t*)&Zo;
 
 			vkCmdPushConstants(presentCommandBuffers[i], samplePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
+
+			float mipBias = 2.0f;
+			uint32_t fragPushConstants[1];
+			fragPushConstants[0] = *(uint32_t*)&mipBias;
+
+			vkCmdPushConstants(presentCommandBuffers[i], samplePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(fragPushConstants), &fragPushConstants);
+
 
 			vkCmdDraw(presentCommandBuffers[i], 12*3, 1, 0, 0);
 
@@ -1033,8 +1041,11 @@ void CreateShaders()
 
 			"sig_small_imm ; r2 = or.always(b, b, nop, 0xbf800000) ; nop = nop(r0, r0) ;"
 
+			"sig_none ; r3 = or.always(b, b, nop, uni) ; nop = nop(r0, r0) ;"
+
 			///write texture addresses (x, y)
 			///writing tmu0_s signals that all coordinates are written
+			"sig_none ; tmu0_b = or.always(r3, r3) ; nop = nop(r0, r0) ;"
 			"sig_none ; tmu0_r = or.always(r2, r2) ; nop = nop(r0, r0) ;" //tex coord z
 			"sig_none ; tmu0_t = or.always(r1, r1) ; nop = nop(r0, r0) ;" //tex coord y
 			"sig_none ; tmu0_s = or.always(r0, r0) ; nop = nop(r0, r0) ;" //tex coord x
@@ -1107,6 +1118,14 @@ void CreateShaders()
 
 	VkRpiAssemblyMappingEXT fragmentMappings[] = {
 		//fragment shader uniforms
+		{
+			VK_RPI_ASSEMBLY_MAPPING_TYPE_PUSH_CONSTANT,
+			VK_DESCRIPTOR_TYPE_MAX_ENUM, //descriptor type
+			0, //descriptor set #
+			0, //descriptor binding #
+			0, //descriptor array element #
+			0, //resource offset
+		},
 		{
 			VK_RPI_ASSEMBLY_MAPPING_TYPE_DESCRIPTOR,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, //descriptor type
@@ -1251,7 +1270,7 @@ void CreatePipeline()
 		pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 		pushConstantRanges[1].offset = 0;
-		pushConstantRanges[1].size = 1 * 4; //1 * 32bits
+		pushConstantRanges[1].size = 2 * 4; //1 * 32bits
 		pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		VkPipelineShaderStageCreateInfo shaderStageCreateInfo[2] = {};
@@ -1317,7 +1336,7 @@ void CreateTexture()
 	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
 	uint32_t width = 1024, height = 1024;
-	uint32_t mipLevels = 1;
+	uint32_t mipLevels = std::floor(std::log2(std::max(width, height))) + 1;
 
 	char* texDatas[6];
 	texDatas[0] = readPPM("cubemapData/posx.ppm");
@@ -1388,6 +1407,8 @@ void CreateTexture()
 
 		vkBindImageMemory(device, textureImage, textureMemory, 0);
 	}
+
+	fprintf(stderr, "copying from staging to optimal\n");
 
 	{ // convert image to optimal texture format
 		VkCommandBufferAllocateInfo allocInfo = {};
@@ -1484,6 +1505,122 @@ void CreateTexture()
 		vkDestroyBuffer(device, stagingBuffer, 0);
 	}
 
+	fprintf(stderr, "generating cubemap mipchain\n");
+
+	{ // generate mipchain
+		VkCommandBufferAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = 1;
+
+		VkCommandBuffer mipgenCommandBuffer;
+
+		vkAllocateCommandBuffers(device, &allocInfo, &mipgenCommandBuffer);
+
+		for(uint32_t d = 0; d < 6; ++d)
+		{
+			for(uint32_t c = 1; c < mipLevels; ++c)
+			{
+				VkImageBlit imageBlit = {};
+
+				imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlit.srcSubresource.mipLevel = c - 1;
+				imageBlit.srcSubresource.baseArrayLayer = d;
+				imageBlit.srcSubresource.layerCount = 1;
+				imageBlit.srcOffsets[1].x = uint32_t(width >> (c - 1));
+				imageBlit.srcOffsets[1].y = uint32_t(height >> (c - 1));
+				imageBlit.srcOffsets[1].z = 1;
+
+				imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				imageBlit.dstSubresource.mipLevel = c;
+				imageBlit.dstSubresource.baseArrayLayer = d;
+				imageBlit.dstSubresource.layerCount = 1;
+				imageBlit.dstOffsets[1].x = uint32_t(width >> c);
+				imageBlit.dstOffsets[1].y = uint32_t(height >> c);
+				imageBlit.dstOffsets[1].z = 1;
+
+				VkImageSubresourceRange mipSubRange = {};
+				mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				mipSubRange.baseMipLevel = c;
+				mipSubRange.levelCount = 1;
+				mipSubRange.baseArrayLayer = d;
+				mipSubRange.layerCount = 1;
+
+				VkImageMemoryBarrier imageMemoryBarrier = {};
+				imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+				imageMemoryBarrier.srcAccessMask = 0;
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+				imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				imageMemoryBarrier.image = textureImage;
+				imageMemoryBarrier.subresourceRange = mipSubRange;
+
+				VkCommandBufferBeginInfo beginInfo = {};
+				beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+				beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+				vkBeginCommandBuffer(mipgenCommandBuffer, &beginInfo);
+
+				vkCmdPipelineBarrier(mipgenCommandBuffer,
+									 VK_PIPELINE_STAGE_TRANSFER_BIT,
+									 VK_PIPELINE_STAGE_TRANSFER_BIT,
+									 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+				vkCmdBlitImage(mipgenCommandBuffer, textureImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+				vkCmdPipelineBarrier(mipgenCommandBuffer,
+									 VK_PIPELINE_STAGE_TRANSFER_BIT,
+									 VK_PIPELINE_STAGE_TRANSFER_BIT,
+									 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+			}
+		}
+
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.levelCount = 1;
+		subresourceRange.layerCount = 1;
+
+		VkImageMemoryBarrier imageMemoryBarrier = {};
+		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageMemoryBarrier.image = textureImage;
+		imageMemoryBarrier.subresourceRange = subresourceRange;
+
+		vkCmdPipelineBarrier(mipgenCommandBuffer,
+							 VK_PIPELINE_STAGE_TRANSFER_BIT,
+							 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+							 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+		vkEndCommandBuffer(mipgenCommandBuffer);
+
+		VkFenceCreateInfo fenceInfo = {};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = 0;
+
+		VkFence fence;
+		vkCreateFence(device, &fenceInfo, 0, &fence);
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &mipgenCommandBuffer;
+
+		vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
+
+		vkWaitForFences(device, 1, &fence, VK_TRUE, -1);
+
+		vkDestroyFence(device, fence, 0);
+		vkFreeCommandBuffers(device, commandPool, 1, &mipgenCommandBuffer);
+	}
 
 	{ //create sampler for sampling texture
 		VkImageViewCreateInfo view = {};
@@ -1495,7 +1632,7 @@ void CreateTexture()
 		view.subresourceRange.baseMipLevel = 0;
 		view.subresourceRange.baseArrayLayer = 0;
 		view.subresourceRange.layerCount = 6;
-		view.subresourceRange.levelCount = 1;
+		view.subresourceRange.levelCount = mipLevels;
 		view.image = textureImage;
 		vkCreateImageView(device, &view, nullptr, &textureView);
 
@@ -1507,13 +1644,15 @@ void CreateTexture()
 		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		sampler.mipLodBias = 0.0f;
+		sampler.mipLodBias = 1.0f; //disable auto lod
 		sampler.compareOp = VK_COMPARE_OP_NEVER;
 		sampler.minLod = 0.0f;
 		sampler.maxLod = 0.0f;
 		sampler.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 		vkCreateSampler(device, &sampler, 0, &textureSampler);
 	}
+
+	fprintf(stderr, "cubemap with mipmaps generated\n");
 }
 
 void CreateDescriptorSet()

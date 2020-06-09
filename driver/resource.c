@@ -241,8 +241,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkCreateImage)(
 	i->height = pCreateInfo->extent.height;
 	i->depth = pCreateInfo->extent.depth;
 	i->miplevels = pCreateInfo->mipLevels;
-	memset(i->levelOffsets, 0, sizeof(uint32_t) * 11);
-	memset(i->levelTiling, 0, sizeof(uint32_t) * 11);
+	memset(i->levelOffsets, 0, sizeof(uint32_t) * 12);
+	memset(i->levelTiling, 0, sizeof(uint32_t) * 12);
 	i->samples = pCreateInfo->samples;
 	i->layers = pCreateInfo->arrayLayers;
 	i->size = 0;
@@ -356,8 +356,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkGetImageMemoryRequirements)(
 	uint32_t potH = getPow2Pad(h);
 	uint32_t offset = 0;
 
-	uint32_t sizes[11];
-	uint32_t strides[11];
+	uint32_t sizes[12];
+	uint32_t strides[12];
 
 	for(int c = i->miplevels - 1; c >= 0; c--)
 	{

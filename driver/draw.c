@@ -441,7 +441,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 				_descriptorImage* di = getMapElement(ds->imageBindingMap, mapping.descriptorBinding);
 				di += mapping.descriptorArrayElement;
 
-				uint32_t cubemapStride = (di->imageView->image->width * di->imageView->image->height * getFormatBpp(di->imageView->interpretedFormat)) >> 3;
+				uint32_t cubemapStride = di->imageView->image->size / 6;
 
 				//fprintf(stderr, "cubemap stride %i\n", cubemapStride);
 
@@ -454,10 +454,10 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 									 getTextureDataType(di->imageView->interpretedFormat),
 									 di->imageView->viewType == VK_IMAGE_VIEW_TYPE_CUBE,
 									 cubemapStride >> 12, //cubemap stride in multiples of 4KB
-									 (di->imageView->image->levelOffsets[0] + di->imageView->image->boundOffset) >> 12, //Image level 0 offset in multiples of 4KB
+									 (di->imageView->subresourceRange.baseArrayLayer * cubemapStride + di->imageView->image->levelOffsets[0] + di->imageView->image->boundOffset) >> 12, //Image level 0 offset in multiples of 4KB
 									 di->imageView->image->height & 2047,
 									 di->imageView->image->width & 2047,
-									 getMinFilterType(di->sampler->minFilter, di->sampler->mipmapMode),// di->sampler->maxLod),
+									 getMinFilterType(di->sampler->minFilter, di->sampler->mipmapMode),
 									 di->sampler->magFilter == VK_FILTER_NEAREST,
 									 getWrapMode(di->sampler->addressModeU),
 									 getWrapMode(di->sampler->addressModeV),
@@ -499,7 +499,7 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 		}
 	}
 
-	assert(numFragUniformReads == fragModule->numFragUniformReads);
+	//assert(numFragUniformReads == fragModule->numFragUniformReads);
 
 	PROFILEEND(&drawCommon3);
 

@@ -200,8 +200,8 @@ typedef struct VkImage_T
 	uint32_t fb; //needed for swapchain
 	uint32_t width, height, depth;
 	uint32_t miplevels, samples;
-	uint32_t levelOffsets[11]; //max 11 mip levels
-	uint32_t levelTiling[11];
+	uint32_t levelOffsets[12]; //max 12 mip levels
+	uint32_t levelTiling[12];
 	uint32_t layers; //number of views for multiview/stereo
 	uint32_t size; //overall size including padding and alignment
 	uint32_t stride; //the number of bytes from one row of pixels in memory to the next row of pixels in memory (aka pitch)
@@ -579,7 +579,7 @@ uint32_t encodeVPMSetup(uint8_t stride,
 						uint8_t address,
 						uint8_t vectorComponentsToRead);
 uint8_t getTextureDataType(VkFormat format);
-uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter);//, float maxLod);
+uint8_t getMinFilterType(VkFilter minFilter, VkSamplerMipmapMode mipFilter);
 uint8_t getWrapMode(VkSamplerAddressMode mode);
 uint32_t getRenderTargetFormatVC4(VkFormat format);
 void clFit(ControlList* cl, uint32_t commandSize);
