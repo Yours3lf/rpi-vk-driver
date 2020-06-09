@@ -77,7 +77,7 @@ There are about 470.000 conformance tests.
 As far as I know the PI is NOT fully VK capable on the hardware level. Some things will be emulated and others won't ever be supported.
 
 ### What performance should you expect?
-Performance wise, the Pi is quite capable. The specs and architecture is close to the GPU in the iPhone 4s. The only problem I see is bandwidth as you only have about 2.5GB/s compared to 25-50GB/s on typical mobile phones. So post processing is a huge no and you'd need to be very careful about the techniques that you use. Eg. you'd need to stay on chip at all times. 
+Performance wise, the Pi is quite capable. The specs and architecture is close to the GPU in the iPhone 4s. The only problem I see is bandwidth as you only have about 2.5GB/s compared to 20-30GB/s on typical mobile phones. So post processing is a huge no and you'd need to be very careful about the techniques that you use. Eg. you'd need to stay on chip at all times. 
 CPU performance (eg. number of draw calls) should be enough on the quad-core PIs as you can easily utilise all cores using VK.
 
 ### What features will not be supported?
