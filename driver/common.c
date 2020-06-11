@@ -537,9 +537,10 @@ void clFit(ControlList* cl, uint32_t commandSize)
 	{
 		uint32_t currSize = cl->nextFreeByteOffset - cl->offset;
 		uint32_t currMarkerOffset = cl->currMarkerOffset - cl->offset;
-		cl->offset = consecutivePoolReAllocate(cl->CPA, getCPAptrFromOffset(cl->CPA, cl->offset), cl->numBlocks); assert(cl->offset != ~0u);
+		uint32_t newNumBlocks = ((currSize + commandSize) / (((ConsecutivePoolAllocator*)cl->CPA)->blockSize)) + 1;
+		cl->offset = consecutivePoolReAllocate(cl->CPA, getCPAptrFromOffset(cl->CPA, cl->offset), cl->numBlocks, newNumBlocks); assert(cl->offset != ~0u);
 		cl->nextFreeByteOffset = cl->offset + currSize;
-		cl->numBlocks++;
+		cl->numBlocks = newNumBlocks;
 		cl->currMarkerOffset = cl->currMarkerOffset == ~0u ? ~0u : cl->offset + currMarkerOffset;
 		if(cl->currMarkerOffset != ~0u)
 		{

@@ -359,6 +359,8 @@ typedef struct VkCommandBuffer_T
 
 	_device* dev; //device from which it was created
 
+	VkCommandBufferLevel level;
+
 	//Recorded commands include commands to bind pipelines and descriptor sets to the command buffer, commands to modify dynamic state, commands to draw (for graphics rendering),
 	//commands to dispatch (for compute), commands to execute secondary command buffers (for primary command buffers only), commands to copy buffers and images, and other commands
 

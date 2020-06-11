@@ -1333,8 +1333,8 @@ void CreateVertexBuffer()
 	float w = 2.0;
 	float h = 2.0;
 
-	float stepH = 6.0*h/1080.0;
-	float stepW = 8.0*w/1920.0;
+	float stepH = 90*6.0*h/1080.0;
+	float stepW = 90*8.0*w/1920.0;
 
 	vertices.reserve(3 * 2 * 960 * 540);
 

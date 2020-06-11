@@ -21,7 +21,7 @@ ConsecutivePoolAllocator createConsecutivePoolAllocator(void* b, unsigned bs, un
 void destroyConsecutivePoolAllocator(ConsecutivePoolAllocator* pa);
 uint32_t consecutivePoolAllocate(ConsecutivePoolAllocator* pa, uint32_t numBlocks);
 void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBlocks);
-uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks);
+uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks, uint32_t newNumBlocks);
 void CPAdebugPrint(ConsecutivePoolAllocator* pa);
 void* getCPAptrFromOffset(ConsecutivePoolAllocator* pa, uint32_t offset);
 

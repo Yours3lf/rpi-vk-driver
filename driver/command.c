@@ -120,6 +120,8 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAllocateCommandBuffers)(
 
 			pCommandBuffers[c]->dev = device;
 
+			pCommandBuffers[c]->level = pAllocateInfo[c].level;
+
 			pCommandBuffers[c]->shaderRecCount = 0;
 			pCommandBuffers[c]->usageFlags = 0;
 			pCommandBuffers[c]->state = CMDBUF_STATE_INITIAL;
@@ -212,15 +214,11 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkBeginCommandBuffer)(
 	assert(commandBuffer);
 	assert(pBeginInfo);
 
-	//TODO secondary command buffers
-
 	//TODO VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT
 	//specifies that a secondary command buffer is considered to be entirely inside a render pass. If this is a primary command buffer, then this bit is ignored
 
 	//TODO VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT
 	//specifies that a command buffer can be resubmitted to a queue while it is in the pending state, and recorded into multiple primary command buffers
-
-	//TODO inheritance info
 
 	//When a command buffer begins recording, all state in that command buffer is undefined
 
@@ -231,6 +229,16 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkBeginCommandBuffer)(
 	   commandBuffer->cp->resetAble)
 	{
 		RPIFUNC(vkResetCommandBuffer)(commandBuffer, 0);
+	}
+
+	if(pBeginInfo->pInheritanceInfo && commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+	{
+		VkRenderPassBeginInfo rpbi = {0};
+		rpbi.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		rpbi.framebuffer = pBeginInfo->pInheritanceInfo->framebuffer;
+		rpbi.renderPass = pBeginInfo->pInheritanceInfo->renderPass;
+		//TODO query stuff
+		RPIFUNC(vkCmdBeginRenderPass)(commandBuffer, &rpbi, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 	}
 
 	PROFILEEND(RPIFUNC(vkBeginCommandBuffer));
@@ -930,7 +938,42 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdExecuteCommands)(
 	const VkCommandBuffer*                      pCommandBuffers)
 {
 	PROFILESTART(RPIFUNC(vkCmdExecuteCommands));
-	//TODO
+
+	assert(commandBuffer);
+	assert(commandBufferCount > 0);
+	assert(pCommandBuffers);
+
+	//just copy bincl etc. over until there's a better solution
+
+	_commandBuffer* primary = commandBuffer;
+
+	for(uint32_t c = 0; c < commandBufferCount; ++c)
+	{
+		_commandBuffer* secondary = pCommandBuffers[c];
+
+		CLMarker* secondaryMarker = getCPAptrFromOffset(secondary->binCl.CPA, secondary->binCl.currMarkerOffset);
+
+		if(!secondaryMarker->size)
+		{
+			clCloseCurrentMarker(&secondary->binCl, &secondary->handlesCl, &secondary->shaderRecCl, secondary->shaderRecCount, &secondary->uniformsCl);
+		}
+
+		clFit(&primary->binCl, secondaryMarker->size);
+		clInsertData(&primary->binCl, secondaryMarker->size, ((uint8_t*)secondaryMarker) + sizeof(CLMarker));
+
+		((CLMarker*)getCPAptrFromOffset(primary->binCl.CPA, primary->binCl.currMarkerOffset))->numDrawCallsSubmitted += secondaryMarker->numDrawCallsSubmitted;
+
+		//TODO handles/handle indices might be grabled up like this...
+		clFit(&primary->handlesCl, secondaryMarker->handlesSize);
+		clInsertData(&primary->handlesCl, secondaryMarker->handlesSize, getCPAptrFromOffset(secondary->handlesCl.CPA, secondaryMarker->handlesBufOffset));
+		clFit(&primary->uniformsCl, secondaryMarker->uniformsSize);
+		clInsertData(&primary->uniformsCl, secondaryMarker->uniformsSize, getCPAptrFromOffset(secondary->uniformsCl.CPA, secondaryMarker->uniformsBufOffset));
+		clFit(&primary->shaderRecCl, secondaryMarker->shaderRecSize);
+		clInsertData(&primary->shaderRecCl, secondaryMarker->shaderRecSize, getCPAptrFromOffset(secondary->shaderRecCl.CPA, secondaryMarker->shaderRecBufOffset));
+
+		primary->shaderRecCount += secondary->shaderRecCount;
+	}
+
 	PROFILEEND(RPIFUNC(vkCmdExecuteCommands));
 }
 

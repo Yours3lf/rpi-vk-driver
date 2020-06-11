@@ -19,7 +19,8 @@ uint32_t clHasEnoughSpace(ControlList* cl, uint32_t size)
 	assert(cl);
 	assert(cl->CPA);
 	uint32_t currSize = cl->nextFreeByteOffset - cl->offset;
-	if(currSize + size < cl->numBlocks * cl->blockSize - 4)
+
+	if((currSize + size) <= (cl->numBlocks * cl->blockSize))
 	{
 		return 1; //fits!
 	}

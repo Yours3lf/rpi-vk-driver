@@ -201,49 +201,52 @@ void consecutivePoolFree(ConsecutivePoolAllocator* pa, void* p, uint32_t numBloc
 	pa->numFreeBlocks += numBlocks;
 }
 
-uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks)
+uint32_t consecutivePoolReAllocate(ConsecutivePoolAllocator* pa, void* currentMem, uint32_t currNumBlocks, uint32_t newNumBlocks)
 {
 	assert(pa);
 	assert(pa->buf);
 	assert(currentMem);
 	assert(currNumBlocks);
 
-	uint32_t* nextCandidate = (char*)currentMem + pa->blockSize * currNumBlocks;
-
-	uint32_t* prevPtr = 0;
-	for(uint32_t* listPtr = pa->nextFreeBlock; listPtr; listPtr = *listPtr)
+	//TODO hack
+	if(newNumBlocks - currNumBlocks < 2)
 	{
-		if(listPtr == nextCandidate)
+		uint32_t* nextCandidate = (char*)currentMem + pa->blockSize * currNumBlocks;
+		uint32_t* prevPtr = 0;
+		for(uint32_t* listPtr = pa->nextFreeBlock; listPtr; listPtr = *listPtr)
 		{
-			//update next free block to be the one after our current candidate
-			if(prevPtr)
+			if(listPtr == nextCandidate)
 			{
-				*prevPtr = *listPtr;
-				pa->nextFreeBlock = prevPtr;
-			}
-			else if(*listPtr)
-			{
-				pa->nextFreeBlock = *listPtr;
+				//update next free block to be the one after our current candidate
+				if(prevPtr)
+				{
+					*prevPtr = *listPtr;
+					pa->nextFreeBlock = prevPtr;
+				}
+				else if(*listPtr)
+				{
+					pa->nextFreeBlock = *listPtr;
+				}
+
+				pa->numFreeBlocks -= 1;
+
+				return (char*)currentMem - (char*)pa->buf;
 			}
 
-			pa->numFreeBlocks -= 1;
-
-			return (char*)currentMem - (char*)pa->buf;
+			prevPtr = listPtr;
 		}
-
-		prevPtr = listPtr;
 	}
 
 	{
 		//try to allocate one more block
-		uint32_t newMemOffset = consecutivePoolAllocate(pa, currNumBlocks + 1);
+		uint32_t newMemOffset = consecutivePoolAllocate(pa, newNumBlocks);
 
 		if(newMemOffset == -1)
 		{
 			return -1;
 		}
 
-		pa->numFreeBlocks -= 1;
+		pa->numFreeBlocks -= newNumBlocks - currNumBlocks;
 
 		//copy over old content
 		memcpy(pa->buf + newMemOffset, currentMem, currNumBlocks * pa->blockSize);

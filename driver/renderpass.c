@@ -150,139 +150,151 @@ void RPIFUNC(vkCmdBeginRenderPass)(VkCommandBuffer commandBuffer, const VkRender
 	currMarker->readMSAAimage = readMSAAimage;
 	currMarker->readMSAAdepthStencilImage = readMSAAdepthStencilImage;
 
-	if(rp->subpasses[0].colorAttachmentCount > 0)
+	if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
 	{
-		if(rp->subpasses[0].pColorAttachments)
+		if(rp->subpasses[0].colorAttachmentCount > 0)
 		{
-			if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+			if(rp->subpasses[0].pColorAttachments)
 			{
-				flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+				if(rp->attachments[rp->subpasses[0].pColorAttachments[0].attachment].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+				{
+					flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
 
-				if(!rp->subpasses[0].pResolveAttachments)
-				{
-					currMarker->clearColor[0] =
-					currMarker->clearColor[1] =
-							packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
-				}
-				else
-				{
-					currMarker->clearColor[0] =
-					currMarker->clearColor[1] =
-							packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
+					if(!rp->subpasses[0].pResolveAttachments)
+					{
+						currMarker->clearColor[0] =
+						currMarker->clearColor[1] =
+								packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
+					}
+					else
+					{
+						currMarker->clearColor[0] =
+						currMarker->clearColor[1] =
+								packVec4IntoABGR8(pRenderPassBegin->pClearValues[rp->subpasses[0].pColorAttachments[0].attachment].color.float32);
+					}
 				}
 			}
 		}
-	}
 
-	if(rp->subpasses[0].pDepthStencilAttachment)
-	{
-		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+		if(rp->subpasses[0].pDepthStencilAttachment)
 		{
-			flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+			if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+			{
+				flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
 
-			currMarker->clearDepth =
-					(uint32_t)(pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.depth * 0xffffff) & 0xffffff;
+				currMarker->clearDepth =
+						(uint32_t)(pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.depth * 0xffffff) & 0xffffff;
+			}
+
+			if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
+			{
+				flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
+
+				currMarker->clearStencil =
+						pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.stencil & 0xff;
+			}
 		}
 
-		if(rp->attachments[rp->subpasses[0].pDepthStencilAttachment->attachment].stencilLoadOp == VK_ATTACHMENT_LOAD_OP_CLEAR)
-		{
-			flags |= VC4_SUBMIT_CL_USE_CLEAR_COLOR;
-
-			currMarker->clearStencil =
-					pRenderPassBegin->pClearValues[rp->subpasses[0].pDepthStencilAttachment->attachment].depthStencil.stencil & 0xff;
-		}
+		currMarker->flags = flags;
 	}
-
-	currMarker->flags = flags;
 
 	//insert relocs
-
-	if(writeImage)
+	//only add image stuff if we're in a primary level
+	//secondary level can't begin a renderpass
+	//but still will need a marker
+	if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
 	{
-		clFit(&commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeImage->boundMem->bo);
+		if(writeImage)
+		{
+			clFit(&commandBuffer->handlesCl, 4);
+			clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeImage->boundMem->bo);
+		}
+
+		if(readImage)
+		{
+			clFit(&commandBuffer->handlesCl, 4);
+			clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, readImage->boundMem->bo);
+		}
+
+		if(writeDepthStencilImage)
+		{
+			clFit(&commandBuffer->handlesCl, 4);
+			clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeDepthStencilImage->boundMem->bo);
+		}
+
+		if(readDepthStencilImage)
+		{
+			clFit(&commandBuffer->handlesCl, 4);
+			clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, readDepthStencilImage->boundMem->bo);
+		}
+
+		if(writeMSAAimage)
+		{
+			clFit(&commandBuffer->handlesCl, 4);
+			clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeMSAAimage->boundMem->bo);
+		}
+
+		if(writeMSAAdepthStencilImage)
+		{
+			clFit(&commandBuffer->handlesCl, 4);
+			clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeMSAAdepthStencilImage->boundMem->bo);
+		}
 	}
 
-	if(readImage)
+	if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
 	{
-		clFit(&commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, readImage->boundMem->bo);
+		uint32_t bpp = 0;
+
+		((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->width = fb->width;
+		((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->height = fb->height;
+
+		if(writeImage)
+		{
+			bpp = getFormatBpp(writeImage->format);
+		}
+		else if(writeMSAAimage)
+		{
+			bpp = getFormatBpp(writeMSAAimage->format);
+		}
+
+		uint32_t biggestMip = 0;
+		for(uint32_t c = 0; c < fb->numAttachmentViews; ++c)
+		{
+			biggestMip = max(biggestMip, fb->attachmentViews[c].subresourceRange.baseMipLevel);
+		}
+
+		//pad render size if we are rendering to a mip level
+		((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->mipLevel = biggestMip;
+
+		uint32_t width = ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->width;
+
+		if(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->mipLevel > 0)
+		{
+			width = getPow2Pad(width);
+			width = width < 4 ? 4 : width;
+		}
+
+
+		clFit(&commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
+		clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
+											 0, //double buffer in non ms mode
+											 0, //tile allocation block size
+											 0, //tile allocation initial block size
+											 0, //auto initialize tile state data array
+											 bpp == 64, //64 bit color mode
+											 writeMSAAimage || writeMSAAdepthStencilImage || performResolve ? 1 : 0, //msaa
+											 width, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->height,
+											 0, //tile state data array address
+											 0, //tile allocation memory size
+											 0); //tile allocation memory address
+
+		//START_TILE_BINNING resets the statechange counters in the hardware,
+		//which are what is used when a primitive is binned to a tile to
+		//figure out what new state packets need to be written to that tile's
+		//command list.
+		clFit(&commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
+		clInsertStartTileBinning(&commandBuffer->binCl);
 	}
-
-	if(writeDepthStencilImage)
-	{
-		clFit(&commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeDepthStencilImage->boundMem->bo);
-	}
-
-	if(readDepthStencilImage)
-	{
-		clFit(&commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, readDepthStencilImage->boundMem->bo);
-	}
-
-	if(writeMSAAimage)
-	{
-		clFit(&commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeMSAAimage->boundMem->bo);
-	}
-
-	if(writeMSAAdepthStencilImage)
-	{
-		clFit(&commandBuffer->handlesCl, 4);
-		clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, writeMSAAdepthStencilImage->boundMem->bo);
-	}
-
-	uint32_t bpp = 0;
-
-	((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->width = fb->width;
-	((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->height = fb->height;
-
-	if(writeImage)
-	{
-		bpp = getFormatBpp(writeImage->format);
-	}
-	else if(writeMSAAimage)
-	{
-		bpp = getFormatBpp(writeMSAAimage->format);
-	}
-
-	uint32_t biggestMip = 0;
-	for(uint32_t c = 0; c < fb->numAttachmentViews; ++c)
-	{
-		biggestMip = max(biggestMip, fb->attachmentViews[c].subresourceRange.baseMipLevel);
-	}
-
-	//pad render size if we are rendering to a mip level
-	((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->mipLevel = biggestMip;
-
-	uint32_t width = ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->width;
-
-	if(((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->mipLevel > 0)
-	{
-		width = getPow2Pad(width);
-		width = width < 4 ? 4 : width;
-	}
-
-	clFit(&commandBuffer->binCl, V3D21_TILE_BINNING_MODE_CONFIGURATION_length);
-	clInsertTileBinningModeConfiguration(&commandBuffer->binCl,
-										 0, //double buffer in non ms mode
-										 0, //tile allocation block size
-										 0, //tile allocation initial block size
-										 0, //auto initialize tile state data array
-										 bpp == 64, //64 bit color mode
-										 writeMSAAimage || writeMSAAdepthStencilImage || performResolve ? 1 : 0, //msaa
-										 width, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->height,
-										 0, //tile state data array address
-										 0, //tile allocation memory size
-										 0); //tile allocation memory address
-
-	//START_TILE_BINNING resets the statechange counters in the hardware,
-	//which are what is used when a primitive is binned to a tile to
-	//figure out what new state packets need to be written to that tile's
-	//command list.
-	clFit(&commandBuffer->binCl, V3D21_START_TILE_BINNING_length);
-	clInsertStartTileBinning(&commandBuffer->binCl);
 
 	((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->perfmonID = cb->perfmonID;
 
@@ -306,15 +318,18 @@ void RPIFUNC(vkCmdEndRenderPass)(VkCommandBuffer commandBuffer)
 
 	//Ending a render pass instance performs any multisample resolve operations on the final subpass
 
-	//Increment the semaphore indicating that binning is done and
-	//unblocking the render thread.  Note that this doesn't act
-	//until the FLUSH completes.
-	//The FLUSH caps all of our bin lists with a
-	//VC4_PACKET_RETURN.
-	clFit(&cb->binCl, V3D21_INCREMENT_SEMAPHORE_length);
-	clInsertIncrementSemaphore(&cb->binCl);
-	clFit(&cb->binCl, V3D21_FLUSH_length);
-	clInsertFlush(&cb->binCl);
+	if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
+	{
+		//Increment the semaphore indicating that binning is done and
+		//unblocking the render thread.  Note that this doesn't act
+		//until the FLUSH completes.
+		//The FLUSH caps all of our bin lists with a
+		//VC4_PACKET_RETURN.
+		clFit(&cb->binCl, V3D21_INCREMENT_SEMAPHORE_length);
+		clInsertIncrementSemaphore(&cb->binCl);
+		clFit(&cb->binCl, V3D21_FLUSH_length);
+		clInsertFlush(&cb->binCl);
+	}
 
 	cb->currRenderPass = 0;
 
