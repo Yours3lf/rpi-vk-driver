@@ -56,6 +56,14 @@ typedef struct CLMarker
 	//uint8_t* uniformsBuf; //
 	uint32_t uniformsBufOffset;
 	uint32_t uniformsSize;
+
+	//secondary commandbuffer handle index relocations
+	uint32_t uniformRelocOffset;
+	uint32_t uniformRelocSize;
+	uint32_t gemRelocOffset;
+	uint32_t gemRelocSize;
+	uint32_t shaderRecRelocOffset;
+	uint32_t shaderRecRelocSize;
 } CLMarker;
 
 typedef struct ControlList

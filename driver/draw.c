@@ -269,6 +269,17 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 						 coordCode  //coordinate shader code address
 						 );
 
+	if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+	{
+		uint32_t offset = commandBuffer->shaderRecCl.nextFreeByteOffset - commandBuffer->shaderRecCl.offset - 12;
+		clFit(&commandBuffer->shaderRecRelocCl, 12);
+		clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
+		offset -= 16;
+		clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
+		offset -= 16;
+		clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
+	}
+
 	uint32_t vertexAttribOffsets[8] = {};
 	uint32_t coordAttribOffsets[8] = {};
 	for(uint32_t c = 1; c < 8; ++c)
@@ -330,6 +341,13 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 									vertexAttribOffsets[cb->graphicsPipeline->vertexAttributeDescriptions[c].location], //vertex vpm offset
 									coordAttribOffsets[cb->graphicsPipeline->vertexAttributeDescriptions[c].location]  //coordinte vpm offset
 									);
+
+			if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+			{
+				uint32_t offset = commandBuffer->shaderRecCl.nextFreeByteOffset - commandBuffer->shaderRecCl.offset - 12;
+				clFit(&commandBuffer->shaderRecRelocCl, 4);
+				clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
+			}
 		}
 	}
 
@@ -372,6 +390,13 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 				clFit(&commandBuffer->uniformsCl, 4);
 				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
 
+				if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+				{
+					uint32_t offset = commandBuffer->uniformsCl.nextFreeByteOffset - commandBuffer->uniformsCl.offset - 4;
+					clFit(&commandBuffer->uniformRelocCl, 4);
+					clInsertData(&commandBuffer->uniformRelocCl, 4, &offset);
+				}
+
 				numFragUniformReads++;
 			}
 			else if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
@@ -391,6 +416,13 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 				clFit(&commandBuffer->uniformsCl, 4);
 				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
 
+				if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+				{
+					uint32_t offset = commandBuffer->uniformsCl.nextFreeByteOffset - commandBuffer->uniformsCl.offset - 4;
+					clFit(&commandBuffer->uniformRelocCl, 4);
+					clInsertData(&commandBuffer->uniformRelocCl, 4, &offset);
+				}
+
 				numFragUniformReads++;
 			}
 			else if(mapping.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ||
@@ -407,6 +439,13 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 				//emit bo reloc index
 				clFit(&commandBuffer->uniformsCl, 4);
 				clInsertData(&commandBuffer->uniformsCl, 4, &idx);
+
+				if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+				{
+					uint32_t offset = commandBuffer->uniformsCl.nextFreeByteOffset - commandBuffer->uniformsCl.offset - 4;
+					clFit(&commandBuffer->uniformRelocCl, 4);
+					clInsertData(&commandBuffer->uniformRelocCl, 4, &offset);
+				}
 
 				numFragUniformReads++;
 			}
@@ -627,6 +666,13 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdDrawIndexed)(
 	uint32_t idx = clGetHandleIndex(&commandBuffer->handlesCl, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesBufOffset + cb->handlesCl.offset, ((CLMarker*)getCPAptrFromOffset(cb->binCl.CPA, cb->binCl.currMarkerOffset))->handlesSize, cb->indexBuffer->boundMem->bo);
 
 	clInsertGEMRelocations(&commandBuffer->binCl, idx, 0);
+
+	if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+	{
+		uint32_t offset = commandBuffer->binCl.nextFreeByteOffset - commandBuffer->binCl.offset - 8;
+		clFit(&commandBuffer->gemRelocCl, 4);
+		clInsertData(&commandBuffer->gemRelocCl, 4, &offset);
+	}
 
 	//Submit draw call: vertex Array Primitives
 	clFit(&commandBuffer->binCl, V3D21_VERTEX_ARRAY_PRIMITIVES_length);

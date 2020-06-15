@@ -379,6 +379,10 @@ typedef struct VkCommandBuffer_T
 	VkCommandBufferUsageFlags usageFlags;
 	_commandPool* cp;
 
+	ControlList uniformRelocCl;
+	ControlList gemRelocCl;
+	ControlList shaderRecRelocCl;
+
 	//State data
 	_pipeline* graphicsPipeline;
 	_pipeline* computePipeline;
