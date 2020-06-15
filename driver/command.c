@@ -120,7 +120,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkAllocateCommandBuffers)(
 
 			pCommandBuffers[c]->dev = device;
 
-			pCommandBuffers[c]->level = pAllocateInfo[c].level;
+			pCommandBuffers[c]->level = pAllocateInfo->level;
 
 			pCommandBuffers[c]->shaderRecCount = 0;
 			pCommandBuffers[c]->usageFlags = 0;
