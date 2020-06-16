@@ -17,7 +17,7 @@
   - [x] cube mapping
   - [x] shadow mapping / depth texture sampling
   - [x] Cubemaps with mipmaps
-  - [ ] Multi threaded cmdbuf generation test (secondary cmdbufs)
+  - [x] Multi threaded cmdbuf generation test (secondary cmdbufs)
 - [x] Shader compiler chain
   - [x] QPU assembler / disassembler
 - [x] Resources
