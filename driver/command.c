@@ -248,14 +248,14 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkBeginCommandBuffer)(
 
 	//When a command buffer begins recording, all state in that command buffer is undefined
 
-	commandBuffer->usageFlags = pBeginInfo->flags;
-	commandBuffer->state = CMDBUF_STATE_RECORDING;
-
-	if((pBeginInfo->flags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) &&
+	if((commandBuffer->state == CMDBUF_STATE_INVALID || commandBuffer->state == CMDBUF_STATE_EXECUTABLE) &&
 	   commandBuffer->cp->resetAble)
 	{
 		RPIFUNC(vkResetCommandBuffer)(commandBuffer, 0);
 	}
+
+	commandBuffer->usageFlags = pBeginInfo->flags;
+	commandBuffer->state = CMDBUF_STATE_RECORDING;
 
 	if(pBeginInfo->pInheritanceInfo && commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
 	{
@@ -596,7 +596,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 				submitCl.shader_rec_count = marker->shaderRecCount;
 				submitCl.uniforms_size = marker->uniformsSize;
 
-				/**/
+				/**
 				printf("BCL:\n");
 				uint8_t* mem = malloc(marker->size);
 				memcpy(mem, marker+1, marker->size);
@@ -613,10 +613,18 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 				{
 					printf("%i ", *(((uint32_t*)getCPAptrFromOffset(cmdbuf->uniformsCl.CPA, marker->uniformsBufOffset + cmdbuf->uniformsCl.offset))+d));
 				}
-				printf("\nShader recs: ");
-				uint8_t* ptr = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset + cmdbuf->shaderRecCl.offset + (3 + 3) * 4);
+
+				printf("\nShader recs: ");				
+				uint8_t* ptr = getCPAptrFromOffset(cmdbuf->shaderRecCl.CPA, marker->shaderRecBufOffset + cmdbuf->shaderRecCl.offset);
 				for(int d = 0; d < marker->shaderRecCount; ++d)
 				{
+					printf("\nShader rec handle indices: ");
+					int numIndices = 3 + 1;
+					for(int d = 0; d < numIndices; ++d)
+					{
+						printf("%u ", *ptr);
+						ptr += 4;
+					}
 					uint8_t flags = *ptr;
 					uint8_t fragmentShaderIsSingleThreaded = flags & (1 << 0);
 					uint8_t pointSizeIncludedInShadedVertexData = (flags & (1 << 1)) >> 1;
@@ -985,6 +993,8 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdExecuteCommands)(
 
 	_commandBuffer* primary = commandBuffer;
 
+	CLMarker* primaryMarker = getCPAptrFromOffset(primary->binCl.CPA, primary->binCl.currMarkerOffset);
+
 	for(uint32_t c = 0; c < commandBufferCount; ++c)
 	{
 		_commandBuffer* secondary = pCommandBuffers[c];
@@ -1000,28 +1010,37 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdExecuteCommands)(
 			secondaryMarker->shaderRecRelocSize = secondary->shaderRecRelocCl.nextFreeByteOffset - (secondaryMarker->shaderRecRelocOffset + secondary->shaderRecRelocCl.offset);
 		}
 
-		for(uint32_t d = 0; d < secondaryMarker->uniformRelocSize; ++d)
+		for(uint32_t d = 0; d < secondaryMarker->uniformRelocSize / 4; ++d)
 		{
-			uint32_t offset = *(uint32_t*)getCPAptrFromOffset(secondary->uniformRelocCl.CPA, secondaryMarker->uniformRelocOffset + secondary->uniformRelocCl.offset);
+			uint32_t offset = *(uint32_t*)getCPAptrFromOffset(secondary->uniformRelocCl.CPA, secondaryMarker->uniformRelocOffset + secondary->uniformRelocCl.offset + d * 4);
 
-			uint32_t* handleIdx = getCPAptrFromOffset(secondary->uniformsCl.CPA, secondary->uniformsCl.offset + offset);
-			*handleIdx += primary->handlesCl.nextFreeByteOffset - primary->handlesCl.offset;
+			uint32_t* handleIdx = getCPAptrFromOffset(secondary->uniformsCl.CPA, secondaryMarker->uniformsBufOffset + secondary->uniformsCl.offset + offset);
+			uint32_t handle = *(uint32_t*)getCPAptrFromOffset(secondary->handlesCl.CPA, secondaryMarker->handlesBufOffset + secondary->handlesCl.offset + (*handleIdx) * 4);
+			clFit(&primary->handlesCl, 4);
+			uint32_t idx = clGetHandleIndex(&primary->handlesCl, primaryMarker->handlesBufOffset + primary->handlesCl.offset, primaryMarker->handlesSize, handle);
+			*handleIdx = idx;
 		}
 
-		for(uint32_t d = 0; d < secondaryMarker->gemRelocSize; ++d)
+		for(uint32_t d = 0; d < secondaryMarker->gemRelocSize / 4; ++d)
 		{
-			uint32_t offset = *(uint32_t*)getCPAptrFromOffset(secondary->gemRelocCl.CPA, secondaryMarker->gemRelocOffset + secondary->gemRelocCl.offset);
+			uint32_t offset = *(uint32_t*)getCPAptrFromOffset(secondary->gemRelocCl.CPA, secondaryMarker->gemRelocOffset + secondary->gemRelocCl.offset + d * 4);
 
 			uint32_t* handleIdx = getCPAptrFromOffset(secondary->binCl.CPA, secondary->binCl.offset + offset);
-			*handleIdx += primary->handlesCl.nextFreeByteOffset - primary->handlesCl.offset;
+			uint32_t handle = *(uint32_t*)getCPAptrFromOffset(secondary->handlesCl.CPA, secondaryMarker->handlesBufOffset + secondary->handlesCl.offset + (*handleIdx) * 4);
+			clFit(&primary->handlesCl, 4);
+			uint32_t idx = clGetHandleIndex(&primary->handlesCl, primaryMarker->handlesBufOffset + primary->handlesCl.offset, primaryMarker->handlesSize, handle);
+			*handleIdx = idx;
 		}
 
-		for(uint32_t d = 0; d < secondaryMarker->shaderRecRelocSize; ++d)
+		for(uint32_t d = 0; d < secondaryMarker->shaderRecRelocSize / 4; ++d)
 		{
-			uint32_t offset = *(uint32_t*)getCPAptrFromOffset(secondary->shaderRecRelocCl.CPA, secondaryMarker->shaderRecRelocOffset + secondary->shaderRecRelocCl.offset);
+			uint32_t offset = *(uint32_t*)getCPAptrFromOffset(secondary->shaderRecRelocCl.CPA, secondaryMarker->shaderRecRelocOffset + secondary->shaderRecRelocCl.offset + d * 4);
 
-			uint32_t* handleIdx = getCPAptrFromOffset(secondary->shaderRecCl.CPA, secondary->shaderRecCl.offset + offset);
-			*handleIdx += primary->handlesCl.nextFreeByteOffset - primary->handlesCl.offset;
+			uint32_t* handleIdx = getCPAptrFromOffset(secondary->shaderRecCl.CPA, secondaryMarker->shaderRecBufOffset + secondary->shaderRecCl.offset + offset);
+			uint32_t handle = *(uint32_t*)getCPAptrFromOffset(secondary->handlesCl.CPA, secondaryMarker->handlesBufOffset + secondary->handlesCl.offset + (*handleIdx) * 4);
+			clFit(&primary->handlesCl, 4);
+			uint32_t idx = clGetHandleIndex(&primary->handlesCl, primaryMarker->handlesBufOffset + primary->handlesCl.offset, primaryMarker->handlesSize, handle);
+			*handleIdx = idx;
 		}
 
 		clFit(&primary->binCl, secondaryMarker->size);
@@ -1029,38 +1048,12 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdExecuteCommands)(
 
 		((CLMarker*)getCPAptrFromOffset(primary->binCl.CPA, primary->binCl.currMarkerOffset))->numDrawCallsSubmitted += secondaryMarker->numDrawCallsSubmitted;
 
-		//TODO handles/handle indices might be grabled up like this...
-		clFit(&primary->handlesCl, secondaryMarker->handlesSize);
-		clInsertData(&primary->handlesCl, secondaryMarker->handlesSize, getCPAptrFromOffset(secondary->handlesCl.CPA, secondaryMarker->handlesBufOffset + secondary->handlesCl.offset));
+		//clFit(&primary->handlesCl, secondaryMarker->handlesSize);
+		//clInsertData(&primary->handlesCl, secondaryMarker->handlesSize, getCPAptrFromOffset(secondary->handlesCl.CPA, secondaryMarker->handlesBufOffset + secondary->handlesCl.offset));
 		clFit(&primary->uniformsCl, secondaryMarker->uniformsSize);
 		clInsertData(&primary->uniformsCl, secondaryMarker->uniformsSize, getCPAptrFromOffset(secondary->uniformsCl.CPA, secondaryMarker->uniformsBufOffset + secondary->uniformsCl.offset));
 		clFit(&primary->shaderRecCl, secondaryMarker->shaderRecSize);
 		clInsertData(&primary->shaderRecCl, secondaryMarker->shaderRecSize, getCPAptrFromOffset(secondary->shaderRecCl.CPA, secondaryMarker->shaderRecBufOffset + secondary->shaderRecCl.offset));
-
-
-		printf("\nUniforms: ");
-		for(int d = 0; d < secondaryMarker->uniformsSize / 4; ++d)
-		{
-			printf("%i ", *(((uint32_t*)getCPAptrFromOffset(secondary->uniformsCl.CPA, secondaryMarker->uniformsBufOffset + secondary->uniformsCl.offset))+d));
-		}
-
-		printf("\nUniforms: ");
-		for(int d = 0; d < secondaryMarker->uniformsSize / 4; ++d)
-		{
-			printf("%i ", *(((uint32_t*)getCPAptrFromOffset(primary->uniformsCl.CPA, primary->uniformsCl.offset))+d));
-		}
-
-		printf("\nBO handles: ");
-		for(int d = 0; d < secondaryMarker->handlesSize / 4; ++d)
-		{
-			printf("%u ", *(((uint32_t*)getCPAptrFromOffset(secondary->handlesCl.CPA, secondaryMarker->handlesBufOffset + secondary->handlesCl.offset))+d));
-		}
-
-		printf("\nBO handles: ");
-		for(int d = 0; d < secondaryMarker->handlesSize / 4; ++d)
-		{
-			printf("%u ", *(((uint32_t*)getCPAptrFromOffset(primary->handlesCl.CPA, primary->handlesCl.offset))+d));
-		}
 
 		primary->shaderRecCount += secondary->shaderRecCount;
 	}

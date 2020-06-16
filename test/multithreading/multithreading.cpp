@@ -666,6 +666,7 @@ void createCommandQueues() {
 	VkCommandPoolCreateInfo poolCreateInfo = {};
 	poolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	poolCreateInfo.queueFamilyIndex = presentQueueFamily;
+	poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 	if (vkCreateCommandPool(device, &poolCreateInfo, nullptr, &primaryCommandPool) != VK_SUCCESS) {
 		std::cerr << "failed to create command queue for presentation queue family" << std::endl;
@@ -748,14 +749,14 @@ void threadFunc(uint32_t threadIdx, VkCommandBufferInheritanceInfo inheritanceIn
 	vkCmdPushConstants(threadDataVector[threadIdx].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
 
 	uint32_t numVerticesPerDrawCall = 3 * 20;
-	for(uint32_t c = threadDataVector[threadIdx].vertexOffset; c < threadDataVector[threadIdx].numVertices; c += numVerticesPerDrawCall)
+	for(uint32_t c = 0; c < threadDataVector[threadIdx].numVertices; c += numVerticesPerDrawCall)
 	{
-		vkCmdDraw(threadDataVector[threadIdx].commandBuffer, min(numVerticesPerDrawCall, threadDataVector[threadIdx].numVertices - c), 1, c, 0);
+		vkCmdDraw(threadDataVector[threadIdx].commandBuffer, min(numVerticesPerDrawCall, threadDataVector[threadIdx].numVertices - c), 1, threadDataVector[threadIdx].vertexOffset + c, 0);
 	}
 
 	vkEndCommandBuffer(threadDataVector[threadIdx].commandBuffer);
 
-	std::cerr << "Recorded thread " << threadIdx << std::endl;
+	//std::cerr << "Recorded thread " << threadIdx << std::endl;
 }
 
 void recordCommandBuffers()
@@ -795,7 +796,7 @@ void recordCommandBuffers()
 	//update secondary command buffers
 
 	//multi threaded mode
-	/**
+	/**/
 	std::vector<std::thread> threads;
 	threads.reserve(numThreads);
 	for(uint32_t c = 0; c < numThreads; ++c)
@@ -810,8 +811,9 @@ void recordCommandBuffers()
 	/**/
 
 	//single threaded mode for debugging
-	/**/
+	/**
 	for(uint32_t c = 0; c < numThreads; ++c)
+	//for(uint32_t c = 0; c < 1; ++c)
 	{
 		threadFunc(c, inheritanceInfo);
 	}
@@ -820,11 +822,13 @@ void recordCommandBuffers()
 	VkCommandBuffer cmdBufs[numThreads];
 
 	for(uint32_t c = 0; c < numThreads; ++c)
+	//for(uint32_t c = 0; c < 1; ++c)
 	{
 		cmdBufs[c] = threadDataVector[c].commandBuffer;
 	}
 
 	vkCmdExecuteCommands(primaryCommandBuffer, numThreads, cmdBufs);
+	//vkCmdExecuteCommands(primaryCommandBuffer, 1, cmdBufs);
 
 	vkCmdEndRenderPass(primaryCommandBuffer);
 
@@ -834,7 +838,7 @@ void recordCommandBuffers()
 	}
 
 
-	std::cout << "recorded command buffer for image " << imageIndex << std::endl;
+	//std::cout << "recorded command buffer for image " << imageIndex << std::endl;
 }
 
 void draw() {
@@ -845,7 +849,7 @@ void draw() {
 		assert(0);
 	}
 
-	std::cout << "acquired image" << std::endl;
+	//std::cout << "acquired image" << std::endl;
 
 	recordCommandBuffers();
 
@@ -867,7 +871,7 @@ void draw() {
 		assert(0);
 	}
 
-	std::cout << "submitted draw command buffer" << std::endl;
+	//std::cout << "submitted draw command buffer" << std::endl;
 
 	// Present drawn image
 	// Note: semaphore here is not strictly necessary, because commands are processed in submission order within a single queue
@@ -887,7 +891,7 @@ void draw() {
 		assert(0);
 	}
 
-	std::cout << "submitted presentation command buffer" << std::endl;
+	//std::cout << "submitted presentation command buffer" << std::endl;
 }
 
 void CreateRenderPass()
@@ -1333,8 +1337,8 @@ void CreateVertexBuffer()
 	float w = 2.0;
 	float h = 2.0;
 
-	float stepH = 90*6.0*h/1080.0;
-	float stepW = 90*8.0*w/1920.0;
+	float stepH = 2*6.0*h/1080.0;
+	float stepW = 2*8.0*w/1920.0;
 
 	vertices.reserve(3 * 2 * 960 * 540);
 

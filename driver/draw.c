@@ -235,6 +235,26 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 	assert(vertModule->numVertVPMreads == vertexAttribSize >> 2);
 	assert(vertModule->numCoordVPMreads == coordAttribSize >> 2);
 
+	if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+	{
+		uint32_t offset = commandBuffer->shaderRecCl.nextFreeByteOffset - commandBuffer->shaderRecCl.offset;
+
+		clFit(&commandBuffer->shaderRecRelocCl, 12);
+		clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
+		offset += 4;
+		clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
+		offset += 4;
+		clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
+
+
+		clFit(&commandBuffer->shaderRecRelocCl, 4 * attribCount);
+		for(uint32_t c = 0; c < attribCount; ++c)
+		{
+			uint32_t offset = commandBuffer->shaderRecCl.nextFreeByteOffset - commandBuffer->shaderRecCl.offset + 12 + c * 4;
+			clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
+		}
+	}
+
 	//number of attribs
 	//3 is the number of type of possible shaders
 	for(uint32_t c = 0; c < (3 + attribCount)*4; ++c)
@@ -268,17 +288,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 						 0, //coordinate uniform address
 						 coordCode  //coordinate shader code address
 						 );
-
-	if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-	{
-		uint32_t offset = commandBuffer->shaderRecCl.nextFreeByteOffset - commandBuffer->shaderRecCl.offset - 12;
-		clFit(&commandBuffer->shaderRecRelocCl, 12);
-		clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
-		offset -= 16;
-		clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
-		offset -= 16;
-		clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
-	}
 
 	uint32_t vertexAttribOffsets[8] = {};
 	uint32_t coordAttribOffsets[8] = {};
@@ -341,13 +350,6 @@ static uint32_t drawCommon(VkCommandBuffer commandBuffer, int32_t vertexOffset)
 									vertexAttribOffsets[cb->graphicsPipeline->vertexAttributeDescriptions[c].location], //vertex vpm offset
 									coordAttribOffsets[cb->graphicsPipeline->vertexAttributeDescriptions[c].location]  //coordinte vpm offset
 									);
-
-			if(commandBuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
-			{
-				uint32_t offset = commandBuffer->shaderRecCl.nextFreeByteOffset - commandBuffer->shaderRecCl.offset - 12;
-				clFit(&commandBuffer->shaderRecRelocCl, 4);
-				clInsertData(&commandBuffer->shaderRecRelocCl, 4, &offset);
-			}
 		}
 	}
 
