@@ -54,24 +54,6 @@
   - [ ] How to do blending, depth/stencil testing, attributes
 - [ ] Try to pass as much of the VK CTS as possible with existing feature set
 
-## VK CTS progress
-- Passed:        7894/67979 (11.6%) 
-- Failed:        878/67979 (1.3%)
-- Not supported: 59206/67979 (87.1%)
-- Warnings:      1/67979 (0.0%)
-
-Conformance run is considered passing if all tests finish with allowed result
-codes. 
-Following status
-codes are allowed:
-
-- Pass
-- NotSupported
-- QualityWarning
-- CompatibilityWarning 
-
-There are about 470.000 conformance tests.
-
 ## FAQ
 ### Will this ever be a fully functional VK driver?
 As far as I know the PI is NOT fully VK capable on the hardware level. Some things will be emulated and others won't ever be supported.
