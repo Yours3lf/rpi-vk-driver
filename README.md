@@ -3,6 +3,13 @@ RPi-VK-Driver is a low level GPU driver for the Broadcom Videocore IV GPU that i
 Compared to the available OpenGL drivers it offers superb speed including precise and predictable memory management and multi-threaded command submission. It also offers a wider feature set such as MSAA support, low level assembly shaders and performance counters.
 On the other hand it currently does not support GLSL shaders.
 
+## Building
+Please follow the instructions in the Build.md file.
+
+## Wiki
+For further information please take a look at the Wiki section:
+https://github.com/Yours3lf/rpi-vk-driver/wiki
+
 ## Supported hardware
 The driver currently supports the following Raspberry Pi models:
 - Zero
