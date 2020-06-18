@@ -8,4 +8,4 @@ target_compile_options(multithreading PRIVATE -Wall -std=c++11
 	-march=${RPI_ARCH} -fPIC
 	)
 
-target_link_libraries(multithreading vulkan $<TARGET_OBJECTS:QPUassembler>)
+target_link_libraries(multithreading vulkan pthread $<TARGET_OBJECTS:QPUassembler>)
