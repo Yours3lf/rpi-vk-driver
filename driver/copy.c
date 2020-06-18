@@ -1327,5 +1327,5 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdCopyBuffer)(
 	const VkBufferCopy*                         pRegions)
 {
 	//needs linear format support from kernel side
-	UNSUPPORTED(vkCmdCopyImageToBuffer);
+	UNSUPPORTED(vkCmdCopyBuffer);
 }
