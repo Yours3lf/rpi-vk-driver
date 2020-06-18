@@ -5,6 +5,7 @@ On the other hand it currently does not support GLSL shaders.
 
 ## Building
 Please follow the instructions in the Build.md file.
+https://github.com/Yours3lf/rpi-vk-driver/blob/master/BUILD.md
 
 ## Wiki
 For further information please take a look at the Wiki section:
