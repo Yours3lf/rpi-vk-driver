@@ -1,5 +1,5 @@
 # RPi-VK-Driver
-RPi-VK-Driver is a low level GPU driver for the Broadcom Videocore IV GPU that implement a subset of the Vulkan (R) standard. The implementation is not conformant to the standard but tries to follow it as closely as the hardware allows for it.
+RPi-VK-Driver is a low level GPU driver for the Broadcom Videocore IV GPU that implements a subset of the Vulkan (R) standard. The implementation is not conformant to the standard but tries to follow it as closely as the hardware allows for it.
 
 ## Supported hardware
 The driver currently supports the following Raspberry Pi models:
