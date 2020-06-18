@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <string.h>
+#include <cmath>
 #include "driver/CustomAssert.h"
 
 #include <vulkan/vulkan.h>
