@@ -596,7 +596,15 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 				submitCl.shader_rec_count = marker->shaderRecCount;
 				submitCl.uniforms_size = marker->uniformsSize;
 
-				/**
+#ifndef RPI_PRINT_COMMAND_LISTS
+	#define RPI_PRINT_COMMAND_LISTS 0
+#endif
+
+#ifndef RPI_PRINT_COMMAND_LISTS_ATTRIBS
+	#define RPI_PRINT_COMMAND_LISTS_ATTRIBS 1
+#endif
+
+#if RPI_PRINT_COMMAND_LISTS == 1
 				printf("BCL:\n");
 				uint8_t* mem = malloc(marker->size);
 				memcpy(mem, marker+1, marker->size);
@@ -619,7 +627,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 				for(int d = 0; d < marker->shaderRecCount; ++d)
 				{
 					printf("\nShader rec handle indices: ");
-					int numIndices = 3 + 1;
+					int numIndices = 3 + RPI_PRINT_COMMAND_LISTS_ATTRIBS;
 					for(int d = 0; d < numIndices; ++d)
 					{
 						printf("%u ", *ptr);
@@ -705,7 +713,7 @@ VKAPI_ATTR VkResult VKAPI_CALL RPIFUNC(vkQueueSubmit)(
 				printf("clear s %u\n", submitCl.clear_s);
 				printf("flags %u\n", submitCl.flags);
 				printf("perfmonID %u\n", submitCl.perfmonid);
-				/**/
+#endif
 
 				assert(marker->numDrawCallsSubmitted <= VC4_HW_2116_COUNT);
 

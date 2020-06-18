@@ -366,14 +366,57 @@ VkResult RPIFUNC(vkCreateShaderModule)(VkDevice device, const VkShaderModuleCrea
 
 			shader->sizes[c] = ci->numInstructions[c]*sizeof(uint64_t);
 
-			/**
+#ifndef RPI_DUMP_SHADER_INFO
+	#define RPI_DUMP_SHADER_INFO 0
+#endif
+
+#if RPI_DUMP_SHADER_INFO == 1
+			if(c == VK_RPI_ASSEMBLY_TYPE_VERTEX)
+			{
+				printf("\nShader Dump Vertex\n");
+				printf("shader->numVertUniformReads %u\n", shader->numVertUniformReads);
+				printf("shader->numVertVPMreads %u\n", shader->numVertVPMreads);
+				printf("shader->numVertVPMwrites %u\n", shader->numVertVPMwrites);
+				printf("shader->numVertCycles %u\n", shader->numVertCycles);
+				printf("shader->numVertALUcycles %u\n", shader->numVertALUcycles);
+				printf("shader->numEmptyVertALUinstructions %u\n", shader->numEmptyVertALUinstructions);
+				printf("shader->numVertBranches %u\n", shader->numVertBranches);
+				printf("shader->numVertSFUoperations %u\n", shader->numVertSFUoperations);
+			}
+			else if(c == VK_RPI_ASSEMBLY_TYPE_COORDINATE)
+			{
+				printf("\nShader Dump Coordinate\n");
+				printf("shader->numCoordUniformReads %u\n", shader->numCoordUniformReads);
+				printf("shader->numCoordVPMreads %u\n", shader->numCoordVPMreads);
+				printf("shader->numCoordVPMwrites %u\n", shader->numCoordVPMwrites);
+				printf("shader->numCoordCycles %u\n", shader->numCoordCycles);
+				printf("shader->numCoordALUcycles %u\n", shader->numCoordALUcycles);
+				printf("shader->numEmptyCoordALUinstructions %u\n", shader->numEmptyCoordALUinstructions);
+				printf("shader->numCoordBranches %u\n", shader->numCoordBranches);
+
+			}
+			else if(c == VK_RPI_ASSEMBLY_TYPE_FRAGMENT)
+			{
+				printf("\nShader Dump Fragment\n");
+				printf("shader->hasThreadSwitch %u\n", shader->hasThreadSwitch);
+				printf("shader->numTextureSamples %u\n", shader->numTextureSamples);
+				printf("shader->numVaryings %u\n", shader->numVaryings);
+				printf("shader->numFragUniformReads %u\n", shader->numFragUniformReads);
+				printf("shader->numFragCycles %u\n", shader->numFragCycles);
+				printf("shader->numFragALUcycles %u\n", shader->numFragALUcycles);
+				printf("shader->numEmptyFragALUinstructions %u\n", shader->numEmptyFragALUinstructions);
+				printf("shader->numFragBranches %u\n", shader->numFragBranches);
+				printf("shader->numFragSFUoperations %u\n", shader->numFragSFUoperations);
+				printf("shader->numCoordSFUoperations %u\n", shader->numCoordSFUoperations);
+			}
+
 			for(uint64_t e = 0; e < shader->sizes[c] / 8; ++e)
 			{
 				printf("%#llx ", ci->instructions[c][e]);
 				disassemble_qpu_asm(ci->instructions[c][e]);
 			}
 			printf("\n");
-			/**/
+#endif
 
 			shader->bos[c] = vc4_bo_alloc_shader(controlFd, ci->instructions[c], &shader->sizes[c]);
 			assert(shader->bos[c]);

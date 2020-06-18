@@ -7,7 +7,9 @@ extern "C" {
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 
-#define EXPOSE_DRIVER 0
+#ifndef EXPOSE_DRIVER
+	#define EXPOSE_DRIVER 0
+#endif
 
 #if EXPOSE_DRIVER == 0
 	#define RPIFUNC(x) rpi_##x

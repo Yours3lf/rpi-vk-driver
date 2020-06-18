@@ -37,8 +37,18 @@
 
 #include "vkCaps.h"
 
-#define PROFILESTART(x)// startMeasure((x), (#x))
-#define PROFILEEND(x)// endMeasure((x))
+#ifndef RPI_PROFILE
+	#define RPI_PROFILE 0
+#endif
+
+#if RPI_PROFILE == 1
+	#define PROFILESTART(x) startMeasure((x), (#x))
+	#define PROFILEEND(x) endMeasure((x))
+#else
+	#define PROFILESTART(x)
+	#define PROFILEEND(x)
+#endif
+
 
 /**
 //scope
