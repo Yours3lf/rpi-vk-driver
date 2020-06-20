@@ -1,3 +1,8 @@
 CMakeLists.txt.user
 build*/
 QPUassembler/build*/
+tools
+rpi-vk-driver.json
+external/include/vulkan/*
+external/share/vulkan/registry/*
+external/lib/libvulk*

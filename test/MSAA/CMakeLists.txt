@@ -4,8 +4,8 @@ file(GLOB testSrc
 )
 
 add_executable(MSAA ${testSrc} )
-target_compile_options(MSAA PRIVATE -Wall -std=c++11
-	-march=${RPI_ARCH} -fPIC
-	)
 
 target_link_libraries(MSAA vulkan $<TARGET_OBJECTS:QPUassembler>)
+add_dependencies(MSAA vulkan-loader QPUassembler)
+
+add_testcase(MSAA)

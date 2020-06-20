@@ -1,35 +1,50 @@
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 3.10.2)
 
-project (rpi-vulkan-driver)
+cmake_policy(SET CMP0048 NEW)
 
-#SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-#SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-#SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
-set(CMAKE_VERBOSE_MAKEFILE ON)
-
-if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-	message("Debug build")
-	add_definitions(-DDEBUG_BUILD)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug, Release, or MinSizeRel." FORCE)
+    message(STATUS "CMAKE_BUILD_TYPE not set, defaulting to Release.")
 endif()
 
-set (EXTERNAL_PATH ${CMAKE_CURRENT_SOURCE_DIR}/external/)
-link_directories(${EXTERNAL_PATH}/lib)
-include_directories(${EXTERNAL_PATH}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-set(RPI_ARCH
-	#armv8-a		#RPi support: 2B 1.2, 3B, 3B+
-	#armv7-a	#RPi support: 2B
-	#armv8		#RPi support: 3A+
-	armv6z		#RPi support: 1A, 1A+, 1B, Zero 1.2, Zero 1.3, Zero W
-	)
+if(NOT BUILD_NUMBER)
+    set(BUILD_NUMBER 1.0.0)
+endif()
+
+project (rpi-vulkan-driver
+	VERSION ${BUILD_NUMBER}
+	DESCRIPTION "Driver for Broadcom Videocore IV GPU"
+	LANGUAGES C CXX
+)
+
+include(options)
+include(sysroot)
+include(global)
+include(vulkan)
 
 add_subdirectory(brcm)
 add_subdirectory(QPUassembler)
 add_subdirectory(driver)
-add_subdirectory(test)
+
+include(packaging)
+
+include(CTest)
+
+if(BUILD_TESTING)
+    add_subdirectory(test)
+endif()
+
+add_custom_target(uninstall 
+    "${CMAKE_COMMAND}" -P "${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake"
+)
+
+add_custom_target(uninstall-vulkan
+    "${CMAKE_COMMAND}" -P "${CMAKE_BINARY_DIR}/vulkan-headers-prefix/src/vulkan-headers-build/cmake_uninstall.cmake"
+)
+
+add_custom_target(clean-vulkan
+    "${CMAKE_COMMAND}" -E remove_directory "${CMAKE_BINARY_DIR}/vulkan-headers-prefix"
+    "${CMAKE_COMMAND}" -E remove_directory "${CMAKE_BINARY_DIR}/vulkan-loader-prefix"
+)

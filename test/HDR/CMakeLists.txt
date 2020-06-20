@@ -4,8 +4,8 @@ file(GLOB testSrc
 )
 
 add_executable(HDR ${testSrc} )
-target_compile_options(HDR PRIVATE -Wall -std=c++11
-	-march=${RPI_ARCH} -fPIC
-	)
 
 target_link_libraries(HDR vulkan $<TARGET_OBJECTS:QPUassembler>)
+add_dependencies(HDR vulkan-loader QPUassembler)
+
+add_testcase(HDR)

@@ -4,9 +4,8 @@ file(GLOB testSrc
 )
 
 add_executable(mintest ${testSrc})
-target_compile_options(mintest PRIVATE -Wall -std=c++11
-	-march=${RPI_ARCH} -fPIC
-	)
 
-#target_link_libraries(mintest rpi-vk-driver)
 target_link_libraries(mintest vulkan)
+add_dependencies(mintest vulkan-loader)
+
+add_testcase(mintest)
