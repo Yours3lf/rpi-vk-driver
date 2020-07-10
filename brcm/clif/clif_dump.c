@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "drm-uapi/v3d_drm.h"
+#include "uapi/drm/v3d_drm.h"
 #include "clif_dump.h"
 #include "clif_private.h"
 #include "../common/list.h"

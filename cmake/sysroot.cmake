@@ -1,0 +1,4 @@
+
+if(NOT EXTERNAL_SYSROOT)
+	set(EXTERNAL_SYSROOT ${CMAKE_SOURCE_DIR}/external)
+endif()

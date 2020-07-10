@@ -4,8 +4,8 @@ file(GLOB testSrc
 )
 
 add_executable(cubemapping ${testSrc} )
-target_compile_options(cubemapping PRIVATE -Wall -std=c++11
-	-march=${RPI_ARCH} -fPIC
-	)
 
 target_link_libraries(cubemapping vulkan $<TARGET_OBJECTS:QPUassembler>)
+add_dependencies(cubemapping vulkan-loader QPUassembler)
+
+add_testcase(cubemapping)

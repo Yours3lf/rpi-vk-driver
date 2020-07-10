@@ -1,0 +1,7 @@
+{
+	"file_format_version": "@PROJECT_VERSION@",
+	"ICD": {
+		"library_path": "@CMAKE_INSTALL_PREFIX@/lib/librpi-vk-driver.so",
+		"api_version": "1.1.0"
+	}
+}

@@ -36,13 +36,7 @@
 #ifndef _DRM_H_
 #define _DRM_H_
 
-#if defined(__KERNEL__)
-
-#include <linux/types.h>
-#include <asm/ioctl.h>
-typedef unsigned int drm_handle_t;
-
-#elif defined(__linux__)
+#if   defined(__linux__)
 
 #include <linux/types.h>
 #include <asm/ioctl.h>
@@ -50,6 +44,7 @@ typedef unsigned int drm_handle_t;
 
 #else /* One of the BSDs */
 
+#include <stdint.h>
 #include <sys/ioccom.h>
 #include <sys/types.h>
 typedef int8_t   __s8;
@@ -67,10 +62,6 @@ typedef unsigned long drm_handle_t;
 
 #if defined(__cplusplus)
 extern "C" {
-#endif
-
-#ifndef __user
-#define __user
 #endif
 
 #define DRM_NAME	"drm"	  /**< Name in kernel, /dev, and /proc */
@@ -145,11 +136,11 @@ struct drm_version {
 	int version_minor;	  /**< Minor version */
 	int version_patchlevel;	  /**< Patch level */
 	__kernel_size_t name_len;	  /**< Length of name buffer */
-	char __user *name;	  /**< Name of driver */
+	char *name;	  /**< Name of driver */
 	__kernel_size_t date_len;	  /**< Length of date buffer */
-	char __user *date;	  /**< User-space buffer to hold date */
+	char *date;	  /**< User-space buffer to hold date */
 	__kernel_size_t desc_len;	  /**< Length of desc buffer */
-	char __user *desc;	  /**< User-space buffer to hold desc */
+	char *desc;	  /**< User-space buffer to hold desc */
 };
 
 /**
@@ -159,12 +150,12 @@ struct drm_version {
  */
 struct drm_unique {
 	__kernel_size_t unique_len;	  /**< Length of unique */
-	char __user *unique;	  /**< Unique name for driver instantiation */
+	char *unique;	  /**< Unique name for driver instantiation */
 };
 
 struct drm_list {
 	int count;		  /**< Length of user-space structures */
-	struct drm_version __user *version;
+	struct drm_version *version;
 };
 
 struct drm_block {
@@ -359,7 +350,7 @@ struct drm_buf_desc {
  */
 struct drm_buf_info {
 	int count;		/**< Entries in list */
-	struct drm_buf_desc __user *list;
+	struct drm_buf_desc *list;
 };
 
 /**
@@ -367,7 +358,7 @@ struct drm_buf_info {
  */
 struct drm_buf_free {
 	int count;
-	int __user *list;
+	int *list;
 };
 
 /**
@@ -379,7 +370,7 @@ struct drm_buf_pub {
 	int idx;		       /**< Index into the master buffer list */
 	int total;		       /**< Buffer size */
 	int used;		       /**< Amount of buffer in use (for DMA) */
-	void __user *address;	       /**< Address of buffer */
+	void *address;	       /**< Address of buffer */
 };
 
 /**
@@ -388,11 +379,11 @@ struct drm_buf_pub {
 struct drm_buf_map {
 	int count;		/**< Length of the buffer list */
 #ifdef __cplusplus
-	void __user *virt;
+	void *virt;
 #else
-	void __user *virtual;		/**< Mmap'd area in user-virtual */
+	void *virtual;		/**< Mmap'd area in user-virtual */
 #endif
-	struct drm_buf_pub __user *list;	/**< Buffer information */
+	struct drm_buf_pub *list;	/**< Buffer information */
 };
 
 /**
@@ -405,13 +396,13 @@ struct drm_buf_map {
 struct drm_dma {
 	int context;			  /**< Context handle */
 	int send_count;			  /**< Number of buffers to send */
-	int __user *send_indices;	  /**< List of handles to buffers */
-	int __user *send_sizes;		  /**< Lengths of data to send */
+	int *send_indices;	  /**< List of handles to buffers */
+	int *send_sizes;		  /**< Lengths of data to send */
 	enum drm_dma_flags flags;	  /**< Flags */
 	int request_count;		  /**< Number of buffers requested */
 	int request_size;		  /**< Desired size for buffers */
-	int __user *request_indices;	  /**< Buffer information */
-	int __user *request_sizes;
+	int *request_indices;	  /**< Buffer information */
+	int *request_sizes;
 	int granted_count;		  /**< Number of buffers granted */
 };
 
@@ -435,7 +426,7 @@ struct drm_ctx {
  */
 struct drm_ctx_res {
 	int count;
-	struct drm_ctx __user *contexts;
+	struct drm_ctx *contexts;
 };
 
 /**
@@ -653,6 +644,7 @@ struct drm_gem_open {
 #define DRM_CAP_PAGE_FLIP_TARGET	0x11
 #define DRM_CAP_CRTC_IN_VBLANK_EVENT	0x12
 #define DRM_CAP_SYNCOBJ		0x13
+#define DRM_CAP_SYNCOBJ_TIMELINE	0x14
 
 /** DRM_IOCTL_GET_CAP ioctl argument type */
 struct drm_get_cap {
@@ -683,6 +675,22 @@ struct drm_get_cap {
  * If set to 1, the DRM core will expose atomic properties to userspace
  */
 #define DRM_CLIENT_CAP_ATOMIC	3
+
+/**
+ * DRM_CLIENT_CAP_ASPECT_RATIO
+ *
+ * If set to 1, the DRM core will provide aspect ratio information in modes.
+ */
+#define DRM_CLIENT_CAP_ASPECT_RATIO    4
+
+/**
+ * DRM_CLIENT_CAP_WRITEBACK_CONNECTORS
+ *
+ * If set to 1, the DRM core will expose special connectors to be used for
+ * writing back to memory the scene setup in the commit. Depends on client
+ * also supporting DRM_CLIENT_CAP_ATOMIC
+ */
+#define DRM_CLIENT_CAP_WRITEBACK_CONNECTORS	5
 
 /** DRM_IOCTL_SET_CLIENT_CAP ioctl argument type */
 struct drm_set_client_cap {
@@ -723,8 +731,18 @@ struct drm_syncobj_handle {
 	__u32 pad;
 };
 
+struct drm_syncobj_transfer {
+	__u32 src_handle;
+	__u32 dst_handle;
+	__u64 src_point;
+	__u64 dst_point;
+	__u32 flags;
+	__u32 pad;
+};
+
 #define DRM_SYNCOBJ_WAIT_FLAGS_WAIT_ALL (1 << 0)
 #define DRM_SYNCOBJ_WAIT_FLAGS_WAIT_FOR_SUBMIT (1 << 1)
+#define DRM_SYNCOBJ_WAIT_FLAGS_WAIT_AVAILABLE (1 << 2) /* wait for time point to become available */
 struct drm_syncobj_wait {
 	__u64 handles;
 	/* absolute timeout */
@@ -735,11 +753,32 @@ struct drm_syncobj_wait {
 	__u32 pad;
 };
 
+struct drm_syncobj_timeline_wait {
+	__u64 handles;
+	/* wait on specific timeline point for every handles*/
+	__u64 points;
+	/* absolute timeout */
+	__s64 timeout_nsec;
+	__u32 count_handles;
+	__u32 flags;
+	__u32 first_signaled; /* only valid when not waiting all */
+	__u32 pad;
+};
+
+
 struct drm_syncobj_array {
 	__u64 handles;
 	__u32 count_handles;
 	__u32 pad;
 };
+
+struct drm_syncobj_timeline_array {
+	__u64 handles;
+	__u64 points;
+	__u32 count_handles;
+	__u32 pad;
+};
+
 
 /* Query current scanout sequence number */
 struct drm_crtc_get_sequence {
@@ -897,6 +936,11 @@ extern "C" {
 #define DRM_IOCTL_MODE_GET_LEASE	DRM_IOWR(0xC8, struct drm_mode_get_lease)
 #define DRM_IOCTL_MODE_REVOKE_LEASE	DRM_IOWR(0xC9, struct drm_mode_revoke_lease)
 
+#define DRM_IOCTL_SYNCOBJ_TIMELINE_WAIT	DRM_IOWR(0xCA, struct drm_syncobj_timeline_wait)
+#define DRM_IOCTL_SYNCOBJ_QUERY		DRM_IOWR(0xCB, struct drm_syncobj_timeline_array)
+#define DRM_IOCTL_SYNCOBJ_TRANSFER	DRM_IOWR(0xCC, struct drm_syncobj_transfer)
+#define DRM_IOCTL_SYNCOBJ_TIMELINE_SIGNAL	DRM_IOWR(0xCD, struct drm_syncobj_timeline_array)
+
 /**
  * Device specific ioctls should only be in their respective headers
  * The device specific ioctl range is from 0x40 to 0x9f.
@@ -949,7 +993,6 @@ struct drm_event_crtc_sequence {
 };
 
 /* typedef area */
-#ifndef __KERNEL__
 typedef struct drm_clip_rect drm_clip_rect_t;
 typedef struct drm_drawable_info drm_drawable_info_t;
 typedef struct drm_tex_region drm_tex_region_t;
@@ -991,7 +1034,6 @@ typedef struct drm_agp_binding drm_agp_binding_t;
 typedef struct drm_agp_info drm_agp_info_t;
 typedef struct drm_scatter_gather drm_scatter_gather_t;
 typedef struct drm_set_version drm_set_version_t;
-#endif
 
 #if defined(__cplusplus)
 }
