@@ -29,7 +29,7 @@ static void* flipQueueThreadFunction(void* vargp)
 {
 	uint32_t run = 1;
 	uint64_t lastFinishedSeqno = 0;
-	int threadFD = *(int*)vargp;
+	int threadFD = (int)vargp;
 
 	while(run)
 	{
@@ -246,7 +246,7 @@ void modeset_create_surface_for_mode(int fd, uint32_t display, uint32_t mode, mo
 	if(!refCount)
 	{
 		flipQueueFifo = createFifo(dataMem, fifoMem, FLIP_FIFO_SIZE, sizeof(vsyncData));
-		pthread_create(&flipQueueThread, 0, flipQueueThreadFunction, &fd);
+		pthread_create(&flipQueueThread, 0, flipQueueThreadFunction, (void*)fd);
 		sem_init(&flipQueueSem, 0, 0);
 		sem_post(&flipQueueSem);
 
