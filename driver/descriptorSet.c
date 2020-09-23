@@ -439,9 +439,9 @@ VKAPI_ATTR void VKAPI_CALL RPIFUNC(vkCmdBindDescriptorSets)(
 	_pipelineLayout* pl = layout;//pipelineBindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS ? cb->graphicsPipeline->layout : cb->computePipeline->layout;
 	assert(firstSet + descriptorSetCount <= pl->setLayoutCount);
 
-	for(uint32_t c = firstSet; c < firstSet + descriptorSetCount; ++c)
+	for(uint32_t c = 0; c < descriptorSetCount; ++c)
 	{
-		setMapElement(&pl->descriptorSetBindingMap, c, pDescriptorSets[c]);
+		setMapElement(&pl->descriptorSetBindingMap, firstSet + c, pDescriptorSets[c]);
 	}
 
 	cb->descriptorSetDirty = 1;
