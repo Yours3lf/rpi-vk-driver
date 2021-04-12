@@ -59,7 +59,7 @@ VK_SYSTEM_ALLOCATION_SCOPE_DEVICE
 VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE
  **/
 
-#define ALLOCATE(size, alignment, scope) (pAllocator == 0) ? malloc(size) : pAllocator->pfnAllocation(pAllocator->pUserData, size, alignment, scope)
+#define ALLOCATE(size, alignment, scope) (pAllocator == 0) ? calloc(size, 1) : pAllocator->pfnAllocation(pAllocator->pUserData, size, alignment, scope)
 #define FREE(memory) (pAllocator == 0) ? free(memory) : pAllocator->pfnFree(pAllocator->pUserData, memory)
 
 #define UNSUPPORTED(str) fprintf(stderr, "Unsupported: %s\n", #str); //exit(-1)
