@@ -136,6 +136,8 @@ void setupVulkan() {
 	findPhysicalDevice();
 	findQueueFamilies();
 	createLogicalDevice();
+	createWindowSurface();
+	createSwapChain();
 
 	VkDescriptorPoolSize ps[2];
 	ps[0].descriptorCount = 1;
@@ -181,10 +183,8 @@ void setupVulkan() {
 	vkDestroyDescriptorPool(device, dp, 0);
 
 	CreateShaders();
-	createWindowSurface();
 	checkSwapChainSupport();
 	createSemaphores();
-	createSwapChain();
 	createCommandQueues();
 	CreateRenderPass();
 	CreateFramebuffer();
